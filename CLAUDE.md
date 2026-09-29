@@ -96,6 +96,17 @@ Environment: copy `.env.example` → `.env.local`, set `NEXT_PUBLIC_API_URL` (ba
 
 ## Git
 
-Same flow as `signa-api`: branches `feature/*`, `fix/*`, `chore/*`, `docs/*`; squash-merge to the
-integration branch with an Angular-style message (`type(scope): description`). Never commit `.env*`
-(except `.env.example`).
+GitFlow, same as `signa-api`. **Never push directly to `develop` or `master`** — every change goes
+through a PR from a new branch.
+
+- **Work branches:** `type/name` cut from `develop` (`feature/*`, `fix/*`, `chore/*`, `docs/*`, `refactor/*`).
+- **To `develop`:** PR with **squash merge**. The squash message must follow Angular Commit Conventions
+  (`type(scope): description`; `feat` → minor, `fix` → patch, `BREAKING CHANGE:` footer → major) because it
+  drives automatic versioning. Commits inside the branch are free-form.
+- **To `master`:** only from `release/*` or `hotfix/*` PRs.
+- **Gates:** `ci.yml` runs on every push (format, lint, typecheck, tests, build); `branch-policy.yml`
+  fails PRs with an invalid branch name/target.
+- **Release:** pushing to `master` runs `semantic-release` (tag + GitHub Release). Never tag by hand.
+- Never commit `.env*` (except `.env.example`).
+
+Workflow files: [`.github/workflows/`](./.github/workflows/) — update this section if they change.
