@@ -11,7 +11,7 @@
 | Access  | module memory (`tokenStore`)          | Never persisted; lost on reload  |
 | Refresh | `localStorage` (`signa.refreshToken`) | Keeps the session across reloads |
 
-**Known trade-off:** a persisted refresh token is readable by any XSS. Accepted because the API is bearer-only (no cookie option). Mitigate with a strict CSP and no untrusted HTML; revisit if the API adds httpOnly-cookie refresh ([../status.md](../status.md)).
+**Known trade-off:** a persisted refresh token is readable by any XSS. Accepted because the API is bearer-only (no cookie option). Mitigated by the strict CSP in [../security.md](../security.md) (blocks injected scripts and exfiltration) and by never rendering untrusted HTML; revisit if the API adds httpOnly-cookie refresh ([../status.md](../status.md)).
 
 ## `useAuth()` contract
 

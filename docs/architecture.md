@@ -21,6 +21,8 @@ src/
     case.ts               # camelCase↔snake_case
     env.ts                # NEXT_PUBLIC_* access
     utils.ts              # cn()
+    security/csp.ts       # CSP builder + MARKETING_PATHS (see security.md)
+  proxy.ts                # per-request nonce CSP for non-marketing routes
 ```
 
 Rule of thumb: `app/` holds thin route files that compose `features/*`; reusable logic lives in
