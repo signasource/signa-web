@@ -23,6 +23,12 @@ const nextConfig: NextConfig = {
         source,
         headers: [{ key: "Content-Security-Policy", value: buildCsp() }],
       })),
+      // The glb-viewer route handler must be embeddable by same-origin iframes.
+      // This more-specific rule overrides the global X-Frame-Options: DENY above.
+      {
+        source: "/api/glb-viewer",
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+      },
     ];
   },
 };

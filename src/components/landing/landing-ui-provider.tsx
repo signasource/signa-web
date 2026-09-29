@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FeatureId, LandingUIContext, LandingUIValue } from "@/components/landing/landing-ui-context";
+import {
+  FeatureId,
+  LandingUIContext,
+  LandingUIValue,
+} from "@/components/landing/landing-ui-context";
 import { OrganizationsModal } from "@/components/landing/organizations-modal";
 import { FeaturePreview } from "@/components/landing/feature-preview";
 

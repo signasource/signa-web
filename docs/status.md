@@ -30,7 +30,7 @@ Accept-invite, forgot/reset password, members list/detail, modules, charts, invi
 | Item                                         | Notes                                                                                                                                               |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Refresh token in `localStorage`              | XSS-exposed; CSP mitigates (see [security.md](./security.md)), cookie-based refresh in the API would remove it — [api/session.md](./api/session.md) |
-| Landing contact form has no submit handler   | No backend endpoint for the organizations contact form yet; button is currently a no-op — [features/landing.md](./features/landing.md)               |
+| Landing contact form has no submit handler   | No backend endpoint for the organizations contact form yet; button is currently a no-op — [features/landing.md](./features/landing.md)              |
 | CI workflow never run on GitHub              | `npm run check` and `npm run build` pass locally; confirm the first `.github/workflows/ci.yml` run                                                  |
 | CSP unverified on `next dev` and on the host | Verified on `next start` only; re-check on first deploy — [security.md](./security.md)                                                              |
 | Hosting, analytics, E2E                      | Undecided — [stack.md](./stack.md)                                                                                                                  |

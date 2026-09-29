@@ -38,7 +38,14 @@ export function FeatureCard({
         ACCENT_BG[id],
       )}
     >
-      <Image src={icon} alt="" aria-hidden width={140} height={140} className="h-[140px] w-[140px]" />
+      <Image
+        src={icon}
+        alt=""
+        aria-hidden
+        width={140}
+        height={140}
+        className="h-[140px] w-[140px]"
+      />
       <span className="font-display text-2xl font-bold tracking-tight">{title}</span>
       <p className={cn("text-[17px] leading-relaxed", ACCENT_TEXT[id])}>{description}</p>
     </button>

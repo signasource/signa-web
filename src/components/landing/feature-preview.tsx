@@ -14,12 +14,22 @@ function AnswerGrid() {
           key={word}
           className={
             word === "Hola"
-              ? "flex h-11 items-center justify-center gap-1.5 rounded-2xl border-2 border-success bg-success-light text-[13px] font-extrabold text-success-dark"
-              : "flex h-11 items-center justify-center rounded-2xl bg-fill text-[13px] font-bold"
+              ? "border-success bg-success-light text-success-dark flex h-11 items-center justify-center gap-1.5 rounded-2xl border-2 text-[13px] font-extrabold"
+              : "bg-fill flex h-11 items-center justify-center rounded-2xl text-[13px] font-bold"
           }
         >
           {word === "Hola" && (
-            <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              aria-hidden="true"
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M5 12.5l4.5 4.5L19 7.5" />
             </svg>
           )}
@@ -32,35 +42,46 @@ function AnswerGrid() {
 
 function SignsPhone() {
   return (
-    <div className="justify-self-center rounded-[46px] bg-text p-2.5 shadow-2xl">
-      <div className="flex h-[620px] w-[280px] flex-col gap-3.5 overflow-hidden rounded-[37px] bg-background p-4 pt-7">
+    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
+      <div className="bg-background flex h-[620px] w-[280px] flex-col gap-3.5 overflow-hidden rounded-[37px] p-4 pt-7">
         <div className="flex items-center gap-2.5">
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" className="stroke-text-muted" strokeWidth="2.4" strokeLinecap="round">
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="stroke-text-muted"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          >
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
-          <div className="h-2.5 flex-grow rounded-full bg-fill-dark">
-            <div className="h-2.5 w-[42%] rounded-full bg-primary" />
+          <div className="bg-fill-dark h-2.5 flex-grow rounded-full">
+            <div className="bg-primary h-2.5 w-[42%] rounded-full" />
           </div>
-          <div className="flex items-center gap-1 text-[13px] font-extrabold text-danger">
+          <div className="text-danger flex items-center gap-1 text-[13px] font-extrabold">
             <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z" />
             </svg>
             5
           </div>
         </div>
-        <div className="relative h-[340px] overflow-hidden rounded-[22px] bg-primary-light">
+        <div className="bg-primary-light relative h-[340px] overflow-hidden rounded-[22px]">
           <Image
             src="/images/lisa-arms-crossed.png"
             alt="Lisa mostrando una seña en 3D"
             width={200}
             height={408}
-            className="absolute left-1/2 top-4 h-[408px] w-[200px] -translate-x-1/2 object-cover object-top"
+            className="absolute top-4 left-1/2 h-[408px] w-[200px] -translate-x-1/2 object-cover object-top"
           />
-          <span className="absolute left-2.5 top-2.5 rounded-full bg-surface px-2.5 py-1 text-[10px] font-extrabold text-primary-dark">
+          <span className="bg-surface text-primary-dark absolute top-2.5 left-2.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold">
             3D
           </span>
         </div>
-        <p className="font-display text-[17px] font-bold tracking-tight">¿Qué significa esta seña?</p>
+        <p className="font-display text-[17px] font-bold tracking-tight">
+          ¿Qué significa esta seña?
+        </p>
         <AnswerGrid />
       </div>
     </div>
@@ -69,30 +90,58 @@ function SignsPhone() {
 
 function CameraPhone() {
   return (
-    <div className="justify-self-center rounded-[46px] bg-text p-2.5 shadow-2xl">
-      <div className="h-[620px] w-[280px] overflow-hidden rounded-[37px] bg-ink-900 text-on-dark">
+    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
+      <div className="bg-ink-900 text-on-dark h-[620px] w-[280px] overflow-hidden rounded-[37px]">
         <div className="flex items-center gap-2.5 px-4 pt-7">
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          >
             <path d="M6 6l12 12M18 6L6 18" />
           </svg>
-          <div className="h-2.5 flex-grow rounded-full bg-ink-700">
-            <div className="h-2.5 w-[72%] rounded-full bg-course-teal" />
+          <div className="bg-ink-700 h-2.5 flex-grow rounded-full">
+            <div className="bg-course-teal h-2.5 w-[72%] rounded-full" />
           </div>
         </div>
-        <div className="mx-4 mt-3.5 rounded-2xl bg-surface p-3.5 text-text">
-          <p className="text-[10px] font-extrabold tracking-wider text-text-muted">HACÉ LA SEÑA</p>
+        <div className="bg-surface text-text mx-4 mt-3.5 rounded-2xl p-3.5">
+          <p className="text-text-muted text-[10px] font-extrabold tracking-wider">HACÉ LA SEÑA</p>
           <p className="font-display text-2xl font-extrabold tracking-tight">Hola</p>
         </div>
-        <div className="relative mx-4 mt-3.5 h-[240px] overflow-hidden rounded-[22px] bg-ink-800">
-          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-ink-900/70 px-2.5 py-1.5 text-[10.5px] font-bold">
-            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" className="stroke-course-teal" strokeWidth="2.6" strokeLinejoin="round">
+        <div className="bg-ink-800 relative mx-4 mt-3.5 h-[240px] overflow-hidden rounded-[22px]">
+          <div className="bg-ink-900/70 absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10.5px] font-bold">
+            <svg
+              aria-hidden="true"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              className="stroke-course-teal"
+              strokeWidth="2.6"
+              strokeLinejoin="round"
+            >
               <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
             </svg>
             Se procesa en tu teléfono
           </div>
         </div>
-        <div className="mx-4 mt-3.5 flex h-[50px] items-center justify-center gap-2 rounded-2xl bg-success font-extrabold text-white">
-          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <div className="bg-success mx-4 mt-3.5 flex h-[50px] items-center justify-center gap-2 rounded-2xl font-extrabold text-white">
+          <svg
+            aria-hidden="true"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M5 12.5l4.5 4.5L19 7.5" />
           </svg>
           ¡Te salió!
@@ -104,9 +153,9 @@ function CameraPhone() {
 
 function StreakPhone() {
   return (
-    <div className="justify-self-center rounded-[46px] bg-text p-2.5 shadow-2xl">
-      <div className="flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px] bg-background">
-        <div className="bg-primary px-4 pb-4 pt-8 text-on-primary">
+    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
+      <div className="bg-background flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px]">
+        <div className="bg-primary text-on-primary px-4 pt-8 pb-4">
           <p className="font-display text-xl font-bold tracking-tight">Tu recorrido</p>
           <p className="mt-1 max-w-[210px] text-[11.5px] leading-tight opacity-90">
             Seguí la ruta lección por lección y sumá señas todos los días.
@@ -127,11 +176,11 @@ function StreakPhone() {
           </div>
         </div>
         <div className="flex flex-1 flex-col gap-2 p-3.5">
-          <div className="rounded-2xl border border-primary bg-surface p-3">
-            <p className="text-[9px] font-bold tracking-wide text-primary">EN CURSO</p>
+          <div className="border-primary bg-surface rounded-2xl border p-3">
+            <p className="text-primary text-[9px] font-bold tracking-wide">EN CURSO</p>
             <p className="font-display text-sm font-bold">Lección 3</p>
-            <div className="mt-2 h-1.5 rounded-full bg-fill">
-              <div className="h-1.5 w-[40%] rounded-full bg-primary" />
+            <div className="bg-fill mt-2 h-1.5 rounded-full">
+              <div className="bg-primary h-1.5 w-[40%] rounded-full" />
             </div>
           </div>
         </div>
@@ -140,7 +189,10 @@ function StreakPhone() {
   );
 }
 
-const CONTENT: Record<FeatureId, { eyebrow: string; eyebrowClass: string; title: string; body: string; phone: React.ReactNode }> = {
+const CONTENT: Record<
+  FeatureId,
+  { eyebrow: string; eyebrowClass: string; title: string; body: string; phone: React.ReactNode }
+> = {
   signs: {
     eyebrow: "SEÑAS EN 3D",
     eyebrowClass: "text-primary",
@@ -169,13 +221,17 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
   const content = CONTENT[feature];
 
   return (
-    <div className="landing-modal-in fixed inset-0 z-50 overflow-y-auto bg-text/55 p-5 backdrop-blur-sm">
-      <div className="landing-modal-card relative mx-auto grid max-w-3xl grid-cols-1 items-center gap-10 rounded-[40px] bg-background p-8 sm:grid-cols-[minmax(0,1fr)_300px] sm:p-14">
-        <CloseButton onClick={closeFeature} className="absolute right-6 top-6" />
+    <div className="landing-modal-in bg-text/55 fixed inset-0 z-50 overflow-y-auto p-5 backdrop-blur-sm">
+      <div className="landing-modal-card bg-background relative mx-auto grid max-w-3xl grid-cols-1 items-center gap-10 rounded-[40px] p-8 sm:grid-cols-[minmax(0,1fr)_300px] sm:p-14">
+        <CloseButton onClick={closeFeature} className="absolute top-6 right-6" />
         <div className="flex flex-col gap-4">
-          <p className={`text-sm font-extrabold tracking-[2px] ${content.eyebrowClass}`}>{content.eyebrow}</p>
-          <h3 className="font-display text-4xl font-extrabold leading-tight tracking-tight">{content.title}</h3>
-          <p className="text-[17px] leading-relaxed text-text-muted">{content.body}</p>
+          <p className={`text-sm font-extrabold tracking-[2px] ${content.eyebrowClass}`}>
+            {content.eyebrow}
+          </p>
+          <h3 className="font-display text-4xl leading-tight font-extrabold tracking-tight">
+            {content.title}
+          </h3>
+          <p className="text-text-muted text-[17px] leading-relaxed">{content.body}</p>
         </div>
         {content.phone}
       </div>

@@ -4,11 +4,11 @@ export function QueEs() {
   return (
     <section id="que-es" className="scroll-mt-16 px-8 py-24 sm:py-32">
       <div className="mx-auto max-w-6xl">
-        <p className="mb-7 text-sm font-extrabold tracking-[2px] text-primary">QUÉ ES SIGNA</p>
+        <p className="text-primary mb-7 text-sm font-extrabold tracking-[2px]">QUÉ ES SIGNA</p>
         <p className="landing-fillwrap max-w-3xl">
-          <span className="landing-fill font-display text-4xl font-bold leading-snug tracking-tight text-balance sm:text-5xl">
-            Signa enseña Lengua de Señas Argentina desde el celular: lecciones cortas, señas en 3D
-            y una cámara que te corrige en el momento.
+          <span className="landing-fill font-display text-4xl leading-snug font-bold tracking-tight text-balance sm:text-5xl">
+            Signa enseña Lengua de Señas Argentina desde el celular: lecciones cortas, señas en 3D y
+            una cámara que te corrige en el momento.
           </span>
         </p>
         <div className="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-3">

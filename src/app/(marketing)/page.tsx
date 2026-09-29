@@ -18,8 +18,11 @@ export const metadata: Metadata = {
 export default function LandingPage() {
   return (
     <LandingUIProvider>
-      <div id="top" className="relative min-h-screen overflow-x-clip bg-background text-text">
-        <div aria-hidden className="landing-page-progress fixed left-0 top-0 z-50 h-1 w-full origin-left bg-primary" />
+      <div id="top" className="bg-background text-text relative min-h-screen overflow-x-clip">
+        <div
+          aria-hidden
+          className="landing-page-progress bg-primary fixed top-0 left-0 z-50 h-1 w-full origin-left"
+        />
         <Nav />
         <Hero />
         <Marquesina />
