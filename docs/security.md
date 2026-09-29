@@ -10,10 +10,10 @@ The refresh token lives in `localStorage` ([api/session.md](./api/session.md)), 
 
 ## Two tiers
 
-| Tier             | Routes                                                                         | Policy                                                                                                            | Rendering                                       |
-| ---------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| Strict (default) | everything except marketing (`/login`, `/dashboard`, future auth/panel routes) | `script-src 'self' 'nonce-…' 'strict-dynamic'`, per-request nonce from `src/proxy.ts`; styles nonce-based in prod | **Dynamic** — layouts call `await connection()` |
-| Relaxed          | `MARKETING_PATHS` in `src/lib/security/csp.ts` (today `/`)                     | `script-src 'self' 'unsafe-inline'`, set in `next.config.ts`                                                      | Static, CDN-cacheable                           |
+| Tier             | Routes                                                                                 | Policy                                                                                                            | Rendering                                       |
+| ---------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Strict (default) | everything except marketing (`/login`, `/dashboard`, future auth/panel routes)         | `script-src 'self' 'nonce-…' 'strict-dynamic'`, per-request nonce from `src/proxy.ts`; styles nonce-based in prod | **Dynamic** — layouts call `await connection()` |
+| Relaxed          | `MARKETING_PATHS` in `src/lib/security/csp.ts` (today `/`, `/privacidad`, `/terminos`) | `script-src 'self' 'unsafe-inline'`, set in `next.config.ts`                                                      | Static, CDN-cacheable                           |
 
 Why not nonces everywhere: nonces force dynamic rendering, losing static generation and CDN caching for the landing. Why not Next's experimental SRI: inline RSC/hydration scripts are not covered by hashes, so `script-src 'self'` breaks hydration (tried and rejected).
 

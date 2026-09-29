@@ -18,6 +18,7 @@ Detailed implementation docs for `signa-web`. Entry point and mandatory rules: [
 | What are the DTO shapes?                                                          | [api/types.md](./api/types.md)                       |
 | Where are tokens stored? How does login/guard/logout work?                        | [api/session.md](./api/session.md)                   |
 | Which security headers/CSP apply? How to add a public page or third-party script? | [security.md](./security.md)                         |
+| What do the privacy policy/terms claim? What legal decisions are open?            | [legal.md](./legal.md)                               |
 | What color/font tokens exist?                                                     | [design-system/tokens.md](./design-system/tokens.md) |
 | State of the landing page?                                                        | [features/landing.md](./features/landing.md)         |
 | State of the admin dashboard?                                                     | [features/dashboard.md](./features/dashboard.md)     |

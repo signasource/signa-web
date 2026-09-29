@@ -8,6 +8,8 @@
 
 Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client data fetching, `metadata` per page, Spanish copy.
 
+Footer links to the legal pages (`/privacidad`, `/terminos`) — see [../legal.md](../legal.md).
+
 ## Planned
 
 Hero + value proposition, how it works (camera recognition), for-organizations section (training contracts), download links (Google Play), contact form, `sitemap.ts` / `robots.ts`, OG image. Pending copy/design input — see [../status.md](../status.md).
