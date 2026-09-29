@@ -5,7 +5,7 @@
 > Sources: src/app/(marketing)/, src/components/landing/, src/app/layout.tsx (`metadata`)
 
 **Status: built.** `/` (`src/app/(marketing)/page.tsx`) renders the full one-page landing: nav,
-hero (merged with the "Conocé a Lisa" intro), feature marquee, "Qué es Signa", "Para quién es",
+hero (with a playable lesson), feature marquee, "Conocé a Lisa", "Qué es Signa", "Para quién es",
 "Cursos", an organizations overlay, the team, and a final CTA.
 
 Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client-side data fetching,
@@ -13,56 +13,85 @@ Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client-side dat
 
 ## Sections (`src/components/landing/`)
 
-| Component                 | Renders                                                                                                                                                                                                                                        |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nav.tsx`                 | Sticky header; scroll-tinted via CSS only (`landing.css`, no JS)                                                                                                                                                                               |
-| `hero.tsx`                | Pinned "magic scroll" section: one continuous scroll crossfades the hero headline into Lisa's introduction, and the phone mockup from the home screen into a lesson screen, inside one circular backdrop — see "Scroll-driven animation" below |
-| `marquesina.tsx`          | Two looping word rows (pure CSS, decorative)                                                                                                                                                                                                   |
-| `que-es.tsx`              | Value prop + 3 clickable feature cards, each opening a `FeaturePreview` overlay                                                                                                                                                                |
-| `para-quien.tsx`          | Horizontal pinned scroll, 4 audience cards                                                                                                                                                                                                     |
-| `cursos.tsx`              | Free basic course + thematic (paid) courses                                                                                                                                                                                                    |
-| `equipo.tsx`              | The 6-person team, UTN FRC Proyecto Final                                                                                                                                                                                                      |
-| `cta-final.tsx`           | Closing CTA + Lisa                                                                                                                                                                                                                             |
-| `landing-footer.tsx`      | Footer links (`/privacidad`, `/terminos`, organizations, legal)                                                                                                                                                                                |
-| `organizations-modal.tsx` | "Signa para organizaciones" overlay: how it works, an example org dashboard, contact form. Triggered from the nav, hero, footer, and final CTA (`org-trigger.tsx`)                                                                             |
-| `feature-preview.tsx`     | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature                                                                                                                                                 |
+| Component                 | Renders                                                                                                                                                                    |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nav.tsx`                 | Sticky header, opaque + blurred background (content never shows through), shadow once scrolled. Below `md` the links collapse into `mobile-menu.tsx`                       |
+| `hero.tsx`                | Headline + CTAs, and a phone mockup running `LessonDemo` next to Lisa waving. Normal document flow (not pinned). `#probar` anchors the demo                                |
+| `lesson-demo.tsx`         | Playable "¿Qué significa esta seña?": Lisa signs in 3D (`LisaGlbViewer`), the visitor picks an answer, gets right/wrong feedback and hearts, and moves to the next sign    |
+| `marquesina.tsx`          | Two word rows looping forever in opposite directions (pure CSS keyframes, pause on hover, decorative)                                                                      |
+| `lisa-intro.tsx`          | "Conocé a Lisa" (`#lisa`): chat bubbles that pop in one by one, next to the app's home screen and Lisa with arms crossed                                                   |
+| `que-es.tsx`              | Value prop (text fills in with color as it scrolls) + 3 clickable feature cards, each opening a `FeaturePreview` overlay                                                   |
+| `para-quien.tsx`          | 4 audience cards in `card-rail.tsx`: native horizontal scroller (scroll-snap, prev/next buttons, progress bar, mouse drag). Each card has a CTA (demo, cursos, or org)     |
+| `cursos.tsx`              | Free basic course (CTA → the hero demo) + thematic (paid) courses; each thematic course opens the organizations overlay                                                    |
+| `equipo.tsx`              | The 6-person team, UTN FRC Proyecto Final                                                                                                                                  |
+| `cta-final.tsx`           | Closing CTA + Lisa                                                                                                                                                         |
+| `landing-footer.tsx`      | Footer links (`/privacidad`, `/terminos`, organizations, legal)                                                                                                            |
+| `organizations-modal.tsx` | "Signa para organizaciones" overlay: how it works, an example org dashboard, contact form. Triggered from the nav, hero, audience cards, thematic courses, footer, and CTA |
+| `feature-preview.tsx`     | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature (the 3D one is a live `LessonDemo`)                                         |
 
 ## Interactivity (client boundary)
 
-The only client components are the ones that hold or read UI state — everything else stays a
-Server Component:
+Server Components by default; client components only where there is state or a browser API:
 
 - `landing-ui-provider.tsx` / `landing-ui-context.tsx` — one `"use client"` boundary at the top of
-  the page tree, holding `orgOpen` and the open feature id, and rendering the two overlays.
-- `org-trigger.tsx`, `feature-card.tsx` — small client leaves that read the context to open an
-  overlay.
+  the page tree, holding `orgOpen` and the open feature id, and rendering the two overlays. While
+  one is open the page behind doesn't scroll and Escape closes it (the feature preview also closes
+  on a backdrop click).
+- `org-trigger.tsx`, `feature-card.tsx`, `mobile-menu.tsx` — small client leaves.
+- `lesson-demo.tsx`, `lisa-glb-viewer.tsx` — the playable lesson and its 3D iframe.
+- `card-rail.tsx` — the horizontal scroller.
+- `landing-scroll-effects.tsx` — see below.
 
-## Scroll-driven animation ("magic scroll")
+## Scroll effects
 
-`src/app/(marketing)/landing.css` (imported only by the landing page) holds every scroll effect,
-built on CSS `animation-timeline` (`view()`, `scroll(root)`, and a named `--hero` / `--hz`
-timeline) — no JS. Wrapped in `@supports (animation-timeline: view())`, so it's progressive
-enhancement; `prefers-reduced-motion: reduce` turns all of it off, and a `max-width: 900px` block
-turns the two pinned sections (hero, "Para quién es") into a normal static/vertical layout.
+**No CSS scroll timelines.** The first version drove everything with `animation-timeline`
+(pinned hero, pinned horizontal section). Firefox doesn't ship it, so Firefox users saw the
+hero's two acts and both Lisa images stacked on top of each other, dead marquees, a transparent
+nav, and two pinned sections that swallowed ~3000px of scrolling without moving. Don't reintroduce
+it (nor pinned/scroll-jacked sections) without a real fallback.
 
-The hero is the centerpiece: it is one pinned section (`view-timeline-name: --hero`) whose single
-scroll range drives every effect inside it — the headline fading into Lisa's introduction, the
-phone crossfading from its home screen to a lesson screen, and Lisa's waving photo crossfading
-into her arms-crossed one — all keyed off percentages of that same timeline, so they always stay
-in sync.
+Today `landing-scroll-effects.tsx` (renders nothing) runs one passive, rAF-throttled scroll
+listener + an `IntersectionObserver`, and `src/app/(marketing)/landing.css` reacts to what it sets:
+
+- `html[data-landing-js]` — only with JS running do `[data-reveal]` elements start hidden, so the
+  page is fully readable without JS.
+- `[data-reveal="up|left|right|pop|tilt-a|tilt-b|zoom|peek"]` → `data-in` once it enters the
+  viewport (one-shot); CSS transitions animate it. Stagger with the `--delay` custom property.
+  Don't put `data-reveal` on an element that also has a hover transform — wrap it instead.
+- `--landing-scroll` (0→1 on `<html>`) → the top progress bar.
+- `[data-progress]` → `--p` (0→1, `elementProgress()` in `src/lib/landing-scroll.ts`) → the
+  "Qué es" text fill.
+- `[data-landing-nav][data-scrolled]` → the nav's shadow.
+
+Above-the-fold content uses `landing-enter` (a plain on-load keyframe), not reveals.
+`prefers-reduced-motion: reduce` turns off every animation and shows reveals in their final state.
+
+**Phone mockups** are laid out on a fixed design canvas (`--stage-w` × `--stage-h`) inside
+`.landing-stage-wrap` and scaled with `--s` per breakpoint, so the composition shrinks instead
+of breaking; the wrapper reserves the scaled height.
 
 ## 3D animation (model-viewer)
 
-The lesson screen inside the hero phone mockup renders a live GLB animation via `<model-viewer>`
-(`@google/model-viewer` v3.5.0 loaded from CDN). The model is fetched from the shared Cloudflare
-R2 bucket at `https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev/lsa/{seña}.glb` — the same
-endpoint used by `signa-mobile` (`src/features/animations/glbUrl.ts`).
+`LessonDemo` renders a live GLB animation via `<model-viewer>` (`@google/model-viewer` v3.5.0
+from CDN). Models come from the shared Cloudflare R2 bucket
+`https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev/lsa/{seña}.glb` (`R2_GLB_BASE` in
+`src/lib/glb.ts`) — the same files `signa-mobile` uses. Every sign in `DEMO_QUESTIONS` must exist
+there (verified: `hola`, `gracias`, `hermano`, `por favor`; also available: `chau`, `perdón`,
+`amigo`).
 
-`src/components/landing/lisa-glb-viewer.tsx` renders a same-origin `<iframe src="/api/glb-viewer?sign=...">`.
-The Route Handler at `src/app/api/glb-viewer/route.ts` serves the model-viewer HTML with its own
-CSP (`buildViewerCsp()`) and `X-Frame-Options: SAMEORIGIN`. This mirrors signa-mobile's WebView
+`lisa-glb-viewer.tsx` renders a same-origin `<iframe src="/api/glb-viewer?sign=...">`. The Route
+Handler at `src/app/api/glb-viewer/route.ts` serves the model-viewer page with its own CSP
+(`buildViewerCsp()`) and `X-Frame-Options: SAMEORIGIN`. This mirrors signa-mobile's WebView
 approach (`baseUrl: "https://localhost"`) — the iframe needs a real HTTP origin context for the
-CDN module script, blob: workers, and R2 fetches to work correctly; `srcDoc` lacks that context.
+CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
+
+- The GLBs are **Draco-compressed**: the viewer CSP must allow the decoder from `www.gstatic.com`
+  and `'wasm-unsafe-eval'`, or no model ever loads — see [../security.md](../security.md).
+- Until the model is decoded the viewer shows Lisa's static picture plus a spinner (never empty).
+- The visitor can drag to rotate (`camera-controls`, zoom/pan off, `touch-action: pan-y` so the
+  page still scrolls on touch).
+- Changing the sign posts `{ type: VIEWER_MESSAGE, sign }` to the iframe, which swaps `src` in
+  place — no reload of model-viewer or the decoder. Both ends validate with `isSafeSign()`.
 
 Camera framing logic (torso-up crop, FOV 15°, radius derived from bounding box) mirrors
 `GlbAnimationView.tsx` in signa-mobile so the two surfaces look identical.

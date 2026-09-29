@@ -1,10 +1,26 @@
 /*
- * Scroll-driven "magic scroll" animations for the landing page only.
- * Progressive enhancement: everything here lives behind @supports(animation-timeline: view()),
- * and prefers-reduced-motion turns all of it off. Colors reference the tokens in
- * src/app/globals.css (Tailwind v4 exposes @theme entries as --color-* custom properties).
+ * Landing-page-only styles. Colors reference the tokens in src/app/globals.css (Tailwind v4
+ * exposes @theme entries as --color-* custom properties).
+ *
+ * Every effect works in every browser: nothing here uses CSS scroll timelines
+ * (`animation-timeline`), which Firefox doesn't ship — relying on them left Firefox users with
+ * overlapping hero copy and "dead" pinned sections. Scroll-linked state comes from
+ * `LandingScrollEffects` (one passive, rAF-throttled listener + an IntersectionObserver):
+ *   - `html[data-landing-js]`   JS is running; only then do reveal targets start hidden
+ *   - `[data-reveal][data-in]`  element has entered the viewport (one-shot)
+ *   - `--landing-scroll`        0→1 page scroll progress, on <html>
+ *   - `[data-progress]` `--p`   0→1 progress of that element through the viewport
+ *   - `[data-landing-nav][data-scrolled]`  page is scrolled past the top
+ * Without JS (or with reduced motion) everything renders in its final, readable state.
  * Canonical reference: docs/features/landing.md
  */
+
+html:has(.landing-root) {
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
+}
+
+/* ── Buttons & cards ─────────────────────────────────────────────────────── */
 
 .landing-btn {
   transition:
@@ -16,6 +32,47 @@
   transform: translateY(-2px);
   box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--color-text) 50%, transparent);
 }
+.landing-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.landing-card-click {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+.landing-card-click:hover,
+.landing-card-click:focus-visible {
+  transform: translateY(-6px);
+  box-shadow: 0 26px 50px -24px color-mix(in srgb, var(--color-text) 40%, transparent);
+}
+
+.landing-chip:has(input:checked) {
+  background: var(--color-text);
+  color: var(--color-on-dark);
+}
+
+/* ── Nav ─────────────────────────────────────────────────────────────────── */
+
+.landing-nav {
+  background-color: color-mix(in srgb, var(--color-background) 94%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    box-shadow 0.25s ease,
+    background-color 0.25s ease;
+}
+.landing-nav[data-scrolled] {
+  box-shadow:
+    0 1px 0 var(--color-border),
+    0 10px 30px -22px color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+
+.landing-page-progress {
+  transform: scaleX(var(--landing-scroll, 0));
+}
+
+/* ── Ambient motion (plain keyframes — works everywhere) ─────────────────── */
 
 .landing-spin {
   animation: landing-spin 28s linear infinite;
@@ -41,20 +98,157 @@
   }
 }
 
-.landing-chip:has(input:checked) {
-  background: var(--color-text);
-  color: var(--color-on-dark);
+/* Above-the-fold entrance: runs on load, no JS needed. */
+.landing-enter {
+  animation: landing-enter 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes landing-enter {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
 }
 
-.landing-card-click {
+/* Marquee: two rows looping forever in opposite directions. Each row renders its words twice,
+   so translating by -50% lands exactly on the start of the copy. Hover pauses it. */
+.landing-marquee-track {
+  animation: landing-marquee 48s linear infinite;
+}
+.landing-marquee-track[data-reverse] {
+  animation-direction: reverse;
+  animation-duration: 56s;
+}
+.landing-marquee:hover .landing-marquee-track {
+  animation-play-state: paused;
+}
+@keyframes landing-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ── Scroll reveal (driven by LandingScrollEffects) ──────────────────────── */
+
+[data-landing-js] [data-reveal] {
   transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease;
+    opacity 0.8s cubic-bezier(0.2, 0.8, 0.3, 1),
+    transform 0.8s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition-delay: var(--delay, 0ms);
 }
-.landing-card-click:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 26px 50px -24px color-mix(in srgb, var(--color-text) 40%, transparent);
+[data-landing-js] [data-reveal]:not([data-in]) {
+  opacity: 0;
 }
+[data-landing-js] [data-reveal="up"]:not([data-in]) {
+  transform: translateY(56px);
+}
+[data-landing-js] [data-reveal="left"]:not([data-in]) {
+  transform: translateX(-64px);
+}
+[data-landing-js] [data-reveal="right"]:not([data-in]) {
+  transform: translateX(64px);
+}
+[data-landing-js] [data-reveal="pop"]:not([data-in]) {
+  transform: scale(0.8);
+}
+[data-landing-js] [data-reveal="tilt-a"]:not([data-in]) {
+  transform: translateY(80px) rotate(-5deg);
+}
+[data-landing-js] [data-reveal="tilt-b"]:not([data-in]) {
+  transform: translateY(100px) rotate(5deg);
+}
+[data-landing-js] [data-reveal="zoom"]:not([data-in]) {
+  opacity: 0.15;
+  transform: scale(0.85);
+}
+[data-landing-js] [data-reveal="peek"]:not([data-in]) {
+  opacity: 1;
+  transform: translateY(160px) rotate(8deg);
+}
+
+/* "Qué es Signa" headline: text fills in with color as it scrolls through view (`--p`). */
+.landing-fill {
+  color: transparent;
+  background: linear-gradient(var(--color-text), var(--color-text)) 0 0 / calc(var(--p, 1) * 100%)
+    100% no-repeat var(--color-fill-dark);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ── Scaled phone stages ─────────────────────────────────────────────────── */
+/* The mockups are laid out on a fixed design canvas (--stage-w × --stage-h) and scaled with
+   --s per breakpoint, so the composition never breaks — it just shrinks. The wrapper reserves
+   the scaled height so surrounding layout flows normally. */
+
+.landing-stage-wrap {
+  --s: 0.54;
+  position: relative;
+  width: 100%;
+  height: calc(var(--stage-h) * var(--s));
+}
+.landing-stage {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  transform: translateX(-50%) scale(var(--s));
+  transform-origin: top center;
+}
+@media (min-width: 400px) {
+  .landing-stage-wrap {
+    --s: 0.62;
+  }
+}
+@media (min-width: 480px) {
+  .landing-stage-wrap {
+    --s: 0.72;
+  }
+}
+@media (min-width: 640px) {
+  .landing-stage-wrap {
+    --s: 0.85;
+  }
+}
+@media (min-width: 1024px) {
+  .landing-stage-wrap {
+    --s: 0.8;
+  }
+}
+@media (min-width: 1200px) {
+  .landing-stage-wrap {
+    --s: 0.92;
+  }
+}
+@media (min-width: 1320px) {
+  .landing-stage-wrap {
+    --s: 1;
+  }
+}
+
+/* ── Horizontal card rail ("Para quién es") ──────────────────────────────── */
+
+.landing-rail {
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  /* Line the first card up with the page's max-w-6xl content column. */
+  padding-inline: max(1.25rem, calc((100vw - 72rem) / 2 + 2rem));
+  scroll-padding-inline: max(1.25rem, calc((100vw - 72rem) / 2 + 2rem));
+}
+.landing-rail::-webkit-scrollbar {
+  display: none;
+}
+.landing-rail[data-dragging] {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+.landing-rail-bar {
+  transform: scaleX(var(--rail, 0));
+  transition: transform 0.15s linear;
+}
+
+/* ── Modals ──────────────────────────────────────────────────────────────── */
 
 .landing-modal-in {
   animation: landing-modal-in 0.28s ease both;
@@ -78,469 +272,73 @@
   }
 }
 
-@supports (animation-timeline: view()) {
-  .landing-page-progress {
-    animation: landing-prog linear both;
-    animation-timeline: scroll(root);
+/* Organizations overlay: one-shot on-open animations (the overlay scrolls itself, so these are
+   plain delayed keyframes rather than scroll reveals). */
+.landing-grow {
+  animation: landing-grow 1.2s cubic-bezier(0.2, 0.8, 0.3, 1) 0.4s both;
+}
+@keyframes landing-grow {
+  from {
+    transform: scaleX(0);
   }
-  .landing-nav {
-    animation: landing-nav linear both;
-    animation-timeline: scroll(root);
-    animation-range: 0px 180px;
-  }
-  @keyframes landing-nav {
-    to {
-      background-color: color-mix(in srgb, var(--color-background) 88%, transparent);
-      box-shadow: 0 1px 0 var(--color-border);
-      backdrop-filter: blur(14px);
-    }
-  }
-
-  /* Hero: pinned while scrolling, two acts on one continuous timeline (headline → Lisa guide). */
-  .landing-hero {
-    view-timeline-name: --hero;
-  }
-  .landing-h-copy {
-    animation: landing-h-copy linear both;
-    animation-timeline: --hero;
-    animation-range: contain 0% contain 34%;
-  }
-  @keyframes landing-h-copy {
-    to {
-      opacity: 0;
-      transform: translateY(-110px) scale(0.94);
-      filter: blur(6px);
-    }
-  }
-  .landing-h-phone {
-    animation: landing-h-phone linear both;
-    animation-timeline: --hero;
-    animation-range: contain 0% contain 60%;
-  }
-  @keyframes landing-h-phone {
-    from {
-      transform: rotate(-7deg);
-    }
-    to {
-      transform: rotate(0deg) translate(20px, -20px) scale(1.06);
-    }
-  }
-  .landing-h-lisa {
-    animation: landing-h-lisa linear both;
-    animation-timeline: --hero;
-    animation-range: contain 5% contain 36%;
-  }
-  @keyframes landing-h-lisa {
-    from {
-      opacity: 1;
-      transform: none;
-    }
-    to {
-      opacity: 0;
-      transform: translate(60px, 10px) scale(0.9);
-    }
-  }
-  .landing-h-blob {
-    animation: landing-h-blob linear both;
-    animation-timeline: --hero;
-    animation-range: contain 0% contain 100%;
-  }
-  @keyframes landing-h-blob {
-    to {
-      transform: scale(1.35);
-      background-color: var(--color-primary-dark);
-    }
-  }
-  .landing-h-chip {
-    animation: landing-h-chip linear both;
-    animation-timeline: --hero;
-    animation-range: contain 0% contain 35%;
-  }
-  @keyframes landing-h-chip {
-    to {
-      opacity: 0;
-      transform: scale(1.3) translateY(-50px);
-    }
-  }
-  .landing-h-hint {
-    animation: landing-h-chip linear both;
-    animation-timeline: --hero;
-    animation-range: contain 0% contain 12%;
-  }
-  .landing-h-copy2 {
+}
+.landing-pop {
+  animation: landing-pop 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes landing-pop {
+  from {
     opacity: 0;
-    animation: landing-h-copy2 linear both;
-    animation-timeline: --hero;
-    animation-range: contain 40% contain 58%;
+    transform: scale(0.7);
   }
-  @keyframes landing-h-copy2 {
-    from {
-      opacity: 0;
-      transform: translateY(40px) scale(0.97);
-      filter: blur(6px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-      filter: none;
-    }
-  }
-  .landing-h-home {
-    animation: landing-h-home-out linear both;
-    animation-timeline: --hero;
-    animation-range: contain 32% contain 46%;
-  }
-  @keyframes landing-h-home-out {
-    to {
-      opacity: 0;
-    }
-  }
-  .landing-h-lesson {
-    opacity: 0;
-    animation: landing-h-lesson-in linear both;
-    animation-timeline: --hero;
-    animation-range: contain 32% contain 46%;
-  }
-  @keyframes landing-h-lesson-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  .landing-h-lisa2 {
-    opacity: 0;
-    animation: landing-h-lisa2-in linear both;
-    animation-timeline: --hero;
-    animation-range: contain 36% contain 54%;
-  }
-  @keyframes landing-h-lisa2-in {
-    from {
-      opacity: 0;
-      transform: translate(40px, 20px) scale(0.92);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
+}
 
-  /* Marquesina: two rows drifting opposite directions as you scroll past them. */
-  .landing-mq {
-    animation: landing-mq linear both;
-    animation-timeline: view();
-    animation-range: cover 0% cover 100%;
+/* Lesson demo: wrong answer shake. */
+.landing-shake {
+  animation: landing-shake 0.4s ease;
+}
+@keyframes landing-shake {
+  25% {
+    translate: -5px 0;
   }
-  .landing-mq2 {
-    animation: landing-mq2 linear both;
-    animation-timeline: view();
-    animation-range: cover 0% cover 100%;
+  50% {
+    translate: 5px 0;
   }
-  @keyframes landing-mq {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-38%);
-    }
-  }
-  @keyframes landing-mq2 {
-    from {
-      transform: translateX(-38%);
-    }
-    to {
-      transform: translateX(0);
-    }
-  }
-
-  /* "Qué es Signa" headline: text fills in with color as it scrolls through view. */
-  .landing-fillwrap {
-    view-timeline-name: --fill;
-  }
-  .landing-fill {
-    color: transparent;
-    background: linear-gradient(var(--color-text), var(--color-text)) 0 0/0% 100% no-repeat
-      var(--color-fill-dark);
-    -webkit-background-clip: text;
-    background-clip: text;
-    animation: landing-fill linear both;
-    animation-timeline: --fill;
-    animation-range: cover 18% cover 58%;
-  }
-  @keyframes landing-fill {
-    to {
-      background-size: 100% 100%;
-    }
-  }
-
-  /* Generic reveal-on-scroll, used across most sections. */
-  .landing-rv {
-    animation: landing-rv linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 70%;
-  }
-  @keyframes landing-rv {
-    from {
-      opacity: 0;
-      transform: translateY(56px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-  .landing-rv-l {
-    animation: landing-rv-l linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 80%;
-  }
-  @keyframes landing-rv-l {
-    from {
-      opacity: 0;
-      transform: translateX(-80px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-  .landing-rv-r {
-    animation: landing-rv-r linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 80%;
-  }
-  @keyframes landing-rv-r {
-    from {
-      opacity: 0;
-      transform: translateX(80px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
-  /* "Para quién es": horizontal pinned scroll. */
-  .landing-hz {
-    view-timeline-name: --hz;
-  }
-  .landing-hz-track {
-    will-change: transform;
-    animation: landing-hz linear both;
-    animation-timeline: --hz;
-    animation-range: contain 0% contain 100%;
-  }
-  @keyframes landing-hz {
-    to {
-      transform: translateX(calc(-100% + 100vw - 64px));
-    }
-  }
-  .landing-hz-bar {
-    animation: landing-prog linear both;
-    animation-timeline: --hz;
-    animation-range: contain 0% contain 100%;
-  }
-  @keyframes landing-prog {
-    from {
-      transform: scaleX(0);
-    }
-    to {
-      transform: scaleX(1);
-    }
-  }
-
-  /* Organizations: progress line filling across the 4 steps. */
-  .landing-grow {
-    animation: landing-grow linear both;
-    animation-timeline: view();
-    animation-range: entry 40% cover 45%;
-  }
-  @keyframes landing-grow {
-    from {
-      transform: scaleX(0);
-    }
-    to {
-      transform: scaleX(1);
-    }
-  }
-  .landing-pop {
-    animation: landing-pop linear both;
-    animation-timeline: view();
-    animation-range: entry 10% entry 90%;
-  }
-  @keyframes landing-pop {
-    from {
-      opacity: 0;
-      transform: scale(0.7);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
-  /* Team grid: alternating tilt-in. */
-  .landing-tm {
-    animation: landing-tm-a linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 85%;
-  }
-  .landing-tm2 {
-    animation: landing-tm-b linear both;
-    animation-timeline: view();
-    animation-range: entry 10% entry 95%;
-  }
-  @keyframes landing-tm-a {
-    from {
-      opacity: 0;
-      transform: translateY(90px) rotate(-5deg);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-  @keyframes landing-tm-b {
-    from {
-      opacity: 0;
-      transform: translateY(120px) rotate(5deg);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
-  /* Final CTA headline + peeking Lisa. */
-  .landing-big {
-    animation: landing-big linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 45%;
-  }
-  @keyframes landing-big {
-    from {
-      opacity: 0.15;
-      transform: scale(0.82);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-  .landing-peek {
-    animation: landing-peek linear both;
-    animation-timeline: view();
-    animation-range: entry 20% cover 50%;
-  }
-  @keyframes landing-peek {
-    from {
-      transform: translateY(160px) rotate(8deg);
-    }
-    to {
-      transform: none;
-    }
+  75% {
+    translate: -3px 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-nav,
-  .landing-hero,
-  .landing-h-copy,
-  .landing-h-phone,
-  .landing-h-lisa,
-  .landing-h-blob,
-  .landing-h-chip,
-  .landing-h-hint,
-  .landing-h-copy2,
-  .landing-h-home,
-  .landing-h-lesson,
-  .landing-h-lisa2,
-  .landing-mq,
-  .landing-mq2,
-  .landing-fill,
-  .landing-rv,
-  .landing-rv-l,
-  .landing-rv-r,
-  .landing-hz-track,
-  .landing-hz-bar,
-  .landing-grow,
-  .landing-pop,
-  .landing-tm,
-  .landing-tm2,
-  .landing-big,
-  .landing-peek,
+  html:has(.landing-root) {
+    scroll-behavior: auto;
+  }
   .landing-spin,
   .landing-floaty,
-  .landing-floaty2 {
+  .landing-floaty2,
+  .landing-enter,
+  .landing-marquee-track,
+  .landing-modal-in,
+  .landing-modal-card,
+  .landing-grow,
+  .landing-pop,
+  .landing-shake {
     animation: none !important;
+  }
+  [data-landing-js] [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .landing-fill {
+    --p: 1 !important;
   }
 }
 
-@media (max-width: 900px) {
-  .landing-hero {
-    height: auto !important;
-  }
-  .landing-hero-pin {
-    position: static !important;
-    height: auto !important;
-    padding-top: 24px !important;
-    padding-bottom: 48px !important;
-  }
-  .landing-h-copy,
-  .landing-h-phone,
-  .landing-h-lisa,
-  .landing-h-blob,
-  .landing-h-chip,
-  .landing-h-hint,
-  .landing-h-copy2,
-  .landing-h-home,
-  .landing-h-lesson,
-  .landing-h-lisa2 {
-    animation: none !important;
-  }
-  .landing-h-hint {
-    display: none !important;
-  }
-  .landing-h-copy2 {
-    position: static !important;
-    opacity: 1 !important;
-    margin-top: 48px;
-  }
-  .landing-h-lesson,
-  .landing-h-lisa2 {
-    display: none !important;
-  }
-  .landing-h-stage {
-    transform: scale(0.6);
-    transform-origin: top left;
-    height: 430px !important;
-    width: 560px !important;
-    margin-top: 24px;
-  }
-  .landing-hz {
-    height: auto !important;
-  }
-  .landing-hz-pin {
-    position: static !important;
-    height: auto !important;
-    padding-top: 72px !important;
-    padding-bottom: 72px !important;
-  }
-  .landing-hz-track {
-    animation: none !important;
-    flex-direction: column !important;
-    width: auto !important;
-    padding-right: 20px !important;
-  }
-  .landing-hz-track > * {
-    width: auto !important;
-    min-height: 0 !important;
-  }
-  .landing-hz-bar-wrap {
-    display: none !important;
-  }
-  .landing-final-lisa {
-    display: none !important;
-  }
+.landing-marquee-outline {
+  color: transparent;
+  -webkit-text-stroke: 2px var(--color-primary-medallion);
+}
+.landing-marquee-outline span:hover {
+  -webkit-text-stroke-color: var(--color-primary);
 }

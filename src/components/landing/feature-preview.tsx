@@ -1,89 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import { FeatureId, useLandingUI } from "@/components/landing/landing-ui-context";
 import { CloseButton } from "@/components/landing/close-button";
-
-const ANSWERS = ["Chau", "Hola", "Gracias", "Perdón"] as const;
-
-function AnswerGrid() {
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {ANSWERS.map((word) => (
-        <div
-          key={word}
-          className={
-            word === "Hola"
-              ? "border-success bg-success-light text-success-dark flex h-11 items-center justify-center gap-1.5 rounded-2xl border-2 text-[13px] font-extrabold"
-              : "bg-fill flex h-11 items-center justify-center rounded-2xl text-[13px] font-bold"
-          }
-        >
-          {word === "Hola" && (
-            <svg
-              aria-hidden="true"
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12.5l4.5 4.5L19 7.5" />
-            </svg>
-          )}
-          {word}
-        </div>
-      ))}
-    </div>
-  );
-}
+import { LessonDemo } from "@/components/landing/lesson-demo";
 
 function SignsPhone() {
   return (
     <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
-      <div className="bg-background flex h-[620px] w-[280px] flex-col gap-3.5 overflow-hidden rounded-[37px] p-4 pt-7">
-        <div className="flex items-center gap-2.5">
-          <svg
-            aria-hidden="true"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            className="stroke-text-muted"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-          >
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-          <div className="bg-fill-dark h-2.5 flex-grow rounded-full">
-            <div className="bg-primary h-2.5 w-[42%] rounded-full" />
-          </div>
-          <div className="text-danger flex items-center gap-1 text-[13px] font-extrabold">
-            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z" />
-            </svg>
-            5
-          </div>
-        </div>
-        <div className="bg-primary-light relative h-[340px] overflow-hidden rounded-[22px]">
-          <Image
-            src="/images/lisa-arms-crossed.png"
-            alt="Lisa mostrando una seña en 3D"
-            width={200}
-            height={408}
-            className="absolute top-4 left-1/2 h-[408px] w-[200px] -translate-x-1/2 object-cover object-top"
-          />
-          <span className="bg-surface text-primary-dark absolute top-2.5 left-2.5 rounded-full px-2.5 py-1 text-[10px] font-extrabold">
-            3D
-          </span>
-        </div>
-        <p className="font-display text-[17px] font-bold tracking-tight">
-          ¿Qué significa esta seña?
-        </p>
-        <AnswerGrid />
-      </div>
+      <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
     </div>
   );
 }
@@ -221,14 +145,26 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
   const content = CONTENT[feature];
 
   return (
-    <div className="landing-modal-in bg-text/55 fixed inset-0 z-50 overflow-y-auto p-5 backdrop-blur-sm">
-      <div className="landing-modal-card bg-background relative mx-auto grid max-w-3xl grid-cols-1 items-center gap-10 rounded-[40px] p-8 sm:grid-cols-[minmax(0,1fr)_300px] sm:p-14">
-        <CloseButton onClick={closeFeature} className="absolute top-6 right-6" />
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="feature-preview-title"
+      onClick={(e) => e.target === e.currentTarget && closeFeature()}
+      className="landing-modal-in bg-text/55 fixed inset-0 z-50 overflow-y-auto p-3 backdrop-blur-sm sm:p-5"
+    >
+      <div className="landing-modal-card bg-background relative mx-auto my-auto grid max-w-3xl grid-cols-1 items-center gap-10 rounded-[40px] p-6 pt-16 sm:grid-cols-[minmax(0,1fr)_300px] sm:p-14">
+        <CloseButton
+          onClick={closeFeature}
+          className="absolute top-5 right-5 sm:top-6 sm:right-6"
+        />
         <div className="flex flex-col gap-4">
           <p className={`text-sm font-extrabold tracking-[2px] ${content.eyebrowClass}`}>
             {content.eyebrow}
           </p>
-          <h3 className="font-display text-4xl leading-tight font-extrabold tracking-tight">
+          <h3
+            id="feature-preview-title"
+            className="font-display text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl"
+          >
             {content.title}
           </h3>
           <p className="text-text-muted text-[17px] leading-relaxed">{content.body}</p>

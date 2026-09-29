@@ -1,4 +1,7 @@
-import type { CSSProperties } from "react";
+"use client";
+
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { VIEWER_MESSAGE } from "@/lib/glb";
 
 // The GLB animation is served from a dedicated Route Handler (/api/glb-viewer) so the iframe
 // has a real same-origin URL context — equivalent to signa-mobile's WebView baseUrl pattern.
@@ -13,7 +16,30 @@ const iframeStyle: CSSProperties = {
   background: "transparent",
 };
 
+/**
+ * Lisa signing `sign` in 3D (drag to rotate). Changing `sign` after mount swaps the model inside
+ * the already-loaded iframe via postMessage instead of reloading it.
+ */
 export function LisaGlbViewer({ sign }: { sign: string }) {
-  const src = `/api/glb-viewer?sign=${encodeURIComponent(sign)}`;
-  return <iframe src={src} title="Lisa mostrando la seña en 3D" style={iframeStyle} />;
+  const frame = useRef<HTMLIFrameElement>(null);
+  const [src] = useState(() => `/api/glb-viewer?sign=${encodeURIComponent(sign)}`);
+  const shown = useRef(sign);
+
+  useEffect(() => {
+    if (shown.current === sign) return;
+    shown.current = sign;
+    frame.current?.contentWindow?.postMessage(
+      { type: VIEWER_MESSAGE, sign },
+      window.location.origin,
+    );
+  }, [sign]);
+
+  return (
+    <iframe
+      ref={frame}
+      src={src}
+      title="Lisa haciendo la seña en 3D. Arrastrá para girarla."
+      style={iframeStyle}
+    />
+  );
 }

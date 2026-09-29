@@ -9,8 +9,8 @@
 - Scaffold: Next.js 16, TypeScript strict, Tailwind v4 tokens, ESLint/Prettier/Vitest, CI.
 - API client (Bearer, casing, single-flight refresh), token store, `AuthProvider`.
 - `/login` and the guarded `/dashboard` overview (4 stat cards).
-- Landing page (`/`) — full one-page site with a CSS-only scroll-driven hero. See
-  [features/landing.md](./features/landing.md).
+- Landing page (`/`) — full one-page site with a playable 3D lesson demo; scroll effects work in
+  every browser (no CSS scroll timelines). See [features/landing.md](./features/landing.md).
 
 ## Stub / placeholder
 

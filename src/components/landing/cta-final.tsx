@@ -10,8 +10,11 @@ export function CtaFinal() {
           aria-hidden
           className="bg-primary-dark/40 absolute -bottom-40 -left-28 h-[480px] w-[480px] rounded-full"
         />
-        <div className="relative mx-auto flex min-h-[420px] max-w-6xl flex-col items-start gap-8 px-8">
-          <h2 className="landing-big font-display max-w-3xl origin-left text-6xl leading-[0.94] font-extrabold tracking-tight sm:text-8xl">
+        <div className="relative mx-auto flex max-w-6xl flex-col items-start gap-8 px-6 pb-16 sm:px-8 lg:min-h-[420px] lg:pb-0">
+          <h2
+            data-reveal="zoom"
+            className="font-display max-w-3xl origin-left text-5xl leading-[0.94] font-extrabold tracking-tight sm:text-7xl lg:text-8xl"
+          >
             Tu primera seña te está esperando.
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -42,9 +45,10 @@ export function CtaFinal() {
         <Image
           src="/images/lisa-waving.png"
           alt="Lisa saludando"
-          width={280}
-          height={560}
-          className="landing-peek landing-final-lisa absolute right-20 -bottom-10 h-[560px] w-auto"
+          width={800}
+          height={800}
+          data-reveal="peek"
+          className="absolute -right-10 -bottom-10 hidden h-[520px] w-[520px] lg:block xl:right-10"
         />
       </div>
     </section>
