@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { OrgTrigger } from "@/components/landing/org-trigger";
 
 const THEMATIC = [
   {
@@ -21,16 +22,22 @@ const THEMATIC = [
 
 export function Cursos() {
   return (
-    <section id="cursos" className="scroll-mt-10 px-8 py-24 sm:py-32">
-      <div id="empezar" aria-hidden className="relative -top-10" />
+    <section id="cursos" className="px-5 py-24 sm:px-8 sm:py-32">
+      <div id="empezar" aria-hidden />
       <div className="mx-auto max-w-6xl">
         <p className="text-primary mb-5 text-sm font-extrabold tracking-[2px]">CURSOS</p>
-        <h2 className="landing-rv font-display mb-14 max-w-2xl text-5xl leading-none font-extrabold tracking-tight text-balance sm:text-6xl">
+        <h2
+          data-reveal="up"
+          className="font-display mb-14 max-w-2xl text-5xl leading-none font-extrabold tracking-tight text-balance sm:text-6xl"
+        >
           Empezás gratis. Te especializás cuando quieras.
         </h2>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="landing-rv-l bg-text text-on-dark relative flex flex-col gap-5.5 overflow-hidden rounded-[36px] p-11">
+          <div
+            data-reveal="left"
+            className="bg-text text-on-dark relative flex flex-col gap-5.5 overflow-hidden rounded-[36px] p-7 sm:p-11"
+          >
             <div
               aria-hidden
               className="bg-primary absolute -top-16 -right-16 h-[240px] w-[240px] rounded-full"
@@ -48,7 +55,7 @@ export function Cursos() {
                 className="h-[30px] w-[30px]"
               />
             </div>
-            <p className="font-display relative text-5xl leading-none font-extrabold tracking-tight">
+            <p className="font-display relative text-4xl leading-none font-extrabold tracking-tight sm:text-5xl">
               Curso básico de LSA
             </p>
             <p className="text-on-dark/70 relative max-w-md text-lg leading-relaxed">
@@ -81,21 +88,37 @@ export function Cursos() {
               ))}
             </ul>
             <Link
-              href="#empezar"
-              className="landing-btn bg-on-dark text-text relative mt-auto flex min-h-13.5 items-center self-start rounded-full px-6.5 text-base font-extrabold"
+              href="#probar"
+              className="landing-btn bg-on-dark text-text relative mt-auto flex min-h-13.5 items-center gap-2 self-start rounded-full px-6.5 text-base font-extrabold"
             >
-              Empezá gratis
+              Probá una lección ahora
+              <svg
+                aria-hidden="true"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 19V5M6 11l6-6 6 6" />
+              </svg>
             </Link>
           </div>
 
-          <div className="landing-rv-r border-border bg-surface flex flex-col gap-5.5 rounded-[36px] border p-11">
+          <div
+            data-reveal="right"
+            className="border-border bg-surface flex flex-col gap-5.5 rounded-[36px] border p-7 sm:p-11"
+          >
             <div className="flex items-center justify-between gap-3">
               <span className="bg-primary-light text-primary-dark rounded-full px-3.5 py-1.5 text-[13px] font-extrabold tracking-wide">
                 CURSOS TEMÁTICOS
               </span>
               <span className="text-text-muted text-[15px] font-bold">Desde [PRECIO]</span>
             </div>
-            <p className="font-display text-5xl leading-none font-extrabold tracking-tight">
+            <p className="font-display text-4xl leading-none font-extrabold tracking-tight sm:text-5xl">
               LSA para tu área
             </p>
             <p className="text-text-muted text-lg leading-relaxed">
@@ -104,16 +127,30 @@ export function Cursos() {
             </p>
             <div className="flex flex-col gap-2.5">
               {THEMATIC.map((item) => (
-                <div
+                <OrgTrigger
                   key={item.title}
-                  className="bg-background flex items-center gap-3.5 rounded-2xl p-3.5"
+                  className="group bg-background hover:border-primary hover:bg-primary-light flex items-center gap-3.5 rounded-2xl border-[1.5px] border-transparent p-3.5 text-left transition-colors"
                 >
                   <ThematicIcon icon={item.icon} />
-                  <div>
-                    <p className="font-display text-lg font-bold">{item.title}</p>
-                    <p className="text-text-muted text-[14.5px]">{item.body}</p>
-                  </div>
-                </div>
+                  <span className="flex-1">
+                    <span className="font-display block text-lg font-bold">{item.title}</span>
+                    <span className="text-text-muted block text-[14.5px]">{item.body}</span>
+                  </span>
+                  <svg
+                    aria-hidden="true"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-text-muted group-hover:text-primary shrink-0 transition-transform group-hover:translate-x-1"
+                  >
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
+                </OrgTrigger>
               ))}
               <div className="border-border flex items-center gap-3.5 rounded-2xl border-[1.5px] border-dashed p-3.5">
                 <div className="bg-fill text-text-muted flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">

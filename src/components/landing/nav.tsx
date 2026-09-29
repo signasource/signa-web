@@ -1,38 +1,34 @@
 import Link from "next/link";
 import { OrgTrigger } from "@/components/landing/org-trigger";
+import { MobileMenu } from "@/components/landing/mobile-menu";
+import { NAV_LINKS } from "@/components/landing/nav-links";
 
 export function Nav() {
   return (
-    <header className="landing-nav sticky top-0 z-40">
-      <nav aria-label="Principal" className="mx-auto flex max-w-6xl items-center gap-8 px-8 py-3.5">
+    <header data-landing-nav className="landing-nav sticky top-0 z-40">
+      <nav
+        aria-label="Principal"
+        className="mx-auto flex h-[72px] max-w-6xl items-center gap-4 px-5 sm:gap-8 sm:px-8"
+      >
         <Link href="#top" className="font-display text-text text-2xl font-extrabold tracking-tight">
           Signa
         </Link>
         <div className="ml-auto hidden items-center gap-7 md:flex">
-          <Link
-            href="#lisa"
-            className="text-text/80 hover:text-primary-dark text-[15px] font-semibold"
-          >
-            Lisa
-          </Link>
-          <Link
-            href="#que-es"
-            className="text-text/80 hover:text-primary-dark text-[15px] font-semibold"
-          >
-            Qué es
-          </Link>
-          <Link
-            href="#cursos"
-            className="text-text/80 hover:text-primary-dark text-[15px] font-semibold"
-          >
-            Cursos
-          </Link>
-          <OrgTrigger className="text-text/80 hover:text-primary-dark text-[15px] font-semibold">
+          {NAV_LINKS.slice(0, 3).map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-text/80 hover:text-primary-dark text-[15px] font-semibold transition-colors"
+            >
+              {link.label}
+            </Link>
+          ))}
+          <OrgTrigger className="text-text/80 hover:text-primary-dark text-[15px] font-semibold transition-colors">
             Organizaciones
           </OrgTrigger>
           <Link
             href="#equipo"
-            className="text-text/80 hover:text-primary-dark text-[15px] font-semibold"
+            className="text-text/80 hover:text-primary-dark text-[15px] font-semibold transition-colors"
           >
             Equipo
           </Link>
@@ -43,6 +39,7 @@ export function Nav() {
         >
           Empezá gratis
         </Link>
+        <MobileMenu />
       </nav>
     </header>
   );

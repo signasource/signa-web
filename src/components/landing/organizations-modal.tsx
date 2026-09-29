@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import type { CSSProperties } from "react";
 import { useLandingUI } from "@/components/landing/landing-ui-context";
 import { CloseButton } from "@/components/landing/close-button";
 
@@ -80,7 +81,7 @@ export function OrganizationsModal() {
       className="landing-modal-in bg-background fixed inset-0 z-50 overflow-y-auto"
     >
       <div className="border-border bg-background/95 sticky top-0 z-10 border-b backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-8 py-4">
+        <div className="mx-auto flex max-w-6xl items-center gap-4 px-5 py-4 sm:px-8">
           <span className="font-display text-xl font-extrabold tracking-tight">
             Signa para organizaciones
           </span>
@@ -88,7 +89,7 @@ export function OrganizationsModal() {
         </div>
       </div>
 
-      <div className="landing-modal-card mx-auto max-w-6xl px-8 pt-12 pb-24">
+      <div className="landing-modal-card mx-auto max-w-6xl px-3 pt-6 pb-24 sm:px-8 sm:pt-12">
         <section className="bg-text text-on-dark rounded-[40px] px-6 py-16 sm:px-12">
           <div className="mx-auto grid max-w-[1200px] gap-12 md:grid-cols-2 md:items-end">
             <div className="flex flex-col gap-5">
@@ -107,14 +108,21 @@ export function OrganizationsModal() {
           </div>
 
           <div className="relative mt-20">
-            <div aria-hidden className="bg-ink-700 absolute inset-x-7 top-7 h-[3px]" />
             <div
               aria-hidden
-              className="landing-grow bg-primary absolute inset-x-7 top-7 h-[3px] origin-left"
+              className="bg-ink-700 absolute inset-x-7 top-7 hidden h-[3px] lg:block"
+            />
+            <div
+              aria-hidden
+              className="landing-grow bg-primary absolute inset-x-7 top-7 hidden h-[3px] origin-left lg:block"
             />
             <ol className="relative grid gap-7 sm:grid-cols-2 lg:grid-cols-4">
               {STEPS.map((step, i) => (
-                <li key={step.title} className="landing-pop flex flex-col gap-3.5">
+                <li
+                  key={step.title}
+                  className="landing-pop flex flex-col gap-3.5"
+                  style={{ "--delay": `${300 + i * 150}ms` } as CSSProperties}
+                >
                   <div className="font-display bg-primary text-on-primary flex h-14 w-14 items-center justify-center rounded-full text-xl font-extrabold">
                     {i + 1}
                   </div>
@@ -139,7 +147,7 @@ export function OrganizationsModal() {
             </ol>
           </div>
 
-          <div className="landing-rv bg-background text-text mt-24 rounded-[32px] p-8 shadow-2xl">
+          <div className="bg-background text-text mt-24 rounded-[32px] p-8 shadow-2xl">
             <div className="flex flex-wrap items-center gap-3.5">
               <span className="font-display text-lg font-bold tracking-tight">
                 Panel de organización
@@ -225,7 +233,7 @@ export function OrganizationsModal() {
 
 function ContactForm() {
   return (
-    <form className="landing-rv bg-background text-text flex flex-col gap-3.5 rounded-3xl p-7">
+    <form className="bg-background text-text flex flex-col gap-3.5 rounded-3xl p-5 sm:p-7">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5 text-[13px] font-bold">
           Nombre y apellido

@@ -16,14 +16,19 @@ const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080").repl
  * Dedicated CSP for the /api/glb-viewer route handler.
  * Allows CDN scripts (model-viewer), R2 fetches (GLB), blob workers (Three.js decoders),
  * and restricts embedding to same-origin pages only.
+ *
+ * The GLBs are Draco-compressed (`KHR_draco_mesh_compression` is a *required* extension), so
+ * model-viewer fetches its Draco decoder from www.gstatic.com and compiles it as WebAssembly —
+ * hence gstatic in `connect-src` and `'wasm-unsafe-eval'` (compiles Wasm only; it does not
+ * allow JS `eval`). Without both, every model fails to load and the viewer stays empty.
  */
 export function buildViewerCsp(): string {
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
-    "connect-src 'self' blob: https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev https://cdn.jsdelivr.net",
+    "connect-src 'self' blob: https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev https://cdn.jsdelivr.net https://www.gstatic.com",
     "worker-src 'self' blob:",
     "frame-ancestors 'self'",
   ].join("; ");

@@ -36,6 +36,16 @@ The Route Handler at `src/app/api/glb-viewer/route.ts` has its own third CSP tie
 
 - `buildViewerCsp()` in `src/lib/security/csp.ts` — allows CDN scripts (model-viewer), R2 fetches
   (GLB models), blob workers (Three.js decoders), and restricts embedding via `frame-ancestors 'self'`.
+- **Draco decoder: `https://www.gstatic.com` in `connect-src` + `'wasm-unsafe-eval'` in `script-src`.**
+  The GLBs list `KHR_draco_mesh_compression` as a _required_ extension, so model-viewer downloads
+  its Draco decoder (`draco_wasm_wrapper.js` + `draco_decoder.wasm`) from gstatic and compiles it as
+  WebAssembly. Without both, every model fails with `TypeError: Failed to fetch` and the viewer
+  stays empty (this was the landing's "3D never loads" bug). `'wasm-unsafe-eval'` only permits
+  compiling Wasm — JS `eval`/`new Function` stay blocked. Viewer-only: neither is in `buildCsp()`.
+  If the decoder is ever self-hosted (`ModelViewerElement.dracoDecoderLocation`), drop gstatic.
+- The sign name is validated with `isSafeSign()` (`src/lib/glb.ts`: letters incl. accents, digits,
+  `_`, `-`, space; ≤ 40 chars) both on the query string and on the `postMessage` the landing sends
+  to swap signs in place; messages from other origins are ignored.
 - `X-Frame-Options: SAMEORIGIN` — set both by the Route Handler response and by a specific rule in
   `next.config.ts` (overrides the global `DENY`), so the landing page iframe can embed it.
 - `src/proxy.ts` skips this path so the middleware does not inject a conflicting nonce CSP.
