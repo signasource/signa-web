@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — mirror signa-mobile (src/theme/colors.ts, typography.ts) so the brand is shared.
+ * Every visual value comes from a token; never hardcode hex in components.
+ * Canonical reference: docs/design-system/tokens.md
+ */
+@theme {
+  --color-primary: #7857ff;
+  --color-primary-light: #eee8ff;
+  --color-primary-dark: #5e3ed1;
+  --color-background: #faf6f2;
+  --color-surface: #ffffff;
+  --color-fill: #f2ece6;
+  --color-fill-dark: #ebe3db;
+  --color-text: #241a16;
+  --color-text-muted: #8c817a;
+  --color-on-primary: #f5f0ff;
+  --color-on-dark: #fbf6f2;
+  --color-border: #ece5de;
+  --color-success: #4ca65c;
+  --color-warning: #fbbf24;
+  --color-danger: #e14e22;
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
