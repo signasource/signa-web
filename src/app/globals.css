@@ -9,6 +9,7 @@
   --color-primary: #7857ff;
   --color-primary-light: #eee8ff;
   --color-primary-dark: #5e3ed1;
+  --color-primary-medallion: #e0d5ff;
   --color-background: #faf6f2;
   --color-surface: #ffffff;
   --color-fill: #f2ece6;
@@ -19,8 +20,39 @@
   --color-on-dark: #fbf6f2;
   --color-border: #ece5de;
   --color-success: #4ca65c;
+  --color-success-dark: #2e7d45;
+  --color-success-light: #e7f5ea;
   --color-warning: #fbbf24;
   --color-danger: #e14e22;
+  --color-danger-light: #fbe0d8;
+
+  /* Landing accent palette — card backgrounds on the marketing page only. */
+  --color-accent-coral: #ff8577;
+  --color-accent-amber: #f7b32f;
+  --color-accent-teal: #47bfa9;
+  --color-accent-violet: #8469ea;
+
+  /* Mirrors signa-mobile's gamification/social palette (colors.ts) — ported for the landing's app
+     mockups, team avatars and org dashboard preview. */
+  --color-streak-orange: #fb8b24;
+  --color-gems-blue: #29b6e8;
+  --color-gems-blue-dark: #1b84ab;
+  --color-course-teal: #2fa8a0;
+  --color-course-teal-light: #e4f1ec;
+  --color-social-wine: #8a2c5e;
+  --color-shop-amber: #de7211;
+  --color-shop-amber-dark: #b85806;
+  --color-shop-amber-light: #fef0de;
+  --color-avatar-teal-light: #e0f4f2;
+  --color-avatar-teal-dark: #1f7e77;
+  --color-avatar-wine-light: #fde8f1;
+  --color-avatar-blue-light: #e4f1fb;
+  --color-avatar-green-light: #e9f3eb;
+
+  /* Dark ink shades — camera-recognition mockup only. */
+  --color-ink-900: #1e1714;
+  --color-ink-800: #2a211d;
+  --color-ink-700: #3a2f2a;
 
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;

@@ -6,7 +6,7 @@
 
 | URL           | File                              | Access | Notes                                                                  |
 | ------------- | --------------------------------- | ------ | ---------------------------------------------------------------------- |
-| `/`           | `(marketing)/page.tsx`            | public | Landing placeholder. See [features/landing.md](./features/landing.md)  |
+| `/`           | `(marketing)/page.tsx`            | public | Landing. See [features/landing.md](./features/landing.md)              |
 | `/privacidad` | `(marketing)/privacidad/page.tsx` | public | Privacy policy (draft, `noindex`). See [legal.md](./legal.md)          |
 | `/terminos`   | `(marketing)/terminos/page.tsx`   | public | Terms and conditions (draft, `noindex`). See [legal.md](./legal.md)    |
 | `/login`      | `(auth)/login/page.tsx`           | public | Redirects to `/dashboard` when already authenticated                   |
