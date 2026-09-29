@@ -4,7 +4,6 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { LisaGlbViewer } from "@/components/landing/lisa-glb-viewer";
 
-/** Every `sign` must exist in the R2 bucket (`lsa/{sign}.glb`) — the same files signa-mobile uses. */
 export const DEMO_QUESTIONS = [
   { sign: "hola", answer: "Hola", options: ["Chau", "Hola", "Gracias", "Perdón"] },
   { sign: "gracias", answer: "Gracias", options: ["Por favor", "Amigo", "Gracias", "Hola"] },
@@ -14,10 +13,6 @@ export const DEMO_QUESTIONS = [
 
 const HEARTS = 5;
 
-/**
- * A playable "¿Qué significa esta seña?" exercise inside the phone mockups: Lisa signs in 3D,
- * the visitor picks an answer, gets the same feedback the app gives, and moves on to the next sign.
- */
 export function LessonDemo({ className }: { className?: string }) {
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);

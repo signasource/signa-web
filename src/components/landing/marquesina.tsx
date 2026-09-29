@@ -1,11 +1,6 @@
 const ROW_1 = ["Hola", "Gracias", "Buen día", "¿Cómo estás?", "Familia", "Amistad"];
 const ROW_2 = ["Por favor", "Perdón", "Nos vemos", "Te quiero", "Bienvenida", "Hermano"];
 
-/**
- * Two rows of words looping forever in opposite directions (pure CSS, pauses on hover —
- * `landing-marquee` in landing.css). Each row is rendered twice back to back so the -50% loop is
- * seamless. Decorative, hence `aria-hidden`.
- */
 export function Marquesina() {
   return (
     <section aria-hidden className="landing-marquee flex flex-col gap-1.5 overflow-hidden py-10">

@@ -37,10 +37,6 @@ const CARDS = [
 const ctaClass =
   "landing-btn mt-2 flex min-h-12 items-center gap-2 self-start rounded-full bg-white/30 px-5 text-[15px] font-extrabold hover:bg-white/45";
 
-/**
- * "Para quién es": heading, then a horizontal rail of audience cards (`CardRail` — native
- * horizontal scroll with buttons and drag; it never hijacks the page's vertical scroll).
- */
 export function ParaQuien() {
   return (
     <section aria-labelledby="para-quien-t" className="py-20 sm:py-28">

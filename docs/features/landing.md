@@ -51,7 +51,8 @@ nav, and two pinned sections that swallowed ~3000px of scrolling without moving.
 it (nor pinned/scroll-jacked sections) without a real fallback.
 
 Today `landing-scroll-effects.tsx` (renders nothing) runs one passive, rAF-throttled scroll
-listener + an `IntersectionObserver`, and `src/app/(marketing)/landing.css` reacts to what it sets:
+listener + an `IntersectionObserver`, and `src/app/(marketing)/landing.css` reacts to what it sets
+(the landing code carries no inline comments; this section is the reference):
 
 - `html[data-landing-js]` — only with JS running do `[data-reveal]` elements start hidden, so the
   page is fully readable without JS.
@@ -87,7 +88,9 @@ CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
 
 - The GLBs are **Draco-compressed**: the viewer CSP must allow the decoder from `www.gstatic.com`
   and `'wasm-unsafe-eval'`, or no model ever loads — see [../security.md](../security.md).
-- Until the model is decoded the viewer shows Lisa's static picture plus a spinner (never empty).
+- While a model loads (first load or a sign swap) the viewer hides model-viewer and shows only a
+  centered spinner; the new model is framed first and then faded in, so the previous sign or a
+  camera jump is never visible. A failed load shows "No pudimos cargar la seña."
 - The visitor can drag to rotate (`camera-controls`, zoom/pan off, `touch-action: pan-y` so the
   page still scrolls on touch).
 - Changing the sign posts `{ type: VIEWER_MESSAGE, sign }` to the iframe, which swaps `src` in

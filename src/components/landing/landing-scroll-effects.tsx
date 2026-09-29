@@ -3,11 +3,6 @@
 import { useEffect } from "react";
 import { elementProgress } from "@/lib/landing-scroll";
 
-/**
- * Drives every scroll-linked effect on the landing (see the header of landing.css): reveal-on-
- * scroll, the page progress bar, the nav's "scrolled" state, and `--p` for `[data-progress]`
- * elements. Renders nothing. Replaces CSS `animation-timeline`, which Firefox doesn't support.
- */
 export function LandingScrollEffects() {
   useEffect(() => {
     const root = document.documentElement;

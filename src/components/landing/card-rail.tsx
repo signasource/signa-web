@@ -3,11 +3,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
-/**
- * Native horizontal scroller (scroll-snap) with prev/next buttons, a progress bar, and mouse
- * drag. Vertical page scroll is never captured: wheel/trackpad/touch scroll the page as usual,
- * horizontal gestures (or the buttons, or dragging) move the cards.
- */
 export function CardRail({ label, children }: { label: string; children: React.ReactNode }) {
   const rail = useRef<HTMLDivElement>(null);
   const [progress, setProgress] = useState(0);
@@ -30,7 +25,6 @@ export function CardRail({ label, children }: { label: string; children: React.R
     };
   }, []);
 
-  // Mouse drag-to-scroll (touch and trackpads already scroll natively).
   useEffect(() => {
     const el = rail.current;
     if (!el) return;
@@ -59,10 +53,8 @@ export function CardRail({ label, children }: { label: string; children: React.R
       down = false;
       if (!moved) return;
       el.removeAttribute("data-dragging");
-      // Re-snap to the nearest card after a drag.
       el.scrollBy({ left: 0, behavior: "smooth" });
     };
-    // A drag must not also click the link/button it started on.
     const onClick = (e: MouseEvent) => {
       if (moved) {
         e.preventDefault();

@@ -15,7 +15,6 @@ export interface LandingUIValue {
 
 export const LandingUIContext = createContext<LandingUIValue | null>(null);
 
-/** Reads the shared landing UI state (org modal, feature preview). Must be used under `LandingUIProvider`. */
 export function useLandingUI(): LandingUIValue {
   const ctx = useContext(LandingUIContext);
   if (!ctx) {

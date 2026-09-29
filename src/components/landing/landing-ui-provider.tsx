@@ -9,12 +9,6 @@ import {
 import { OrganizationsModal } from "@/components/landing/organizations-modal";
 import { FeaturePreview } from "@/components/landing/feature-preview";
 
-/**
- * Only client boundary the landing page needs: holds the org-modal and feature-preview state and
- * renders the two overlays. Everything else (`children`) is server-rendered and passed straight
- * through — see docs/features/landing.md. While an overlay is open the page behind it doesn't
- * scroll, and Escape closes it.
- */
 export function LandingUIProvider({ children }: { children: React.ReactNode }) {
   const [orgOpen, setOrgOpen] = useState(false);
   const [feature, setFeature] = useState<FeatureId | null>(null);

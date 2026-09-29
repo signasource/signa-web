@@ -3,11 +3,6 @@ import { OrgTrigger } from "@/components/landing/org-trigger";
 import { MobileMenu } from "@/components/landing/mobile-menu";
 import { NAV_LINKS } from "@/components/landing/nav-links";
 
-/**
- * Sticky header with an opaque, blurred background (content never shows through it); gains a
- * shadow once the page is scrolled (`data-scrolled`, set by LandingScrollEffects). Below `md` the
- * links collapse into `MobileMenu`.
- */
 export function Nav() {
   return (
     <header data-landing-nav className="landing-nav sticky top-0 z-40">

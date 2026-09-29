@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { useLandingUI } from "@/components/landing/landing-ui-context";
 import { NAV_LINKS } from "@/components/landing/nav-links";
 
-/** Below `md`: a menu button that drops the nav links down under the header. */
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
   const { openOrg } = useLandingUI();

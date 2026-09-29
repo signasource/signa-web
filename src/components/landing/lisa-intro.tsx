@@ -4,7 +4,6 @@ import type { CSSProperties } from "react";
 
 const delay = (ms: number) => ({ "--delay": `${ms}ms` }) as CSSProperties;
 
-/** "Conocé a Lisa": Lisa introduces herself next to the app's home screen. */
 export function LisaIntro() {
   return (
     <section id="lisa" className="relative px-5 py-20 sm:px-8 sm:py-28">

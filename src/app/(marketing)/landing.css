@@ -1,26 +1,7 @@
-/*
- * Landing-page-only styles. Colors reference the tokens in src/app/globals.css (Tailwind v4
- * exposes @theme entries as --color-* custom properties).
- *
- * Every effect works in every browser: nothing here uses CSS scroll timelines
- * (`animation-timeline`), which Firefox doesn't ship — relying on them left Firefox users with
- * overlapping hero copy and "dead" pinned sections. Scroll-linked state comes from
- * `LandingScrollEffects` (one passive, rAF-throttled listener + an IntersectionObserver):
- *   - `html[data-landing-js]`   JS is running; only then do reveal targets start hidden
- *   - `[data-reveal][data-in]`  element has entered the viewport (one-shot)
- *   - `--landing-scroll`        0→1 page scroll progress, on <html>
- *   - `[data-progress]` `--p`   0→1 progress of that element through the viewport
- *   - `[data-landing-nav][data-scrolled]`  page is scrolled past the top
- * Without JS (or with reduced motion) everything renders in its final, readable state.
- * Canonical reference: docs/features/landing.md
- */
-
 html:has(.landing-root) {
   scroll-behavior: smooth;
   scroll-padding-top: 88px;
 }
-
-/* ── Buttons & cards ─────────────────────────────────────────────────────── */
 
 .landing-btn {
   transition:
@@ -52,8 +33,6 @@ html:has(.landing-root) {
   color: var(--color-on-dark);
 }
 
-/* ── Nav ─────────────────────────────────────────────────────────────────── */
-
 .landing-nav {
   background-color: color-mix(in srgb, var(--color-background) 94%, transparent);
   backdrop-filter: blur(14px);
@@ -71,8 +50,6 @@ html:has(.landing-root) {
 .landing-page-progress {
   transform: scaleX(var(--landing-scroll, 0));
 }
-
-/* ── Ambient motion (plain keyframes — works everywhere) ─────────────────── */
 
 .landing-spin {
   animation: landing-spin 28s linear infinite;
@@ -98,7 +75,6 @@ html:has(.landing-root) {
   }
 }
 
-/* Above-the-fold entrance: runs on load, no JS needed. */
 .landing-enter {
   animation: landing-enter 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) both;
   animation-delay: var(--delay, 0ms);
@@ -110,8 +86,6 @@ html:has(.landing-root) {
   }
 }
 
-/* Marquee: two rows looping forever in opposite directions. Each row renders its words twice,
-   so translating by -50% lands exactly on the start of the copy. Hover pauses it. */
 .landing-marquee-track {
   animation: landing-marquee 48s linear infinite;
 }
@@ -127,8 +101,6 @@ html:has(.landing-root) {
     transform: translateX(-50%);
   }
 }
-
-/* ── Scroll reveal (driven by LandingScrollEffects) ──────────────────────── */
 
 [data-landing-js] [data-reveal] {
   transition:
@@ -166,7 +138,6 @@ html:has(.landing-root) {
   transform: translateY(160px) rotate(8deg);
 }
 
-/* "Qué es Signa" headline: text fills in with color as it scrolls through view (`--p`). */
 .landing-fill {
   color: transparent;
   background: linear-gradient(var(--color-text), var(--color-text)) 0 0 / calc(var(--p, 1) * 100%)
@@ -174,11 +145,6 @@ html:has(.landing-root) {
   -webkit-background-clip: text;
   background-clip: text;
 }
-
-/* ── Scaled phone stages ─────────────────────────────────────────────────── */
-/* The mockups are laid out on a fixed design canvas (--stage-w × --stage-h) and scaled with
-   --s per breakpoint, so the composition never breaks — it just shrinks. The wrapper reserves
-   the scaled height so surrounding layout flows normally. */
 
 .landing-stage-wrap {
   --s: 0.54;
@@ -226,12 +192,9 @@ html:has(.landing-root) {
   }
 }
 
-/* ── Horizontal card rail ("Para quién es") ──────────────────────────────── */
-
 .landing-rail {
   scrollbar-width: none;
   overscroll-behavior-x: contain;
-  /* Line the first card up with the page's max-w-6xl content column. */
   padding-inline: max(1.25rem, calc((100vw - 72rem) / 2 + 2rem));
   scroll-padding-inline: max(1.25rem, calc((100vw - 72rem) / 2 + 2rem));
 }
@@ -247,8 +210,6 @@ html:has(.landing-root) {
   transform: scaleX(var(--rail, 0));
   transition: transform 0.15s linear;
 }
-
-/* ── Modals ──────────────────────────────────────────────────────────────── */
 
 .landing-modal-in {
   animation: landing-modal-in 0.28s ease both;
@@ -272,8 +233,6 @@ html:has(.landing-root) {
   }
 }
 
-/* Organizations overlay: one-shot on-open animations (the overlay scrolls itself, so these are
-   plain delayed keyframes rather than scroll reveals). */
 .landing-grow {
   animation: landing-grow 1.2s cubic-bezier(0.2, 0.8, 0.3, 1) 0.4s both;
 }
@@ -293,7 +252,6 @@ html:has(.landing-root) {
   }
 }
 
-/* Lesson demo: wrong answer shake. */
 .landing-shake {
   animation: landing-shake 0.4s ease;
 }

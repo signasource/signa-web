@@ -6,11 +6,6 @@ import { LessonDemo } from "@/components/landing/lesson-demo";
 
 const delay = (ms: number) => ({ "--delay": `${ms}ms` }) as CSSProperties;
 
-/**
- * Above-the-fold hero: headline + CTAs, and a phone mockup running a playable lesson with Lisa
- * signing in 3D. Plain document flow — no pinned/scroll-jacked section. The mockup sits on a
- * fixed design canvas scaled per breakpoint (`landing-stage`, see landing.css).
- */
 export function Hero() {
   return (
     <section className="relative">
@@ -78,7 +73,6 @@ export function Hero() {
           </p>
         </div>
 
-        {/* Stage: circular backdrop, phone running the lesson demo, Lisa waving */}
         <div
           id="probar"
           className="landing-stage-wrap landing-enter"
