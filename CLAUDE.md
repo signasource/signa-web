@@ -103,6 +103,9 @@ through a PR from a new branch.
 - **To `develop`:** PR with **squash merge**. The squash message must follow Angular Commit Conventions
   (`type(scope): description`; `feat` → minor, `fix` → patch, `BREAKING CHANGE:` footer → major) because it
   drives automatic versioning. Commits inside the branch are free-form.
+  The repo squashes with the **PR title** as the commit message, so the PR title must follow the convention.
+- **Protection (`develop`, `master`):** PR required, 1 approval, stale approvals dismissed, branch must be
+  up to date, no force-push or deletion. Only squash merge is enabled; merged branches are auto-deleted.
 - **To `master`:** only from `release/*` or `hotfix/*` PRs.
 - **Gates:** `ci.yml` runs on every push (format, lint, typecheck, tests, build); `branch-policy.yml`
   fails PRs with an invalid branch name/target.
