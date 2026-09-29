@@ -9,11 +9,14 @@
 - Scaffold: Next.js 16, TypeScript strict, Tailwind v4 tokens, ESLint/Prettier/Vitest, CI.
 - API client (Bearer, casing, single-flight refresh), token store, `AuthProvider`.
 - `/login` and the guarded `/dashboard` overview (4 stat cards).
+- Landing page (`/`) — full one-page site with a CSS-only scroll-driven hero. See
+  [features/landing.md](./features/landing.md).
 
 ## Stub / placeholder
 
 - Privacy policy and terms (`/privacidad`, `/terminos`) — **draft, not legally reviewed**; open decisions in [legal.md](./legal.md).
-- Landing page (`/`) — [features/landing.md](./features/landing.md).
+- Landing page (`/`) — pricing, the organizations contact email, and the contact form submit are
+  placeholders; no `sitemap.ts` / `robots.ts` / OG image yet — [features/landing.md](./features/landing.md).
 - `CourseSummary` and `WeeklyPerformance` types are loose — [api/types.md](./api/types.md).
 
 - Security headers + two-tier CSP (strict nonce for panel, relaxed static for landing) — [security.md](./security.md).
@@ -27,6 +30,7 @@ Accept-invite, forgot/reset password, members list/detail, modules, charts, invi
 | Item                                         | Notes                                                                                                                                               |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Refresh token in `localStorage`              | XSS-exposed; CSP mitigates (see [security.md](./security.md)), cookie-based refresh in the API would remove it — [api/session.md](./api/session.md) |
+| Landing contact form has no submit handler   | No backend endpoint for the organizations contact form yet; button is currently a no-op — [features/landing.md](./features/landing.md)               |
 | CI workflow never run on GitHub              | `npm run check` and `npm run build` pass locally; confirm the first `.github/workflows/ci.yml` run                                                  |
 | CSP unverified on `next dev` and on the host | Verified on `next start` only; re-check on first deploy — [security.md](./security.md)                                                              |
 | Hosting, analytics, E2E                      | Undecided — [stack.md](./stack.md)                                                                                                                  |

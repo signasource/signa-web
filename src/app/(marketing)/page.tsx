@@ -1,29 +1,35 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import { LandingUIProvider } from "@/components/landing/landing-ui-provider";
+import { Nav } from "@/components/landing/nav";
+import { Hero } from "@/components/landing/hero";
+import { Marquesina } from "@/components/landing/marquesina";
+import { QueEs } from "@/components/landing/que-es";
+import { ParaQuien } from "@/components/landing/para-quien";
+import { Cursos } from "@/components/landing/cursos";
+import { Equipo } from "@/components/landing/equipo";
+import { CtaFinal } from "@/components/landing/cta-final";
+import { LandingFooter } from "@/components/landing/landing-footer";
+import "./landing.css";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <main className="mx-auto flex max-w-3xl flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-        <h1 className="font-display text-5xl font-extrabold">Signa</h1>
-        <p className="text-text-muted text-lg">
-          Aprendé Lengua de Señas Argentina con reconocimiento por cámara. Capacitá a tu equipo con
-          cursos a medida.
-        </p>
-        <Link
-          href="/login"
-          className="bg-text text-on-dark rounded-xl px-6 py-3 font-semibold transition hover:opacity-90"
-        >
-          Ingresar al panel
-        </Link>
-      </main>
-      <footer className="text-text-muted flex justify-center gap-6 px-6 py-6 text-sm">
-        <Link href="/privacidad" className="hover:underline">
-          Política de privacidad
-        </Link>
-        <Link href="/terminos" className="hover:underline">
-          Términos y condiciones
-        </Link>
-      </footer>
-    </div>
+    <LandingUIProvider>
+      <div id="top" className="relative min-h-screen overflow-x-clip bg-background text-text">
+        <div aria-hidden className="landing-page-progress fixed left-0 top-0 z-50 h-1 w-full origin-left bg-primary" />
+        <Nav />
+        <Hero />
+        <Marquesina />
+        <QueEs />
+        <ParaQuien />
+        <Cursos />
+        <Equipo />
+        <CtaFinal />
+        <LandingFooter />
+      </div>
+    </LandingUIProvider>
   );
 }
