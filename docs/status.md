@@ -12,6 +12,7 @@
 
 ## Stub / placeholder
 
+- Privacy policy and terms (`/privacidad`, `/terminos`) — **draft, not legally reviewed**; open decisions in [legal.md](./legal.md).
 - Landing page (`/`) — [features/landing.md](./features/landing.md).
 - `CourseSummary` and `WeeklyPerformance` types are loose — [api/types.md](./api/types.md).
 
