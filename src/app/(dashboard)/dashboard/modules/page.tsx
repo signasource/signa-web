@@ -53,14 +53,14 @@ export default function ModulesPage() {
       ) : null}
 
       <ul className="flex flex-col gap-3">
-        {data?.map((m) => (
+        {data?.map((m, index) => (
           <li
             key={m.topicId}
             className="border-border bg-surface flex flex-wrap items-center gap-x-8 gap-y-5 rounded-2xl border p-5"
           >
             <div className="flex min-w-0 flex-[1_1_280px] items-center gap-3.5">
               <span className="bg-primary text-on-primary font-display flex size-12 shrink-0 items-center justify-center rounded-full text-lg font-extrabold">
-                {m.order}
+                {index + 1}
               </span>
               <div className="min-w-0">
                 <p className="font-display text-xl font-bold tracking-tight">{m.title}</p>
