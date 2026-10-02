@@ -8,7 +8,7 @@
 
 - Scaffold: Next.js 16, TypeScript strict, Tailwind v4 tokens, ESLint/Prettier/Vitest, CI.
 - API client (Bearer, casing, single-flight refresh), token store, `AuthProvider`.
-- `/login` and the guarded `/dashboard` overview (4 stat cards).
+- `/login` and the guarded dashboard: overview, members list + detail (remove), contents, invitations — see [features/dashboard.md](./features/dashboard.md).
 - Landing page (`/`) — full one-page site with a playable 3D lesson demo; scroll effects work in
   every browser (no CSS scroll timelines). See [features/landing.md](./features/landing.md).
 
@@ -17,13 +17,13 @@
 - Privacy policy and terms (`/privacidad`, `/terminos`) — **draft, not legally reviewed**; open decisions in [legal.md](./legal.md).
 - Landing page (`/`) — pricing, the organizations contact email, and the contact form submit are
   placeholders; no `sitemap.ts` / `robots.ts` / OG image yet — [features/landing.md](./features/landing.md).
-- `CourseSummary` and `WeeklyPerformance` types are loose — [api/types.md](./api/types.md).
+- Dashboard screens omit some prototype data the API does not expose (sort, inactivity filters, per-module member progress, activity feed) — [features/dashboard.md](./features/dashboard.md).
 
 - Security headers + two-tier CSP (strict nonce for panel, relaxed static for landing) — [security.md](./security.md).
 
 ## Not started
 
-Accept-invite, forgot/reset password, members list/detail, modules, charts, invitations UI, sitemap/robots/OG, E2E tests.
+Accept-invite, forgot/reset password, admin invitations, sitemap/robots/OG, E2E tests.
 
 ## Tech debt / open decisions
 

@@ -13,9 +13,13 @@ Types live in `src/lib/api/types.ts`, camelCase (the client converts). They are 
 | `RedeemInviteCodeResponse`  | `RedeemInviteCodeResponse`          |                                                                                  |
 | `OrganizationOverview`      | `OrganizationOverviewResponse`      | `participation` / `progress` / `performance`                                     |
 | `OrganizationMemberSummary` | `OrganizationMemberSummaryResponse` | `lastActivityAt`, `currentModule` nullable                                       |
+| `MemberProgress`            | `MemberProgressResponse`            | `lastActivityAt`, `currentModule` nullable; `courses: MemberCourseProgress[]`    |
+| `ModuleStats`               | `ModuleStatsResponse`               |                                                                                  |
+| `InviteCode`                | `InviteCodeResponse`                | `email` null for shareable codes; `expiresAt`, `maxUses` nullable                |
+| `CourseSummary`             | `CourseSummaryResponse`             |                                                                                  |
+| `WeeklyPerformance`         | `WeeklyPerformanceResponse`         | `weekStart` is an ISO date                                                       |
 | `Page<T>`                   | Spring Data `Page`                  | Only the fields used: `content`, `totalElements`, `totalPages`, `number`, `size` |
 
-## Loose placeholders (tighten when used)
+## Loose placeholders
 
-- `CourseSummary` — only `id` is typed; the rest is `unknown` until a screen renders courses.
-- `WeeklyPerformance` — `Record<string, unknown>` until the evolution chart is built (read `WeeklyPerformanceResponse.java` then).
+None at the moment — every DTO the panel uses is typed.
