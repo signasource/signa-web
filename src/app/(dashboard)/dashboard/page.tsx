@@ -264,13 +264,13 @@ export default function DashboardOverviewPage() {
                 <p className="text-text-muted text-sm">Todavía no hay módulos para mostrar.</p>
               ) : null}
               <ul className="flex flex-col">
-                {moduleList.map((m) => (
+                {moduleList.map((m, index) => (
                   <li
                     key={m.topicId}
                     className="border-fill grid grid-cols-[28px_minmax(0,1fr)_120px_44px] items-center gap-3 border-b py-2.5 last:border-b-0"
                   >
                     <span className="bg-primary text-on-primary font-display flex size-7 items-center justify-center rounded-full text-[13px] font-extrabold">
-                      {m.order}
+                      {index + 1}
                     </span>
                     <span className="truncate text-sm font-bold">{m.title}</span>
                     <ProgressBar

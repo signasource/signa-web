@@ -72,8 +72,8 @@ export default function MembersPage() {
       <PageHeading
         title="Participantes"
         subtitle={
-          data && status === "ACTIVE"
-            ? `${data.totalElements} personas con acceso${organization?.courses[0] ? ` a ${organization.courses[0].name}` : ""}`
+          data && status === "ACTIVE" && !query
+            ? `${data.totalElements} ${data.totalElements === 1 ? "persona con acceso" : "personas con acceso"}${organization?.courses[0] ? ` a ${organization.courses[0].name}` : ""}`
             : undefined
         }
       >
