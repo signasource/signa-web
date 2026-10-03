@@ -147,7 +147,7 @@ html:has(.landing-root) {
 }
 
 .landing-stage-wrap {
-  --s: 0.54;
+  --s: 0.67;
   position: relative;
   width: 100%;
   height: calc(var(--stage-h) * var(--s));
@@ -163,32 +163,32 @@ html:has(.landing-root) {
 }
 @media (min-width: 400px) {
   .landing-stage-wrap {
-    --s: 0.62;
+    --s: 0.77;
   }
 }
 @media (min-width: 480px) {
   .landing-stage-wrap {
-    --s: 0.72;
+    --s: 0.9;
   }
 }
 @media (min-width: 640px) {
   .landing-stage-wrap {
-    --s: 0.85;
+    --s: 1.05;
   }
 }
 @media (min-width: 1024px) {
   .landing-stage-wrap {
-    --s: 0.8;
+    --s: 0.98;
   }
 }
 @media (min-width: 1200px) {
   .landing-stage-wrap {
-    --s: 0.92;
+    --s: 1.12;
   }
 }
 @media (min-width: 1320px) {
   .landing-stage-wrap {
-    --s: 1;
+    --s: 1.25;
   }
 }
 
@@ -270,15 +270,18 @@ html:has(.landing-root) {
 .landing-phone-ring {
   animation: landing-phone-ring 2.4s ease-in-out infinite;
 }
+.landing-phone-ring2 {
+  animation: landing-phone-ring 2.4s ease-in-out 1.2s infinite;
+}
 @keyframes landing-phone-ring {
   0%,
   100% {
-    opacity: 0.25;
+    opacity: 0.22;
     transform: scale(1);
   }
   55% {
     opacity: 0;
-    transform: scale(1.06);
+    transform: scale(1.08);
   }
 }
 
@@ -290,6 +293,7 @@ html:has(.landing-root) {
   .landing-floaty,
   .landing-floaty2,
   .landing-phone-ring,
+  .landing-phone-ring2,
   .landing-enter,
   .landing-marquee-track,
   .landing-modal-in,

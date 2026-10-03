@@ -7,13 +7,33 @@ import { LottiePlayer } from "@/components/landing/lottie-player";
 
 function SignsPhone() {
   return (
-    <div className="justify-self-center">
-      <div className="bg-text hover:ring-primary/30 rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10 transition-shadow">
-        <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
+    <div className="justify-self-center pb-6">
+      <div className="relative">
+        {/* Outer pulsing ring */}
+        <div
+          aria-hidden
+          className="landing-phone-ring2 bg-primary/15 absolute -inset-8 rounded-[58px]"
+        />
+        {/* Inner pulsing ring */}
+        <div
+          aria-hidden
+          className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
+        />
+        <div className="bg-text hover:ring-primary/30 relative rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10 transition-shadow">
+          <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
+        </div>
+        {/* Racha badge — bottom center of phone */}
+        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
+          <span className="bg-surface landing-floaty flex items-center gap-2 rounded-full py-2.5 pr-4 pl-2.5 text-sm font-bold shadow-xl">
+            <span className="bg-shop-amber-light text-streak-orange flex h-7.5 w-7.5 items-center justify-center rounded-full">
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 0 2 1 3 2 3 0-3-1-6.5.5-9z" />
+              </svg>
+            </span>
+            12 días de racha
+          </span>
+        </div>
       </div>
-      <p className="text-text-muted mt-3 text-center text-[12px] font-semibold">
-        Tocá una opción para interactuar
-      </p>
     </div>
   );
 }

@@ -94,24 +94,29 @@ export function Hero() {
               className="landing-floaty2 bg-accent-teal absolute top-[575px] left-[55px] h-[46px] w-[46px] rounded-full"
             />
 
-            {/* Phone + pulsing ring */}
+            {/* Phone + pulsing rings */}
             <div className="absolute top-[10px] left-[135px] z-10">
-              {/* Pulsing ring */}
+              {/* Outer pulsing ring */}
               <div
                 aria-hidden
-                className="landing-phone-ring bg-primary/25 absolute -inset-3 rounded-[52px]"
+                className="landing-phone-ring2 bg-primary/15 absolute -inset-8 rounded-[58px]"
+              />
+              {/* Inner pulsing ring */}
+              <div
+                aria-hidden
+                className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
               />
               <div className="bg-text relative rounded-[46px] p-2.5 shadow-2xl">
                 <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
               </div>
 
               {/* "Tocá" badge — bottom center of phone */}
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="bg-primary text-on-primary landing-floaty flex items-center gap-2 rounded-full px-5 py-3 text-[15px] font-extrabold shadow-lg">
+              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <span className="bg-primary text-on-primary landing-floaty flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[17px] font-extrabold shadow-xl">
                   <svg
                     aria-hidden="true"
-                    width="16"
-                    height="16"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -126,41 +131,6 @@ export function Hero() {
               </div>
             </div>
 
-            {/* Racha chip — top right */}
-            <div className="landing-floaty bg-surface absolute top-[0px] left-[430px] z-20 flex items-center gap-2 rounded-full py-2.5 pr-4 pl-2.5 text-sm font-bold shadow-lg">
-              <span className="bg-shop-amber-light text-streak-orange flex h-7.5 w-7.5 items-center justify-center rounded-full">
-                <svg
-                  aria-hidden="true"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 0 2 1 3 2 3 0-3-1-6.5.5-9z" />
-                </svg>
-              </span>
-              12 días de racha
-            </div>
-
-            {/* Correct answer chip — bottom left */}
-            <div className="landing-floaty2 bg-surface absolute top-[530px] left-[-5px] z-20 flex items-center gap-2 rounded-full py-2.5 pr-4 pl-2.5 text-sm font-bold shadow-lg">
-              <span className="bg-success-light text-success-dark flex h-7.5 w-7.5 items-center justify-center rounded-full">
-                <svg
-                  aria-hidden="true"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12.5l4.5 4.5L19 7.5" />
-                </svg>
-              </span>
-              ¡Seña correcta! +15 XP
-            </div>
           </div>
         </div>
       </div>

@@ -81,22 +81,18 @@ export function LisaIntro() {
               className="absolute top-[150px] left-[300px] z-20 h-[500px] w-[277px]"
             />
             <div className="landing-floaty2 bg-surface absolute top-[520px] left-[0px] z-30 flex items-center gap-2 rounded-full py-2.5 pr-4 pl-2.5 text-sm font-bold shadow-lg">
-              <span className="bg-success-light text-success-dark flex h-7.5 w-7.5 items-center justify-center rounded-full">
+              <span className="bg-shop-amber-light text-streak-orange flex h-7.5 w-7.5 items-center justify-center rounded-full">
                 <svg
                   aria-hidden="true"
                   width="16"
                   height="16"
                   viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  fill="currentColor"
                 >
-                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                  <path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 0 2 1 3 2 3 0-3-1-6.5.5-9z" />
                 </svg>
               </span>
-              ¡Seña correcta! +15 XP
+              12 días de racha
             </div>
           </div>
         </div>
