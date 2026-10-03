@@ -7,13 +7,41 @@ import { LottiePlayer } from "@/components/landing/lottie-player";
 
 function SignsPhone() {
   return (
-    <div className="justify-self-center">
-      <div className="bg-text hover:ring-primary/30 rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10 transition-shadow">
-        <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
+    <div className="justify-self-center pb-6">
+      <div className="relative">
+        {/* Outer pulsing ring */}
+        <div
+          aria-hidden
+          className="landing-phone-ring2 bg-primary/15 absolute -inset-8 rounded-[58px]"
+        />
+        {/* Inner pulsing ring */}
+        <div
+          aria-hidden
+          className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
+        />
+        <div className="bg-text hover:ring-primary/30 relative rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10 transition-shadow">
+          <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
+        </div>
+        {/* "Tocá" badge — bottom center of phone */}
+        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
+          <span className="bg-primary text-on-primary landing-floaty flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[17px] font-extrabold shadow-xl">
+            <svg
+              aria-hidden="true"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 11V6a1.5 1.5 0 0 1 3 0v5M12 10V4.5a1.5 1.5 0 0 1 3 0V10M15 10.5V7a1.5 1.5 0 0 1 3 0v6a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 14l-1.3-2.4a1.5 1.5 0 0 1 2.6-1.5L8 13" />
+            </svg>
+            ¡Tocá una opción!
+          </span>
+        </div>
       </div>
-      <p className="text-text-muted mt-3 text-center text-[12px] font-semibold">
-        Tocá una opción para interactuar
-      </p>
     </div>
   );
 }
