@@ -3,6 +3,7 @@
 import { FeatureId, useLandingUI } from "@/components/landing/landing-ui-context";
 import { CloseButton } from "@/components/landing/close-button";
 import { LessonDemo } from "@/components/landing/lesson-demo";
+import { LottiePlayer } from "@/components/landing/lottie-player";
 
 function SignsPhone() {
   return (
@@ -83,36 +84,72 @@ function CameraPhone() {
 function StreakPhone() {
   return (
     <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
-      <div className="bg-background flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px]">
-        <div className="bg-primary text-on-primary px-4 pt-8 pb-4">
-          <p className="font-display text-xl font-bold tracking-tight">Tu recorrido</p>
-          <p className="mt-1 max-w-[210px] text-[11.5px] leading-tight opacity-90">
-            Seguí la ruta lección por lección y sumá señas todos los días.
+      {/* mirrors AchievementCelebrationScreen (signa-mobile) for a streak achievement */}
+      <div
+        className="flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px] px-5 pt-10 pb-6"
+        style={{ backgroundColor: "#FDA55A" }}
+      >
+        {/* streak-fire Lottie — same file used in signa-mobile */}
+        <div className="flex flex-1 items-center justify-center">
+          <LottiePlayer
+            src="/animations/streak-fire.json"
+            className="h-[220px] w-[160px]"
+          />
+        </div>
+
+        {/* headline + subtitle */}
+        <div className="text-center">
+          <p className="font-display text-[22px] font-extrabold leading-tight tracking-tight text-white">
+            ¡Llegaste a 7 días de racha!
           </p>
-          <div className="mt-3 grid grid-cols-3 gap-1.5">
-            <div className="rounded-xl bg-white/15 px-2 py-1.5">
-              <p className="text-[8px] font-bold tracking-wide opacity-80">RACHA</p>
-              <p className="font-display mt-0.5 text-base font-bold">12</p>
-            </div>
-            <div className="rounded-xl bg-white/15 px-2 py-1.5">
-              <p className="text-[8px] font-bold tracking-wide opacity-80">GEMAS</p>
-              <p className="font-display mt-0.5 text-base font-bold">340</p>
-            </div>
-            <div className="rounded-xl bg-white/15 px-2 py-1.5">
-              <p className="text-[8px] font-bold tracking-wide opacity-80">XP</p>
-              <p className="font-display mt-0.5 text-base font-bold">1.250</p>
+          <p className="mt-1.5 text-[12px] leading-snug text-white/80">
+            Seguís aprendiendo todos los días. ¡Así se hace!
+          </p>
+        </div>
+
+        {/* reward card */}
+        <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white p-3.5">
+          {/* silver medal Lottie — same file used in signa-mobile (tier "silver" = 7 days) */}
+          <LottiePlayer
+            src="/animations/medals/silver.json"
+            className="h-[60px] w-[60px] shrink-0"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-text-muted text-[10.5px] font-semibold">Logro desbloqueado</p>
+            <p className="font-display text-[14px] font-bold leading-tight">Primera semana</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <span
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                style={{ backgroundColor: "#29b6e81f", color: "#1b84ab" }}
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor">
+                  <path d="M12 2a7 7 0 0 0-3.5 13.07V17h7v-1.93A7 7 0 0 0 12 2zm-1 15h2v1h-2zm0 2h2v1h-2z" />
+                  <path d="M8.5 9.5C8.5 7.57 10.07 6 12 6s3.5 1.57 3.5 3.5c0 1.38-.8 2.58-1.97 3.18L13 13.28V15h-2v-1.72l-.53-.6A3.49 3.49 0 0 1 8.5 9.5z" />
+                </svg>
+                +10 gemas
+              </span>
+              <span
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                style={{ backgroundColor: "#29b6e81f", color: "#1b84ab" }}
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor">
+                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
+                </svg>
+                +1 protector de racha
+              </span>
             </div>
           </div>
         </div>
-        <div className="flex flex-1 flex-col gap-2 p-3.5">
-          <div className="border-primary bg-surface rounded-2xl border p-3">
-            <p className="text-primary text-[9px] font-bold tracking-wide">EN CURSO</p>
-            <p className="font-display text-sm font-bold">Lección 3</p>
-            <div className="bg-fill mt-2 h-1.5 rounded-full">
-              <div className="bg-primary h-1.5 w-[40%] rounded-full" />
-            </div>
-          </div>
-        </div>
+
+        {/* button */}
+        <button
+          className="mt-3.5 w-full rounded-2xl py-3 text-[13px] font-extrabold text-white"
+          style={{ backgroundColor: "#e07020" }}
+          tabIndex={-1}
+          aria-hidden="true"
+        >
+          ¡Genial!
+        </button>
       </div>
     </div>
   );
@@ -349,7 +386,7 @@ const CONTENT: Record<
     eyebrow: "UN RATITO POR DÍA",
     eyebrowClass: "text-shop-amber",
     title: "Tu racha, tus gemas y tu XP, de un vistazo.",
-    body: "Elegí tu meta diaria de 5 a 20 minutos. Signa tiene vidas, racha, gemas, logros, desafíos diarios y semanales. Cada lección suma puntos y podés regalarles cosas a tus amigos desde la tienda.",
+    body: "Signa tiene vidas, racha, gemas, logros, desafíos diarios y semanales. Cada lección suma XP y hay rankings globales y entre tus amigos para ver quién lidera.",
     phone: <StreakPhone />,
   },
   social: {

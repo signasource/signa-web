@@ -30,8 +30,8 @@ export default function LandingPage() {
         />
         <Nav />
         <Hero />
-        <QueEs />
         <Marquesina />
+        <QueEs />
         <LisaIntro />
         <Cursos />
         <Equipo />

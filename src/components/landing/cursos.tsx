@@ -26,7 +26,7 @@ export function Cursos() {
       <div id="empezar" aria-hidden className="relative -top-10" />
       <div className="mx-auto max-w-6xl">
         <p className="text-primary mb-5 text-sm font-extrabold tracking-[2px]">CURSOS</p>
-        <h2 className="landing-rv font-display mb-14 max-w-2xl text-5xl leading-none font-extrabold tracking-tight text-balance sm:text-6xl">
+        <h2 className="landing-rv font-display mb-14 text-5xl leading-none font-extrabold tracking-tight sm:text-6xl">
           Empezás gratis. Te especializás cuando quieras.
         </h2>
 
