@@ -2,12 +2,12 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 
 const MEMBERS = [
-  { name: "Agostina Avalle", photo: "/images/equipo/agostina.png", objectPosition: "top" },
-  { name: "Paloma Córcoba", photo: "/images/equipo/paloma.png", objectPosition: "top" },
-  { name: "Juan Cruz López Freytas", photo: "/images/equipo/juancruz.png", objectPosition: "center" },
-  { name: "Joaquín Miranda", photo: "/images/equipo/joaquin.png", objectPosition: "top" },
-  { name: "Mateo Ottonello", photo: "/images/equipo/mateo.png", objectPosition: "top" },
-  { name: "Marina Polunosik", photo: "/images/equipo/marina.png", objectPosition: "center" },
+  { name: "Agostina Avalle", photo: "/images/equipo/agostina-v2.png", objectPosition: "top" },
+  { name: "Paloma Córcoba", photo: "/images/equipo/paloma-v2.png", objectPosition: "top" },
+  { name: "Juan Cruz López Freytas", photo: "/images/equipo/juancruz-v2.png", objectPosition: "center" },
+  { name: "Joaquín Miranda", photo: "/images/equipo/joaquin-v2.png", objectPosition: "top" },
+  { name: "Mateo Ottonello", photo: "/images/equipo/mateo-v2.png", objectPosition: "top" },
+  { name: "Marina Polunosik", photo: "/images/equipo/marina-v2.png", objectPosition: "center" },
 ];
 
 export function Equipo() {
