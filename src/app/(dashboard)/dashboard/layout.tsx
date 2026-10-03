@@ -46,8 +46,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "rounded-full px-3.5 py-2 text-sm font-bold",
-                    active ? "bg-primary-light text-primary-dark" : "text-text-muted",
+                    "rounded-full px-3.5 py-2 text-sm font-bold transition-all duration-200",
+                    active
+                      ? "bg-primary-light text-primary-dark"
+                      : "text-text-muted hover:bg-fill hover:text-text",
                   )}
                 >
                   {item.label}

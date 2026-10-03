@@ -13,7 +13,7 @@ export function Hero() {
             className="landing-enter font-display text-[44px] leading-[0.96] font-extrabold tracking-tight text-balance sm:text-7xl"
             style={delay(0)}
           >
-            Aprendé a comunicarte con las <span className="text-primary">manos</span>.
+            Aprendé a comunicarte con las <span className="text-primary landing-highlight">manos</span>.
           </h1>
           <p
             className="landing-enter text-text-muted max-w-md text-lg leading-snug sm:text-xl"
@@ -87,11 +87,11 @@ export function Hero() {
             />
             <div
               aria-hidden
-              className="bg-accent-amber absolute top-[50px] left-[420px] h-[80px] w-[80px] rounded-full"
+              className="landing-floaty4 bg-accent-amber absolute top-[50px] left-[420px] h-[80px] w-[80px] rounded-full"
             />
             <div
               aria-hidden
-              className="bg-accent-teal absolute top-[575px] left-[55px] h-[46px] w-[46px] rounded-full"
+              className="landing-floaty2 bg-accent-teal absolute top-[575px] left-[55px] h-[46px] w-[46px] rounded-full"
             />
 
             {/* Phone + pulsing ring */}

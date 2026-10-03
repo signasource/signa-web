@@ -66,7 +66,7 @@ export function LisaIntro() {
             />
             <div
               aria-hidden
-              className="bg-accent-teal absolute top-[70px] left-[40px] h-[70px] w-[70px] rounded-full"
+              className="landing-floaty bg-accent-teal absolute top-[70px] left-[40px] h-[70px] w-[70px] rounded-full"
             />
             <div className="absolute top-[10px] left-[40px] z-10 rotate-3">
               <div className="bg-text rounded-[46px] p-2.5 shadow-2xl">

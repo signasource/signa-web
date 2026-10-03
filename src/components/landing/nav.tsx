@@ -20,17 +20,17 @@ export function Nav() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-text/80 hover:text-primary-dark text-[15px] font-semibold transition-colors"
+              className="landing-nav-link text-text/80 hover:text-primary-dark text-[15px] font-semibold transition-colors"
             >
               {link.label}
             </Link>
           ))}
-          <OrgTrigger className="text-text/80 hover:text-primary-dark text-[15px] font-semibold transition-colors">
+          <OrgTrigger className="landing-nav-link text-text/80 hover:text-primary-dark text-[15px] font-semibold transition-colors">
             Organizaciones
           </OrgTrigger>
           <Link
             href="/#equipo"
-            className="text-text/80 hover:text-primary-dark text-[15px] font-semibold transition-colors"
+            className="landing-nav-link text-text/80 hover:text-primary-dark text-[15px] font-semibold transition-colors"
           >
             Equipo
           </Link>

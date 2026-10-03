@@ -25,11 +25,6 @@ export function LegalPage({ title, children }: { title: string; children: React.
       <header className="flex flex-col gap-3">
         <h1 className="font-display text-4xl font-extrabold">{title}</h1>
         <p className="text-text-muted text-sm">Última actualización: {legal.lastUpdated}</p>
-        <p role="note" className="border-warning bg-warning/15 rounded-xl border px-4 py-3 text-sm">
-          <strong>Borrador.</strong> Este documento fue redactado por el equipo del proyecto y aún
-          no fue revisado por un profesional del derecho. Las partes resaltadas están pendientes de
-          definición.
-        </p>
       </header>
 
       <div className="flex flex-col gap-8 [&_a]:underline [&_li]:ml-5 [&_li]:list-disc [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-1">

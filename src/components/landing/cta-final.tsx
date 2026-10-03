@@ -44,7 +44,7 @@ export function CtaFinal() {
           width={800}
           height={800}
           data-reveal="peek"
-          className="absolute -right-10 -bottom-10 hidden h-[520px] w-[520px] lg:block xl:right-10"
+          className="landing-floaty3 absolute -right-10 -bottom-10 hidden h-[520px] w-[520px] lg:block xl:right-10"
         />
       </div>
     </section>

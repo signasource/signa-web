@@ -18,7 +18,7 @@ const METRICS: { key: Metric; label: string; caption: string }[] = [
   },
 ];
 
-export function WeeklyEvolution({ weeks }: { weeks: WeeklyPerformance[] }) {
+export function WeeklyEvolution({ weeks, delay }: { weeks: WeeklyPerformance[]; delay?: number }) {
   const [metric, setMetric] = useState<Metric>("attempts");
   const [asTable, setAsTable] = useState(false);
   const current = METRICS.find((m) => m.key === metric)!;
@@ -33,7 +33,7 @@ export function WeeklyEvolution({ weeks }: { weeks: WeeklyPerformance[] }) {
   const summary = data.map((d) => `Semana del ${d.label}: ${d.text}`).join(". ");
 
   return (
-    <Card className="flex min-w-0 flex-col gap-4">
+    <Card delay={delay} className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <CardTitle>Evolución semanal</CardTitle>
@@ -48,8 +48,8 @@ export function WeeklyEvolution({ weeks }: { weeks: WeeklyPerformance[] }) {
                 aria-pressed={metric === m.key}
                 onClick={() => setMetric(m.key)}
                 className={cn(
-                  "cursor-pointer rounded-full px-3 py-1.5 text-[13px] font-bold whitespace-nowrap",
-                  metric === m.key ? "bg-surface text-text" : "text-text-muted",
+                  "cursor-pointer rounded-full px-3 py-1.5 text-[13px] font-bold whitespace-nowrap transition-all duration-200",
+                  metric === m.key ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
                 )}
               >
                 {m.label}
@@ -107,7 +107,9 @@ export function WeeklyEvolution({ weeks }: { weeks: WeeklyPerformance[] }) {
                 dataKey="value"
                 radius={[10, 10, 4, 4]}
                 maxBarSize={44}
-                isAnimationActive={false}
+                isAnimationActive
+                animationDuration={700}
+                animationEasing="ease-out"
               >
                 {data.map((d, i) => (
                   <Cell

@@ -107,19 +107,21 @@ export default function DashboardOverviewPage() {
           }
         />
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="dash-page-enter flex flex-col gap-4">
           <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
             <StatCard
+              delay={0}
               label="Participantes"
               value={participation.totalParticipants}
               hint={`${participation.participantsStarted} iniciaron la capacitación`}
             />
             <StatCard
+              delay={60}
               label={`Activos (últimos ${participation.activeWindowDays} días)`}
               value={participation.activeParticipants}
               hint={`${participation.inactiveParticipants} inactivos`}
             />
-            <StatCard label="Progreso promedio" value={`${progress.averageProgressPercentage}%`}>
+            <StatCard delay={120} label="Progreso promedio" value={`${progress.averageProgressPercentage}%`}>
               <ProgressBar
                 percent={progress.averageProgressPercentage}
                 tone="primary"
@@ -128,6 +130,7 @@ export default function DashboardOverviewPage() {
               />
             </StatCard>
             <StatCard
+              delay={180}
               label="Lecciones completadas"
               value={NUMBER.format(progress.completedLessons)}
               hint={`${progress.participantsCompletedAll} completaron todo el curso`}
@@ -137,9 +140,9 @@ export default function DashboardOverviewPage() {
           <div className="flex flex-wrap gap-4">
             <div className="min-w-0 flex-[2_1_460px]">
               {performance.weeklyEvolution.length > 0 ? (
-                <WeeklyEvolution weeks={performance.weeklyEvolution} />
+                <WeeklyEvolution weeks={performance.weeklyEvolution} delay={240} />
               ) : (
-                <Card>
+                <Card delay={240}>
                   <CardTitle>Evolución semanal</CardTitle>
                   <p className="text-text-muted mt-2 text-sm">
                     Todavía no hay actividad registrada por semana.
@@ -147,7 +150,7 @@ export default function DashboardOverviewPage() {
                 </Card>
               )}
             </div>
-            <Card className="flex min-w-0 flex-[1_1_260px] flex-col gap-4">
+            <Card delay={300} className="flex min-w-0 flex-[1_1_260px] flex-col gap-4">
               <div>
                 <CardTitle>Avance del equipo</CardTitle>
                 <p className="text-text-muted mt-0.5 text-[13px]">
@@ -174,7 +177,7 @@ export default function DashboardOverviewPage() {
           </div>
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-4">
-            <Card className="flex flex-col gap-3.5">
+            <Card delay={360} className="flex flex-col gap-3.5">
               <div className="flex items-center gap-2.5">
                 <SectionIcon name="people" className="bg-primary-light text-primary-dark" />
                 <CardTitle>Participación</CardTitle>
@@ -202,7 +205,7 @@ export default function DashboardOverviewPage() {
                 ]}
               />
             </Card>
-            <Card className="flex flex-col gap-3.5">
+            <Card delay={420} className="flex flex-col gap-3.5">
               <div className="flex items-center gap-2.5">
                 <SectionIcon name="trend" className="bg-course-teal-light text-avatar-teal-dark" />
                 <CardTitle>Progreso</CardTitle>
@@ -222,7 +225,7 @@ export default function DashboardOverviewPage() {
                 ]}
               />
             </Card>
-            <Card className="flex flex-col gap-3.5">
+            <Card delay={480} className="flex flex-col gap-3.5">
               <div className="flex items-center gap-2.5">
                 <SectionIcon name="hand" className="bg-shop-amber-light text-shop-amber-dark" />
                 <CardTitle>Desempeño</CardTitle>
@@ -248,7 +251,7 @@ export default function DashboardOverviewPage() {
           </div>
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-4">
-            <Card className="flex flex-col gap-3">
+            <Card delay={540} className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-3">
                 <CardTitle>Desempeño por módulo</CardTitle>
                 <Link
@@ -289,7 +292,7 @@ export default function DashboardOverviewPage() {
               </p>
             </Card>
 
-            <Card className="flex flex-col gap-3">
+            <Card delay={600} className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <CardTitle>Necesitan un empujón</CardTitle>

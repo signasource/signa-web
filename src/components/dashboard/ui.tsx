@@ -1,5 +1,5 @@
 import Image from "next/image";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Icon, type IconName } from "@/components/dashboard/icons";
 import {
   initials,
@@ -29,9 +29,20 @@ export function PageHeading({
   );
 }
 
-export function Card({ className, children }: { className?: string; children: ReactNode }) {
+export function Card({
+  className,
+  children,
+  delay,
+}: {
+  className?: string;
+  children: ReactNode;
+  delay?: number;
+}) {
   return (
-    <div className={cn("border-border bg-surface rounded-2xl border p-5", className)}>
+    <div
+      className={cn("border-border bg-surface dash-card-enter rounded-2xl border p-5", className)}
+      style={delay !== undefined ? ({ "--delay": `${delay}ms` } as CSSProperties) : undefined}
+    >
       {children}
     </div>
   );
@@ -46,16 +57,21 @@ export function StatCard({
   value,
   hint,
   children,
+  delay,
 }: {
   label: string;
   value: ReactNode;
   hint?: ReactNode;
   children?: ReactNode;
+  delay?: number;
 }) {
   return (
-    <div className="border-border bg-surface rounded-2xl border p-[18px]">
+    <div
+      className="border-border bg-surface dash-card-enter rounded-2xl border p-[18px]"
+      style={delay !== undefined ? ({ "--delay": `${delay}ms` } as CSSProperties) : undefined}
+    >
       <p className="text-text-muted text-[13px] font-bold">{label}</p>
-      <p className="font-display mt-1.5 text-4xl leading-10 font-extrabold tracking-tight">
+      <p className="font-display dash-stat-pop mt-1.5 text-4xl leading-10 font-extrabold tracking-tight">
         {value}
       </p>
       {hint ? <p className="text-text-muted mt-1.5 text-[13px]">{hint}</p> : null}
@@ -92,7 +108,7 @@ export function ProgressBar({
       className={cn("bg-fill h-2.5 overflow-hidden rounded-full", className)}
     >
       <div
-        className={cn("h-full rounded-full", TONE_BAR[tone ?? progressTone(value)])}
+        className={cn("dash-progress-fill h-full rounded-full", TONE_BAR[tone ?? progressTone(value)])}
         style={{ width: `${value}%` }}
       />
     </div>
@@ -129,7 +145,7 @@ export function Avatar({
     <span
       aria-hidden="true"
       className={cn(
-        "font-display flex shrink-0 items-center justify-center rounded-full font-extrabold",
+        "font-display dash-avatar-hover flex shrink-0 items-center justify-center rounded-full font-extrabold",
         size === "lg" ? "size-[72px] text-[26px]" : "size-[34px] text-xs",
         AVATARS[avatarIndex(seed)],
       )}
@@ -200,7 +216,14 @@ export const pillButton =
   "border-border bg-surface inline-flex cursor-pointer items-center gap-1 rounded-full border px-3.5 py-2 text-[13px] font-bold whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50";
 
 export function LoadingState({ children = "Cargando…" }: { children?: ReactNode }) {
-  return <p className="text-text-muted">{children}</p>;
+  return (
+    <div className="text-text-muted flex items-center gap-1.5">
+      <span className="dash-loading-dot" style={{ "--delay": "0s" } as CSSProperties} />
+      <span className="dash-loading-dot" style={{ "--delay": "0.18s" } as CSSProperties} />
+      <span className="dash-loading-dot" style={{ "--delay": "0.36s" } as CSSProperties} />
+      <span className="sr-only">{children}</span>
+    </div>
+  );
 }
 
 export function ErrorState({ children }: { children: ReactNode }) {

@@ -53,13 +53,17 @@ export function Equipo() {
               style={{ "--delay": `${i * 60}ms` } as CSSProperties}
               className="flex flex-col items-center gap-3"
             >
-              <div className="bg-primary/8 aspect-square w-full overflow-hidden rounded-[24px]">
+              <div
+                className={`bg-primary/8 aspect-square w-full overflow-hidden rounded-[24px] ${
+                  i % 2 === 0 ? "landing-team-card" : "landing-team-card landing-team-card-alt"
+                }`}
+              >
                 <Image
                   src={member.photo}
                   alt={member.name}
                   width={600}
                   height={600}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   style={{ objectPosition: member.objectPosition }}
                 />
               </div>

@@ -63,3 +63,93 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
 }
+
+/* ─── Dashboard animations ──────────────────────────────────────────── */
+
+/* Progress bar grows from 0 on mount */
+@keyframes dash-progress-grow {
+  from {
+    width: 0;
+  }
+}
+.dash-progress-fill {
+  animation: dash-progress-grow 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) 0.08s both;
+}
+
+/* Page content fades up when data resolves */
+@keyframes dash-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.dash-page-enter {
+  animation: dash-page-enter 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+/* Cards stagger in with delay from CSS variable */
+@keyframes dash-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.dash-card-enter {
+  animation: dash-card-enter 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Three-dot loading indicator */
+@keyframes dash-loading-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.55);
+    opacity: 0.35;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.dash-loading-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: dash-loading-bounce 1.3s ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+/* Avatar hover scale */
+.dash-avatar-hover {
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.dash-avatar-hover:hover {
+  transform: scale(1.12);
+}
+
+/* Stat value pop on mount */
+@keyframes dash-stat-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+.dash-stat-pop {
+  animation: dash-stat-pop 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) 0.15s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-progress-fill,
+  .dash-page-enter,
+  .dash-card-enter,
+  .dash-loading-dot,
+  .dash-stat-pop {
+    animation: none !important;
+  }
+  .dash-avatar-hover {
+    transition: none !important;
+  }
+}

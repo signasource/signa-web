@@ -316,3 +316,127 @@ html:has(.landing-root) {
 .landing-marquee-outline span:hover {
   -webkit-text-stroke-color: var(--color-primary);
 }
+
+/* ─── Nav link: underline draws from left on hover ─────────────────── */
+.landing-nav-link {
+  position: relative;
+}
+.landing-nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.landing-nav-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* ─── CTA buttons: arrow slides right on hover ──────────────────────── */
+.landing-btn svg {
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.landing-btn:hover svg {
+  transform: translateX(4px);
+}
+.landing-btn:active svg {
+  transform: translateX(1px);
+}
+
+/* ─── Highlighted word: underline draws in after text appears ───────── */
+.landing-highlight {
+  display: inline-block;
+  position: relative;
+}
+.landing-highlight::after {
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  left: -1px;
+  right: -1px;
+  height: 4px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: landing-grow 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) 0.85s both;
+}
+
+/* ─── Team member photo: tilt + lift on hover ───────────────────────── */
+.landing-team-card {
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 0.35s ease;
+}
+.landing-team-card:hover {
+  transform: translateY(-10px) rotate(-2.5deg) scale(1.04);
+  box-shadow: 0 28px 48px -18px color-mix(in srgb, var(--color-text) 30%, transparent);
+}
+.landing-team-card-alt:hover {
+  transform: translateY(-10px) rotate(2.5deg) scale(1.04);
+  box-shadow: 0 28px 48px -18px color-mix(in srgb, var(--color-text) 30%, transparent);
+}
+
+/* ─── Additional floaty variants ────────────────────────────────────── */
+.landing-floaty3 {
+  animation: landing-floaty 9s ease-in-out -1.5s infinite;
+}
+.landing-floaty4 {
+  animation: landing-floaty 5.5s ease-in-out -3.5s infinite;
+}
+
+/* ─── Soft-pulse for decorative background blobs ────────────────────── */
+.landing-blob-pulse {
+  animation: landing-blob-pulse 7s ease-in-out infinite;
+}
+@keyframes landing-blob-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.08;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.14;
+  }
+}
+
+/* ─── Marquee words: scale up + color on hover ──────────────────────── */
+.landing-marquee-track span {
+  transition:
+    transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1),
+    color 0.22s ease,
+    -webkit-text-stroke-color 0.22s ease;
+  display: inline-flex;
+  align-items: center;
+}
+.landing-marquee-track span:hover {
+  transform: scale(1.07) translateY(-3px);
+}
+
+/* ─── Reduced-motion additions ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .landing-floaty3,
+  .landing-floaty4,
+  .landing-blob-pulse {
+    animation: none !important;
+  }
+  .landing-nav-link::after,
+  .landing-highlight::after {
+    transition: none !important;
+    animation: none !important;
+    transform: scaleX(1) !important;
+  }
+  .landing-btn svg,
+  .landing-team-card,
+  .landing-team-card-alt,
+  .landing-marquee-track span {
+    transition: none !important;
+  }
+}
