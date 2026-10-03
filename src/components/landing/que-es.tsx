@@ -6,7 +6,7 @@ export function QueEs() {
       <div className="mx-auto max-w-6xl">
         <h2
           data-reveal="up"
-          className="font-display mb-14 max-w-2xl text-4xl leading-tight font-extrabold tracking-tight text-balance sm:text-5xl"
+          className="font-display mb-14 text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl"
         >
           Todo lo que podés hacer en <strong className="text-primary">Signa</strong>.
         </h2>
