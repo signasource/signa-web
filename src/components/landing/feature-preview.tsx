@@ -6,8 +6,13 @@ import { LessonDemo } from "@/components/landing/lesson-demo";
 
 function SignsPhone() {
   return (
-    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
-      <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
+    <div className="justify-self-center">
+      <div className="bg-text hover:ring-primary/30 rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10 transition-shadow">
+        <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
+      </div>
+      <p className="text-text-muted mt-3 text-center text-[12px] font-semibold">
+        Tocá una opción para interactuar
+      </p>
     </div>
   );
 }
@@ -113,6 +118,215 @@ function StreakPhone() {
   );
 }
 
+function SocialPhone() {
+  const PODIUM = [
+    {
+      rank: 2,
+      initials: "SG",
+      firstName: "Sofia",
+      xp: "1.890",
+      avatar: "bg-primary-light text-primary-dark",
+      ring: "ring-[#86868B]",
+      bar: "bg-[#86868B]/20",
+      barH: "h-[26px]",
+      size: "h-9 w-9",
+    },
+    {
+      rank: 1,
+      initials: "MR",
+      firstName: "Mati",
+      xp: "2.340",
+      avatar: "bg-avatar-teal-light text-avatar-teal-dark",
+      ring: "ring-[#FBBF24]",
+      bar: "bg-[#FBBF24]/30",
+      barH: "h-[40px]",
+      size: "h-10 w-10",
+    },
+    {
+      rank: 3,
+      initials: "JP",
+      firstName: "Juan",
+      xp: "980",
+      avatar: "bg-shop-amber-light text-shop-amber-dark",
+      ring: "ring-[#DE7211]",
+      bar: "bg-[#DE7211]/20",
+      barH: "h-[18px]",
+      size: "h-9 w-9",
+    },
+  ];
+
+  const LIST = [
+    {
+      rank: 4,
+      initials: "AL",
+      name: "Ana L.",
+      handle: "@anal",
+      streak: 8,
+      xp: "750",
+      delta: "↑ 2",
+      deltaClass: "bg-success-light text-success-dark",
+      avatar: "bg-avatar-blue-light text-gems-blue-dark",
+    },
+    {
+      rank: 5,
+      initials: "TU",
+      name: "Vos",
+      handle: "@usuario",
+      streak: 12,
+      xp: "1.250",
+      delta: "—",
+      deltaClass: "bg-fill text-text-muted",
+      avatar: "bg-avatar-wine-light text-social-wine",
+      isYou: true,
+    },
+  ];
+
+  return (
+    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
+      <div className="bg-background flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px]">
+        {/* Wine header */}
+        <div className="bg-social-wine relative overflow-hidden px-4 pt-7 pb-3 text-white">
+          <div
+            aria-hidden
+            className="absolute -top-10 -right-8 h-[130px] w-[130px] rounded-full bg-white/10"
+          />
+          <p className="font-display relative text-2xl font-bold tracking-tight">Social</p>
+          <p className="relative mt-0.5 text-[10.5px] opacity-85">
+            Mirá qué están logrando tus amigos.
+          </p>
+          <div className="relative mt-2.5 flex gap-2">
+            {[
+              { label: "AMIGOS", value: "8" },
+              { label: "SOLICITUDES", value: "2" },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="flex items-center gap-1.5 rounded-xl bg-white/15 px-2 py-1.5"
+              >
+                <p className="text-[7.5px] font-bold tracking-wide opacity-80">{s.label}</p>
+                <p className="font-display text-sm font-bold">{s.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Segmented control */}
+        <div className="border-border flex border-b bg-white">
+          {["Feed", "Amigos", "Ranking"].map((tab) => (
+            <div
+              key={tab}
+              className={`px-3 pt-2 pb-2 text-[10.5px] font-bold ${
+                tab === "Ranking"
+                  ? "border-social-wine text-social-wine border-b-2"
+                  : "text-text-muted"
+              }`}
+            >
+              {tab}
+            </div>
+          ))}
+        </div>
+
+        {/* Ranking content */}
+        <div className="flex flex-1 flex-col overflow-hidden px-2.5 pt-2">
+          {/* Scope toggle */}
+          <div className="bg-fill flex rounded-[10px] p-0.5 text-[9.5px] font-bold">
+            <div className="bg-surface text-social-wine flex-1 rounded-[8px] py-1.5 text-center shadow-sm">
+              Global (98)
+            </div>
+            <div className="text-text-muted flex-1 py-1.5 text-center">Mis amigos (8)</div>
+          </div>
+
+          {/* Countdown */}
+          <div className="border-border mt-1.5 flex items-center gap-1.5 rounded-xl border bg-white px-2.5 py-1.5">
+            <svg
+              aria-hidden="true"
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              className="text-social-wine shrink-0"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+            <p className="text-text-muted flex-1 text-[8.5px]">Se reinicia el lunes a las 00:00</p>
+            <p className="font-display text-[10px] font-bold">2d 14:22</p>
+          </div>
+
+          {/* Section label */}
+          <p className="text-text-muted mt-1.5 text-[8px] font-bold tracking-[0.6px]">
+            XP DE ESTA SEMANA
+          </p>
+
+          {/* Podium */}
+          <div className="border-border mt-1 flex items-end justify-around overflow-hidden rounded-[14px] border bg-white px-2 pt-2">
+            {PODIUM.map((p) => (
+              <div key={p.rank} className="flex flex-col items-center gap-0.5">
+                <div
+                  className={`font-display flex shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ring-2 ${p.avatar} ${p.size} ${p.ring}`}
+                >
+                  {p.initials}
+                </div>
+                <div className="bg-social-wine rounded-full px-1.5 py-px text-[7px] font-extrabold text-white">
+                  #{p.rank}
+                </div>
+                <p className="text-[8.5px] font-semibold">{p.firstName}</p>
+                <p className="text-text-muted text-[7.5px]">⚡ {p.xp}</p>
+                <div className={`w-full rounded-t-sm ${p.bar} ${p.barH}`} />
+              </div>
+            ))}
+          </div>
+
+          {/* List rows */}
+          <div className="border-border mt-1.5 overflow-hidden rounded-[14px] border bg-white">
+            {LIST.map((r, i) => (
+              <div
+                key={r.rank}
+                className={`flex items-center gap-2 px-2.5 py-2 ${i < LIST.length - 1 ? "border-border border-b" : ""} ${r.isYou ? "bg-avatar-wine-light" : ""}`}
+              >
+                <p className="text-text-muted font-display w-3.5 text-right text-[9.5px] font-bold">
+                  #{r.rank}
+                </p>
+                <span
+                  className={`font-display flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold ${r.avatar}`}
+                >
+                  {r.initials}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-[11px] font-bold">{r.name}</p>
+                  <p className="text-text-muted text-[8px]">🔥 {r.streak} días</p>
+                </div>
+                <div className="flex flex-col items-end gap-0.5">
+                  <span className={`rounded-[5px] px-1 py-px text-[7px] font-bold ${r.deltaClass}`}>
+                    {r.delta}
+                  </span>
+                  <p className="font-display text-[9.5px] font-extrabold">⚡ {r.xp}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Sticky me bar */}
+          <div className="border-social-wine/40 bg-avatar-wine-light mt-auto -mx-2.5 flex items-center gap-2 border-t px-3.5 py-2">
+            <p className="font-display text-social-wine text-[11px] font-bold">#5</p>
+            <span className="border-social-wine font-display text-social-wine bg-avatar-wine-light flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-extrabold">
+              TU
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-social-wine text-[11px] font-bold">Vos</p>
+              <p className="text-social-wine/65 text-[8px]">290 XP detrás del #4</p>
+            </div>
+            <p className="font-display text-social-wine text-[10px] font-extrabold">⚡ 1.250</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const CONTENT: Record<
   FeatureId,
   { eyebrow: string; eyebrowClass: string; title: string; body: string; phone: React.ReactNode }
@@ -135,8 +349,15 @@ const CONTENT: Record<
     eyebrow: "UN RATITO POR DÍA",
     eyebrowClass: "text-shop-amber",
     title: "Tu racha, tus gemas y tu XP, de un vistazo.",
-    body: "Elegí tu meta diaria de 5 a 20 minutos. Cada lección suma a tu racha y a tu experiencia, y podés ver tu recorrido lección por lección.",
+    body: "Elegí tu meta diaria de 5 a 20 minutos. Signa tiene vidas, racha, gemas, logros, desafíos diarios y semanales. Cada lección suma puntos y podés regalarles cosas a tus amigos desde la tienda.",
     phone: <StreakPhone />,
+  },
+  social: {
+    eyebrow: "APRENDÉ CON AMIGOS",
+    eyebrowClass: "text-social-wine",
+    title: "Agregá amigos y compartan el progreso.",
+    body: "Ves el avance de tus amigos, las señas que aprendieron y cuántos días llevan de racha. Podés regalarles protectores de racha, gemas y más desde la tienda. Un ranking semanal te muestra quién está liderando.",
+    phone: <SocialPhone />,
   },
 };
 

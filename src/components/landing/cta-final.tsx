@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { OrgTrigger } from "@/components/landing/org-trigger";
 
 export function CtaFinal() {
   return (
@@ -19,7 +18,7 @@ export function CtaFinal() {
           </h2>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="#empezar"
+              href="/proximamente"
               className="landing-btn bg-text text-on-dark flex min-h-14.5 items-center gap-2.5 rounded-full px-7.5 text-[17px] font-extrabold"
             >
               Empezá gratis
@@ -37,9 +36,6 @@ export function CtaFinal() {
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
             </Link>
-            <OrgTrigger className="landing-btn flex min-h-14.5 items-center rounded-full border-[1.5px] border-white/40 bg-white/15 px-7 text-[17px] font-extrabold text-white">
-              Para organizaciones
-            </OrgTrigger>
           </div>
         </div>
         <Image

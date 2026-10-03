@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { LandingUIProvider } from "@/components/landing/landing-ui-provider";
 import { Nav } from "@/components/landing/nav";
 import { Hero } from "@/components/landing/hero";
@@ -6,7 +6,6 @@ import { LisaIntro } from "@/components/landing/lisa-intro";
 import { LandingScrollEffects } from "@/components/landing/landing-scroll-effects";
 import { Marquesina } from "@/components/landing/marquesina";
 import { QueEs } from "@/components/landing/que-es";
-import { ParaQuien } from "@/components/landing/para-quien";
 import { Cursos } from "@/components/landing/cursos";
 import { Equipo } from "@/components/landing/equipo";
 import { CtaFinal } from "@/components/landing/cta-final";
@@ -31,10 +30,9 @@ export default function LandingPage() {
         />
         <Nav />
         <Hero />
+        <QueEs />
         <Marquesina />
         <LisaIntro />
-        <QueEs />
-        <ParaQuien />
         <Cursos />
         <Equipo />
         <CtaFinal />

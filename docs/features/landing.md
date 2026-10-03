@@ -5,39 +5,54 @@
 > Sources: src/app/(marketing)/, src/components/landing/, src/app/layout.tsx (`metadata`)
 
 **Status: built.** `/` (`src/app/(marketing)/page.tsx`) renders the full one-page landing: nav,
-hero (with a playable lesson), feature marquee, "Conocé a Lisa", "Qué es Signa", "Para quién es",
-"Cursos", an organizations overlay, the team, and a final CTA.
+hero (with a playable lesson), "Qué es Signa", feature marquee, "Conocé a Lisa", "Cursos", the
+team, and a final CTA. Section order: Hero → QueEs → Marquesina → LisaIntro → Cursos → Equipo →
+CtaFinal → Footer. "Para quién es" was removed.
+
+`/proximamente` (`src/app/(marketing)/proximamente/page.tsx`) is the coming-soon page reached by
+all "Empezá gratis" CTAs. It explains the app is ready and being submitted to Google Play, shows
+a waitlist email form (calls `POST /waitlist` on `signa-api`), and links to `/organizaciones`.
+
+`/organizaciones` (`src/app/(marketing)/organizaciones/page.tsx`) is the organizations marketing
+page: hero, four-step flow, an example org dashboard preview, and CTAs to login or register. It
+replaces the former `organizations-modal.tsx` overlay that was embedded inside the landing.
+
+`/organizaciones/ingresar` is the org auth page: login tab (uses existing `useAuth().login()`,
+redirects to `/organizaciones/panel`) and register tab (CUIT + org name + email + password, with
+CUIT validation via `src/lib/cuit.ts`; registration API not yet available — submission shows a
+"te avisamos" confirmation).
+
+`/organizaciones/panel` is the post-login holding page shown when the org module is not yet
+complete; it redirects unauthenticated users to `/organizaciones/ingresar`.
 
 Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client-side data fetching,
 `metadata` per page, Spanish copy.
 
 ## Sections (`src/components/landing/`)
 
-| Component                 | Renders                                                                                                                                                                    |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nav.tsx`                 | Sticky header, opaque + blurred background (content never shows through), shadow once scrolled. Below `md` the links collapse into `mobile-menu.tsx`                       |
-| `hero.tsx`                | Headline + CTAs, and a phone mockup running `LessonDemo` next to Lisa waving. Normal document flow (not pinned). `#probar` anchors the demo                                |
-| `lesson-demo.tsx`         | Playable "¿Qué significa esta seña?": Lisa signs in 3D (`LisaGlbViewer`), the visitor picks an answer, gets right/wrong feedback and hearts, and moves to the next sign    |
-| `marquesina.tsx`          | Two word rows looping forever in opposite directions (pure CSS keyframes, pause on hover, decorative)                                                                      |
-| `lisa-intro.tsx`          | "Conocé a Lisa" (`#lisa`): chat bubbles that pop in one by one, next to the app's home screen and Lisa with arms crossed                                                   |
-| `que-es.tsx`              | Value prop (text fills in with color as it scrolls) + 3 clickable feature cards, each opening a `FeaturePreview` overlay                                                   |
-| `para-quien.tsx`          | 4 audience cards in `card-rail.tsx`: native horizontal scroller (scroll-snap, prev/next buttons, progress bar, mouse drag). Each card has a CTA (demo, cursos, or org)     |
-| `cursos.tsx`              | Free basic course (CTA → the hero demo) + thematic (paid) courses; each thematic course opens the organizations overlay                                                    |
-| `equipo.tsx`              | The 6-person team, UTN FRC Proyecto Final                                                                                                                                  |
-| `cta-final.tsx`           | Closing CTA + Lisa                                                                                                                                                         |
-| `landing-footer.tsx`      | Footer links (`/privacidad`, `/terminos`, organizations, legal)                                                                                                            |
-| `organizations-modal.tsx` | "Signa para organizaciones" overlay: how it works, an example org dashboard, contact form. Triggered from the nav, hero, audience cards, thematic courses, footer, and CTA |
-| `feature-preview.tsx`     | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature (the 3D one is a live `LessonDemo`)                                         |
+| Component                 | Renders                                                                                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nav.tsx`                 | Sticky header, opaque + blurred background (content never shows through), shadow once scrolled. Below `md` the links collapse into `mobile-menu.tsx`                         |
+| `hero.tsx`                | Headline + CTAs, and a phone mockup running `LessonDemo` next to Lisa waving. Normal document flow (not pinned). `#probar` anchors the demo                                  |
+| `lesson-demo.tsx`         | Playable "¿Qué significa esta seña?": Lisa signs in 3D (`LisaGlbViewer`), the visitor picks an answer, gets right/wrong feedback and hearts, and moves to the next sign      |
+| `marquesina.tsx`          | Two word rows looping forever in opposite directions (pure CSS keyframes, pause on hover, decorative)                                                                        |
+| `lisa-intro.tsx`          | "Conocé a Lisa" (`#lisa`): chat bubbles that pop in one by one, next to the app's home screen and Lisa with arms crossed                                                     |
+| `que-es.tsx`              | Value prop (text fills in with color as it scrolls) + 3 clickable feature cards, each opening a `FeaturePreview` overlay                                                     |
+| `cursos.tsx`              | Free basic course ("Probá una lección" → `/proximamente`) + thematic (paid) courses (Salud, Atención al cliente); org call-out at the bottom opens the organizations overlay |
+| `equipo.tsx`              | Single team photo (`/images/equipo.jpg`) — one image instead of 6 individual cards                                                                                           |
+| `cta-final.tsx`           | Closing CTA + Lisa                                                                                                                                                           |
+| `landing-footer.tsx`      | Footer links (`/privacidad`, `/terminos`, organizations, legal)                                                                                                              |
+| `org-trigger.tsx`         | Link to `/organizaciones`. Replaces the former modal-open button.                                                                                                            |
+| `feature-preview.tsx`     | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature (the 3D one is a live `LessonDemo`)                                           |
 
 ## Interactivity (client boundary)
 
 Server Components by default; client components only where there is state or a browser API:
 
 - `landing-ui-provider.tsx` / `landing-ui-context.tsx` — one `"use client"` boundary at the top of
-  the page tree, holding `orgOpen` and the open feature id, and rendering the two overlays. While
-  one is open the page behind doesn't scroll and Escape closes it (the feature preview also closes
-  on a backdrop click).
-- `org-trigger.tsx`, `feature-card.tsx`, `mobile-menu.tsx` — small client leaves.
+  the page tree, holding the open feature id, and rendering the `FeaturePreview` overlay. While
+  a feature is open the page behind doesn't scroll and Escape closes it.
+- `feature-card.tsx`, `mobile-menu.tsx` — small client leaves.
 - `lesson-demo.tsx`, `lisa-glb-viewer.tsx` — the playable lesson and its 3D iframe.
 - `card-rail.tsx` — the horizontal scroller.
 - `landing-scroll-effects.tsx` — see below.

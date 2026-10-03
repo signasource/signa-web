@@ -2,12 +2,9 @@
 
 import { createContext, useContext } from "react";
 
-export type FeatureId = "signs" | "camera" | "streak";
+export type FeatureId = "signs" | "camera" | "streak" | "social";
 
 export interface LandingUIValue {
-  orgOpen: boolean;
-  openOrg: () => void;
-  closeOrg: () => void;
   feature: FeatureId | null;
   openFeature: (id: FeatureId) => void;
   closeFeature: () => void;

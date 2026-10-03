@@ -1,29 +1,14 @@
 import type { CSSProperties } from "react";
+import Image from "next/image";
 
-const TEAM = [
-  { initials: "PC", name: "Paloma Corcoba", className: "bg-primary-light text-primary-dark" },
-  {
-    initials: "JM",
-    name: "Joaquín Miranda",
-    className: "bg-avatar-teal-light text-avatar-teal-dark",
-  },
-  {
-    initials: "JL",
-    name: "Juan Cruz López Freytas",
-    className: "bg-avatar-wine-light text-social-wine",
-  },
-  {
-    initials: "MP",
-    name: "Marina Polunosik",
-    className: "bg-shop-amber-light text-shop-amber-dark",
-  },
-  {
-    initials: "MO",
-    name: "Mateo Ottonello",
-    className: "bg-avatar-blue-light text-gems-blue-dark",
-  },
-  { initials: "AA", name: "Agostina Avalle", className: "bg-avatar-green-light text-success-dark" },
-] as const;
+const MEMBERS = [
+  { name: "Agostina Avalle", photo: "/images/equipo/agostina.png", objectPosition: "top" },
+  { name: "Paloma Córcoba", photo: "/images/equipo/paloma.png", objectPosition: "top" },
+  { name: "Juan Cruz López Freytas", photo: "/images/equipo/juancruz.png", objectPosition: "center" },
+  { name: "Joaquín Miranda", photo: "/images/equipo/joaquin.png", objectPosition: "top" },
+  { name: "Mateo Ottonello", photo: "/images/equipo/mateo.png", objectPosition: "top" },
+  { name: "Marina Polunosik", photo: "/images/equipo/marina.png", objectPosition: "center" },
+];
 
 export function Equipo() {
   return (
@@ -60,24 +45,28 @@ export function Equipo() {
           </div>
         </div>
 
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {TEAM.map((member, i) => (
-            <li
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
+          {MEMBERS.map((member, i) => (
+            <div
               key={member.name}
-              data-reveal={i % 2 === 0 ? "tilt-a" : "tilt-b"}
-              style={{ "--delay": `${(i % 3) * 80}ms` } as CSSProperties}
+              data-reveal="up"
+              style={{ "--delay": `${i * 60}ms` } as CSSProperties}
+              className="flex flex-col items-center gap-3"
             >
-              <div className="landing-card-click group bg-surface flex h-full flex-col items-center gap-3.5 rounded-3xl p-6 text-center">
-                <div
-                  className={`font-display flex h-[88px] w-[88px] items-center justify-center rounded-full text-3xl font-extrabold transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 ${member.className}`}
-                >
-                  {member.initials}
-                </div>
-                <p className="font-display text-lg leading-tight font-bold">{member.name}</p>
+              <div className="bg-primary/8 aspect-square w-full overflow-hidden rounded-[24px]">
+                <Image
+                  src={member.photo}
+                  alt={member.name}
+                  width={600}
+                  height={600}
+                  className="h-full w-full object-cover"
+                  style={{ objectPosition: member.objectPosition }}
+                />
               </div>
-            </li>
+              <p className="text-sm font-bold leading-tight text-center">{member.name}</p>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     </section>
   );

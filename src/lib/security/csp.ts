@@ -7,7 +7,13 @@
 //    These routes must render dynamically (`await connection()` in their layout).
 
 /** Exact paths served statically with the relaxed CSP. Anything not listed gets the strict nonce CSP. */
-export const MARKETING_PATHS = ["/", "/privacidad", "/terminos"] as const;
+export const MARKETING_PATHS = [
+  "/",
+  "/privacidad",
+  "/terminos",
+  "/proximamente",
+  "/organizaciones",
+] as const;
 
 const isDev = process.env.NODE_ENV === "development";
 const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080").replace(/\/+$/, "");

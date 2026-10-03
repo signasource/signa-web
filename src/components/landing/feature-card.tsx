@@ -9,12 +9,14 @@ const ACCENT_BG: Record<FeatureId, string> = {
   signs: "bg-accent-violet text-on-primary",
   camera: "bg-accent-teal text-text",
   streak: "bg-accent-amber text-text",
+  social: "bg-avatar-wine-light text-social-wine",
 };
 
 const ACCENT_TEXT: Record<FeatureId, string> = {
   signs: "text-on-primary/85",
   camera: "text-text/75",
   streak: "text-text/75",
+  social: "text-social-wine/75",
 };
 
 export function FeatureCard({
@@ -27,7 +29,7 @@ export function FeatureCard({
   id: FeatureId;
   icon: string;
   title: string;
-  description: string;
+  description?: string;
   delayMs?: number;
 }) {
   const { openFeature } = useLandingUI();
@@ -51,7 +53,9 @@ export function FeatureCard({
           className="h-[120px] w-[120px] transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3 sm:h-[140px] sm:w-[140px]"
         />
         <span className="font-display text-2xl font-bold tracking-tight">{title}</span>
-        <p className={cn("text-[17px] leading-relaxed", ACCENT_TEXT[id])}>{description}</p>
+        {description && (
+          <p className={cn("text-[17px] leading-relaxed", ACCENT_TEXT[id])}>{description}</p>
+        )}
         <span className="mt-auto flex items-center gap-1.5 rounded-full bg-white/25 px-4 py-2 text-sm font-extrabold transition-colors group-hover:bg-white/40">
           Ver cómo funciona
           <svg

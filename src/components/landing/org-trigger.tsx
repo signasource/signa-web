@@ -1,7 +1,5 @@
-"use client";
-
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useLandingUI } from "@/components/landing/landing-ui-context";
 
 export function OrgTrigger({
   className,
@@ -10,10 +8,9 @@ export function OrgTrigger({
   className?: string;
   children: React.ReactNode;
 }) {
-  const { openOrg } = useLandingUI();
   return (
-    <button type="button" onClick={openOrg} className={cn("cursor-pointer", className)}>
+    <Link href="/organizaciones" className={cn(className)}>
       {children}
-    </button>
+    </Link>
   );
 }

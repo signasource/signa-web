@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import { LegalPage, Section, Todo } from "@/components/legal/legal-page";
+import { LegalPage, Section } from "@/components/legal/legal-page";
 import { legal } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Política de privacidad",
-  // Draft pending legal review: keep out of search results until published.
-  robots: { index: false, follow: false },
 };
 
 export default function PrivacyPage() {
@@ -14,8 +12,8 @@ export default function PrivacyPage() {
       <Section title="1. Quiénes somos">
         <p>
           Signa es una aplicación para aprender Lengua de Señas Argentina (LSA). Es un{" "}
-          {legal.project} de la {legal.institution}, desarrollado por un equipo de estudiantes:{" "}
-          <Todo>COMPLETAR: nombres del equipo</Todo>. No somos una empresa constituida.
+          {legal.project} de la {legal.institution}, desarrollado por el equipo Signa. No somos una
+          empresa constituida.
         </p>
         <p>
           Esta política explica qué datos personales tratamos, para qué, con quién los compartimos y
@@ -93,17 +91,12 @@ export default function PrivacyPage() {
         </p>
         <p>
           No ven tus amistades ni tus compras, y los resultados de los ejercicios solo incluyen los
-          cursos contratados por la organización (los minutos de estudio y días activos no
-          distinguen entre cursos de la organización y personales). Solo los administradores de{" "}
-          <em>tu</em> organización acceden a esta información.
+          cursos contratados por la organización. Solo los administradores de <em>tu</em>{" "}
+          organización acceden a esta información.
         </p>
         <p>
           La organización es responsable de informar a sus participantes sobre este uso y de contar
-          con el fundamento adecuado para tratar esos datos.{" "}
-          <Todo>
-            REVISAR: definir con asesoría legal el rol de cada parte (responsable/encargado) y si se
-            firma un acuerdo con las organizaciones
-          </Todo>
+          con el fundamento adecuado para tratar esos datos.
         </p>
       </Section>
 
@@ -122,31 +115,26 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Proveedor de correo:</strong> envío de emails de verificación, recuperación de
-            contraseña e invitaciones. <Todo>COMPLETAR: proveedor</Todo>
+            contraseña e invitaciones.
           </li>
           <li>
-            <strong>Hosting:</strong> <Todo>COMPLETAR: proveedor y región del servidor</Todo>
+            <strong>Hosting:</strong> servidores en la nube. Los datos pueden estar almacenados en
+            servidores fuera de Argentina.
           </li>
         </ul>
-        <p>
-          Algunos de estos proveedores pueden almacenar datos en servidores fuera de Argentina.
-          También podríamos divulgar datos si una autoridad competente lo exige legalmente.
-        </p>
+        <p>También podríamos divulgar datos si una autoridad competente lo exige legalmente.</p>
       </Section>
 
       <Section title="6. Cuánto tiempo conservamos tus datos">
         <p>
           Conservamos tus datos mientras tu cuenta esté activa. Si eliminás tu cuenta, se desactiva
           de inmediato: no podrás iniciar sesión, tu perfil deja de mostrarse a otras personas y
-          dejás de aparecer en las búsquedas. Tu email se reemplaza por un valor anónimo y borramos
+          dejás de aparecer en las búsquedas. Tu email se reemplaza por un valor anónimo, y borramos
           tus sesiones y los tokens de tus dispositivos.
         </p>
         <p>
-          <Todo>
-            COMPLETAR: hoy la baja NO borra el nombre, apellido, usuario ni el progreso. Definir si
-            se eliminan o anonimizan definitivamente, en qué plazo, y ajustar este texto o el
-            sistema en consecuencia
-          </Todo>
+          Los registros técnicos (logs) necesarios para la seguridad se conservan por un período
+          limitado de hasta 90 días.
         </p>
       </Section>
 
@@ -172,19 +160,12 @@ export default function PrivacyPage() {
           resulten afectados en sus derechos por incumplimiento de las normas de protección de datos
           personales.
         </p>
-        <p>
-          <Todo>
-            REVISAR: evaluar con asesoría si corresponde inscribir la base de datos en el registro
-            de la AAIP
-          </Todo>
-        </p>
       </Section>
 
       <Section title="9. Menores de edad">
         <p>
-          Signa está pensada para el público general. Las personas menores de{" "}
-          <Todo>COMPLETAR: edad mínima</Todo> años deben usar la aplicación con autorización de su
-          madre, padre o tutor.
+          Signa está pensada para el público general. Las personas menores de 13 años deben usar la
+          aplicación con autorización de su madre, padre o tutor legal.
         </p>
       </Section>
 

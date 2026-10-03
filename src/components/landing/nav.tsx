@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { OrgTrigger } from "@/components/landing/org-trigger";
 import { MobileMenu } from "@/components/landing/mobile-menu";
@@ -10,7 +11,8 @@ export function Nav() {
         aria-label="Principal"
         className="mx-auto flex h-[72px] max-w-6xl items-center gap-4 px-5 sm:gap-8 sm:px-8"
       >
-        <Link href="#top" className="font-display text-text text-2xl font-extrabold tracking-tight">
+        <Link href="/" className="font-display text-text flex items-center gap-2 text-2xl font-extrabold tracking-tight">
+          <Image src="/images/signa-logo.png" alt="" aria-hidden width={36} height={36} className="h-9 w-9" />
           Signa
         </Link>
         <div className="ml-auto hidden items-center gap-7 md:flex">
@@ -27,14 +29,14 @@ export function Nav() {
             Organizaciones
           </OrgTrigger>
           <Link
-            href="#equipo"
+            href="/#equipo"
             className="text-text/80 hover:text-primary-dark text-[15px] font-semibold transition-colors"
           >
             Equipo
           </Link>
         </div>
         <Link
-          href="#empezar"
+          href="/proximamente"
           className="landing-btn bg-text text-on-dark ml-auto flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-bold md:ml-0"
         >
           Empezá gratis

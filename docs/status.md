@@ -11,12 +11,16 @@
 - `/login` and the guarded dashboard: overview, members list + detail (remove), contents, invitations — see [features/dashboard.md](./features/dashboard.md).
 - Landing page (`/`) — full one-page site with a playable 3D lesson demo; scroll effects work in
   every browser (no CSS scroll timelines). See [features/landing.md](./features/landing.md).
+- `/proximamente` — coming-soon page with waitlist email form (calls `POST /waitlist` on signa-api; entity auto-created by JPA `ddl-auto: update`). All "Empezá gratis" CTAs link here.
 
 ## Stub / placeholder
 
 - Privacy policy and terms (`/privacidad`, `/terminos`) — **draft, not legally reviewed**; open decisions in [legal.md](./legal.md).
-- Landing page (`/`) — pricing, the organizations contact email, and the contact form submit are
-  placeholders; no `sitemap.ts` / `robots.ts` / OG image yet — [features/landing.md](./features/landing.md).
+- Landing page (`/`) — pricing for thematic courses shows "Desde $10" (final number pending); no `sitemap.ts` / `robots.ts` / OG image yet — [features/landing.md](./features/landing.md).
+- `/organizaciones/ingresar` — register tab collects CUIT + org data but the registration API does not exist yet; submission shows a "te avisamos" confirmation. CUIT validation works client-side.
+- `/organizaciones/panel` — holding page only; shows "finalizando el módulo" message. Will be replaced by the real org dashboard when the module is complete.
+- `/proximamente` — waitlist form calls `signa-api /waitlist` which silently succeeds for duplicate emails; `/images/equipo.jpg` team photo is a placeholder — replace with actual photo.
+- `Equipo` section shows `/images/equipo.jpg` — file does not exist yet; replace with the actual team photo.
 - Dashboard screens omit some prototype data the API does not expose (sort, inactivity filters, per-module member progress, activity feed) — [features/dashboard.md](./features/dashboard.md).
 
 - Security headers + two-tier CSP (strict nonce for panel, relaxed static for landing) — [security.md](./security.md).
@@ -30,7 +34,7 @@ Accept-invite, forgot/reset password, admin invitations, sitemap/robots/OG, E2E 
 | Item                                         | Notes                                                                                                                                               |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Refresh token in `localStorage`              | XSS-exposed; CSP mitigates (see [security.md](./security.md)), cookie-based refresh in the API would remove it — [api/session.md](./api/session.md) |
-| Landing contact form has no submit handler   | No backend endpoint for the organizations contact form yet; button is currently a no-op — [features/landing.md](./features/landing.md)              |
+| Org registration API not built               | `/organizaciones/ingresar` register tab submits a no-op; shows confirmation. Needs a `POST /organizations/register` endpoint — [features/landing.md](./features/landing.md) |
 | CI workflow never run on GitHub              | `npm run check` and `npm run build` pass locally; confirm the first `.github/workflows/ci.yml` run                                                  |
 | CSP unverified on `next dev` and on the host | Verified on `next start` only; re-check on first deploy — [security.md](./security.md)                                                              |
 | Hosting, analytics, E2E                      | Undecided — [stack.md](./stack.md)                                                                                                                  |
