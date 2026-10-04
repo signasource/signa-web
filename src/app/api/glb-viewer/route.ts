@@ -3,6 +3,7 @@ import { isSafeSign, MAX_PRELOAD, R2_GLB_BASE, VIEWER_MESSAGE, VIEWER_PRELOAD } 
 
 const MODEL_VIEWER_CDN =
   "https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js";
+const DRACO = "https://www.gstatic.com/draco/versioned/decoders/1.5.6/";
 const MODEL_VIEWER_SRI = "sha384-Ftcjj/GNLxPvzNDftO/oryXB9aGxsGZY9JGqsXG0uUKgQDl9RfDgsx9NJ/4IVNPe";
 
 const FOV = 15;
@@ -14,6 +15,9 @@ function buildViewerHtml(sign: string): string {
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="icon" href="data:,">
+  <link rel="preload" href="${R2_GLB_BASE}/${encodeURIComponent(sign)}.glb" as="fetch" crossorigin="anonymous">
+  <link rel="preload" href="${DRACO}draco_wasm_wrapper.js" as="fetch" crossorigin="anonymous">
+  <link rel="preload" href="${DRACO}draco_decoder.wasm" as="fetch" crossorigin="anonymous">
   <style>
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     model-viewer{position:absolute;inset:0;display:block;width:100%;height:100%;--background-color:transparent;--poster-color:transparent;cursor:grab;opacity:0;pointer-events:none;transition:opacity .3s ease}

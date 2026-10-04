@@ -18,9 +18,11 @@ const PRELOAD = DEMO_QUESTIONS.map((q) => q.sign);
 export function LessonDemo({
   className,
   viewerClassName = "h-[300px]",
+  viewerDelay,
 }: {
   className?: string;
   viewerClassName?: string;
+  viewerDelay?: number;
 }) {
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
@@ -88,7 +90,7 @@ export function LessonDemo({
           viewerClassName,
         )}
       >
-        <LisaGlbViewer sign={question.sign} preload={PRELOAD} />
+        <LisaGlbViewer sign={question.sign} preload={PRELOAD} delay={viewerDelay} />
         <span className="bg-surface text-primary-dark pointer-events-none absolute top-2.5 left-2.5 z-10 rounded-full px-2.5 py-1 text-[10px] font-extrabold">
           3D
         </span>

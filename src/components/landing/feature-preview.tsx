@@ -14,6 +14,7 @@ const LIVE_PHONE = { w: 380, h: 780 };
 const STATIC_PHONE = { w: 300, h: 640 };
 const MAX_SCALE = 1.5;
 const MOBILE_CHROME = 128;
+const MODAL_OPEN_MS = 400;
 
 function FitPhone({
   base,
@@ -85,7 +86,11 @@ function SignsPhone() {
   return (
     <FitPhone base={LIVE_PHONE} around={<></>}>
       <LivePhone className="hover:ring-primary/30 transition-shadow">
-        <LessonDemo className={LIVE_SCREEN} viewerClassName="h-[440px]" />
+        <LessonDemo
+          className={LIVE_SCREEN}
+          viewerClassName="h-[440px]"
+          viewerDelay={MODAL_OPEN_MS}
+        />
       </LivePhone>
     </FitPhone>
   );

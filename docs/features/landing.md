@@ -130,7 +130,10 @@ CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
   before its preload is loaded on demand (~1 s). **The very first sign plays its first repetition hidden, at 4× speed**
   (spinner on, `WARM_SPEED`), and Lisa appears from the start at normal speed: the first
   playback stuttered on real laptops, and only the first one. Costs ~1 s of extra spinner (a
-  normal-speed warm-up cost 4 s), once per viewer. `LessonDemo` preloads its four questions; the camera demo
+  normal-speed warm-up cost 4 s), once per viewer. **Downloads run in parallel**: the viewer HTML preloads the first sign's
+  GLB and the Draco decoder (`<link rel="preload">`), so they no longer wait for model-viewer's
+  script and for each other. Measured on a 20 Mbps connection: Lisa visible at 3.4 s instead of
+  4.3 s. What remains is mostly the GLB itself (~2.2 MB per sign). `LessonDemo` preloads its four questions; the camera demo
   preloads every letter of the name but starts recognizing right away — it never waits for the
   models (waiting for all of them used to delay the start by more than 10 s).
 
@@ -233,7 +236,7 @@ resizing the screen, and the two fought (flicker).
 Closing (X, backdrop or Escape) plays the opening animation in reverse (280 ms) before
 unmounting; with `prefers-reduced-motion` it closes at once.
 
-**The 3D viewer starts 400 ms after it is mounted** (`LisaGlbViewer`). Booting model-viewer
+**Inside a modal, the 3D viewer starts 400 ms after it is mounted** (`LisaGlbViewer`'s `delay`, passed by the Señas en 3D modal; the hero's viewer starts at once and is part of the server HTML). Booting model-viewer
 (script, WebGL, shaders) blocks the page's main thread for ~300 ms — the iframe is same-origin —
 and doing it while the modal opens froze the whole opening animation. Measured: 0 dropped frames
 during the opening now; the boot happens once the card is in place.
