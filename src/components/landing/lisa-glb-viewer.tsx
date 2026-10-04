@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { VIEWER_MESSAGE, VIEWER_PRELOAD } from "@/lib/glb";
 
-const MOUNT_DELAY_MS = 400;
-
 const iframeStyle: CSSProperties = {
   position: "absolute",
   inset: 0,
@@ -16,17 +14,26 @@ const iframeStyle: CSSProperties = {
 
 const viewerUrl = (sign: string) => `/api/glb-viewer?sign=${encodeURIComponent(sign)}`;
 
-export function LisaGlbViewer({ sign, preload }: { sign: string; preload?: readonly string[] }) {
+export function LisaGlbViewer({
+  sign,
+  preload,
+  delay = 0,
+}: {
+  sign: string;
+  preload?: readonly string[];
+  delay?: number;
+}) {
   const frame = useRef<HTMLIFrameElement>(null);
   const shown = useRef(sign);
-  const [src, setSrc] = useState<string | null>(null);
+  const [src, setSrc] = useState<string | null>(() => (delay ? null : viewerUrl(sign)));
   const [frameReady, setFrameReady] = useState(false);
   const preloadKey = preload?.join("\n") ?? "";
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSrc(viewerUrl(shown.current)), MOUNT_DELAY_MS);
+    if (!delay) return;
+    const timer = window.setTimeout(() => setSrc(viewerUrl(shown.current)), delay);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [delay]);
 
   useEffect(() => {
     if (shown.current === sign) return;

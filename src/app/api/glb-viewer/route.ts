@@ -3,6 +3,7 @@ import { isSafeSign, MAX_PRELOAD, R2_GLB_BASE, VIEWER_MESSAGE, VIEWER_PRELOAD } 
 
 const MODEL_VIEWER_CDN =
   "https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js";
+const DRACO = "https://www.gstatic.com/draco/versioned/decoders/1.5.6/";
 const MODEL_VIEWER_SRI = "sha384-Ftcjj/GNLxPvzNDftO/oryXB9aGxsGZY9JGqsXG0uUKgQDl9RfDgsx9NJ/4IVNPe";
 
 const FOV = 15;
@@ -14,6 +15,9 @@ function buildViewerHtml(sign: string): string {
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="icon" href="data:,">
+  <link rel="preload" href="${R2_GLB_BASE}/${encodeURIComponent(sign)}.glb" as="fetch" crossorigin="anonymous">
+  <link rel="preload" href="${DRACO}draco_wasm_wrapper.js" as="fetch" crossorigin="anonymous">
+  <link rel="preload" href="${DRACO}draco_decoder.wasm" as="fetch" crossorigin="anonymous">
   <style>
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     model-viewer{position:absolute;inset:0;display:block;width:100%;height:100%;--background-color:transparent;--poster-color:transparent;cursor:grab;opacity:0;pointer-events:none;transition:opacity .3s ease}
@@ -31,9 +35,9 @@ function buildViewerHtml(sign: string): string {
   <div id="spin" aria-hidden="true"></div>
   <div id="err">No pudimos cargar la seña.</div>
   <script>
-    var FOV=${FOV},ENCUADRE=${ENCUADRE},BASE=${JSON.stringify(R2_GLB_BASE)},MAX=${MAX_PRELOAD},
+    var WARM_SPEED=4,FOV=${FOV},ENCUADRE=${ENCUADRE},BASE=${JSON.stringify(R2_GLB_BASE)},MAX=${MAX_PRELOAD},
         SAFE=${String(/^[\p{L}\p{N}_\- ]{1,40}$/u)},b=document.body;
-    var cache={},order=[],queue=[],loading=0,shown=null,want=${JSON.stringify(sign)};
+    var cache={},order=[],queue=[],loading=0,shown=null,holding=null,slot=null,warm=null,warming=false,warmed=false,want=${JSON.stringify(sign)};
     function urlOf(sign){return BASE+'/'+encodeURIComponent(sign)+'.glb';}
     function frame(mv){
       try{
@@ -69,13 +73,13 @@ function buildViewerHtml(sign: string): string {
         mv.dataset.loaded='1';
         loading--;
         if(want===sign)reveal(sign);
-        pump();
+        resume();
       });
       mv.addEventListener('error',function(){
         mv.dataset.failed='1';
         loading--;
         if(want===sign){b.classList.remove('ready');b.classList.add('failed');}
-        pump();
+        resume();
       });
       mv.setAttribute('src',urlOf(sign));
       b.appendChild(mv);
@@ -86,19 +90,59 @@ function buildViewerHtml(sign: string): string {
       var mv=cache[sign];
       if(shown&&shown!==mv){shown.classList.remove('on');shown.pause();}
       shown=mv;
+      holding=null;
       mv.currentTime=0;
       mv.play();
+      clearTimeout(slot);
+      clearTimeout(warm);
+      warming=false;
+      mv.timeScale=1;
+      if(!warmed){
+        warmed=true;
+        warming=true;
+        mv.timeScale=WARM_SPEED;
+        warm=setTimeout(function(){
+          warming=false;
+          mv.timeScale=1;
+          if(shown!==mv)return;
+          mv.currentTime=0;
+          uncover(mv,sign);
+        },(mv.duration||0)*1000/WARM_SPEED);
+        return;
+      }
+      uncover(mv,sign);
+    }
+    function uncover(mv,sign){
+      arm();
       requestAnimationFrame(function(){requestAnimationFrame(function(){
         if(want!==sign)return;
         mv.classList.add('on');
         b.classList.add('ready');
       });});
     }
-    function pump(){
-      var cur=cache[want];
-      if(loading||!cur||!(cur.dataset.loaded||cur.dataset.failed))return;
+    function arm(){
+      clearTimeout(slot);
+      if(warming)return;
       while(queue.length&&cache[queue[0]])queue.shift();
-      if(queue.length)viewer(queue.shift());
+      if(!shown||!queue.length)return;
+      var d=shown.duration||0;
+      var left=d?d-(shown.currentTime%d):1;
+      slot=setTimeout(boundary,Math.max(0,left*1000-40));
+    }
+    function boundary(){
+      if(loading||!shown)return arm();
+      while(queue.length&&cache[queue[0]])queue.shift();
+      if(!queue.length)return;
+      holding=shown;
+      shown.pause();
+      shown.currentTime=0;
+      viewer(queue.shift());
+    }
+    function resume(){
+      var h=holding;
+      holding=null;
+      if(h&&h===shown)h.play();
+      arm();
     }
     function show(sign){
       want=sign;
@@ -119,7 +163,7 @@ function buildViewerHtml(sign: string): string {
       }else if(e.data.type===${JSON.stringify(VIEWER_PRELOAD)}&&Array.isArray(e.data.signs)){
         var signs=e.data.signs.filter(function(s){return typeof s==='string'&&SAFE.test(s);}).slice(0,MAX);
         queue=signs;
-        customElements.whenDefined('model-viewer').then(pump);
+        customElements.whenDefined('model-viewer').then(arm);
       }
     });
   </script>
@@ -140,7 +184,7 @@ export function GET(request: Request): Response {
       "Content-Type": "text/html; charset=utf-8",
       "Content-Security-Policy": buildViewerCsp(),
       "X-Frame-Options": "SAMEORIGIN",
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": "no-cache",
     },
   });
 }
