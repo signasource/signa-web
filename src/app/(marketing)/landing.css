@@ -2,6 +2,15 @@ html:has(.landing-root) {
   scroll-behavior: smooth;
   scroll-padding-top: 88px;
 }
+html:has(.landing-root),
+html:has(.landing-root) body {
+  touch-action: pan-x pan-y;
+}
+@media (min-width: 1024px) {
+  html:has(.landing-root) {
+    zoom: 0.9;
+  }
+}
 
 .landing-btn {
   transition:
@@ -222,6 +231,23 @@ html:has(.landing-root) {
 .landing-modal-card {
   animation: landing-modal-card 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
+.landing-modal-out {
+  animation: landing-modal-out 0.28s ease both;
+}
+@keyframes landing-modal-out {
+  to {
+    opacity: 0;
+  }
+}
+.landing-modal-card-out {
+  animation: landing-modal-card-out 0.28s cubic-bezier(0.7, 0, 0.8, 0.2) both;
+}
+@keyframes landing-modal-card-out {
+  to {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+}
 @keyframes landing-modal-card {
   from {
     opacity: 0;
@@ -298,6 +324,8 @@ html:has(.landing-root) {
   .landing-marquee-track,
   .landing-modal-in,
   .landing-modal-card,
+  .landing-modal-out,
+  .landing-modal-card-out,
   .landing-grow,
   .landing-pop,
   .landing-shake {
@@ -314,14 +342,14 @@ html:has(.landing-root) {
 }
 
 .landing-marquee-outline {
-  color: transparent;
-  -webkit-text-stroke: 2px var(--color-primary-medallion);
+  color: var(--color-background);
+  -webkit-text-stroke: 4px var(--color-primary-medallion);
+  paint-order: stroke fill;
 }
 .landing-marquee-outline span:hover {
   -webkit-text-stroke-color: var(--color-primary);
 }
 
-/* ─── Nav link: underline draws from left on hover ─────────────────── */
 .landing-nav-link {
   position: relative;
 }
@@ -342,7 +370,6 @@ html:has(.landing-root) {
   transform: scaleX(1);
 }
 
-/* ─── CTA buttons: arrow slides right on hover ──────────────────────── */
 .landing-btn svg {
   transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
@@ -353,7 +380,6 @@ html:has(.landing-root) {
   transform: translateX(1px);
 }
 
-/* ─── Highlighted word: underline draws in after text appears ───────── */
 .landing-highlight {
   display: inline-block;
   position: relative;
@@ -372,7 +398,10 @@ html:has(.landing-root) {
   animation: landing-grow 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) 0.85s both;
 }
 
-/* ─── Team member photo: tilt + lift on hover ───────────────────────── */
+.landing-team-card img {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
 .landing-team-card {
   transition:
     transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1),
@@ -387,7 +416,6 @@ html:has(.landing-root) {
   box-shadow: 0 28px 48px -18px color-mix(in srgb, var(--color-text) 30%, transparent);
 }
 
-/* ─── Additional floaty variants ────────────────────────────────────── */
 .landing-floaty3 {
   animation: landing-floaty 9s ease-in-out -1.5s infinite;
 }
@@ -395,7 +423,6 @@ html:has(.landing-root) {
   animation: landing-floaty 5.5s ease-in-out -3.5s infinite;
 }
 
-/* ─── Soft-pulse for decorative background blobs ────────────────────── */
 .landing-blob-pulse {
   animation: landing-blob-pulse 7s ease-in-out infinite;
 }
@@ -411,7 +438,6 @@ html:has(.landing-root) {
   }
 }
 
-/* ─── Marquee words: scale up + color on hover ──────────────────────── */
 .landing-marquee-track span {
   transition:
     transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1),
@@ -424,7 +450,6 @@ html:has(.landing-root) {
   transform: scale(1.07) translateY(-3px);
 }
 
-/* ─── Reduced-motion additions ──────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .landing-floaty3,
   .landing-floaty4,
@@ -442,5 +467,22 @@ html:has(.landing-root) {
   .landing-team-card-alt,
   .landing-marquee-track span {
     transition: none !important;
+  }
+}
+
+.landing-sweep {
+  animation: landing-sweep 0.95s linear infinite;
+}
+@keyframes landing-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(270%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-sweep {
+    animation: none;
   }
 }

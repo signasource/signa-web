@@ -7,13 +7,12 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { BackButton } from "@/components/back-button";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { formatCuit, validateCuit } from "@/lib/cuit";
 
 type Tab = "login" | "registro";
-
-// ── Schemas ──────────────────────────────────────────────────────────────────
 
 const loginSchema = z.object({
   identifier: z.string().min(1, "Ingresá tu email."),
@@ -40,14 +39,10 @@ const registroSchema = z
 type LoginValues = z.infer<typeof loginSchema>;
 type RegistroValues = z.infer<typeof registroSchema>;
 
-// ── Shared field style ────────────────────────────────────────────────────────
-
 const INPUT =
   "border-border bg-surface focus:ring-primary/30 h-12 w-full rounded-2xl border px-3.5 text-[15px] outline-none focus:ring-2";
 const LABEL = "flex flex-col gap-1.5 text-[13px] font-bold";
 const ERROR = "text-danger text-[12px] font-medium";
-
-// ── Login form ────────────────────────────────────────────────────────────────
 
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const { login } = useAuth();
@@ -108,8 +103,6 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-// ── Register form ─────────────────────────────────────────────────────────────
-
 function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
   const [submitted, setSubmitted] = useState(false);
   const {
@@ -126,7 +119,6 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
   }
 
   async function onSubmit(_values: RegistroValues) {
-    // Registration API not yet available — show confirmation.
     await new Promise((r) => setTimeout(r, 600));
     setSubmitted(true);
     onSuccess();
@@ -187,8 +179,7 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
       </label>
 
       <label className={LABEL}>
-        Teléfono{" "}
-        <span className="text-text-muted font-normal">(opcional)</span>
+        Teléfono <span className="text-text-muted font-normal">(opcional)</span>
         <input
           {...register("telefono")}
           type="tel"
@@ -234,30 +225,26 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export default function IngresarPage() {
   const router = useRouter();
   const { status } = useAuth();
   const [tab, setTab] = useState<Tab>("login");
   const registroRef = useRef<HTMLButtonElement>(null);
 
-  // If the URL contains #registro, switch to the register tab.
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash === "#registro") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTab("registro");
       registroRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, []);
 
-  // Already authenticated: go to the org panel.
   useEffect(() => {
     if (status === "authenticated") router.replace("/organizaciones/panel");
   }, [status, router]);
 
   return (
     <div className="bg-background text-text flex min-h-screen flex-col">
-      {/* Minimal header */}
       <header className="border-border border-b px-5 py-4 sm:px-8">
         <Link
           href="/organizaciones"
@@ -275,49 +262,45 @@ export default function IngresarPage() {
         </Link>
       </header>
 
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-5 py-12 sm:px-0">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">
-            {tab === "login" ? "Ingresar al panel" : "Registrar organización"}
-          </h1>
-          <p className="text-text-muted text-[15px]">Signa para organizaciones</p>
-        </div>
+      <div className="page-enter relative flex flex-1 flex-col">
+        <BackButton href="/organizaciones" />
+        <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-5 py-12 sm:px-0">
+          <div className="flex flex-col gap-1">
+            <h1 className="font-display text-3xl font-extrabold tracking-tight">
+              {tab === "login" ? "Ingresar al panel" : "Registrar organización"}
+            </h1>
+            <p className="text-text-muted text-[15px]">Signa para organizaciones</p>
+          </div>
 
-        {/* Tabs */}
-        <div className="bg-fill flex rounded-2xl p-1">
-          <button
-            type="button"
-            onClick={() => setTab("login")}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-colors ${
-              tab === "login" ? "bg-background shadow" : "text-text-muted"
-            }`}
-          >
-            Ingresar
-          </button>
-          <button
-            ref={registroRef}
-            type="button"
-            onClick={() => setTab("registro")}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-colors ${
-              tab === "registro" ? "bg-background shadow" : "text-text-muted"
-            }`}
-          >
-            Registrarse
-          </button>
-        </div>
+          <div className="bg-fill flex rounded-2xl p-1">
+            <button
+              type="button"
+              onClick={() => setTab("login")}
+              className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-colors ${
+                tab === "login" ? "bg-background shadow" : "text-text-muted"
+              }`}
+            >
+              Ingresar
+            </button>
+            <button
+              ref={registroRef}
+              type="button"
+              onClick={() => setTab("registro")}
+              className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-colors ${
+                tab === "registro" ? "bg-background shadow" : "text-text-muted"
+              }`}
+            >
+              Registrarse
+            </button>
+          </div>
 
-        {tab === "login" ? (
-          <LoginForm onSuccess={() => router.push("/organizaciones/panel")} />
-        ) : (
-          <RegistroForm onSuccess={() => {}} />
-        )}
-
-        <p className="text-text-muted text-center text-[13px]">
-          <Link href="/organizaciones" className="hover:text-text font-semibold hover:underline">
-            ← Volver a Signa para organizaciones
-          </Link>
-        </p>
-      </main>
+          {tab === "login" ? (
+            <LoginForm onSuccess={() => router.push("/organizaciones/panel")} />
+          ) : (
+            <RegistroForm onSuccess={() => {}} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }

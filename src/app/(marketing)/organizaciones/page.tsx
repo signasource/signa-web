@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BackButton } from "@/components/back-button";
 import { LandingUIProvider } from "@/components/landing/landing-ui-provider";
 import { Nav } from "@/components/landing/nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
@@ -77,10 +78,10 @@ export default function OrganizacionesPage() {
     <LandingUIProvider>
       <div className="bg-background text-text flex min-h-screen flex-col">
         <Nav />
-        <main>
+        <main className="page-enter relative">
+          <BackButton href="/" />
           <section className="bg-text text-on-dark px-4 py-16 sm:py-24">
             <div className="mx-auto max-w-6xl px-2 sm:px-4">
-              {/* Hero */}
               <div className="grid gap-10 md:grid-cols-2 md:items-end">
                 <div className="flex flex-col gap-5">
                   <p className="text-primary-light text-sm font-extrabold tracking-[2px]">
@@ -97,7 +98,6 @@ export default function OrganizacionesPage() {
                 </p>
               </div>
 
-              {/* Steps */}
               <div className="relative mt-20">
                 <div
                   aria-hidden
@@ -126,7 +126,6 @@ export default function OrganizacionesPage() {
                 </ol>
               </div>
 
-              {/* Panel preview */}
               <div className="bg-background text-text mt-24 rounded-[32px] p-8 shadow-2xl">
                 <div className="flex flex-wrap items-center gap-3.5">
                   <span className="font-display text-lg font-bold tracking-tight">
@@ -190,7 +189,6 @@ export default function OrganizacionesPage() {
                 </div>
               </div>
 
-              {/* CTA */}
               <div className="mt-24 flex flex-col items-center gap-6 text-center">
                 <h2 className="font-display text-4xl font-extrabold tracking-tight">
                   ¿Listo para empezar?

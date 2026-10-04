@@ -11,7 +11,6 @@ type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
 type AuthContextValue = {
   status: AuthStatus;
-  /** The organization the signed-in admin manages; null while loading or signed out. */
   organization: MyOrganization | null;
   login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
@@ -42,7 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setOnSessionExpired(signOut);
-    // No access token after a reload: the first call 401s and the client refreshes transparently.
     const restore = tokenStore.getRefresh()
       ? fetchAdminOrganization().then(signIn)
       : Promise.reject(new Error("no session"));

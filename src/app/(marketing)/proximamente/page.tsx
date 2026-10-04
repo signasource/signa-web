@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import { BackButton } from "@/components/back-button";
 import { LandingUIProvider } from "@/components/landing/landing-ui-provider";
 import { Nav } from "@/components/landing/nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
@@ -18,7 +18,8 @@ export default function ProximamentePage() {
     <LandingUIProvider>
       <div className="bg-background text-text flex min-h-screen flex-col">
         <Nav />
-        <main className="flex flex-1 flex-col items-center justify-center px-5 py-24 sm:px-8">
+        <main className="page-enter relative flex flex-1 flex-col items-center justify-center px-5 py-24 sm:px-8">
+          <BackButton href="/" />
           <div className="mx-auto grid w-full max-w-5xl grid-cols-1 items-center gap-14 lg:grid-cols-2">
             <div className="flex flex-col gap-7">
               <div className="flex items-center gap-3">
@@ -69,25 +70,6 @@ export default function ProximamentePage() {
                   className="h-[420px] w-auto"
                 />
               </div>
-              <Link
-                href="/"
-                className="text-text-muted flex items-center gap-2 text-sm font-semibold hover:underline"
-              >
-                <svg
-                  aria-hidden="true"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M19 12H5M12 5l-7 7 7 7" />
-                </svg>
-                Volver a la página principal
-              </Link>
             </div>
           </div>
         </main>

@@ -1,5 +1,3 @@
-// Access token lives in memory only; the refresh token is persisted so a reload keeps the session.
-// Trade-off documented in docs/api/session.md.
 const REFRESH_KEY = "signa.refreshToken";
 
 let accessToken: string | null = null;
@@ -17,16 +15,12 @@ export const tokenStore = {
     accessToken = tokens.accessToken;
     try {
       window.localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
-    } catch {
-      // Storage unavailable: session lasts until reload.
-    }
+    } catch {}
   },
   clear() {
     accessToken = null;
     try {
       window.localStorage.removeItem(REFRESH_KEY);
-    } catch {
-      // Nothing to clear.
-    }
+    } catch {}
   },
 };

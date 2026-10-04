@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LandingUIProvider } from "@/components/landing/landing-ui-provider";
 import { OrgTrigger } from "@/components/landing/org-trigger";
 import { FeatureCard } from "@/components/landing/feature-card";
@@ -16,7 +16,7 @@ describe("LandingUIProvider", () => {
     expect(link).toHaveAttribute("href", "/organizaciones");
   });
 
-  it("opens a feature preview for the clicked card", () => {
+  it("opens a feature preview for the clicked card", async () => {
     render(
       <LandingUIProvider>
         <FeatureCard
@@ -32,6 +32,7 @@ describe("LandingUIProvider", () => {
     expect(screen.getByText("TU CÁMARA TE CORRIGE")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Cerrar" }));
-    expect(screen.queryByText("TU CÁMARA TE CORRIGE")).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toHaveClass("landing-modal-out");
+    await waitFor(() => expect(screen.queryByText("TU CÁMARA TE CORRIGE")).not.toBeInTheDocument());
   });
 });

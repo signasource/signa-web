@@ -108,7 +108,10 @@ export function ProgressBar({
       className={cn("bg-fill h-2.5 overflow-hidden rounded-full", className)}
     >
       <div
-        className={cn("dash-progress-fill h-full rounded-full", TONE_BAR[tone ?? progressTone(value)])}
+        className={cn(
+          "dash-progress-fill h-full rounded-full",
+          TONE_BAR[tone ?? progressTone(value)],
+        )}
         style={{ width: `${value}%` }}
       />
     </div>
@@ -177,14 +180,7 @@ export function StatusPill({ status }: { status: DisplayStatus }) {
   );
 }
 
-export function SectionIcon({
-  name,
-  className,
-}: {
-  name: IconName;
-  /** Medallion colors, e.g. `bg-primary-light text-primary-dark`. */
-  className: string;
-}) {
+export function SectionIcon({ name, className }: { name: IconName; className: string }) {
   return (
     <span
       className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", className)}

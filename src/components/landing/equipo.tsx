@@ -4,7 +4,11 @@ import Image from "next/image";
 const MEMBERS = [
   { name: "Agostina Avalle", photo: "/images/equipo/agostina-v2.png", objectPosition: "top" },
   { name: "Paloma Córcoba", photo: "/images/equipo/paloma-v2.png", objectPosition: "top" },
-  { name: "Juan Cruz López Freytas", photo: "/images/equipo/juancruz-v2.png", objectPosition: "center" },
+  {
+    name: "Juan Cruz López Freytas",
+    photo: "/images/equipo/juancruz-v2.png",
+    objectPosition: "center",
+  },
   { name: "Joaquín Miranda", photo: "/images/equipo/joaquin-v2.png", objectPosition: "top" },
   { name: "Mateo Ottonello", photo: "/images/equipo/mateo-v2.png", objectPosition: "top" },
   { name: "Marina Polunosik", photo: "/images/equipo/marina-v2.png", objectPosition: "center" },
@@ -26,22 +30,10 @@ export function Equipo() {
           </div>
           <div data-reveal="up" className="flex flex-col gap-4">
             <p className="text-text-muted text-lg leading-relaxed">
-              Somos el equipo detrás de Signa: estudiantes de Ingeniería en Sistemas de Información
+              Somos el equipo detrás de Signa, estudiantes de Ingeniería en Sistemas de Información
               de la Universidad Tecnológica Nacional, Facultad Regional Córdoba. Signa es nuestro
               Proyecto Final, la tesis con la que cerramos la carrera.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {["UTN · FRC", "Ingeniería en Sistemas de Información", "Proyecto Final"].map(
-                (tag) => (
-                  <span
-                    key={tag}
-                    className="border-border bg-surface rounded-full border px-3.5 py-2 text-sm font-bold"
-                  >
-                    {tag}
-                  </span>
-                ),
-              )}
-            </div>
           </div>
         </div>
 
@@ -63,11 +55,12 @@ export function Equipo() {
                   alt={member.name}
                   width={600}
                   height={600}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  draggable={false}
+                  className="pointer-events-none h-full w-full object-cover transition-transform duration-500 select-none group-hover:scale-105"
                   style={{ objectPosition: member.objectPosition }}
                 />
               </div>
-              <p className="text-sm font-bold leading-tight text-center">{member.name}</p>
+              <p className="text-center text-sm leading-tight font-bold">{member.name}</p>
             </div>
           ))}
         </div>

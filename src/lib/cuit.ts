@@ -1,5 +1,3 @@
-/** CUIT/CUIL validation for Argentine tax IDs (format: XX-XXXXXXXX-X, 11 digits). */
-
 export function validateCuit(raw: string): boolean {
   const digits = raw.replace(/\D/g, "");
   if (digits.length !== 11) return false;
@@ -11,7 +9,6 @@ export function validateCuit(raw: string): boolean {
   return check === Number(digits[10]);
 }
 
-/** Formats a raw digit string as XX-XXXXXXXX-X while the user types. */
 export function formatCuit(raw: string): string {
   const d = raw.replace(/\D/g, "").slice(0, 11);
   if (d.length <= 2) return d;

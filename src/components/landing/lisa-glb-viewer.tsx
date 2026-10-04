@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { VIEWER_MESSAGE } from "@/lib/glb";
+import { VIEWER_MESSAGE, VIEWER_PRELOAD } from "@/lib/glb";
+
+const MOUNT_DELAY_MS = 400;
 
 const iframeStyle: CSSProperties = {
   position: "absolute",
@@ -12,10 +14,19 @@ const iframeStyle: CSSProperties = {
   background: "transparent",
 };
 
-export function LisaGlbViewer({ sign }: { sign: string }) {
+const viewerUrl = (sign: string) => `/api/glb-viewer?sign=${encodeURIComponent(sign)}`;
+
+export function LisaGlbViewer({ sign, preload }: { sign: string; preload?: readonly string[] }) {
   const frame = useRef<HTMLIFrameElement>(null);
-  const [src] = useState(() => `/api/glb-viewer?sign=${encodeURIComponent(sign)}`);
   const shown = useRef(sign);
+  const [src, setSrc] = useState<string | null>(null);
+  const [frameReady, setFrameReady] = useState(false);
+  const preloadKey = preload?.join("\n") ?? "";
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSrc(viewerUrl(shown.current)), MOUNT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (shown.current === sign) return;
@@ -26,12 +37,23 @@ export function LisaGlbViewer({ sign }: { sign: string }) {
     );
   }, [sign]);
 
+  useEffect(() => {
+    if (!frameReady || !preloadKey) return;
+    frame.current?.contentWindow?.postMessage(
+      { type: VIEWER_PRELOAD, signs: preloadKey.split("\n") },
+      window.location.origin,
+    );
+  }, [frameReady, preloadKey]);
+
+  if (!src) return null;
+
   return (
     <iframe
       ref={frame}
       src={src}
       title="Lisa haciendo la seña en 3D. Arrastrá para girarla."
       style={iframeStyle}
+      onLoad={() => setFrameReady(true)}
     />
   );
 }

@@ -49,7 +49,9 @@ export function WeeklyEvolution({ weeks, delay }: { weeks: WeeklyPerformance[]; 
                 onClick={() => setMetric(m.key)}
                 className={cn(
                   "cursor-pointer rounded-full px-3 py-1.5 text-[13px] font-bold whitespace-nowrap transition-all duration-200",
-                  metric === m.key ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
+                  metric === m.key
+                    ? "bg-surface text-text shadow-sm"
+                    : "text-text-muted hover:text-text",
                 )}
               >
                 {m.label}

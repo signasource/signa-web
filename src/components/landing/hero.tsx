@@ -13,7 +13,8 @@ export function Hero() {
             className="landing-enter font-display text-[44px] leading-[0.96] font-extrabold tracking-tight text-balance sm:text-7xl"
             style={delay(0)}
           >
-            Aprendé a comunicarte con las <span className="text-primary landing-highlight">manos</span>.
+            Aprendé a comunicarte con las{" "}
+            <span className="text-primary landing-highlight">manos</span>.
           </h1>
           <p
             className="landing-enter text-text-muted max-w-md text-lg leading-snug sm:text-xl"
@@ -48,26 +49,7 @@ export function Hero() {
           <p
             className="landing-enter text-text-muted flex items-center gap-2.5 text-sm font-semibold"
             style={delay(360)}
-          >
-            <svg
-              aria-hidden="true"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M9 11V6a1.5 1.5 0 0 1 3 0v5M12 10V4.5a1.5 1.5 0 0 1 3 0V10M15 10.5V7a1.5 1.5 0 0 1 3 0v6a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 14l-1.3-2.4a1.5 1.5 0 0 1 2.6-1.5L8 13" />
-            </svg>
-            <span>
-              <span className="lg:hidden">Probala abajo:</span>
-              <span className="hidden lg:inline">Probala acá al lado:</span> elegí una respuesta o
-              arrastrá a Lisa para girarla.
-            </span>
-          </p>
+          ></p>
         </div>
 
         <div
@@ -76,7 +58,6 @@ export function Hero() {
           style={{ ...delay(200), "--stage-w": "560px", "--stage-h": "680px" } as CSSProperties}
         >
           <div className="landing-stage">
-            {/* Decorative circles */}
             <div
               aria-hidden
               className="landing-spin border-primary-medallion absolute top-[70px] left-[35px] h-[490px] w-[490px] rounded-full border-2 border-dashed"
@@ -94,23 +75,19 @@ export function Hero() {
               className="landing-floaty2 bg-accent-teal absolute top-[575px] left-[55px] h-[46px] w-[46px] rounded-full"
             />
 
-            {/* Phone + pulsing rings */}
             <div className="absolute top-[10px] left-[135px] z-10">
-              {/* Outer pulsing ring */}
               <div
                 aria-hidden
                 className="landing-phone-ring2 bg-primary/15 absolute -inset-8 rounded-[58px]"
               />
-              {/* Inner pulsing ring */}
               <div
                 aria-hidden
                 className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
               />
               <div className="bg-text relative rounded-[46px] p-2.5 shadow-2xl">
-                <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
+                <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px] pb-10" />
               </div>
 
-              {/* "Tocá" badge — bottom center of phone */}
               <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
                 <span className="bg-primary text-on-primary landing-floaty flex items-center gap-2.5 rounded-full px-6 py-3.5 text-[17px] font-extrabold shadow-xl">
                   <svg
@@ -130,7 +107,6 @@ export function Hero() {
                 </span>
               </div>
             </div>
-
           </div>
         </div>
       </div>

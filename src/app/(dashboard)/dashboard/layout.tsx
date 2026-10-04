@@ -17,8 +17,6 @@ function isActive(pathname: string, href: string) {
   return href === "/dashboard" ? pathname === href : pathname.startsWith(href);
 }
 
-// Client-side guard: the API is stateless-bearer (no cookies), so there is no server session to check.
-// Real authorization is enforced by signa-api on every request.
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();

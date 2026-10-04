@@ -1,125 +1,123 @@
 "use client";
 
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { FeatureId, useLandingUI } from "@/components/landing/landing-ui-context";
 import { CloseButton } from "@/components/landing/close-button";
 import { LessonDemo } from "@/components/landing/lesson-demo";
 import { LottiePlayer } from "@/components/landing/lottie-player";
+import { CameraNameDemo } from "@/components/landing/camera-name-demo";
 
-function SignsPhone() {
+const LIVE_SCREEN = "h-[760px] w-[360px] overflow-hidden rounded-[37px]";
+
+const LIVE_PHONE = { w: 380, h: 780 };
+const STATIC_PHONE = { w: 300, h: 640 };
+const MAX_SCALE = 1.5;
+
+function FitPhone({
+  base,
+  children,
+  around,
+}: {
+  base: { w: number; h: number };
+  children: ReactNode;
+  around?: ReactNode;
+}) {
+  const slot = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0);
+
+  useEffect(() => {
+    const el = slot.current;
+    if (!el) return;
+    const fit = () => {
+      const { clientWidth, clientHeight } = el;
+      const style = getComputedStyle(el);
+      const w = clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const h = clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      setScale(Math.max(0.3, Math.min(MAX_SCALE, w / base.w, h / base.h)));
+    };
+    fit();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(fit);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [base.w, base.h]);
+
   return (
-    <div className="justify-self-center pb-6">
-      <div className="relative">
-        {/* Outer pulsing ring */}
+    <div
+      ref={slot}
+      className="flex h-[calc(100dvh-8rem)] min-h-0 w-full items-center justify-center p-5 md:h-full md:p-6"
+    >
+      <div
+        className={cn("relative shrink-0", scale === 0 && "invisible")}
+        style={{ width: base.w * scale, height: base.h * scale }}
+      >
+        {around}
         <div
-          aria-hidden
-          className="landing-phone-ring2 bg-primary/15 absolute -inset-8 rounded-[58px]"
-        />
-        {/* Inner pulsing ring */}
-        <div
-          aria-hidden
-          className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
-        />
-        <div className="bg-text hover:ring-primary/30 relative rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10 transition-shadow">
-          <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
-        </div>
-        {/* Racha badge — bottom center of phone */}
-        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
-          <span className="bg-surface landing-floaty flex items-center gap-2 rounded-full py-2.5 pr-4 pl-2.5 text-sm font-bold shadow-xl">
-            <span className="bg-shop-amber-light text-streak-orange flex h-7.5 w-7.5 items-center justify-center rounded-full">
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 0 2 1 3 2 3 0-3-1-6.5.5-9z" />
-              </svg>
-            </span>
-            12 días de racha
-          </span>
+          className="absolute top-0 left-0 origin-top-left"
+          style={{ width: base.w, height: base.h, transform: `scale(${scale})` }}
+        >
+          {children}
         </div>
       </div>
     </div>
+  );
+}
+
+function LivePhone({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "bg-text h-full w-full rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SignsPhone() {
+  return (
+    <FitPhone
+      base={LIVE_PHONE}
+      around={
+        <>
+
+        </>
+      }
+    >
+      <LivePhone className="hover:ring-primary/30 transition-shadow">
+        <LessonDemo className={LIVE_SCREEN} viewerClassName="h-[440px]" />
+      </LivePhone>
+
+    </FitPhone>
   );
 }
 
 function CameraPhone() {
   return (
-    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
-      <div className="bg-ink-900 text-on-dark h-[620px] w-[280px] overflow-hidden rounded-[37px]">
-        <div className="flex items-center gap-2.5 px-4 pt-7">
-          <svg
-            aria-hidden="true"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-          >
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-          <div className="bg-ink-700 h-2.5 flex-grow rounded-full">
-            <div className="bg-course-teal h-2.5 w-[72%] rounded-full" />
-          </div>
-        </div>
-        <div className="bg-surface text-text mx-4 mt-3.5 rounded-2xl p-3.5">
-          <p className="text-text-muted text-[10px] font-extrabold tracking-wider">HACÉ LA SEÑA</p>
-          <p className="font-display text-2xl font-extrabold tracking-tight">Hola</p>
-        </div>
-        <div className="bg-ink-800 relative mx-4 mt-3.5 h-[240px] overflow-hidden rounded-[22px]">
-          <div className="bg-ink-900/70 absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10.5px] font-bold">
-            <svg
-              aria-hidden="true"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="stroke-course-teal"
-              strokeWidth="2.6"
-              strokeLinejoin="round"
-            >
-              <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
-            </svg>
-            Se procesa en tu teléfono
-          </div>
-        </div>
-        <div className="bg-success mx-4 mt-3.5 flex h-[50px] items-center justify-center gap-2 rounded-2xl font-extrabold text-white">
-          <svg
-            aria-hidden="true"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12.5l4.5 4.5L19 7.5" />
-          </svg>
-          ¡Te salió!
-        </div>
-      </div>
-    </div>
+    <FitPhone base={LIVE_PHONE}>
+      <LivePhone>
+        <CameraNameDemo className={LIVE_SCREEN} />
+      </LivePhone>
+    </FitPhone>
   );
 }
 
 function StreakPhone() {
   return (
-    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
-      {/* mirrors AchievementCelebrationScreen (signa-mobile) for a streak achievement */}
+    <div className="bg-text rounded-[46px] p-2.5 shadow-2xl">
       <div
         className="flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px] px-5 pt-10 pb-6"
         style={{ backgroundColor: "#FDA55A" }}
       >
-        {/* streak-fire Lottie — same file used in signa-mobile */}
         <div className="flex flex-1 items-center justify-center">
-          <LottiePlayer
-            src="/animations/streak-fire.json"
-            className="h-[220px] w-[160px]"
-          />
+          <LottiePlayer src="/animations/streak-fire.json" className="h-[220px] w-[160px]" />
         </div>
 
-        {/* headline + subtitle */}
         <div className="text-center">
-          <p className="font-display text-[22px] font-extrabold leading-tight tracking-tight text-white">
+          <p className="font-display text-[22px] leading-tight font-extrabold tracking-tight text-white">
             ¡Llegaste a 7 días de racha!
           </p>
           <p className="mt-1.5 text-[12px] leading-snug text-white/80">
@@ -127,16 +125,14 @@ function StreakPhone() {
           </p>
         </div>
 
-        {/* reward card */}
         <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white p-3.5">
-          {/* silver medal Lottie — same file used in signa-mobile (tier "silver" = 7 days) */}
           <LottiePlayer
             src="/animations/medals/silver.json"
             className="h-[60px] w-[60px] shrink-0"
           />
           <div className="min-w-0 flex-1">
             <p className="text-text-muted text-[10.5px] font-semibold">Logro desbloqueado</p>
-            <p className="font-display text-[14px] font-bold leading-tight">Primera semana</p>
+            <p className="font-display text-[14px] leading-tight font-bold">Primera semana</p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               <span
                 className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
@@ -161,7 +157,6 @@ function StreakPhone() {
           </div>
         </div>
 
-        {/* button */}
         <button
           className="mt-3.5 w-full rounded-2xl py-3 text-[13px] font-extrabold text-white"
           style={{ backgroundColor: "#e07020" }}
@@ -239,9 +234,8 @@ function SocialPhone() {
   ];
 
   return (
-    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
+    <div className="bg-text rounded-[46px] p-2.5 shadow-2xl">
       <div className="bg-background flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px]">
-        {/* Wine header */}
         <div className="bg-social-wine relative overflow-hidden px-4 pt-7 pb-3 text-white">
           <div
             aria-hidden
@@ -267,7 +261,6 @@ function SocialPhone() {
           </div>
         </div>
 
-        {/* Segmented control */}
         <div className="border-border flex border-b bg-white">
           {["Feed", "Amigos", "Ranking"].map((tab) => (
             <div
@@ -283,9 +276,7 @@ function SocialPhone() {
           ))}
         </div>
 
-        {/* Ranking content */}
         <div className="flex flex-1 flex-col overflow-hidden px-2.5 pt-2">
-          {/* Scope toggle */}
           <div className="bg-fill flex rounded-[10px] p-0.5 text-[9.5px] font-bold">
             <div className="bg-surface text-social-wine flex-1 rounded-[8px] py-1.5 text-center shadow-sm">
               Global (98)
@@ -293,7 +284,6 @@ function SocialPhone() {
             <div className="text-text-muted flex-1 py-1.5 text-center">Mis amigos (8)</div>
           </div>
 
-          {/* Countdown */}
           <div className="border-border mt-1.5 flex items-center gap-1.5 rounded-xl border bg-white px-2.5 py-1.5">
             <svg
               aria-hidden="true"
@@ -313,12 +303,10 @@ function SocialPhone() {
             <p className="font-display text-[10px] font-bold">2d 14:22</p>
           </div>
 
-          {/* Section label */}
           <p className="text-text-muted mt-1.5 text-[8px] font-bold tracking-[0.6px]">
             XP DE ESTA SEMANA
           </p>
 
-          {/* Podium */}
           <div className="border-border mt-1 flex items-end justify-around overflow-hidden rounded-[14px] border bg-white px-2 pt-2">
             {PODIUM.map((p) => (
               <div key={p.rank} className="flex flex-col items-center gap-0.5">
@@ -337,7 +325,6 @@ function SocialPhone() {
             ))}
           </div>
 
-          {/* List rows */}
           <div className="border-border mt-1.5 overflow-hidden rounded-[14px] border bg-white">
             {LIST.map((r, i) => (
               <div
@@ -366,8 +353,7 @@ function SocialPhone() {
             ))}
           </div>
 
-          {/* Sticky me bar */}
-          <div className="border-social-wine/40 bg-avatar-wine-light mt-auto -mx-2.5 flex items-center gap-2 border-t px-3.5 py-2">
+          <div className="border-social-wine/40 bg-avatar-wine-light -mx-2.5 mt-auto flex items-center gap-2 border-t px-3.5 py-2">
             <p className="font-display text-social-wine text-[11px] font-bold">#5</p>
             <span className="border-social-wine font-display text-social-wine bg-avatar-wine-light flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-extrabold">
               TU
@@ -386,39 +372,61 @@ function SocialPhone() {
 
 const CONTENT: Record<
   FeatureId,
-  { eyebrow: string; eyebrowClass: string; title: string; body: string; phone: React.ReactNode }
+  {
+    eyebrow: string;
+    eyebrowClass: string;
+    title: string;
+    body: string | string[];
+    phone: React.ReactNode;
+    note?: string | string[];
+    live?: boolean;
+  }
 > = {
   signs: {
     eyebrow: "SEÑAS EN 3D",
     eyebrowClass: "text-primary",
-    title: "Cada seña, en 3D y desde todos los ángulos.",
-    body: "Lisa te muestra la seña y vos la reconocés. Las lecciones son cortas y combinan ejercicios distintos: elegí el significado, elegí la seña, uní pares y respondé en contexto.",
+    title: "Mirá cada seña en 3D, desde el ángulo que quieras.",
+    body: "Lisa hace la seña y vos descubrís qué significa. Las lecciones son cortas y cada una mezcla ejercicios distintos. A veces elegís el significado, otras buscás la seña correcta, y también vas a unir pares y responder en contexto.",
     phone: <SignsPhone />,
+    live: true,
   },
   camera: {
     eyebrow: "TU CÁMARA TE CORRIGE",
     eyebrowClass: "text-course-teal",
-    title: "Hacé la seña. Signa te dice si te salió.",
-    body: "La cámara reconoce tus manos en tiempo real, también para deletrear tu nombre con el alfabeto manual. Todo se procesa en tu celular: ningún video sale de tu teléfono.",
+    title: "Hacé la seña y Signa te dice si te salió.",
+    body: "La cámara sigue tus manos en tiempo real y mira más de 200 medidas de tu mano y de dónde está respecto de tu cara. Probalo ahora mismo escribiendo tu nombre y haciendo cada letra frente a la cámara.",
+    note: [
+      "El reconocimiento todavía está aprendiendo y a veces se equivoca. Lo seguimos revisando y mejorando.",
+      "Todo pasa en tu dispositivo y ningún video sale de tu navegador.",
+    ],
     phone: <CameraPhone />,
+    live: true,
   },
   streak: {
     eyebrow: "UN RATITO POR DÍA",
     eyebrowClass: "text-shop-amber",
-    title: "Tu racha, tus gemas y tu XP, de un vistazo.",
-    body: "Signa tiene vidas, racha, gemas, logros, desafíos diarios y semanales. Cada lección suma XP y hay rankings globales y entre tus amigos para ver quién lidera.",
-    phone: <StreakPhone />,
+    title: "Aprendé un poco cada día y mirá cómo crece tu racha.",
+    body: "Cada lección te suma XP, tu racha crece y vas desbloqueando logros y desafíos diarios y semanales. Si un día no podés, un protector de racha la cuida por vos. Y si te gusta competir, hay rankings con todo el mundo y con tus amigos.",
+    phone: (
+      <FitPhone base={STATIC_PHONE}>
+        <StreakPhone />
+      </FitPhone>
+    ),
   },
   social: {
     eyebrow: "APRENDÉ CON AMIGOS",
     eyebrowClass: "text-social-wine",
-    title: "Agregá amigos y compartan el progreso.",
-    body: "Ves el avance de tus amigos, las señas que aprendieron y cuántos días llevan de racha. Podés regalarles protectores de racha, gemas y más desde la tienda. Un ranking semanal te muestra quién está liderando.",
-    phone: <SocialPhone />,
+    title: "Sumá a tus amigos y avancen juntos.",
+    body: "Mirá cómo vienen tus amigos, qué señas aprendieron y cuántos días llevan de racha. Desde la tienda les podés regalar gemas o un protector de racha, y cada semana un ranking muestra quién va adelante.",
+    phone: (
+      <FitPhone base={STATIC_PHONE}>
+        <SocialPhone />
+      </FitPhone>
+    ),
   },
 };
 
-export function FeaturePreview({ feature }: { feature: FeatureId }) {
+export function FeaturePreview({ feature, closing }: { feature: FeatureId; closing?: boolean }) {
   const { closeFeature } = useLandingUI();
   const content = CONTENT[feature];
 
@@ -428,24 +436,61 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
       aria-modal="true"
       aria-labelledby="feature-preview-title"
       onClick={(e) => e.target === e.currentTarget && closeFeature()}
-      className="landing-modal-in bg-text/55 fixed inset-0 z-50 overflow-y-auto p-3 backdrop-blur-sm sm:p-5"
+      className={cn(
+        "bg-text/55 fixed inset-0 z-50 flex items-center justify-center p-3 backdrop-blur-sm sm:p-6 lg:p-8",
+        closing ? "landing-modal-out pointer-events-none" : "landing-modal-in",
+      )}
     >
-      <div className="landing-modal-card bg-background relative mx-auto my-auto grid max-w-3xl grid-cols-1 items-center gap-10 rounded-[40px] p-6 pt-16 sm:grid-cols-[minmax(0,1fr)_300px] sm:p-14">
+      <div
+        className={cn(
+          "bg-background relative grid h-full max-h-[960px] w-full max-w-[1280px] grid-cols-1 items-center gap-6 overflow-y-auto rounded-[40px] p-6 pt-16 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-10 md:px-12 md:py-8 lg:px-16",
+          closing ? "landing-modal-card-out" : "landing-modal-card",
+        )}
+      >
         <CloseButton
           onClick={closeFeature}
           className="absolute top-5 right-5 sm:top-6 sm:right-6"
         />
-        <div className="flex flex-col gap-4">
-          <p className={`text-sm font-extrabold tracking-[2px] ${content.eyebrowClass}`}>
-            {content.eyebrow}
-          </p>
-          <h3
-            id="feature-preview-title"
-            className="font-display text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl"
-          >
-            {content.title}
-          </h3>
-          <p className="text-text-muted text-[17px] leading-relaxed">{content.body}</p>
+        <div className={cn("flex max-w-xl flex-col gap-4", content.note && "md:self-stretch")}>
+          <div className={cn("flex flex-col gap-4", content.note && "md:my-auto")}>
+            <p className={`text-sm font-extrabold tracking-[2px] ${content.eyebrowClass}`}>
+              {content.eyebrow}
+            </p>
+            <h3
+              id="feature-preview-title"
+              className="font-display text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl"
+            >
+              {content.title}
+            </h3>
+            {[content.body].flat().map((paragraph) => (
+              <p key={paragraph} className="text-text-muted text-[17px] leading-relaxed">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+          {content.note && (
+            <p className="bg-fill text-text-muted flex gap-2.5 rounded-2xl px-4 py-3 text-sm leading-relaxed">
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                className="mt-0.5 shrink-0"
+              >
+                <circle cx="12" cy="12" r="9.5" />
+                <path d="M12 11v6M12 7.5v.5" />
+              </svg>
+              <span className="flex flex-col gap-0.5">
+                {[content.note].flat().map((paragraph) => (
+                  <span key={paragraph}>{paragraph}</span>
+                ))}
+              </span>
+            </p>
+          )}
         </div>
         {content.phone}
       </div>
