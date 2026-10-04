@@ -8,6 +8,7 @@ type LessonState = "done" | "current" | "locked";
 const UNITS: ReadonlyArray<{
   title: string;
   icon: "hand" | "people" | "place";
+  total?: number;
   lessons: ReadonlyArray<{ title: string; state: LessonState }>;
 }> = [
   {
@@ -32,10 +33,8 @@ const UNITS: ReadonlyArray<{
   {
     title: "Lugares",
     icon: "place",
-    lessons: [
-      { title: "Escuela, universidad, museo, jardín de infantes", state: "locked" },
-      { title: "Comercio, plaza, comisaría, hospital", state: "locked" },
-    ],
+    total: 2,
+    lessons: [],
   },
 ];
 
@@ -166,7 +165,7 @@ function HomeScreen() {
           const open = unit.lessons.some((l) => l.state !== "locked");
           return (
             <div key={unit.title}>
-              <div className="flex items-center gap-2.5 pt-3.5 pb-1">
+              <div className={`flex items-center gap-2.5 pb-1 ${u === 0 ? "pt-3.5" : "pt-5"}`}>
                 <div
                   className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
                     open ? "bg-primary-light text-primary" : "bg-fill text-text-muted"
@@ -188,7 +187,7 @@ function HomeScreen() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-text-muted text-[8.5px] font-bold tracking-wide">
-                    UNIDAD {u + 1} · {done}/{unit.lessons.length}
+                    UNIDAD {u + 1} · {done}/{unit.total ?? unit.lessons.length}
                   </p>
                   <p
                     className={`font-display truncate text-[12.5px] font-bold ${
