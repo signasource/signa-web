@@ -177,7 +177,7 @@ export function GET(request: Request): Response {
       "Content-Type": "text/html; charset=utf-8",
       "Content-Security-Policy": buildViewerCsp(),
       "X-Frame-Options": "SAMEORIGIN",
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": "no-cache",
     },
   });
 }
