@@ -450,25 +450,10 @@ export function CameraNameDemo({ className }: { className?: string }) {
               {error}
             </p>
           )}
-          <p className="text-text-muted mt-auto flex items-center gap-1.5 pt-4 text-xs font-semibold">
-            <svg
-              aria-hidden="true"
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinejoin="round"
-              className="text-course-teal shrink-0"
-            >
-              <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
-            </svg>
-          </p>
           <button
             type="submit"
             disabled={stage === "loading"}
-            className="bg-primary text-on-primary mt-3 flex h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold transition-opacity disabled:cursor-wait disabled:opacity-80"
+            className="bg-primary text-on-primary mt-auto flex h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold transition-opacity disabled:cursor-wait disabled:opacity-80"
           >
             {stage === "loading" ? (
               <>

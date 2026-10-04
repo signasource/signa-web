@@ -14,6 +14,14 @@ const scope = self as unknown as {
   postMessage(message: WorkerResponse): void;
 };
 
+// MediaPipe's Wasm prints informational lines ("INFO: Created TensorFlow Lite XNNPACK delegate
+// for CPU.") through console.error. They are not errors; anything else still goes through.
+const consoleError = console.error.bind(console);
+console.error = (...args: unknown[]) => {
+  if (typeof args[0] === "string" && args[0].startsWith("INFO:")) return;
+  consoleError(...args);
+};
+
 let engine: AlphabetEngine | null = null;
 
 scope.onmessage = async ({ data }) => {

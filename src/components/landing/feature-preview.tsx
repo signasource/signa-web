@@ -432,21 +432,25 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
           onClick={closeFeature}
           className="absolute top-5 right-5 sm:top-6 sm:right-6"
         />
-        <div className="flex flex-col gap-4">
-          <p className={`text-sm font-extrabold tracking-[2px] ${content.eyebrowClass}`}>
-            {content.eyebrow}
-          </p>
-          <h3
-            id="feature-preview-title"
-            className="font-display text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl"
-          >
-            {content.title}
-          </h3>
-          {[content.body].flat().map((paragraph) => (
-            <p key={paragraph} className="text-text-muted text-[17px] leading-relaxed">
-              {paragraph}
+        {/* With a disclaimer, the column spans the phone's height on desktop: the copy stays
+            centered and the disclaimer sits at the bottom, level with the phone's base. */}
+        <div className={cn("flex flex-col gap-4", content.note && "md:self-stretch")}>
+          <div className={cn("flex flex-col gap-4", content.note && "md:my-auto")}>
+            <p className={`text-sm font-extrabold tracking-[2px] ${content.eyebrowClass}`}>
+              {content.eyebrow}
             </p>
-          ))}
+            <h3
+              id="feature-preview-title"
+              className="font-display text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl"
+            >
+              {content.title}
+            </h3>
+            {[content.body].flat().map((paragraph) => (
+              <p key={paragraph} className="text-text-muted text-[17px] leading-relaxed">
+                {paragraph}
+              </p>
+            ))}
+          </div>
           {content.note && (
             <p className="bg-fill text-text-muted flex gap-2.5 rounded-2xl px-4 py-3 text-sm leading-relaxed">
               <svg
@@ -463,7 +467,7 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
                 <circle cx="12" cy="12" r="9.5" />
                 <path d="M12 11v6M12 7.5v.5" />
               </svg>
-              <span className="flex flex-col gap-2">
+              <span className="flex flex-col gap-0.5">
                 {[content.note].flat().map((paragraph) => (
                   <span key={paragraph}>{paragraph}</span>
                 ))}

@@ -156,7 +156,8 @@ still being reviewed.
 Everything runs on the visitor's device; no frame leaves the browser.
 
 - **Detection:** MediaPipe Tasks (`HandLandmarker` + `PoseLandmarker`, image mode, one hand,
-  GPU with CPU fallback) from the CDN, pinned to `0.10.22-rc.20250304`; the `.task` models come
+  on the CPU like signa-ml's demo server — from the worker it processed 6× more frames than the
+  GPU delegate) from the CDN, pinned to `0.10.22-rc.20250304`; the `.task` models come
   from `storage.googleapis.com/mediapipe-models` (hand float16/1, pose lite float16/1) — the same
   bytes `signa-mobile` ships and the dataset was extracted with. Loaded only when "Empezar" is
   pressed (`src/lib/alphabet-engine.ts`), so the landing's first load doesn't pay for it.

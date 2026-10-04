@@ -98,7 +98,7 @@ async function loadDetectors() {
   const fileset = await vision.FilesetResolver.forVisionTasks(VISION_WASM);
   // Same settings signa-ml uses to build the dataset (src/data/tasks_extractor.py,
   // detectores_estaticos): image mode, one hand, detection floor 0.4.
-  const create = async (delegate: "GPU" | "CPU") => {
+  const create = async (delegate: "CPU") => {
     const hands = await vision.HandLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetPath: HAND_MODEL, delegate },
       runningMode: "IMAGE",
@@ -117,12 +117,12 @@ async function loadDetectors() {
       throw e;
     }
   };
-  // GPU when the browser has it; some don't open MediaPipe's GPU graph, and CPU still works.
-  try {
-    return await create("GPU");
-  } catch {
-    return create("CPU");
-  }
+  // CPU (XNNPACK), the same as signa-ml's demo server runs it — and that page looks steady on
+  // the same machine. Measured with one video (a still hand with camera noise): from the worker,
+  // CPU processed 106 frames in 12 s and the GPU delegate 17, paying an upload and a readback
+  // per frame. So few updates made the skeleton move in jumps. (That test browser rendered WebGL
+  // in software, which exaggerates the gap; CPU is still what the demo page runs.)
+  return create("CPU");
 }
 
 const toPoint = (p: Landmark): Point => ({ x: p.x, y: p.y, z: p.z });
