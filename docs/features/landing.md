@@ -208,7 +208,8 @@ never hydrates on a phone and buttons/modals do nothing. The camera demo also ne
 hides `getUserMedia`; the demo then says the camera needs https). For the phone run
 `npm run dev:celu`: `scripts/dev-cert.mjs` creates a self-signed certificate for `localhost` and
 the machine's LAN IPs in `certificates/` (git-ignored, regenerated when the IPs change) and starts
-`next dev` over https on every interface. Open `https://<LAN IP>:3000` on the phone and accept
+`next dev` over https (it prints the phone URL as "Network"). Open `https://<LAN IP>:3000` on
+the phone — not `0.0.0.0`, which browsers block — and accept
 the certificate warning once.
 
 ## Known placeholders

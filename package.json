@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "node scripts/copy-mediapipe-wasm.mjs",
     "dev": "next dev",
-    "dev:celu": "node scripts/copy-mediapipe-wasm.mjs && node scripts/dev-cert.mjs && next dev -H 0.0.0.0 --experimental-https --experimental-https-key certificates/lan-key.pem --experimental-https-cert certificates/lan-cert.pem",
+    "dev:celu": "node scripts/copy-mediapipe-wasm.mjs && node scripts/dev-cert.mjs && next dev --experimental-https --experimental-https-key certificates/lan-key.pem --experimental-https-cert certificates/lan-cert.pem",
     "prebuild": "node scripts/copy-mediapipe-wasm.mjs",
     "build": "next build",
     "postbuild": "node scripts/strip-sourcemaps.mjs",
