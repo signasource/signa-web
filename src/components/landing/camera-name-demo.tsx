@@ -129,6 +129,15 @@ export function CameraNameDemo({ className }: { className?: string }) {
     }
     setWarning(null);
     setError(null);
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setError(
+        window.isSecureContext
+          ? "Este navegador no permite usar la cámara."
+          : "La cámara solo funciona en una conexión segura (https).",
+      );
+      setStage("error");
+      return;
+    }
     setStage("loading");
     try {
       const [stream, engine] = await Promise.all([

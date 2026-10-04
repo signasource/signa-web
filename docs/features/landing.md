@@ -204,9 +204,12 @@ rows are `select-none`.
 
 `next dev` only serves its dev scripts to `localhost` unless the origin is listed in
 `allowedDevOrigins` (`next.config.ts`: `192.168.*.*`, `10.*.*.*`, `*.local`); otherwise the page
-never hydrates on a phone and buttons/modals do nothing. The camera demo still needs a secure
-context, which plain `http://<LAN IP>` is not: use `next dev --experimental-https` to try the
-camera from a phone.
+never hydrates on a phone and buttons/modals do nothing. The camera demo also needs a secure context, which plain `http://<LAN IP>` is not (the browser
+hides `getUserMedia`; the demo then says the camera needs https). For the phone run
+`npm run dev:celu`: `scripts/dev-cert.mjs` creates a self-signed certificate for `localhost` and
+the machine's LAN IPs in `certificates/` (git-ignored, regenerated when the IPs change) and starts
+`next dev` over https on every interface. Open `https://<LAN IP>:3000` on the phone and accept
+the certificate warning once.
 
 ## Known placeholders
 
