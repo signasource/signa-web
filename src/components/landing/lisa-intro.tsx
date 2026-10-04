@@ -156,7 +156,11 @@ function HomeScreen() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden px-3.5 pb-3">
+      <div className="relative flex-1 overflow-hidden px-4 pb-3">
+        <div
+          aria-hidden
+          className="bg-primary/20 absolute top-[30px] bottom-0 left-[31px] w-[2px]"
+        />
         {UNITS.map((unit, u) => {
           const done = unit.lessons.filter((l) => l.state === "done").length;
           const open = unit.lessons.some((l) => l.state !== "locked");
@@ -164,7 +168,7 @@ function HomeScreen() {
             <div key={unit.title}>
               <div className="flex items-center gap-2.5 pt-3.5 pb-1">
                 <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                  className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
                     open ? "bg-primary-light text-primary" : "bg-fill text-text-muted"
                   }`}
                 >
@@ -196,14 +200,11 @@ function HomeScreen() {
                 </div>
               </div>
 
-              <div className="relative pt-1.5">
-                <div className="bg-primary/20 absolute top-3 bottom-3 left-[9px] w-[2px]" />
-                <ul className="flex flex-col">
-                  {unit.lessons.map((lesson) => (
-                    <LessonRow key={lesson.title} {...lesson} />
-                  ))}
-                </ul>
-              </div>
+              <ul className="flex flex-col pt-1">
+                {unit.lessons.map((lesson) => (
+                  <LessonRow key={lesson.title} {...lesson} />
+                ))}
+              </ul>
             </div>
           );
         })}
@@ -214,48 +215,50 @@ function HomeScreen() {
 
 function LessonRow({ title, state }: { title: string; state: LessonState }) {
   return (
-    <li className="relative flex items-start gap-2.5 py-[5px]">
-      <div
-        className={`relative z-10 mt-[3px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-          state === "done"
-            ? "bg-success"
-            : state === "current"
-              ? "bg-primary ring-primary/30 ring-2"
-              : "border-border bg-fill border"
-        }`}
-      >
-        {state === "done" && (
-          <svg
-            aria-hidden="true"
-            width="10"
-            height="10"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12.5l4.5 4.5L19 7.5" />
-          </svg>
-        )}
-        {state === "current" && <div className="h-2 w-2 rounded-full bg-white" />}
-        {state === "locked" && (
-          <svg
-            aria-hidden="true"
-            width="8"
-            height="8"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="text-text-muted"
-          >
-            <rect x="6" y="11" width="12" height="10" rx="2" />
-            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-          </svg>
-        )}
+    <li className="flex items-center gap-2.5 py-[5px]">
+      <div className="flex w-8 shrink-0 justify-center">
+        <div
+          className={`relative z-10 flex h-5 w-5 items-center justify-center rounded-full ${
+            state === "done"
+              ? "bg-success"
+              : state === "current"
+                ? "bg-primary ring-primary/30 ring-2"
+                : "border-border bg-fill border"
+          }`}
+        >
+          {state === "done" && (
+            <svg
+              aria-hidden="true"
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12.5l4.5 4.5L19 7.5" />
+            </svg>
+          )}
+          {state === "current" && <div className="h-2 w-2 rounded-full bg-white" />}
+          {state === "locked" && (
+            <svg
+              aria-hidden="true"
+              width="8"
+              height="8"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              className="text-text-muted"
+            >
+              <rect x="6" y="11" width="12" height="10" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+          )}
+        </div>
       </div>
 
       {state === "current" ? (
