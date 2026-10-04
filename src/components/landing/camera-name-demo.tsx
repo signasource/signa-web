@@ -354,8 +354,10 @@ export function CameraNameDemo({ className }: { className?: string }) {
         const r = i === 0 ? 5.5 : TIPS.has(i) ? 4.6 : 3.4;
         octx.beginPath();
         octx.arc(x, y, r + 1.6, 0, Math.PI * 2);
+        octx.globalAlpha = 0.9;
         octx.fillStyle = halo;
         octx.fill();
+        octx.globalAlpha = 1;
         octx.beginPath();
         octx.arc(x, y, r, 0, Math.PI * 2);
         octx.fillStyle = color;
