@@ -49,26 +49,7 @@ export function Hero() {
           <p
             className="landing-enter text-text-muted flex items-center gap-2.5 text-sm font-semibold"
             style={delay(360)}
-          >
-            <svg
-              aria-hidden="true"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M9 11V6a1.5 1.5 0 0 1 3 0v5M12 10V4.5a1.5 1.5 0 0 1 3 0V10M15 10.5V7a1.5 1.5 0 0 1 3 0v6a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 14l-1.3-2.4a1.5 1.5 0 0 1 2.6-1.5L8 13" />
-            </svg>
-            <span>
-              <span className="lg:hidden">Probala abajo:</span>
-              <span className="hidden lg:inline">Probala acá al lado:</span> elegí una respuesta o
-              arrastrá a Lisa para girarla.
-            </span>
-          </p>
+          ></p>
         </div>
 
         <div
@@ -104,7 +85,7 @@ export function Hero() {
                 className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
               />
               <div className="bg-text relative rounded-[46px] p-2.5 shadow-2xl">
-                <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
+                <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px] pb-10" />
               </div>
 
               <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
