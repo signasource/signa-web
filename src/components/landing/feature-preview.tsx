@@ -12,7 +12,7 @@ const LIVE_SCREEN = "h-[760px] w-[360px] overflow-hidden rounded-[37px]";
 
 const LIVE_PHONE = { w: 380, h: 780 };
 const STATIC_PHONE = { w: 300, h: 640 };
-const MAX_SCALE = 1.25;
+const MAX_SCALE = 1.5;
 
 function FitPhone({
   base,
