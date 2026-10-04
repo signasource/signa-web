@@ -2,6 +2,10 @@ html:has(.landing-root) {
   scroll-behavior: smooth;
   scroll-padding-top: 88px;
 }
+html:has(.landing-root),
+html:has(.landing-root) body {
+  touch-action: pan-x pan-y;
+}
 @media (min-width: 1024px) {
   html:has(.landing-root) {
     zoom: 0.9;
@@ -278,6 +282,23 @@ html:has(.landing-root) {
 .landing-modal-card {
   animation: landing-modal-card 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
+.landing-modal-out {
+  animation: landing-modal-out 0.22s ease both;
+}
+@keyframes landing-modal-out {
+  to {
+    opacity: 0;
+  }
+}
+.landing-modal-card-out {
+  animation: landing-modal-card-out 0.22s cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes landing-modal-card-out {
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
 @keyframes landing-modal-card {
   from {
     opacity: 0;
@@ -354,6 +375,8 @@ html:has(.landing-root) {
   .landing-marquee-track,
   .landing-modal-in,
   .landing-modal-card,
+  .landing-modal-out,
+  .landing-modal-card-out,
   .landing-grow,
   .landing-pop,
   .landing-shake {

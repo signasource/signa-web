@@ -384,7 +384,7 @@ const CONTENT: Record<
   },
 };
 
-export function FeaturePreview({ feature }: { feature: FeatureId }) {
+export function FeaturePreview({ feature, closing }: { feature: FeatureId; closing?: boolean }) {
   const { closeFeature } = useLandingUI();
   const content = CONTENT[feature];
 
@@ -394,14 +394,18 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
       aria-modal="true"
       aria-labelledby="feature-preview-title"
       onClick={(e) => e.target === e.currentTarget && closeFeature()}
-      className="landing-modal-in bg-text/55 fixed inset-0 z-50 overflow-y-auto p-3 backdrop-blur-sm sm:p-5"
+      className={cn(
+        "bg-text/55 fixed inset-0 z-50 overflow-y-auto p-3 backdrop-blur-sm sm:p-5",
+        closing ? "landing-modal-out pointer-events-none" : "landing-modal-in",
+      )}
     >
       <div
         className={cn(
-          "landing-modal-card bg-background relative mx-auto my-auto grid grid-cols-1 items-center gap-10 rounded-[40px] p-6 pt-16",
+          "bg-background relative mx-auto my-auto grid grid-cols-1 items-center gap-10 rounded-[40px] p-6 pt-16",
           content.live
             ? "max-w-5xl md:grid-cols-[minmax(0,1fr)_380px] md:p-12"
             : "max-w-3xl sm:grid-cols-[minmax(0,1fr)_300px] sm:p-14",
+          closing ? "landing-modal-card-out" : "landing-modal-card",
         )}
       >
         <CloseButton

@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import { LandingUIProvider } from "@/components/landing/landing-ui-provider";
 import { Nav } from "@/components/landing/nav";
 import { Hero } from "@/components/landing/hero";
@@ -14,6 +14,13 @@ import "./landing.css";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function LandingPage() {
