@@ -26,6 +26,7 @@ describe("CameraNameDemo", () => {
 
   it("explains it when the camera permission is denied", async () => {
     const getUserMedia = vi.fn().mockRejectedValue(new DOMException("denied", "NotAllowedError"));
+    vi.stubGlobal("isSecureContext", true);
     vi.stubGlobal("navigator", { mediaDevices: { getUserMedia } });
     render(<CameraNameDemo />);
 
@@ -37,5 +38,22 @@ describe("CameraNameDemo", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Necesitamos permiso para usar la cámara",
     );
+  });
+
+  it("says the camera needs https outside a secure context", async () => {
+    const getUserMedia = vi.fn();
+    vi.stubGlobal("isSecureContext", false);
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia } });
+    render(<CameraNameDemo />);
+
+    fireEvent.change(screen.getByPlaceholderText("Nombre"), {
+      target: { value: "Ana" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Empezar a deletrear" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "La cámara solo funciona en una conexión segura (https).",
+    );
+    expect(getUserMedia).not.toHaveBeenCalled();
   });
 });
