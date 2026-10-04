@@ -208,14 +208,6 @@ zooming into the name field), `touch-action: pan-x pan-y` on `html`/`body` (`lan
 vision lose pinch zoom on this page; the browser's text-size setting and "force enable zoom"
 accessibility options still work.
 
-## Modal close animation
-
-Closing a feature preview (X, backdrop or Escape) first plays a 220 ms fade/slide out
-(`landing-modal-out` / `landing-modal-card-out`) and only then unmounts it, so the camera and the
-3D viewer stop after the animation. `LandingUIProvider` keeps the modal mounted with
-`closing` set; with `prefers-reduced-motion` it closes at once. Measured at 60 fps with the 3D
-viewer running on a real GPU (headless software GL drops frames there; not representative).
-
 ## Images are not selectable
 
 `img`, `svg`, `canvas` and `video` are `user-select: none` and not draggable site-wide
