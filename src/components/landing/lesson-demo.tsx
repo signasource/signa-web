@@ -13,6 +13,10 @@ export const DEMO_QUESTIONS = [
 
 const HEARTS = 5;
 
+// Every sign of the demo is loaded up front, so "Seguir" swaps instantly instead of stalling the
+// page while the next model loads.
+const PRELOAD = DEMO_QUESTIONS.map((q) => q.sign);
+
 export function LessonDemo({
   className,
   viewerClassName = "h-[300px]",
@@ -86,7 +90,7 @@ export function LessonDemo({
           viewerClassName,
         )}
       >
-        <LisaGlbViewer sign={question.sign} />
+        <LisaGlbViewer sign={question.sign} preload={PRELOAD} />
         <span className="bg-surface text-primary-dark pointer-events-none absolute top-2.5 left-2.5 z-10 rounded-full px-2.5 py-1 text-[10px] font-extrabold">
           3D
         </span>

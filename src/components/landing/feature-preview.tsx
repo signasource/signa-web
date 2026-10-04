@@ -363,10 +363,11 @@ const CONTENT: Record<
     eyebrow: string;
     eyebrowClass: string;
     title: string;
-    body: string;
+    /** One or more paragraphs. */
+    body: string | string[];
     phone: React.ReactNode;
-    /** A small disclaimer under the body. */
-    note?: string;
+    /** A small disclaimer under the body: one or more paragraphs. */
+    note?: string | string[];
     /** Live, interactive preview: wider modal and a larger phone. */
     live?: boolean;
   }
@@ -383,8 +384,11 @@ const CONTENT: Record<
     eyebrow: "TU CÁMARA TE CORRIGE",
     eyebrowClass: "text-course-teal",
     title: "Hacé la seña y Signa te dice si te salió.",
-    body: "La cámara sigue tus manos en tiempo real y mira más de 200 medidas de tu mano y de dónde está respecto de tu cara. Probalo ahora mismo escribiendo tu nombre y haciendo cada letra frente a la cámara. Todo pasa en tu dispositivo y ningún video sale de tu navegador.",
-    note: "El reconocimiento todavía está aprendiendo y a veces se equivoca. Lo seguimos revisando y mejorando. Todo pasa en tu dispositivo y ningún video sale de tu navegador.",
+    body: "La cámara sigue tus manos en tiempo real y mira más de 200 medidas de tu mano y de dónde está respecto de tu cara. Probalo ahora mismo escribiendo tu nombre y haciendo cada letra frente a la cámara.",
+    note: [
+      "El reconocimiento todavía está aprendiendo y a veces se equivoca. Lo seguimos revisando y mejorando.",
+      "Todo pasa en tu dispositivo y ningún video sale de tu navegador.",
+    ],
     phone: <CameraPhone />,
     live: true,
   },
@@ -438,7 +442,11 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
           >
             {content.title}
           </h3>
-          <p className="text-text-muted text-[17px] leading-relaxed">{content.body}</p>
+          {[content.body].flat().map((paragraph) => (
+            <p key={paragraph} className="text-text-muted text-[17px] leading-relaxed">
+              {paragraph}
+            </p>
+          ))}
           {content.note && (
             <p className="bg-fill text-text-muted flex gap-2.5 rounded-2xl px-4 py-3 text-sm leading-relaxed">
               <svg
@@ -455,7 +463,11 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
                 <circle cx="12" cy="12" r="9.5" />
                 <path d="M12 11v6M12 7.5v.5" />
               </svg>
-              {content.note}
+              <span className="flex flex-col gap-2">
+                {[content.note].flat().map((paragraph) => (
+                  <span key={paragraph}>{paragraph}</span>
+                ))}
+              </span>
             </p>
           )}
         </div>

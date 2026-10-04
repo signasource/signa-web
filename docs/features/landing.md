@@ -113,8 +113,18 @@ CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
   camera jump is never visible. A failed load shows "No pudimos cargar la seña."
 - The visitor can drag to rotate (`camera-controls`, zoom/pan off, `touch-action: pan-y` so the
   page still scrolls on touch).
-- Changing the sign posts `{ type: VIEWER_MESSAGE, sign }` to the iframe, which swaps `src` in
-  place — no reload of model-viewer or the decoder. Both ends validate with `isSafeSign()`.
+- Changing the sign posts `{ type: VIEWER_MESSAGE, sign }` to the iframe — no reload of
+  model-viewer or the decoder. Both ends validate with `isSafeSign()`.
+- **One model-viewer per sign, kept loaded.** Loading a model (parse, GPU upload, shaders)
+  blocks the page's main thread for a moment — the iframe is same-origin, so it shares it with
+  the landing; measured 172 ms per sign change. That froze the camera demo's skeleton on every
+  correct letter. Pages send `{ type: VIEWER_PRELOAD, signs }` (validated with
+  `safeSignList()`) to load signs ahead of time; switching to a loaded sign only swaps which one
+  is visible (measured 0 ms of blocking). Hidden viewers are paused and don't render;
+  model-viewer shares one WebGL renderer per page. The iframe reports each loaded (or failed)
+  sign back with `{ type: VIEWER_LOADED, sign }`. `LessonDemo` preloads its four questions; the
+  camera demo preloads every letter of the name and only starts recognizing once they are in
+  ("Preparando las señas…", at most 10 s).
 
 Camera framing logic (torso-up crop, FOV 15°, radius derived from bounding box) mirrors
 `GlbAnimationView.tsx` in signa-mobile so the two surfaces look identical.

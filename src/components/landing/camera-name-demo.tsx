@@ -28,6 +28,8 @@ const FRAME_WIDTH = 480;
 /** The face reference (pose) is refreshed one frame out of this many: the head moves slowly. */
 const FRAMES_PER_POSE = 5;
 const COOLDOWN_MS = 1800;
+/** Recognition waits for Lisa's signs to be loaded (see SignPip), but never longer than this. */
+const PRELOAD_MAX_MS = 10000;
 const HIT_MS = 1300;
 
 const HAND_LINKS: ReadonlyArray<readonly [number, number]> = [
@@ -82,6 +84,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [running, setRunning] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  const [signsReady, setSignsReady] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -94,6 +97,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
     filled: 0,
     running: true,
     skeleton: true,
+    signsReady: false,
     phase: "idle" as Phase,
     cooldownUntil: 0,
     target: null as Point[] | null,
@@ -102,8 +106,25 @@ export function CameraNameDemo({ className }: { className?: string }) {
 
   const target = name[filled] ?? "";
   useEffect(() => {
-    Object.assign(live.current, { name, filled, running, skeleton: showSkeleton, phase });
-  }, [name, filled, running, showSkeleton, phase]);
+    Object.assign(live.current, {
+      name,
+      filled,
+      running,
+      skeleton: showSkeleton,
+      signsReady,
+      phase,
+    });
+  }, [name, filled, running, showSkeleton, signsReady, phase]);
+
+  // Lisa's signs for the whole name load while the visitor gets ready; recognition starts when
+  // they are in (or after PRELOAD_MAX_MS, so a slow network never blocks the exercise).
+  const letters = [...new Set(name.split(""))];
+  const onSignsLoaded = useCallback(() => setSignsReady(true), []);
+  useEffect(() => {
+    if (stage !== "practice") return;
+    const t = setTimeout(() => setSignsReady(true), PRELOAD_MAX_MS);
+    return () => clearTimeout(t);
+  }, [stage]);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -148,6 +169,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
       setFilled(0);
       setPhase("idle");
       setRunning(true);
+      setSignsReady(false);
       setStage("practice");
     } catch (err) {
       const denied = err instanceof DOMException && err.name === "NotAllowedError";
@@ -249,7 +271,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
         verifier.reset();
         lastTarget = letter;
       }
-      if (!state.running || !letter || state.phase === "hit") {
+      if (!state.running || !state.signsReady || !letter || state.phase === "hit") {
         verifier.reset();
         return;
       }
@@ -290,7 +312,8 @@ export function CameraNameDemo({ className }: { className?: string }) {
       if (busy || video.readyState < 2 || !capture()) return;
       busy = true;
       const state = live.current;
-      const classify = state.running && state.phase !== "hit" && !!state.name[state.filled];
+      const classify =
+        state.running && state.signsReady && state.phase !== "hit" && !!state.name[state.filled];
       void createImageBitmap(frame)
         .then((bitmap) => engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify))
         .then(({ landmarks, probs }) => {
@@ -493,13 +516,15 @@ export function CameraNameDemo({ className }: { className?: string }) {
                   hit ? "bg-success" : capturing ? "bg-primary" : "bg-text-muted",
                 )}
               />
-              {!running
-                ? "En pausa"
-                : hit
-                  ? "Letra confirmada"
-                  : capturing
-                    ? "Capturando seña"
-                    : "Listo · esperando manos"}
+              {!signsReady
+                ? "Preparando las señas…"
+                : !running
+                  ? "En pausa"
+                  : hit
+                    ? "Letra confirmada"
+                    : capturing
+                      ? "Capturando seña"
+                      : "Listo · esperando manos"}
             </div>
 
             <button
@@ -515,7 +540,14 @@ export function CameraNameDemo({ className }: { className?: string }) {
               <BodyIcon filled={showSkeleton} />
             </button>
 
-            {target && <SignPip sign={target} viewportRef={viewportRef} />}
+            {target && (
+              <SignPip
+                sign={target}
+                preload={letters}
+                onAllLoaded={onSignsLoaded}
+                viewportRef={viewportRef}
+              />
+            )}
 
             {capturing && running && (
               <div className="absolute inset-x-0 bottom-0 z-10 h-1 overflow-hidden bg-white/35">
@@ -664,11 +696,25 @@ function nearestCorner(x: number, y: number, w: number, h: number): Corner {
 
 function SignPip({
   sign,
+  preload,
+  onAllLoaded,
   viewportRef,
 }: {
   sign: string;
+  /** Every sign of the exercise, loaded up front so switching letters never stalls the page. */
+  preload: readonly string[];
+  onAllLoaded: () => void;
   viewportRef: RefObject<HTMLDivElement | null>;
 }) {
+  const loaded = useRef(new Set<string>());
+  const preloadKey = preload.join("");
+  const onLoaded = useCallback(
+    (s: string) => {
+      loaded.current.add(s);
+      if ([...preloadKey].every((l) => loaded.current.has(l))) onAllLoaded();
+    },
+    [preloadKey, onAllLoaded],
+  );
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [corner, setCorner] = useState<Corner>("tr");
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
@@ -746,7 +792,7 @@ function SignPip({
           : "transition-[left,top,width,height,border-radius] duration-300 ease-[cubic-bezier(0.34,1.2,0.5,1)]",
       )}
     >
-      <LisaGlbViewer sign={sign} />
+      <LisaGlbViewer sign={sign} preload={preload} onLoaded={onLoaded} />
       {!big && (
         <div
           aria-label="Tocá para agrandar la seña. Arrastrala para moverla."
