@@ -14,6 +14,7 @@ import { LisaGlbViewer } from "@/components/landing/lisa-glb-viewer";
 import { PRELOAD_AHEAD } from "@/lib/glb";
 import {
   LetterVerifier,
+  nameLetters,
   parseName,
   visibleRegion,
   MAX_NAME_LENGTH,
@@ -189,6 +190,8 @@ export function CameraNameDemo({ className }: { className?: string }) {
     const video = videoRef.current;
     if (!video || !streamRef.current) return;
     setVideoReady(false);
+    live.current.target = [null, null];
+    live.current.drawn = [null, null];
     video.srcObject = streamRef.current;
     void video.play().catch(() => {});
   }, [stage]);
@@ -414,10 +417,11 @@ export function CameraNameDemo({ className }: { className?: string }) {
             <input
               value={input}
               onChange={(e) => {
+                if (nameLetters(e.target.value).length > MAX_NAME_LENGTH) return;
                 setInput(e.target.value);
                 setWarning(null);
               }}
-              maxLength={MAX_NAME_LENGTH + 4}
+              maxLength={MAX_NAME_LENGTH * 2}
               onFocus={(e) => {
                 if (!window.matchMedia?.("(pointer: coarse)").matches) return;
                 const phone = e.currentTarget.closest("[data-phone]") ?? e.currentTarget;

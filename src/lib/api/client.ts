@@ -1,7 +1,6 @@
 import { keysToCamel, keysToSnake } from "@/lib/case";
 import { env } from "@/lib/env";
 import { tokenStore } from "@/lib/api/token-store";
-import type { AuthResponse } from "@/lib/api/types";
 
 export class ApiError extends Error {
   constructor(
@@ -50,19 +49,9 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
 
 function refreshSession(): Promise<boolean> {
   refreshInFlight ??= (async () => {
-    const refreshToken = tokenStore.getRefresh();
-    if (!refreshToken) return false;
     try {
-      const res = await send("/auth/refresh", {
-        method: "POST",
-        body: { refreshToken },
-        anonymous: true,
-      });
-      if (!res.ok) return false;
-      tokenStore.set(keysToCamel<AuthResponse>(await res.json()));
-      return true;
-    } catch {
-      return false;
+      const { sessionApi } = await import("@/lib/api/session");
+      return await sessionApi.refresh();
     } finally {
       refreshInFlight = null;
     }
