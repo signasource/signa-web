@@ -11,6 +11,7 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 import { LisaGlbViewer } from "@/components/landing/lisa-glb-viewer";
+import { PRELOAD_AHEAD } from "@/lib/glb";
 import {
   LetterVerifier,
   parseName,
@@ -106,7 +107,9 @@ export function CameraNameDemo({ className }: { className?: string }) {
     });
   }, [name, filled, running, showSkeleton, phase]);
 
-  const letters = [...new Set(name.split(""))];
+  const upcoming = [...new Set(name.slice(filled + 1).split(""))]
+    .filter((c) => c !== name[filled])
+    .slice(0, PRELOAD_AHEAD);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -406,6 +409,11 @@ export function CameraNameDemo({ className }: { className?: string }) {
                 setWarning(null);
               }}
               maxLength={MAX_NAME_LENGTH + 4}
+              onFocus={(e) => {
+                if (!window.matchMedia?.("(pointer: coarse)").matches) return;
+                const phone = e.currentTarget.closest("[data-phone]") ?? e.currentTarget;
+                phone.scrollIntoView({ block: "center", behavior: "instant" });
+              }}
               autoComplete="off"
               placeholder="Nombre"
               disabled={stage === "loading"}
@@ -501,7 +509,14 @@ export function CameraNameDemo({ className }: { className?: string }) {
               <BodyIcon filled={showSkeleton} />
             </button>
 
-            {target && <SignPip sign={target} preload={letters} viewportRef={viewportRef} />}
+            {name && (
+              <SignPip
+                sign={target || name[name.length - 1]!}
+                preload={upcoming}
+                viewportRef={viewportRef}
+                leaving={!target}
+              />
+            )}
 
             {capturing && running && (
               <div className="absolute inset-x-0 bottom-0 z-10 h-1 overflow-hidden bg-white/35">
@@ -615,6 +630,8 @@ export function CameraNameDemo({ className }: { className?: string }) {
 const PIP_W = 104;
 const PIP_H = 138;
 const PIP_M = 12;
+const PIP_TRANSITION =
+  "transition-[left,top,width,height,transform,border-radius] duration-300 ease-[cubic-bezier(0.2,0.8,0.3,1)]";
 const PIP_TOP = 56;
 const PIP_BOTTOM = 52;
 
@@ -646,13 +663,15 @@ function SignPip({
   sign,
   preload,
   viewportRef,
+  leaving,
 }: {
   sign: string;
   preload: readonly string[];
   viewportRef: RefObject<HTMLDivElement | null>;
+  leaving?: boolean;
 }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [corner, setCorner] = useState<Corner>("tr");
+  const [corner, setCorner] = useState<Corner>("tl");
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const [big, setBig] = useState(false);
   const [hint, setHint] = useState(true);
@@ -671,9 +690,23 @@ function SignPip({
     return () => ro.disconnect();
   }, [viewportRef]);
 
-  if (!size.w) return null;
   const home = cornerPos(corner, size.w, size.h);
   const pos = drag ?? home;
+  const box = big
+    ? { left: PIP_M, top: PIP_M, width: size.w - 2 * PIP_M, height: size.h - 2 * PIP_M }
+    : { left: pos.x, top: pos.y, width: PIP_W, height: PIP_H };
+  const fullW = size.w - 2 * PIP_M - 4;
+  const fullH = size.h - 2 * PIP_M - 4;
+  const k = big ? 1 : Math.max((PIP_W - 4) / fullW, (PIP_H - 4) / fullH);
+  const inner = {
+    width: fullW,
+    height: fullH,
+    transform: `translate(${big ? 0 : (PIP_W - 4 - fullW * k) / 2}px, ${
+      big ? 0 : (PIP_H - 4 - fullH * k) / 2
+    }px) scale(${k})`,
+  };
+
+  if (!size.w) return null;
   const scale = () => {
     const vp = viewportRef.current;
     return vp && vp.clientWidth ? vp.getBoundingClientRect().width / vp.clientWidth : 1;
@@ -712,22 +745,22 @@ function SignPip({
     }
   }
 
-  const box = big
-    ? { left: PIP_M, top: PIP_M, width: size.w - 2 * PIP_M, height: size.h - 2 * PIP_M }
-    : { left: pos.x, top: pos.y, width: PIP_W, height: PIP_H };
-
   return (
     <div
       style={box}
       className={cn(
         "bg-fill shadow-text/30 absolute z-20 overflow-hidden border-2 border-white/90 shadow-xl",
         big ? "rounded-[22px]" : "rounded-[18px]",
-        drag
-          ? "cursor-grabbing"
-          : "transition-[left,top,width,height,border-radius] duration-300 ease-[cubic-bezier(0.34,1.2,0.5,1)]",
+        drag ? "cursor-grabbing" : PIP_TRANSITION,
+        leaving && "landing-pip-out pointer-events-none",
       )}
     >
-      <LisaGlbViewer sign={sign} preload={preload} />
+      <div
+        style={inner}
+        className={cn("absolute top-0 left-0 origin-top-left", !drag && PIP_TRANSITION)}
+      >
+        <LisaGlbViewer sign={sign} preload={preload} />
+      </div>
       {!big && (
         <div
           aria-label="Tocá para agrandar la seña. Arrastrala para moverla."

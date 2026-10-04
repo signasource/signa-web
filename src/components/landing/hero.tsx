@@ -85,7 +85,10 @@ export function Hero() {
                 className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
               />
               <div className="bg-text relative rounded-[46px] p-2.5 shadow-2xl">
-                <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px] pb-10" />
+                <LessonDemo
+                  className="h-[620px] w-[280px] overflow-hidden rounded-[37px] pb-10"
+                  releaseViewerWithModal
+                />
               </div>
 
               <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
