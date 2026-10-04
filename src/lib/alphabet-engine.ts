@@ -5,9 +5,17 @@ import {
   type NormalizedLandmark,
 } from "@mediapipe/tasks-vision";
 import { createClassifier, type ClassifierManifest } from "@/lib/alphabet-classifier";
-import { applyLocationRule, faceBlock, type Point } from "@/lib/alphabet-recognizer";
+import {
+  applyLocationRule,
+  faceBlock,
+  pickPrimary,
+  touchWeight,
+  TWO_HANDED,
+  type Point,
+} from "@/lib/alphabet-recognizer";
 import { buildHandFeatures, type Vec3 } from "@/lib/hand-features";
 import { fetchVerified } from "@/lib/integrity";
+import type { Delegate } from "@/lib/delegate-choice";
 
 const WASM_PATH = "/mediapipe/wasm";
 const MODELS = "https://storage.googleapis.com/mediapipe-models";
@@ -32,12 +40,17 @@ export interface HandDetection {
 
 export interface Detection {
   hand: HandDetection | null;
+  other: HandDetection | null;
   pose: Point[] | null;
+  aspect: number;
 }
 
 export interface AlphabetEngine {
   labels: string[];
   thresholds: Record<string, number>;
+  handDelegate: Delegate;
+  lastHandMs: number;
+  switchHands(delegate: Delegate): Promise<boolean>;
   detect(frame: Frame, withPose: boolean): Detection;
   predict(detection: Detection): Float32Array | null;
   close(): void;
@@ -57,25 +70,44 @@ async function loadClassifier() {
   return createClassifier(manifest, weights);
 }
 
-async function loadDetectors() {
-  const [fileset, handModel, poseModel] = await Promise.all([
+type Fileset = Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>;
+
+function createHands(fileset: Fileset, model: Uint8Array, delegate: Delegate) {
+  return HandLandmarker.createFromOptions(fileset, {
+    baseOptions: { modelAssetBuffer: model.slice(), delegate },
+    runningMode: "IMAGE",
+    numHands: 2,
+    minHandDetectionConfidence: 0.4,
+    ...(delegate === "GPU" && typeof OffscreenCanvas !== "undefined"
+      ? { canvas: new OffscreenCanvas(1, 1) }
+      : {}),
+  });
+}
+
+async function startHands(fileset: Fileset, model: Uint8Array, preferred: Delegate) {
+  if (preferred === "GPU") {
+    try {
+      return { hands: await createHands(fileset, model, "GPU"), delegate: "GPU" as Delegate };
+    } catch {}
+  }
+  return { hands: await createHands(fileset, model, "CPU"), delegate: "CPU" as Delegate };
+}
+
+async function loadDetectors(preferred: Delegate) {
+  const [fileset, handBuffer, poseModel] = await Promise.all([
     FilesetResolver.forVisionTasks(WASM_PATH),
     fetchVerified(HAND_MODEL.url, HAND_MODEL.sha256),
     fetchVerified(POSE_MODEL.url, POSE_MODEL.sha256),
   ]);
-  const hands = await HandLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetBuffer: handModel, delegate: "CPU" },
-    runningMode: "IMAGE",
-    numHands: 1,
-    minHandDetectionConfidence: 0.4,
-  });
+  const handModel = new Uint8Array(handBuffer);
+  const { hands, delegate } = await startHands(fileset, handModel, preferred);
   try {
     const pose = await PoseLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetBuffer: poseModel, delegate: "CPU" },
       runningMode: "IMAGE",
       numPoses: 1,
     });
-    return { hands, pose };
+    return { fileset, handModel, hands, handDelegate: delegate, pose };
   } catch (e) {
     hands.close();
     throw e;
@@ -85,43 +117,76 @@ async function loadDetectors() {
 const toPoint = (p: NormalizedLandmark): Point => ({ x: p.x, y: p.y, z: p.z });
 const toVec = (p: Point, sign: number): Vec3 => [sign * p.x, p.y, p.z ?? 0];
 
-export async function createAlphabetEngine(): Promise<AlphabetEngine> {
-  const [classifier, detectors] = await Promise.all([loadClassifier(), loadDetectors()]);
+export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise<AlphabetEngine> {
+  const [classifier, detectors] = await Promise.all([loadClassifier(), loadDetectors(preferred)]);
   const { labels, thresholds } = classifier.manifest;
   let lastPose: Point[] | null = null;
+  let lastWrist: Point | null = null;
 
-  return {
+  const classify = (hand: HandDetection, pose: Point[] | null) => {
+    const sign = hand.mirrored ? -1 : 1;
+    const features = buildHandFeatures(
+      hand.landmarks.map((p) => toVec(p, sign)),
+      hand.world.length ? hand.world.map((p) => toVec(p, sign)) : null,
+    );
+    const face = faceBlock(pose, hand.landmarks, hand.mirrored);
+    return Float32Array.from(applyLocationRule(classifier.predict(features, face), labels, face));
+  };
+
+  const engine: AlphabetEngine = {
     labels,
     thresholds,
+    handDelegate: detectors.handDelegate,
+    lastHandMs: 0,
+
+    async switchHands(delegate) {
+      if (delegate === this.handDelegate) return true;
+      try {
+        const next = await createHands(detectors.fileset, detectors.handModel, delegate);
+        detectors.hands.close();
+        detectors.hands = next;
+        this.handDelegate = delegate;
+        return true;
+      } catch {
+        return false;
+      }
+    },
 
     detect(frame, withPose) {
       if (withPose || !lastPose) {
         const pose = detectors.pose.detect(frame).landmarks[0];
         lastPose = pose ? pose.map(toPoint) : null;
       }
+      const t0 = performance.now();
       const r = detectors.hands.detect(frame);
-      const landmarks = r.landmarks[0];
-      if (!landmarks) return { hand: null, pose: lastPose };
-      const label = r.handedness[0]?.[0]?.categoryName ?? "Right";
-      return {
-        hand: {
-          landmarks: landmarks.map(toPoint),
-          world: (r.worldLandmarks[0] ?? []).map(toPoint),
-          mirrored: label.toLowerCase().startsWith("l"),
-        },
-        pose: lastPose,
-      };
+      this.lastHandMs = performance.now() - t0;
+      const aspect = frame.height / frame.width;
+      const hands = r.landmarks.map((lm, i) => ({
+        landmarks: lm.map(toPoint),
+        world: (r.worldLandmarks[i] ?? []).map(toPoint),
+        mirrored: (r.handedness[i]?.[0]?.categoryName ?? "Right").toLowerCase().startsWith("l"),
+      }));
+      const main = pickPrimary(
+        hands.map((h) => h.landmarks),
+        lastWrist,
+        aspect,
+      );
+      const hand = hands[main] ?? null;
+      lastWrist = hand?.landmarks[0] ?? null;
+      const other = hands.find((_, i) => i !== main) ?? null;
+      return { hand, other, pose: lastPose, aspect };
     },
 
-    predict({ hand, pose }) {
+    predict({ hand, other, pose, aspect }) {
       if (!hand) return null;
-      const sign = hand.mirrored ? -1 : 1;
-      const features = buildHandFeatures(
-        hand.landmarks.map((p) => toVec(p, sign)),
-        hand.world.length ? hand.world.map((p) => toVec(p, sign)) : null,
-      );
-      const face = faceBlock(pose, hand.landmarks, hand.mirrored);
-      return applyLocationRule(classifier.predict(features, face), labels, face);
+      const probs = classify(hand, pose);
+      const second = other ? classify(other, pose) : null;
+      const touch = touchWeight(hand.landmarks, other?.landmarks ?? null, aspect);
+      for (const letter of TWO_HANDED) {
+        const i = labels.indexOf(letter);
+        if (i >= 0) probs[i] = Math.max(probs[i]!, second?.[i] ?? 0) * touch;
+      }
+      return probs;
     },
 
     close() {
@@ -129,4 +194,5 @@ export async function createAlphabetEngine(): Promise<AlphabetEngine> {
       detectors.pose.close();
     },
   };
+  return engine;
 }

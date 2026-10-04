@@ -25,6 +25,7 @@ type Stage = "setup" | "loading" | "practice" | "complete" | "error";
 type Phase = "idle" | "capturing" | "hit";
 
 const FRAME_WIDTH = 480;
+const VIDEO_SETTLE_MS = 120;
 const FRAMES_PER_POSE = 5;
 const COOLDOWN_MS = 1800;
 const HIT_MS = 1300;
@@ -78,6 +79,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
   const [filled, setFilled] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
   const [running, setRunning] = useState(true);
+  const [videoReady, setVideoReady] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -92,8 +94,8 @@ export function CameraNameDemo({ className }: { className?: string }) {
     skeleton: true,
     phase: "idle" as Phase,
     cooldownUntil: 0,
-    target: null as Point[] | null,
-    drawn: null as Point[] | null,
+    target: [null, null] as (Point[] | null)[],
+    drawn: [null, null] as (Point[] | null)[],
   });
 
   const target = name[filled] ?? "";
@@ -186,6 +188,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
     if (stage !== "practice") return;
     const video = videoRef.current;
     if (!video || !streamRef.current) return;
+    setVideoReady(false);
     video.srcObject = streamRef.current;
     void video.play().catch(() => {});
   }, [stage]);
@@ -300,9 +303,9 @@ export function CameraNameDemo({ className }: { className?: string }) {
       const classify = state.running && state.phase !== "hit" && !!state.name[state.filled];
       void createImageBitmap(frame)
         .then((bitmap) => engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify))
-        .then(({ landmarks, probs }) => {
+        .then(({ landmarks, other, probs }) => {
           if (!alive) return;
-          live.current.target = landmarks;
+          live.current.target = [landmarks, other];
           recognize(probs, landmarks !== null, performance.now());
         })
         .catch(() => {})
@@ -321,51 +324,57 @@ export function CameraNameDemo({ className }: { className?: string }) {
       }
       octx.setTransform(dpr, 0, 0, dpr, 0, 0);
       octx.clearRect(0, 0, w, h);
-      const { target: tgt, skeleton } = live.current;
-      if (!tgt || !skeleton) return;
-      const drawn = (live.current.drawn ??= tgt.map((p) => ({ ...p })));
-      drawn.forEach((p, i) => {
-        const t = tgt[i]!;
-        p.x += (t.x - p.x) * 0.35;
-        p.y += (t.y - p.y) * 0.35;
-      });
+      const { target: targets, skeleton } = live.current;
+      if (!skeleton) return;
       const vw = video.videoWidth || 4;
       const vh = video.videoHeight || 3;
       const s = Math.max(w / vw, h / vh);
       const ox = (w - vw * s) / 2;
       const oy = (h - vh * s) / 2;
-      const pts = drawn.map((p) => [ox + p.x * vw * s, oy + p.y * vh * s] as const);
       const color = live.current.phase === "hit" ? success : accent;
-      octx.lineCap = "round";
-      for (const [style, width] of [
-        [halo, 5],
-        [color, 2.4],
-      ] as const) {
-        octx.strokeStyle = style;
-        octx.globalAlpha = style === halo ? 0.55 : 1;
-        octx.lineWidth = width;
-        for (const [a, b] of HAND_LINKS) {
-          const pa = pts[a]!;
-          const pb = pts[b]!;
-          octx.beginPath();
-          octx.moveTo(pa[0], pa[1]);
-          octx.lineTo(pb[0], pb[1]);
-          octx.stroke();
+      targets.forEach((tgt, slot) => {
+        if (!tgt) {
+          live.current.drawn[slot] = null;
+          return;
         }
-      }
-      octx.globalAlpha = 1;
-      pts.forEach(([x, y], i) => {
-        const r = i === 0 ? 5.5 : TIPS.has(i) ? 4.6 : 3.4;
-        octx.beginPath();
-        octx.arc(x, y, r + 1.6, 0, Math.PI * 2);
-        octx.globalAlpha = 0.9;
-        octx.fillStyle = halo;
-        octx.fill();
+        const drawn = (live.current.drawn[slot] ??= tgt.map((p) => ({ ...p })));
+        drawn.forEach((p, i) => {
+          const t = tgt[i]!;
+          p.x += (t.x - p.x) * 0.35;
+          p.y += (t.y - p.y) * 0.35;
+        });
+        const pts = drawn.map((p) => [ox + p.x * vw * s, oy + p.y * vh * s] as const);
+        octx.lineCap = "round";
+        for (const [style, width] of [
+          [halo, 5],
+          [color, 2.4],
+        ] as const) {
+          octx.strokeStyle = style;
+          octx.globalAlpha = style === halo ? 0.55 : 1;
+          octx.lineWidth = width;
+          for (const [a, b] of HAND_LINKS) {
+            const pa = pts[a]!;
+            const pb = pts[b]!;
+            octx.beginPath();
+            octx.moveTo(pa[0], pa[1]);
+            octx.lineTo(pb[0], pb[1]);
+            octx.stroke();
+          }
+        }
         octx.globalAlpha = 1;
-        octx.beginPath();
-        octx.arc(x, y, r, 0, Math.PI * 2);
-        octx.fillStyle = color;
-        octx.fill();
+        pts.forEach(([x, y], i) => {
+          const r = i === 0 ? 5.5 : TIPS.has(i) ? 4.6 : 3.4;
+          octx.beginPath();
+          octx.arc(x, y, r + 1.6, 0, Math.PI * 2);
+          octx.globalAlpha = 0.9;
+          octx.fillStyle = halo;
+          octx.fill();
+          octx.globalAlpha = 1;
+          octx.beginPath();
+          octx.arc(x, y, r, 0, Math.PI * 2);
+          octx.fillStyle = color;
+          octx.fill();
+        });
       });
     };
 
@@ -473,7 +482,21 @@ export function CameraNameDemo({ className }: { className?: string }) {
               playsInline
               disablePictureInPicture
               disableRemotePlayback
-              className="absolute inset-0 h-full w-full -scale-x-100 object-cover"
+              onPlaying={(e) => {
+                const v = e.currentTarget;
+                let frames = 0;
+                const show = () => window.setTimeout(() => setVideoReady(true), VIDEO_SETTLE_MS);
+                const onFrame = () => {
+                  if (v.videoWidth && ++frames >= 2) return show();
+                  if ("requestVideoFrameCallback" in v) v.requestVideoFrameCallback(onFrame);
+                  else window.setTimeout(onFrame, 50);
+                };
+                onFrame();
+              }}
+              className={cn(
+                "absolute inset-0 h-full w-full -scale-x-100 object-cover transition-opacity duration-200",
+                videoReady ? "opacity-100" : "opacity-0",
+              )}
             />
             <canvas
               ref={overlayRef}
@@ -569,13 +592,23 @@ export function CameraNameDemo({ className }: { className?: string }) {
 
           <button
             type="button"
-            onClick={() => setRunning((r) => !r)}
-            className={cn(
-              "flex h-12 shrink-0 cursor-pointer items-center justify-center rounded-2xl text-[15px] font-extrabold transition-colors",
-              running ? "bg-fill text-text" : "bg-primary text-on-primary",
-            )}
+            onClick={restart}
+            className="bg-fill text-text flex h-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl text-[15px] font-extrabold transition-colors"
           >
-            {running ? "Pausar reconocimiento" : "Seguir reconociendo"}
+            <svg
+              aria-hidden="true"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+            Cambiar nombre
           </button>
         </div>
       )}

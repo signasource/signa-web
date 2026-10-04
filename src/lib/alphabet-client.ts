@@ -1,16 +1,34 @@
 import type { Point } from "@/lib/alphabet-recognizer";
+import { storedDelegate, storeDelegate, type Delegate } from "@/lib/delegate-choice";
 
 export type WorkerRequest =
-  { type: "init" } | { type: "frame"; bitmap: ImageBitmap; withPose: boolean; classify: boolean };
+  | { type: "init"; delegate: Delegate | null }
+  | {
+      type: "frame";
+      bitmap: ImageBitmap;
+      withPose: boolean;
+      classify: boolean;
+    };
 
 export type WorkerResponse =
   | { type: "ready"; labels: string[]; thresholds: Record<string, number> }
   | { type: "error"; message: string }
-  | { type: "result"; landmarks: Point[] | null; probs: Float32Array | null };
+  | {
+      type: "result";
+      landmarks: Point[] | null;
+      other: Point[] | null;
+      probs: Float32Array | null;
+      delegate: Delegate;
+      handMs: number;
+    }
+  | { type: "decided"; delegate: Delegate; cpuMs: number; gpuMs: number | null };
 
 export interface FrameResult {
   landmarks: Point[] | null;
+  other: Point[] | null;
   probs: Float32Array | null;
+  delegate: Delegate;
+  handMs: number;
 }
 
 export interface RecognizerClient {
@@ -51,9 +69,17 @@ export function createRecognizerClient(): Promise<RecognizerClient> {
       } else if (data.type === "result") {
         const done = pending;
         pending = null;
-        done?.({ landmarks: data.landmarks, probs: data.probs });
+        done?.({
+          landmarks: data.landmarks,
+          other: data.other,
+          probs: data.probs,
+          delegate: data.delegate,
+          handMs: data.handMs,
+        });
+      } else if (data.type === "decided") {
+        storeDelegate(data.delegate);
       }
     };
-    send({ type: "init" });
+    send({ type: "init", delegate: storedDelegate() });
   });
 }

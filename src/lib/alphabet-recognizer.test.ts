@@ -4,6 +4,8 @@ import {
   faceBlock,
   LetterVerifier,
   parseName,
+  pickPrimary,
+  touchWeight,
   visibleRegion,
   type Point,
 } from "@/lib/alphabet-recognizer";
@@ -150,5 +152,59 @@ describe("parseName", () => {
 
   it("is empty for an empty input", () => {
     expect(parseName("", supported)).toEqual({ name: "", unsupported: [] });
+  });
+});
+
+describe("location zones", () => {
+  const labels = ["H", "S", "A"];
+  const face = (x: number, y: number) => Float32Array.from([0, 3, x, y, 0, 0, 0.5, 1]);
+  const probs = () => Float32Array.from([0.8, 0.8, 0.8]);
+
+  it("keeps H by the face and S on the chin", () => {
+    const out = applyLocationRule(probs(), labels, face(0.3, 1.6));
+    expect(out[0]).toBeGreaterThan(0.75);
+    expect(out[1]).toBeGreaterThan(0.75);
+  });
+
+  it("drops H and S made away from the face, leaving other letters alone", () => {
+    const out = applyLocationRule(probs(), labels, face(-2.5, 3.5));
+    expect(out[0]).toBeLessThan(0.05);
+    expect(out[1]).toBeLessThan(0.05);
+    expect(out[2]).toBeCloseTo(0.8);
+  });
+
+  it("drops S by the eyes, where H is still fine", () => {
+    const out = applyLocationRule(probs(), labels, face(0.3, 0.1));
+    expect(out[0]).toBeGreaterThan(0.75);
+    expect(out[1]).toBeLessThan(0.05);
+  });
+
+  it("does nothing without a face", () => {
+    const f = face(-2.5, 3.5);
+    f[7] = 0;
+    expect(Array.from(applyLocationRule(probs(), labels, f))).toEqual(Array.from(probs()));
+  });
+});
+
+describe("two hands", () => {
+  const hand = (dx: number, dy = 0) =>
+    Array.from({ length: 21 }, (_, i) => ({
+      x: 0.3 + dx + (i % 5) * 0.01,
+      y: 0.6 + dy - i * 0.01,
+    }));
+
+  it("counts hands as touching only when a fingertip reaches the other hand", () => {
+    expect(touchWeight(hand(0), hand(0.02), 1)).toBeGreaterThan(0.95);
+    expect(touchWeight(hand(0), hand(0.4), 1)).toBeLessThan(0.01);
+    expect(touchWeight(hand(0), null, 1)).toBe(0);
+  });
+
+  it("keeps following the same hand instead of jumping to the bigger one", () => {
+    const small = hand(0);
+    const big = hand(0.4).map((p, i) => (i === 9 ? { x: p.x, y: p.y - 0.2 } : p));
+    expect(pickPrimary([small, big], null, 1)).toBe(1);
+    expect(pickPrimary([small, big], small[0]!, 1)).toBe(0);
+    expect(pickPrimary([big, small], small[0]!, 1)).toBe(1);
+    expect(pickPrimary([], null, 1)).toBe(-1);
   });
 });

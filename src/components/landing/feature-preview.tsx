@@ -399,7 +399,7 @@ const CONTENT: Record<
     body: "La cámara sigue tus manos en tiempo real y mira más de 200 medidas de tu mano y de dónde está respecto de tu cara. Probalo ahora mismo escribiendo tu nombre y haciendo cada letra frente a la cámara.",
     note: [
       "El reconocimiento todavía está aprendiendo y a veces se equivoca. Lo seguimos revisando y mejorando.",
-      "Todo pasa en tu dispositivo y ningún video sale de tu navegador.",
+      "Todo pasa en tu dispositivo y ningún video sale de tu navegador, así que en equipos más viejos puede ir un poco más lento.",
     ],
     phone: <CameraPhone />,
     live: true,
