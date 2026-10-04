@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { BackButton } from "@/components/back-button";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { formatCuit, validateCuit } from "@/lib/cuit";
@@ -261,48 +262,45 @@ export default function IngresarPage() {
         </Link>
       </header>
 
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-5 py-12 sm:px-0">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">
-            {tab === "login" ? "Ingresar al panel" : "Registrar organización"}
-          </h1>
-          <p className="text-text-muted text-[15px]">Signa para organizaciones</p>
-        </div>
+      <div className="page-enter relative flex flex-1 flex-col">
+        <BackButton href="/organizaciones" />
+        <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-5 py-12 sm:px-0">
+          <div className="flex flex-col gap-1">
+            <h1 className="font-display text-3xl font-extrabold tracking-tight">
+              {tab === "login" ? "Ingresar al panel" : "Registrar organización"}
+            </h1>
+            <p className="text-text-muted text-[15px]">Signa para organizaciones</p>
+          </div>
 
-        <div className="bg-fill flex rounded-2xl p-1">
-          <button
-            type="button"
-            onClick={() => setTab("login")}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-colors ${
-              tab === "login" ? "bg-background shadow" : "text-text-muted"
-            }`}
-          >
-            Ingresar
-          </button>
-          <button
-            ref={registroRef}
-            type="button"
-            onClick={() => setTab("registro")}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-colors ${
-              tab === "registro" ? "bg-background shadow" : "text-text-muted"
-            }`}
-          >
-            Registrarse
-          </button>
-        </div>
+          <div className="bg-fill flex rounded-2xl p-1">
+            <button
+              type="button"
+              onClick={() => setTab("login")}
+              className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-colors ${
+                tab === "login" ? "bg-background shadow" : "text-text-muted"
+              }`}
+            >
+              Ingresar
+            </button>
+            <button
+              ref={registroRef}
+              type="button"
+              onClick={() => setTab("registro")}
+              className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-colors ${
+                tab === "registro" ? "bg-background shadow" : "text-text-muted"
+              }`}
+            >
+              Registrarse
+            </button>
+          </div>
 
-        {tab === "login" ? (
-          <LoginForm onSuccess={() => router.push("/organizaciones/panel")} />
-        ) : (
-          <RegistroForm onSuccess={() => {}} />
-        )}
-
-        <p className="text-text-muted text-center text-[13px]">
-          <Link href="/organizaciones" className="hover:text-text font-semibold hover:underline">
-            ← Volver a Signa para organizaciones
-          </Link>
-        </p>
-      </main>
+          {tab === "login" ? (
+            <LoginForm onSuccess={() => router.push("/organizaciones/panel")} />
+          ) : (
+            <RegistroForm onSuccess={() => {}} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
