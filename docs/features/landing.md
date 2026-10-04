@@ -122,7 +122,18 @@ CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
   `safeSignList()`) to load signs ahead of time; switching to a loaded sign only swaps which one
   is visible (measured 0 ms of blocking). Hidden viewers are paused and don't render;
   model-viewer shares one WebGL renderer per page. Preloads are loaded one at a time, so the sign on screen
-  is never queued behind the rest. `LessonDemo` preloads its four questions; the camera demo
+  is never queued behind the rest, and **only at a loop boundary**: preparing a model blocks the
+  page for 300–450 ms, and doing it while Lisa signs made her first sign stutter. The viewer lets
+  the visible sign play its first repetition untouched; when a repetition ends it holds Lisa in
+  her starting pose, loads the next preload, and resumes once it is ready (`arm()`/`boundary()`/
+  `resume()` in the route). Measured: 0 dropped frames during the first sign; a sign picked
+  before its preload is loaded on demand (~1 s). **The very first sign plays its first repetition hidden, at 4× speed**
+  (spinner on, `WARM_SPEED`), and Lisa appears from the start at normal speed: the first
+  playback stuttered on real laptops, and only the first one. Costs ~1 s of extra spinner (a
+  normal-speed warm-up cost 4 s), once per viewer. **Downloads run in parallel**: the viewer HTML preloads the first sign's
+  GLB and the Draco decoder (`<link rel="preload">`), so they no longer wait for model-viewer's
+  script and for each other. Measured on a 20 Mbps connection: Lisa visible at 3.4 s instead of
+  4.3 s. What remains is mostly the GLB itself (~2.2 MB per sign). `LessonDemo` preloads its four questions; the camera demo
   preloads every letter of the name but starts recognizing right away — it never waits for the
   models (waiting for all of them used to delay the start by more than 10 s).
 
@@ -214,15 +225,30 @@ All four "Ver cómo funciona" modals share one size: almost the whole screen (up
 with a margin around it), text on the left and the phone on the right (stacked on phones, with
 scroll inside the card). Each phone is drawn at its fixed design size (live demos 380×780, static
 screens 300×640) and `FitPhone` in `feature-preview.tsx` scales it with a `ResizeObserver` to
-fill the space left, so every phone has the same height and keeps its proportions.
+fill the space left, so every phone has the same height and keeps its proportions. On phones (and on
+desktops zoomed past the `md` breakpoint) text and phone are stacked and the phone's size is
+computed once from the screen height when the modal opens: tracking the height made the phone
+shrink when the keyboard opened, which moved the name field and made the page bounce. Also, on touch screens focusing the name
+field centers it instantly (before the keyboard rises) and smooth scrolling is off while a modal
+is open: a half-visible field made the browser scroll the modal smoothly while the keyboard was
+resizing the screen, and the two fought (flicker).
 
 Closing (X, backdrop or Escape) plays the opening animation in reverse (280 ms) before
 unmounting; with `prefers-reduced-motion` it closes at once.
 
-**The 3D viewer starts 400 ms after it is mounted** (`LisaGlbViewer`). Booting model-viewer
+**Inside a modal, the 3D viewer starts 400 ms after it is mounted** (`LisaGlbViewer`'s `delay`, passed by the Señas en 3D modal; the hero's viewer starts at once and is part of the server HTML). Booting model-viewer
 (script, WebGL, shaders) blocks the page's main thread for ~300 ms — the iframe is same-origin —
 and doing it while the modal opens froze the whole opening animation. Measured: 0 dropped frames
 during the opening now; the boot happens once the card is in place.
+
+## Full pages (Próximamente, Organizaciones, Ingresar, Panel, legal)
+
+Each one enters with `page-enter` (`globals.css`: 0.5 s fade + 8 px rise; off with
+`prefers-reduced-motion`) on its content — the nav stays put, so moving from the landing feels
+continuous. Going back is a single round arrow button (`src/components/back-button.tsx`) at the
+top-left corner of the content, under the top bar: to `/` from Próximamente, Organizaciones and
+the legal pages, to `/organizaciones` from Ingresar and Panel. There are no "Volver a…" text
+links.
 
 ## Images are not selectable
 

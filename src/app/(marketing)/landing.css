@@ -2,6 +2,9 @@ html:has(.landing-root) {
   scroll-behavior: smooth;
   scroll-padding-top: 88px;
 }
+html:has(.landing-root):has([role="dialog"]) {
+  scroll-behavior: auto;
+}
 html:has(.landing-root),
 html:has(.landing-root) body {
   touch-action: pan-x pan-y;
@@ -293,11 +296,15 @@ html:has(.landing-root) body {
   }
 }
 
+.landing-phone-ring,
+.landing-phone-ring2 {
+  opacity: 0.22;
+}
 .landing-phone-ring {
   animation: landing-phone-ring 2.4s ease-in-out infinite;
 }
 .landing-phone-ring2 {
-  animation: landing-phone-ring 2.4s ease-in-out 1.2s infinite;
+  animation: landing-phone-ring 2.4s ease-in-out 1.2s infinite both;
 }
 @keyframes landing-phone-ring {
   0%,
