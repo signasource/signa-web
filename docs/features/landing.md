@@ -187,6 +187,26 @@ Everything runs on the visitor's device; no frame leaves the browser.
   `signa-mobile/assets/images/`; keep both repos' copies in sync if Lisa's artwork changes.
 - `public/icons/*.svg` — a handful of the project's illustration set (not the gamification icon
   set used in-app); used as-is, no inline coloring.
+- Team photos (`public/images/equipo/`) can't be dragged or long-pressed/right-clicked as an
+  image (no "open in new tab"/"save image"): `pointer-events: none`, `draggable={false}`,
+  `-webkit-touch-callout: none`. This only deters casual copying — the files are public URLs.
+
+## Marquee outline row
+
+The second row is outlined, not filled. Bricolage Grotesque is a variable font whose glyphs are
+built from overlapping contours, so a plain `-webkit-text-stroke` also draws the joints inside
+each letter. The row is filled with the page background and stroked at twice the width with
+`paint-order: stroke fill`, so the fill hides the inner half of the stroke and the joints. It
+relies on the row sitting on `bg-background`; over another color, change the fill to match. Both
+rows are `select-none`.
+
+## Opening the dev server from a phone
+
+`next dev` only serves its dev scripts to `localhost` unless the origin is listed in
+`allowedDevOrigins` (`next.config.ts`: `192.168.*.*`, `10.*.*.*`, `*.local`); otherwise the page
+never hydrates on a phone and buttons/modals do nothing. The camera demo still needs a secure
+context, which plain `http://<LAN IP>` is not: use `next dev --experimental-https` to try the
+camera from a phone.
 
 ## Known placeholders
 
