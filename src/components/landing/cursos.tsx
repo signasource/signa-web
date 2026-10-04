@@ -98,7 +98,6 @@ export function Cursos() {
               <span className="bg-primary text-on-primary rounded-full px-3.5 py-1.5 text-[13px] font-extrabold tracking-wide">
                 CURSOS TEMÁTICOS
               </span>
-              <span className="text-on-dark/60 text-[15px] font-bold">Desde $10</span>
             </div>
             <p className="font-display relative text-5xl leading-none font-extrabold tracking-tight">
               LSA para tu área

@@ -30,22 +30,10 @@ export function Equipo() {
           </div>
           <div data-reveal="up" className="flex flex-col gap-4">
             <p className="text-text-muted text-lg leading-relaxed">
-              Somos el equipo detrás de Signa: estudiantes de Ingeniería en Sistemas de Información
+              Somos el equipo detrás de Signa, estudiantes de Ingeniería en Sistemas de Información
               de la Universidad Tecnológica Nacional, Facultad Regional Córdoba. Signa es nuestro
               Proyecto Final, la tesis con la que cerramos la carrera.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {["UTN · FRC", "Ingeniería en Sistemas de Información", "Proyecto Final"].map(
-                (tag) => (
-                  <span
-                    key={tag}
-                    className="border-border bg-surface rounded-full border px-3.5 py-2 text-sm font-bold"
-                  >
-                    {tag}
-                  </span>
-                ),
-              )}
-            </div>
           </div>
         </div>
 

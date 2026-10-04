@@ -229,6 +229,6 @@ the certificate warning once.
 
 ## Known placeholders
 
-Pricing (`[PRECIO]`), the organizations contact email, and the contact form's submit handler
+Pricing (the thematic courses card shows no price until it is decided), the organizations contact email, and the contact form's submit handler
 (currently a no-op button) are unresolved — see [../status.md](../status.md). No `sitemap.ts` /
 `robots.ts` / OG image yet.
