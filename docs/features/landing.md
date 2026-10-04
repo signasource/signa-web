@@ -127,7 +127,10 @@ CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
   the visible sign play its first repetition untouched; when a repetition ends it holds Lisa in
   her starting pose, loads the next preload, and resumes once it is ready (`arm()`/`boundary()`/
   `resume()` in the route). Measured: 0 dropped frames during the first sign; a sign picked
-  before its preload is loaded on demand (~1 s). `LessonDemo` preloads its four questions; the camera demo
+  before its preload is loaded on demand (~1 s). **The very first sign plays its first repetition hidden** (spinner on)
+  and Lisa appears at the start of the second: even without preloads competing, the first
+  playback stuttered on real laptops, and only the first one. Costs ~one repetition (4 s) of
+  extra spinner, once per viewer. `LessonDemo` preloads its four questions; the camera demo
   preloads every letter of the name but starts recognizing right away — it never waits for the
   models (waiting for all of them used to delay the start by more than 10 s).
 
@@ -219,7 +222,10 @@ All four "Ver cómo funciona" modals share one size: almost the whole screen (up
 with a margin around it), text on the left and the phone on the right (stacked on phones, with
 scroll inside the card). Each phone is drawn at its fixed design size (live demos 380×780, static
 screens 300×640) and `FitPhone` in `feature-preview.tsx` scales it with a `ResizeObserver` to
-fill the space left, so every phone has the same height and keeps its proportions.
+fill the space left, so every phone has the same height and keeps its proportions. On phones (and on
+desktops zoomed past the `md` breakpoint) text and phone are stacked and the phone's size is
+computed once from the screen height when the modal opens: tracking the height made the phone
+shrink when the keyboard opened, which moved the name field and made the page bounce.
 
 Closing (X, backdrop or Escape) plays the opening animation in reverse (280 ms) before
 unmounting; with `prefers-reduced-motion` it closes at once.

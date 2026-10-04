@@ -33,7 +33,7 @@ function buildViewerHtml(sign: string): string {
   <script>
     var FOV=${FOV},ENCUADRE=${ENCUADRE},BASE=${JSON.stringify(R2_GLB_BASE)},MAX=${MAX_PRELOAD},
         SAFE=${String(/^[\p{L}\p{N}_\- ]{1,40}$/u)},b=document.body;
-    var cache={},order=[],queue=[],loading=0,shown=null,holding=null,slot=null,want=${JSON.stringify(sign)};
+    var cache={},order=[],queue=[],loading=0,shown=null,holding=null,slot=null,warm=null,warming=false,warmed=false,want=${JSON.stringify(sign)};
     function urlOf(sign){return BASE+'/'+encodeURIComponent(sign)+'.glb';}
     function frame(mv){
       try{
@@ -89,6 +89,23 @@ function buildViewerHtml(sign: string): string {
       holding=null;
       mv.currentTime=0;
       mv.play();
+      clearTimeout(slot);
+      clearTimeout(warm);
+      warming=false;
+      if(!warmed){
+        warmed=true;
+        warming=true;
+        warm=setTimeout(function(){
+          warming=false;
+          if(shown!==mv)return;
+          mv.currentTime=0;
+          uncover(mv,sign);
+        },(mv.duration||0)*1000);
+        return;
+      }
+      uncover(mv,sign);
+    }
+    function uncover(mv,sign){
       arm();
       requestAnimationFrame(function(){requestAnimationFrame(function(){
         if(want!==sign)return;
@@ -98,6 +115,7 @@ function buildViewerHtml(sign: string): string {
     }
     function arm(){
       clearTimeout(slot);
+      if(warming)return;
       while(queue.length&&cache[queue[0]])queue.shift();
       if(!shown||!queue.length)return;
       var d=shown.duration||0;
