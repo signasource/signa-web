@@ -13,7 +13,13 @@ export const DEMO_QUESTIONS = [
 
 const HEARTS = 5;
 
-export function LessonDemo({ className }: { className?: string }) {
+export function LessonDemo({
+  className,
+  viewerClassName = "h-[300px]",
+}: {
+  className?: string;
+  viewerClassName?: string;
+}) {
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [hearts, setHearts] = useState(HEARTS);
@@ -74,7 +80,12 @@ export function LessonDemo({ className }: { className?: string }) {
         </div>
       </div>
 
-      <div className="bg-primary-light relative h-[300px] shrink-0 overflow-hidden rounded-[20px]">
+      <div
+        className={cn(
+          "bg-primary-light relative shrink-0 overflow-hidden rounded-[20px]",
+          viewerClassName,
+        )}
+      >
         <LisaGlbViewer sign={question.sign} />
         <span className="bg-surface text-primary-dark pointer-events-none absolute top-2.5 left-2.5 z-10 rounded-full px-2.5 py-1 text-[10px] font-extrabold">
           3D

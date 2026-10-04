@@ -11,6 +11,7 @@
 - `/login` and the guarded dashboard: overview, members list + detail (remove), contents, invitations — see [features/dashboard.md](./features/dashboard.md).
 - Landing page (`/`) — full one-page site with a playable 3D lesson demo; scroll effects work in
   every browser (no CSS scroll timelines). See [features/landing.md](./features/landing.md).
+- Landing camera demo ("Tu cámara te corrige") — real in-browser recognition: spell your name with the LSA alphabet, same model as the app (signa-ml v5). See [features/landing.md](./features/landing.md).
 - `/proximamente` — coming-soon page with waitlist email form (calls `POST /waitlist` on signa-api; entity auto-created by JPA `ddl-auto: update`). All "Empezá gratis" CTAs link here.
 
 ## Stub / placeholder

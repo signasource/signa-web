@@ -23,6 +23,17 @@ const nextConfig: NextConfig = {
         source,
         headers: [{ key: "Content-Security-Policy", value: buildCsp() }],
       })),
+      // The landing's camera demo ("Tu cámara te corrige") uses the webcam, on this page only.
+      // More specific than the global rule above, so it overrides camera=() for "/".
+      {
+        source: "/",
+        headers: [
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), microphone=(), geolocation=(), payment=()",
+          },
+        ],
+      },
       // The glb-viewer route handler must be embeddable by same-origin iframes.
       // This more-specific rule overrides the global X-Frame-Options: DENY above.
       {

@@ -1,9 +1,32 @@
 "use client";
 
+import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { FeatureId, useLandingUI } from "@/components/landing/landing-ui-context";
 import { CloseButton } from "@/components/landing/close-button";
 import { LessonDemo } from "@/components/landing/lesson-demo";
 import { LottiePlayer } from "@/components/landing/lottie-player";
+import { CameraNameDemo } from "@/components/landing/camera-name-demo";
+
+// The two live previews (3D lesson and camera) are drawn on a fixed 380×780 phone and scaled as
+// a whole (`.landing-live-phone` in landing.css), so they shrink or grow with the screen but
+// always keep a phone's proportions.
+const LIVE_SCREEN = "h-[760px] w-[360px] overflow-hidden rounded-[37px]";
+
+function LivePhone({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className="landing-live-phone">
+      <div
+        className={cn(
+          "landing-live-phone-canvas bg-text rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10",
+          className,
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function SignsPhone() {
   return (
@@ -19,14 +42,20 @@ function SignsPhone() {
           aria-hidden
           className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
         />
-        <div className="bg-text hover:ring-primary/30 relative rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10 transition-shadow">
-          <LessonDemo className="h-[620px] w-[280px] overflow-hidden rounded-[37px]" />
-        </div>
+        <LivePhone className="hover:ring-primary/30 transition-shadow">
+          <LessonDemo className={LIVE_SCREEN} viewerClassName="h-[440px]" />
+        </LivePhone>
         {/* Racha badge — bottom center of phone */}
         <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
           <span className="bg-surface landing-floaty flex items-center gap-2 rounded-full py-2.5 pr-4 pl-2.5 text-sm font-bold shadow-xl">
             <span className="bg-shop-amber-light text-streak-orange flex h-7.5 w-7.5 items-center justify-center rounded-full">
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <svg
+                aria-hidden="true"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
                 <path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 0 2 1 3 2 3 0-3-1-6.5.5-9z" />
               </svg>
             </span>
@@ -40,63 +69,10 @@ function SignsPhone() {
 
 function CameraPhone() {
   return (
-    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
-      <div className="bg-ink-900 text-on-dark h-[620px] w-[280px] overflow-hidden rounded-[37px]">
-        <div className="flex items-center gap-2.5 px-4 pt-7">
-          <svg
-            aria-hidden="true"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-          >
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-          <div className="bg-ink-700 h-2.5 flex-grow rounded-full">
-            <div className="bg-course-teal h-2.5 w-[72%] rounded-full" />
-          </div>
-        </div>
-        <div className="bg-surface text-text mx-4 mt-3.5 rounded-2xl p-3.5">
-          <p className="text-text-muted text-[10px] font-extrabold tracking-wider">HACÉ LA SEÑA</p>
-          <p className="font-display text-2xl font-extrabold tracking-tight">Hola</p>
-        </div>
-        <div className="bg-ink-800 relative mx-4 mt-3.5 h-[240px] overflow-hidden rounded-[22px]">
-          <div className="bg-ink-900/70 absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[10.5px] font-bold">
-            <svg
-              aria-hidden="true"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="stroke-course-teal"
-              strokeWidth="2.6"
-              strokeLinejoin="round"
-            >
-              <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
-            </svg>
-            Se procesa en tu teléfono
-          </div>
-        </div>
-        <div className="bg-success mx-4 mt-3.5 flex h-[50px] items-center justify-center gap-2 rounded-2xl font-extrabold text-white">
-          <svg
-            aria-hidden="true"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M5 12.5l4.5 4.5L19 7.5" />
-          </svg>
-          ¡Te salió!
-        </div>
-      </div>
+    <div className="justify-self-center">
+      <LivePhone>
+        <CameraNameDemo className={LIVE_SCREEN} />
+      </LivePhone>
     </div>
   );
 }
@@ -111,15 +87,12 @@ function StreakPhone() {
       >
         {/* streak-fire Lottie — same file used in signa-mobile */}
         <div className="flex flex-1 items-center justify-center">
-          <LottiePlayer
-            src="/animations/streak-fire.json"
-            className="h-[220px] w-[160px]"
-          />
+          <LottiePlayer src="/animations/streak-fire.json" className="h-[220px] w-[160px]" />
         </div>
 
         {/* headline + subtitle */}
         <div className="text-center">
-          <p className="font-display text-[22px] font-extrabold leading-tight tracking-tight text-white">
+          <p className="font-display text-[22px] leading-tight font-extrabold tracking-tight text-white">
             ¡Llegaste a 7 días de racha!
           </p>
           <p className="mt-1.5 text-[12px] leading-snug text-white/80">
@@ -136,7 +109,7 @@ function StreakPhone() {
           />
           <div className="min-w-0 flex-1">
             <p className="text-text-muted text-[10.5px] font-semibold">Logro desbloqueado</p>
-            <p className="font-display text-[14px] font-bold leading-tight">Primera semana</p>
+            <p className="font-display text-[14px] leading-tight font-bold">Primera semana</p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               <span
                 className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
@@ -367,7 +340,7 @@ function SocialPhone() {
           </div>
 
           {/* Sticky me bar */}
-          <div className="border-social-wine/40 bg-avatar-wine-light mt-auto -mx-2.5 flex items-center gap-2 border-t px-3.5 py-2">
+          <div className="border-social-wine/40 bg-avatar-wine-light -mx-2.5 mt-auto flex items-center gap-2 border-t px-3.5 py-2">
             <p className="font-display text-social-wine text-[11px] font-bold">#5</p>
             <span className="border-social-wine font-display text-social-wine bg-avatar-wine-light flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-extrabold">
               TU
@@ -386,34 +359,47 @@ function SocialPhone() {
 
 const CONTENT: Record<
   FeatureId,
-  { eyebrow: string; eyebrowClass: string; title: string; body: string; phone: React.ReactNode }
+  {
+    eyebrow: string;
+    eyebrowClass: string;
+    title: string;
+    body: string;
+    phone: React.ReactNode;
+    /** A small disclaimer under the body. */
+    note?: string;
+    /** Live, interactive preview: wider modal and a larger phone. */
+    live?: boolean;
+  }
 > = {
   signs: {
     eyebrow: "SEÑAS EN 3D",
     eyebrowClass: "text-primary",
-    title: "Cada seña, en 3D y desde todos los ángulos.",
-    body: "Lisa te muestra la seña y vos la reconocés. Las lecciones son cortas y combinan ejercicios distintos: elegí el significado, elegí la seña, uní pares y respondé en contexto.",
+    title: "Mirá cada seña en 3D, desde el ángulo que quieras.",
+    body: "Lisa hace la seña y vos descubrís qué significa. Las lecciones son cortas y cada una mezcla ejercicios distintos. A veces elegís el significado, otras buscás la seña correcta, y también vas a unir pares y responder en contexto.",
     phone: <SignsPhone />,
+    live: true,
   },
   camera: {
     eyebrow: "TU CÁMARA TE CORRIGE",
     eyebrowClass: "text-course-teal",
-    title: "Hacé la seña. Signa te dice si te salió.",
-    body: "La cámara reconoce tus manos en tiempo real, también para deletrear tu nombre con el alfabeto manual. Todo se procesa en tu celular: ningún video sale de tu teléfono.",
+    title: "Hacé la seña y Signa te dice si te salió.",
+    body: "La cámara sigue tus manos en tiempo real y mira más de 200 medidas de tu mano y de dónde está respecto de tu cara. Probalo ahora mismo escribiendo tu nombre y haciendo cada letra frente a la cámara. Todo pasa en tu dispositivo y ningún video sale de tu navegador.",
+    note: "El reconocimiento todavía está aprendiendo y a veces se equivoca. Lo seguimos revisando y mejorando. Todo pasa en tu dispositivo y ningún video sale de tu navegador.",
     phone: <CameraPhone />,
+    live: true,
   },
   streak: {
     eyebrow: "UN RATITO POR DÍA",
     eyebrowClass: "text-shop-amber",
-    title: "Tu racha, tus gemas y tu XP, de un vistazo.",
-    body: "Signa tiene vidas, racha, gemas, logros, desafíos diarios y semanales. Cada lección suma XP y hay rankings globales y entre tus amigos para ver quién lidera.",
+    title: "Aprendé un poco cada día y mirá cómo crece tu racha.",
+    body: "Cada lección te suma XP, tu racha crece y vas desbloqueando logros y desafíos diarios y semanales. Si un día no podés, un protector de racha la cuida por vos. Y si te gusta competir, hay rankings con todo el mundo y con tus amigos.",
     phone: <StreakPhone />,
   },
   social: {
     eyebrow: "APRENDÉ CON AMIGOS",
     eyebrowClass: "text-social-wine",
-    title: "Agregá amigos y compartan el progreso.",
-    body: "Ves el avance de tus amigos, las señas que aprendieron y cuántos días llevan de racha. Podés regalarles protectores de racha, gemas y más desde la tienda. Un ranking semanal te muestra quién está liderando.",
+    title: "Sumá a tus amigos y avancen juntos.",
+    body: "Mirá cómo vienen tus amigos, qué señas aprendieron y cuántos días llevan de racha. Desde la tienda les podés regalar gemas o un protector de racha, y cada semana un ranking muestra quién va adelante.",
     phone: <SocialPhone />,
   },
 };
@@ -430,7 +416,14 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
       onClick={(e) => e.target === e.currentTarget && closeFeature()}
       className="landing-modal-in bg-text/55 fixed inset-0 z-50 overflow-y-auto p-3 backdrop-blur-sm sm:p-5"
     >
-      <div className="landing-modal-card bg-background relative mx-auto my-auto grid max-w-3xl grid-cols-1 items-center gap-10 rounded-[40px] p-6 pt-16 sm:grid-cols-[minmax(0,1fr)_300px] sm:p-14">
+      <div
+        className={cn(
+          "landing-modal-card bg-background relative mx-auto my-auto grid grid-cols-1 items-center gap-10 rounded-[40px] p-6 pt-16",
+          content.live
+            ? "max-w-5xl md:grid-cols-[minmax(0,1fr)_380px] md:p-12"
+            : "max-w-3xl sm:grid-cols-[minmax(0,1fr)_300px] sm:p-14",
+        )}
+      >
         <CloseButton
           onClick={closeFeature}
           className="absolute top-5 right-5 sm:top-6 sm:right-6"
@@ -446,6 +439,25 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
             {content.title}
           </h3>
           <p className="text-text-muted text-[17px] leading-relaxed">{content.body}</p>
+          {content.note && (
+            <p className="bg-fill text-text-muted flex gap-2.5 rounded-2xl px-4 py-3 text-sm leading-relaxed">
+              <svg
+                aria-hidden="true"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                className="mt-0.5 shrink-0"
+              >
+                <circle cx="12" cy="12" r="9.5" />
+                <path d="M12 11v6M12 7.5v.5" />
+              </svg>
+              {content.note}
+            </p>
+          )}
         </div>
         {content.phone}
       </div>

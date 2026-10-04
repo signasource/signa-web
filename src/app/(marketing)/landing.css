@@ -192,6 +192,57 @@ html:has(.landing-root) {
   }
 }
 
+.landing-live-phone {
+  --s: 0.8;
+  position: relative;
+  width: calc(380px * var(--s));
+  height: calc(780px * var(--s));
+}
+.landing-live-phone-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 380px;
+  height: 780px;
+  transform: scale(var(--s));
+  transform-origin: top left;
+}
+@media (min-width: 400px) {
+  .landing-live-phone {
+    --s: 0.9;
+  }
+}
+@media (min-width: 480px) {
+  .landing-live-phone {
+    --s: 1;
+  }
+}
+@media (min-width: 768px) and (max-height: 959px) {
+  .landing-live-phone {
+    --s: 0.9;
+  }
+}
+@media (min-width: 768px) and (max-height: 879px) {
+  .landing-live-phone {
+    --s: 0.8;
+  }
+}
+@media (min-width: 768px) and (max-height: 799px) {
+  .landing-live-phone {
+    --s: 0.7;
+  }
+}
+@media (min-width: 768px) and (max-height: 719px) {
+  .landing-live-phone {
+    --s: 0.6;
+  }
+}
+@media (min-width: 768px) and (max-height: 639px) {
+  .landing-live-phone {
+    --s: 0.52;
+  }
+}
+
 .landing-rail {
   scrollbar-width: none;
   overscroll-behavior-x: contain;
@@ -442,5 +493,22 @@ html:has(.landing-root) {
   .landing-team-card-alt,
   .landing-marquee-track span {
     transition: none !important;
+  }
+}
+
+.landing-sweep {
+  animation: landing-sweep 0.95s linear infinite;
+}
+@keyframes landing-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(270%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-sweep {
+    animation: none;
   }
 }

@@ -22,6 +22,7 @@
 | Forms/validation | **react-hook-form + zod**                               | Typed schemas, Spanish messages, small footprint.                                                                                                            |
 | Charts           | **Recharts**                                            | Declarative, React-native, enough for the weekly-evolution and per-module charts.                                                                            |
 | Lottie           | **lottie-web** (dynamic import, landing only)           | Renders the same `.json` animation files from `signa-mobile` (streak-fire, medals) inside the landing's feature preview modal. Dynamic import keeps it out of the main bundle. |
+| Camera demo (ML) | **MediaPipe Tasks from the CDN + a TypeScript classifier** | Hand/pose detection runs in the browser (loaded on demand, pinned version, no npm dependency); the alphabet model is a small dense ensemble exported as raw weights and run in plain TS — see [features/landing.md](./features/landing.md). |
 | HTTP             | **native `fetch`** wrapper (`src/lib/api`)              | No extra dependency; mirrors mobile's client behavior (Bearer, camel↔snake, refresh on 401).                                                                 |
 | Tests            | **Vitest + Testing Library (jsdom)**                    | Fast, Vite-based, no Jest config burden.                                                                                                                     |
 | Lint/format      | **ESLint (next config) + Prettier (+ tailwind plugin)** | `npm run check` gates every change.                                                                                                                          |
@@ -33,6 +34,7 @@
 - **Next.js with cookie-based BFF/session:** would add server-side session handling that the API does not support; revisit only if the API moves to cookie auth (see [status.md](./status.md) → token storage).
 - **Redux/Zustand:** server state is handled by TanStack Query; the only global client state is auth.
 - **axios:** `fetch` covers the need; avoids a dependency.
+- **TensorFlow.js / TFLite web runtime for the camera demo:** the TFLite loader needs `eval`, forbidden by the CSP; the model is small enough to run in plain TypeScript.
 - **Component library (MUI, Chakra):** would fight the brand tokens. `shadcn/ui` (Radix + Tailwind) is the planned way to add accessible primitives on demand — not installed yet.
 
 ## Not decided yet

@@ -30,6 +30,14 @@ Why not nonces everywhere: nonces force dynamic rendering, losing static generat
 - **`blob:` in `connect-src`** — Three.js (used by model-viewer) calls `fetch()` on blob URLs it creates when processing GLB textures. Without this, textures fail to load silently.
 - **`worker-src 'self' blob:`** — model-viewer creates Web Workers from blob URLs for model decoding. Without this, workers fail silently with `TypeError: Failed to fetch`.
 
+- **Camera demo (relaxed tier only).** The landing's "Tu cámara te corrige" preview runs MediaPipe
+  in the browser: `'wasm-unsafe-eval'` in `script-src` (compiles WebAssembly only — JS `eval`/`new
+  Function` stay blocked) and `https://storage.googleapis.com` in `connect-src` (MediaPipe's
+  `.task` models). The TFLite web runtime was rejected because its loader calls `eval`; the
+  classifier runs in plain TypeScript instead — see [features/landing.md](./features/landing.md).
+- **`Permissions-Policy: camera=(self)` on `/` only** (`next.config.ts`, a more specific rule that
+  overrides the global `camera=()`): the webcam is available to the landing page and nowhere else.
+
 ## GLB viewer route (`/api/glb-viewer`)
 
 The Route Handler at `src/app/api/glb-viewer/route.ts` has its own third CSP tier:
@@ -52,7 +60,7 @@ The Route Handler at `src/app/api/glb-viewer/route.ts` has its own third CSP tie
 
 ## Other headers (`next.config.ts`, all routes)
 
-HSTS (2 years, `includeSubDomains`, `preload`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` (legacy twin of `frame-ancestors 'none'`), `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/microphone/geolocation/payment off), `Cross-Origin-Opener-Policy: same-origin`, `X-Powered-By` removed.
+HSTS (2 years, `includeSubDomains`, `preload`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` (legacy twin of `frame-ancestors 'none'`), `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/microphone/geolocation/payment off; camera on for `/` only, for the camera demo), `Cross-Origin-Opener-Policy: same-origin`, `X-Powered-By` removed.
 
 `preload` in HSTS is a commitment: submit the domain to the preload list only when every subdomain is HTTPS-only.
 

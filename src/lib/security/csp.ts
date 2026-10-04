@@ -45,9 +45,14 @@ export function buildCsp(nonce?: string): string {
   // Marketing pages add cdn.jsdelivr.net so the dynamically-injected model-viewer
   // module script is allowed. Strict pages use nonce/strict-dynamic — CDN origins are
   // irrelevant there (strict-dynamic ignores allowlists in modern browsers).
+  // Marketing pages also add 'wasm-unsafe-eval': the camera demo ("Tu cámara te corrige")
+  // compiles MediaPipe's and TFLite's WebAssembly. It only permits compiling Wasm — JS
+  // `eval`/`new Function` stay blocked.
   const scriptSrc = nonce
     ? `'self' 'nonce-${nonce}' 'strict-dynamic'`
-    : "'self' 'unsafe-inline' https://cdn.jsdelivr.net";
+    : "'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net";
+  // storage.googleapis.com serves MediaPipe's hand/pose models (.task) for the camera demo.
+  const demoModels = nonce ? "" : " https://storage.googleapis.com";
   const styleSrc = nonce && !isDev ? `'self' 'nonce-${nonce}'` : "'self' 'unsafe-inline'";
 
   return [
@@ -59,7 +64,7 @@ export function buildCsp(nonce?: string): string {
     // blob: for Three.js internal fetch() on blob URLs (textures, worker data).
     // cdn.jsdelivr.net for model-viewer's WASM decoder files (Draco, KTX2) served
     // at CDN-relative paths alongside the main model-viewer.min.js.
-    `connect-src 'self' blob: ${apiUrl} https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev https://cdn.jsdelivr.net`,
+    `connect-src 'self' blob: ${apiUrl} https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev https://cdn.jsdelivr.net${demoModels}`,
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",

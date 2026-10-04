@@ -43,7 +43,7 @@ Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client-side dat
 | `cta-final.tsx`           | Closing CTA + Lisa                                                                                                                                                           |
 | `landing-footer.tsx`      | Footer links (`/privacidad`, `/terminos`, organizations, legal)                                                                                                              |
 | `org-trigger.tsx`         | Link to `/organizaciones`. Replaces the former modal-open button.                                                                                                            |
-| `feature-preview.tsx`     | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature (the 3D one is a live `LessonDemo`)                                           |
+| `feature-preview.tsx`     | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature. Two are live, in a wider modal with a larger phone: the 3D one (`LessonDemo`) and the camera one (`CameraNameDemo`) |
 
 ## Interactivity (client boundary)
 
@@ -82,6 +82,11 @@ listener + an `IntersectionObserver`, and `src/app/(marketing)/landing.css` reac
 Above-the-fold content uses `landing-enter` (a plain on-load keyframe), not reveals.
 `prefers-reduced-motion: reduce` turns off every animation and shows reveals in their final state.
 
+**Live phones in the feature modal** (3D lesson and camera demo) use the same idea: a fixed
+380×780 canvas (`.landing-live-phone` / `.landing-live-phone-canvas`) scaled as a whole by
+`--s` — by width on phones, by viewport height on desktop so the modal always fits — so they
+shrink or grow but never stop looking like a phone.
+
 **Phone mockups** are laid out on a fixed design canvas (`--stage-w` × `--stage-h`) inside
 `.landing-stage-wrap` and scaled with `--s` per breakpoint, so the composition shrinks instead
 of breaking; the wrapper reserves the scaled height.
@@ -114,8 +119,55 @@ CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
 Camera framing logic (torso-up crop, FOV 15°, radius derived from bounding box) mirrors
 `GlbAnimationView.tsx` in signa-mobile so the two surfaces look identical.
 
+## Camera demo ("Tu cámara te corrige")
+
+`camera-name-demo.tsx` is the real recognizer, not a mockup: the visitor types a name and spells
+it in front of the webcam with the LSA manual alphabet. Same flow and look as the app's "Deletreá
+tu nombre" and signa-ml's demo (`demo/static/nombre.html`): name input (empty), then per letter a
+viewport with the mirrored camera (browser picture-in-picture disabled), the hand skeleton (toggle
+with the app's `body` icon), a "¡Correcto!" card, the letter slots, a pause button (keeps tracking,
+stops recognizing), and a "¡NOMBRE completado!" screen whose title wraps by whole words. No
+progress bar and no debug panel. The modal adds a disclaimer that recognition can be wrong and is
+still being reviewed.
+
+- **Lisa's picture-in-picture** behaves exactly like `nombre.html`: 104×138 in a corner (top-right
+  by default), dragged and snapped to the nearest corner, "tocá para agrandar", tapped to fill the
+  viewport with the same spring transition, an X in the corner to shrink it back. While small, a
+  transparent layer over the `LisaGlbViewer` iframe takes the drag/tap (an iframe swallows pointer
+  events); when big it is removed and dragging rotates the model.
+- **Detection runs in a Web Worker** (`src/lib/alphabet-worker.ts`, driven by
+  `src/lib/alphabet-client.ts`), exactly as signa-ml's demo page runs it on its server: the page
+  sends one 480 px frame at a time and only draws, easing the skeleton 35% per animation frame
+  toward the latest detection and hiding it without a hand (the same as `LandmarkRenderer` in
+  `demo/static/signa.js`). Run on the page's thread, each detection froze the drawing for a few
+  milliseconds and the skeleton moved in jerks. The worker is a same-origin script, covered by
+  `worker-src 'self'`.
+
+Everything runs on the visitor's device; no frame leaves the browser.
+
+- **Detection:** MediaPipe Tasks (`HandLandmarker` + `PoseLandmarker`, image mode, one hand,
+  GPU with CPU fallback) from the CDN, pinned to `0.10.22-rc.20250304`; the `.task` models come
+  from `storage.googleapis.com/mediapipe-models` (hand float16/1, pose lite float16/1) — the same
+  bytes `signa-mobile` ships and the dataset was extracted with. Loaded only when "Empezar" is
+  pressed (`src/lib/alphabet-engine.ts`), so the landing's first load doesn't pay for it.
+- **Classifier:** plain TypeScript (`src/lib/hand-features.ts` + `src/lib/alphabet-classifier.ts`),
+  no TFLite/TensorFlow.js — the TFLite web runtime's loader needs `eval`, which the CSP forbids.
+  Weights in `public/reconocedor/alfabeto.{json,bin}` (6 MB), exported by signa-ml
+  `scripts/export_alphabet_for_web.py`, which folds normalization and BatchNorm into the dense
+  layers. `alphabet-classifier.test.ts` checks the port against signa-ml on real hands
+  (`alphabet-classifier.vectors.json`, generated by the same script): same features (< 1e-4) and
+  probabilities (< 1e-5).
+- **Decision** (`src/lib/alphabet-recognizer.ts`): verification of the requested letter against
+  its calibrated threshold, averaged over 7 frames and held for 5; the T/I height rule; the hand's
+  position relative to the face (from the pose). Only what the viewport shows is analyzed: what
+  `object-fit: cover` crops out is blanked before detection.
+- **Updating the model:** retrain/calibrate in signa-ml, then `python scripts/export_alphabet_for_web.py`
+  (writes the weights here and regenerates the test vectors) and run `npm run test`.
+
 ## Assets
 
+- `public/reconocedor/alfabeto.json`, `public/reconocedor/alfabeto.bin` — the camera demo's
+  classifier (labels, per-letter thresholds, folded weights), exported from signa-ml.
 - `public/images/lisa-waving.png`, `public/images/lisa-arms-crossed.png` — copied from
   `signa-mobile/assets/images/`; keep both repos' copies in sync if Lisa's artwork changes.
 - `public/icons/*.svg` — a handful of the project's illustration set (not the gamification icon
