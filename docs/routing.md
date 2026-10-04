@@ -4,21 +4,21 @@
 > Update when: a route, page, layout, or guard is added, renamed, or removed.
 > Sources: src/app/**/page.tsx, src/app/**/layout.tsx
 
-| URL                           | File                                              | Access | Notes                                                                  |
-| ----------------------------- | ------------------------------------------------- | ------ | ---------------------------------------------------------------------- |
-| `/`                           | `(marketing)/page.tsx`                            | public | Landing. See [features/landing.md](./features/landing.md)              |
-| `/privacidad`                 | `(marketing)/privacidad/page.tsx`                 | public | Privacy policy (draft, `noindex`). See [legal.md](./legal.md)          |
-| `/terminos`                   | `(marketing)/terminos/page.tsx`                   | public | Terms and conditions (draft, `noindex`). See [legal.md](./legal.md)    |
-| `/proximamente`               | `(marketing)/proximamente/page.tsx`               | public | Coming-soon page: Google Play status, waitlist email form, org CTA     |
-| `/organizaciones`             | `(marketing)/organizaciones/page.tsx`             | public | Organizations marketing page: steps, panel preview, CTA               |
-| `/organizaciones/ingresar`    | `(marketing)/organizaciones/ingresar/page.tsx`    | public | Org login + register (CUIT validation). Redirects to `/organizaciones/panel` on login |
+| URL                           | File                                              | Access | Notes                                                                                                                |
+| ----------------------------- | ------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------- |
+| `/`                           | `(marketing)/page.tsx`                            | public | Landing. See [features/landing.md](./features/landing.md)                                                            |
+| `/privacidad`                 | `(marketing)/privacidad/page.tsx`                 | public | Privacy policy (draft, `noindex`). See [legal.md](./legal.md)                                                        |
+| `/terminos`                   | `(marketing)/terminos/page.tsx`                   | public | Terms and conditions (draft, `noindex`). See [legal.md](./legal.md)                                                  |
+| `/proximamente`               | `(marketing)/proximamente/page.tsx`               | public | Coming-soon page: Google Play status, waitlist email form, org CTA                                                   |
+| `/organizaciones`             | `(marketing)/organizaciones/page.tsx`             | public | Organizations marketing page: steps, panel preview, CTA                                                              |
+| `/organizaciones/ingresar`    | `(marketing)/organizaciones/ingresar/page.tsx`    | public | Org login + register (CUIT validation). Redirects to `/organizaciones/panel` on login                                |
 | `/organizaciones/panel`       | `(marketing)/organizaciones/panel/page.tsx`       | org    | Post-login holding page ("finalizando el módulo"). Guard: redirects to `/organizaciones/ingresar` if unauthenticated |
-| `/login`                      | `(auth)/login/page.tsx`                           | public | Redirects to `/dashboard` when already authenticated                   |
-| `/dashboard`                  | `(dashboard)/dashboard/page.tsx`                  | admin  | Overview metrics. See [features/dashboard.md](./features/dashboard.md) |
-| `/dashboard/members`          | `(dashboard)/dashboard/members/page.tsx`          | admin  | Participants list (search, status, pagination)                         |
-| `/dashboard/members/[userId]` | `(dashboard)/dashboard/members/[userId]/page.tsx` | admin  | Participant detail + remove                                            |
-| `/dashboard/modules`          | `(dashboard)/dashboard/modules/page.tsx`          | admin  | Contracted modules and their stats                                     |
-| `/dashboard/invitations`      | `(dashboard)/dashboard/invitations/page.tsx`      | admin  | Invite by email, shareable invite codes                                |
+| `/login`                      | `(auth)/login/page.tsx`                           | public | Redirects to `/dashboard` when already authenticated                                                                 |
+| `/dashboard`                  | `(dashboard)/dashboard/page.tsx`                  | admin  | Overview metrics. See [features/dashboard.md](./features/dashboard.md)                                               |
+| `/dashboard/members`          | `(dashboard)/dashboard/members/page.tsx`          | admin  | Participants list (search, status, pagination)                                                                       |
+| `/dashboard/members/[userId]` | `(dashboard)/dashboard/members/[userId]/page.tsx` | admin  | Participant detail + remove                                                                                          |
+| `/dashboard/modules`          | `(dashboard)/dashboard/modules/page.tsx`          | admin  | Contracted modules and their stats                                                                                   |
+| `/dashboard/invitations`      | `(dashboard)/dashboard/invitations/page.tsx`      | admin  | Invite by email, shareable invite codes                                                                              |
 
 ## Guard
 

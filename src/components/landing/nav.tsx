@@ -11,8 +11,18 @@ export function Nav() {
         aria-label="Principal"
         className="mx-auto flex h-[88px] w-full items-center gap-4 px-6 sm:gap-8 sm:px-12"
       >
-        <Link href="/" className="font-display text-text flex items-center gap-2 text-2xl font-extrabold tracking-tight">
-          <Image src="/images/signa-logo.png" alt="" aria-hidden width={36} height={36} className="h-9 w-9" />
+        <Link
+          href="/"
+          className="font-display text-text flex items-center gap-2 text-2xl font-extrabold tracking-tight"
+        >
+          <Image
+            src="/images/signa-logo.png"
+            alt=""
+            aria-hidden
+            width={36}
+            height={36}
+            className="h-9 w-9"
+          />
           Signa
         </Link>
         <div className="ml-auto hidden items-center gap-7 md:flex">

@@ -232,6 +232,7 @@ export default function IngresarPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash === "#registro") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTab("registro");
       registroRef.current?.scrollIntoView({ behavior: "smooth" });
     }
