@@ -4,8 +4,6 @@ export const R2_GLB_BASE = "https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev/
 export const VIEWER_MESSAGE = "signa:glb-sign";
 /** Page → viewer iframe: load these signs ahead of time, so switching to them later is instant. */
 export const VIEWER_PRELOAD = "signa:glb-preload";
-/** Viewer iframe → page: this sign is loaded and framed. */
-export const VIEWER_LOADED = "signa:glb-loaded";
 
 /** At most this many signs are kept loaded in one viewer. */
 export const MAX_PRELOAD = 32;

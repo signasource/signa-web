@@ -1,12 +1,5 @@
 import { buildViewerCsp } from "@/lib/security/csp";
-import {
-  isSafeSign,
-  MAX_PRELOAD,
-  R2_GLB_BASE,
-  VIEWER_LOADED,
-  VIEWER_MESSAGE,
-  VIEWER_PRELOAD,
-} from "@/lib/glb";
+import { isSafeSign, MAX_PRELOAD, R2_GLB_BASE, VIEWER_MESSAGE, VIEWER_PRELOAD } from "@/lib/glb";
 
 const MODEL_VIEWER_CDN =
   "https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js";
@@ -45,7 +38,7 @@ function buildViewerHtml(sign: string): string {
   <script>
     var FOV=${FOV},ENCUADRE=${ENCUADRE},BASE=${JSON.stringify(R2_GLB_BASE)},MAX=${MAX_PRELOAD},
         SAFE=${String(/^[\p{L}\p{N}_\- ]{1,40}$/u)},b=document.body;
-    var cache={},order=[],shown=null,want=${JSON.stringify(sign)};
+    var cache={},order=[],queue=[],loading=0,shown=null,want=${JSON.stringify(sign)};
     function urlOf(sign){return BASE+'/'+encodeURIComponent(sign)+'.glb';}
     function frame(mv){
       try{
@@ -74,17 +67,20 @@ function buildViewerHtml(sign: string): string {
       mv.setAttribute('camera-orbit','0deg 85deg 100%');
       mv.setAttribute('field-of-view',FOV+'deg');
       mv.setAttribute('alt','Lisa haciendo la seña en 3D. Arrastrá para girarla.');
+      loading++;
       mv.addEventListener('load',function(){
         frame(mv);
         mv.pause();
         mv.dataset.loaded='1';
-        parent.postMessage({type:${JSON.stringify(VIEWER_LOADED)},sign:sign},location.origin);
+        loading--;
         if(want===sign)reveal(sign);
+        pump();
       });
       mv.addEventListener('error',function(){
         mv.dataset.failed='1';
-        parent.postMessage({type:${JSON.stringify(VIEWER_LOADED)},sign:sign,failed:true},location.origin);
+        loading--;
         if(want===sign){b.classList.remove('ready');b.classList.add('failed');}
+        pump();
       });
       mv.setAttribute('src',urlOf(sign));
       b.appendChild(mv);
@@ -102,6 +98,12 @@ function buildViewerHtml(sign: string): string {
         mv.classList.add('on');
         b.classList.add('ready');
       });});
+    }
+    function pump(){
+      var cur=cache[want];
+      if(loading||!cur||!(cur.dataset.loaded||cur.dataset.failed))return;
+      while(queue.length&&cache[queue[0]])queue.shift();
+      if(queue.length)viewer(queue.shift());
     }
     function show(sign){
       want=sign;
@@ -121,7 +123,8 @@ function buildViewerHtml(sign: string): string {
         if(customElements.get('model-viewer'))show(want);
       }else if(e.data.type===${JSON.stringify(VIEWER_PRELOAD)}&&Array.isArray(e.data.signs)){
         var signs=e.data.signs.filter(function(s){return typeof s==='string'&&SAFE.test(s);}).slice(0,MAX);
-        customElements.whenDefined('model-viewer').then(function(){signs.forEach(viewer);});
+        queue=signs;
+        customElements.whenDefined('model-viewer').then(pump);
       }
     });
   </script>
