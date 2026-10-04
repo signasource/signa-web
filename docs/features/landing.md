@@ -127,10 +127,10 @@ CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
   the visible sign play its first repetition untouched; when a repetition ends it holds Lisa in
   her starting pose, loads the next preload, and resumes once it is ready (`arm()`/`boundary()`/
   `resume()` in the route). Measured: 0 dropped frames during the first sign; a sign picked
-  before its preload is loaded on demand (~1 s). **The very first sign plays its first repetition hidden** (spinner on)
-  and Lisa appears at the start of the second: even without preloads competing, the first
-  playback stuttered on real laptops, and only the first one. Costs ~one repetition (4 s) of
-  extra spinner, once per viewer. `LessonDemo` preloads its four questions; the camera demo
+  before its preload is loaded on demand (~1 s). **The very first sign plays its first repetition hidden, at 4× speed**
+  (spinner on, `WARM_SPEED`), and Lisa appears from the start at normal speed: the first
+  playback stuttered on real laptops, and only the first one. Costs ~1 s of extra spinner (a
+  normal-speed warm-up cost 4 s), once per viewer. `LessonDemo` preloads its four questions; the camera demo
   preloads every letter of the name but starts recognizing right away — it never waits for the
   models (waiting for all of them used to delay the start by more than 10 s).
 

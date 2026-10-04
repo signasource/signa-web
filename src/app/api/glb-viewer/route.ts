@@ -31,7 +31,7 @@ function buildViewerHtml(sign: string): string {
   <div id="spin" aria-hidden="true"></div>
   <div id="err">No pudimos cargar la seña.</div>
   <script>
-    var FOV=${FOV},ENCUADRE=${ENCUADRE},BASE=${JSON.stringify(R2_GLB_BASE)},MAX=${MAX_PRELOAD},
+    var WARM_SPEED=4,FOV=${FOV},ENCUADRE=${ENCUADRE},BASE=${JSON.stringify(R2_GLB_BASE)},MAX=${MAX_PRELOAD},
         SAFE=${String(/^[\p{L}\p{N}_\- ]{1,40}$/u)},b=document.body;
     var cache={},order=[],queue=[],loading=0,shown=null,holding=null,slot=null,warm=null,warming=false,warmed=false,want=${JSON.stringify(sign)};
     function urlOf(sign){return BASE+'/'+encodeURIComponent(sign)+'.glb';}
@@ -92,15 +92,18 @@ function buildViewerHtml(sign: string): string {
       clearTimeout(slot);
       clearTimeout(warm);
       warming=false;
+      mv.timeScale=1;
       if(!warmed){
         warmed=true;
         warming=true;
+        mv.timeScale=WARM_SPEED;
         warm=setTimeout(function(){
           warming=false;
+          mv.timeScale=1;
           if(shown!==mv)return;
           mv.currentTime=0;
           uncover(mv,sign);
-        },(mv.duration||0)*1000);
+        },(mv.duration||0)*1000/WARM_SPEED);
         return;
       }
       uncover(mv,sign);
