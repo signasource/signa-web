@@ -12,7 +12,7 @@
 - Landing page (`/`) — full one-page site with a playable 3D lesson demo; scroll effects work in
   every browser (no CSS scroll timelines). See [features/landing.md](./features/landing.md).
 - Landing camera demo ("Tu cámara te corrige") — real in-browser recognition: spell your name with the LSA alphabet, signa-ml v6 (v5 plus S and O recorded on an iPhone; the native app still ships v5). See [features/landing.md](./features/landing.md).
-- `/proximamente` — coming-soon page with waitlist email form: the browser calls signa-api `POST /waitlist` directly (202 for valid emails, rate-limited per IP by the API), validates the email first, has a hidden honeypot field and a minimum fill time, and shows the real result. All "Empezá gratis" CTAs link here.
+- `/proximamente` — coming-soon page with waitlist email form: the browser calls signa-api `POST /waitlist` directly (202 for valid emails; rate limiting is done by Cloudflare in front of the API), validates the email first, has a hidden honeypot field and a minimum fill time, and shows the real result. All "Empezá gratis" CTAs link here.
 
 ## Stub / placeholder
 
@@ -20,7 +20,7 @@
 - Landing page (`/`) — thematic courses show no price yet (removed until the final number is set); no `sitemap.ts` / `robots.ts` / OG image yet — [features/landing.md](./features/landing.md).
 - `/organizaciones/ingresar` — register tab collects CUIT + org data but the registration API does not exist yet; submission shows a "te avisamos" confirmation. CUIT validation works client-side.
 - `/organizaciones/panel` — holding page only; shows "finalizando el módulo" message. Will be replaced by the real org dashboard when the module is complete.
-- `/proximamente` — `POST /waitlist` only exists from signa-api `feat/lista-de-espera` on (before that the form never stored anything); no captcha yet (Cloudflare Turnstile needs an account); `/images/equipo.jpg` team photo is a placeholder — replace with actual photo.
+- `/proximamente` — `POST /waitlist` only exists from signa-api PR #88 on (before that the form never stored anything); no captcha yet (Cloudflare Turnstile needs an account); `/images/equipo.jpg` team photo is a placeholder — replace with actual photo.
 - `Equipo` section shows `/images/equipo.jpg` — file does not exist yet; replace with the actual team photo.
 - Dashboard screens omit some prototype data the API does not expose (sort, inactivity filters, per-module member progress, activity feed) — [features/dashboard.md](./features/dashboard.md).
 
