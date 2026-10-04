@@ -181,10 +181,11 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       if (!hand) return null;
       const probs = classify(hand, pose);
       const second = other ? classify(other, pose) : null;
+      if (second) for (let i = 0; i < probs.length; i++) probs[i] = Math.max(probs[i]!, second[i]!);
       const touch = touchWeight(hand.landmarks, other?.landmarks ?? null, aspect);
       for (const letter of TWO_HANDED) {
         const i = labels.indexOf(letter);
-        if (i >= 0) probs[i] = Math.max(probs[i]!, second?.[i] ?? 0) * touch;
+        if (i >= 0) probs[i] = probs[i]! * touch;
       }
       return probs;
     },
