@@ -224,6 +224,15 @@ unmounting; with `prefers-reduced-motion` it closes at once.
 and doing it while the modal opens froze the whole opening animation. Measured: 0 dropped frames
 during the opening now; the boot happens once the card is in place.
 
+## Full pages (Próximamente, Organizaciones, Ingresar, Panel, legal)
+
+Each one enters with `page-enter` (`globals.css`: 0.5 s fade + 8 px rise; off with
+`prefers-reduced-motion`) on its content — the nav stays put, so moving from the landing feels
+continuous. Going back is a single round arrow button (`src/components/back-button.tsx`) at the
+top-left corner of the content, under the top bar: to `/` from Próximamente, Organizaciones and
+the legal pages, to `/organizaciones` from Ingresar and Panel. There are no "Volver a…" text
+links.
+
 ## Images are not selectable
 
 `img`, `svg`, `canvas` and `video` are `user-select: none` and not draggable site-wide
