@@ -146,8 +146,7 @@ Camera framing logic (torso-up crop, FOV 15°, radius derived from bounding box)
 it in front of the webcam with the LSA manual alphabet. Same flow and look as the app's "Deletreá
 tu nombre" and signa-ml's demo (`demo/static/nombre.html`): name input (empty), then per letter a
 viewport with the mirrored camera (browser picture-in-picture disabled), the hand skeleton (toggle
-with the app's `body` icon), a "¡Correcto!" card, the letter slots, a pause button (keeps tracking,
-stops recognizing), and a "¡NOMBRE completado!" screen whose title wraps by whole words. No
+with the app's `body` icon), a "¡Correcto!" card, the letter slots, a «Cambiar nombre» button (stops the camera and goes back to the name screen), and a "¡NOMBRE completado!" screen whose title wraps by whole words. No
 progress bar and no debug panel. The modal adds a disclaimer that recognition can be wrong and is
 still being reviewed.
 
@@ -175,7 +174,14 @@ Everything runs on the visitor's device; no frame leaves the browser.
   (`signa:reconocimiento:delegado:v1`); later visits switch to a stored GPU after the first frame.
   Cost: one ~0.5 s tracking pause on the visit that switches. Measured on a laptop with Intel Arc:
   CPU 75 ms → GPU 22 ms per detection, 10 → 20 fps; without a usable GPU: no trial, no pause.
-  Add `?rendimiento` to the URL to see the delegate, ms per detection and fps in the demo.
+  Add `?rendimiento` to the URL to see the delegate, ms per detection and fps in the demo, plus
+  the requested letter's averaged probability against its threshold and the strongest rival.
+- **Recording samples for fine-tuning:** with `?captura` the demo shows «Grabar «X» 3 s» and
+  «Descargar». It records the 266 values the model reads (258 hand + 8 face block, no image) for
+  the requested letter and downloads them as JSON; signa-ml `scripts/add_alphabet_captures.py`
+  adds them to the dataset as new sources. Recorded frames never feed the recognizer.
+- **The camera fades in** once the video is playing at its final size (`videoReady`): iOS Safari
+  showed it letterboxed for a moment before applying `object-fit: cover`.
 - **Detection:** MediaPipe Tasks (`HandLandmarker` + `PoseLandmarker`, image mode, one hand,
   (see above)). The library is the npm package `@mediapipe/tasks-vision` (pinned to
   `0.10.22-rc.20250304`), bundled, and its WebAssembly is self-hosted under `/mediapipe/wasm`

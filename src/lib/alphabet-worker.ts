@@ -66,7 +66,7 @@ scope.onmessage = async ({ data }) => {
     return;
   }
   if (data.type === "frame") {
-    const { bitmap, withPose, classify } = data;
+    const { bitmap, withPose, classify, capture } = data;
     try {
       if (!engine) throw new Error("El reconocedor no está listo");
       const detection = engine.detect(bitmap, withPose);
@@ -78,6 +78,7 @@ scope.onmessage = async ({ data }) => {
         probs,
         delegate: engine.handDelegate,
         handMs,
+        features: capture ? engine.lastFeatures : null,
       });
       void step(handMs);
     } catch {
@@ -87,6 +88,7 @@ scope.onmessage = async ({ data }) => {
         probs: null,
         delegate: engine?.handDelegate ?? "CPU",
         handMs: 0,
+        features: null,
       });
     } finally {
       bitmap.close();

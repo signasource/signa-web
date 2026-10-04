@@ -44,6 +44,7 @@ export interface AlphabetEngine {
   switchHands(delegate: Delegate): Promise<boolean>;
   detect(frame: Frame, withPose: boolean): Detection;
   predict(detection: Detection): Float32Array | null;
+  lastFeatures: Float32Array | null;
   close(): void;
 }
 
@@ -117,6 +118,7 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
     labels,
     thresholds,
     handDelegate: detectors.handDelegate,
+    lastFeatures: null,
     lastHandMs: 0,
 
     async switchHands(delegate) {
@@ -154,6 +156,7 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
     },
 
     predict({ hand, pose }) {
+      this.lastFeatures = null;
       if (!hand) return null;
       const sign = hand.mirrored ? -1 : 1;
       const features = buildHandFeatures(
@@ -161,6 +164,10 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
         hand.world.length ? hand.world.map((p) => toVec(p, sign)) : null,
       );
       const face = faceBlock(pose, hand.landmarks, hand.mirrored);
+      const all = new Float32Array(features.length + face.length);
+      all.set(features);
+      all.set(face, features.length);
+      this.lastFeatures = all;
       return applyLocationRule(classifier.predict(features, face), labels, face);
     },
 

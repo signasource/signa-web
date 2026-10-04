@@ -3,7 +3,13 @@ import { storedDelegate, storeDelegate, type Delegate } from "@/lib/delegate-cho
 
 export type WorkerRequest =
   | { type: "init"; delegate: Delegate | null }
-  | { type: "frame"; bitmap: ImageBitmap; withPose: boolean; classify: boolean };
+  | {
+      type: "frame";
+      bitmap: ImageBitmap;
+      withPose: boolean;
+      classify: boolean;
+      capture?: boolean;
+    };
 
 export type WorkerResponse =
   | { type: "ready"; labels: string[]; thresholds: Record<string, number> }
@@ -14,6 +20,7 @@ export type WorkerResponse =
       probs: Float32Array | null;
       delegate: Delegate;
       handMs: number;
+      features: Float32Array | null;
     }
   | { type: "decided"; delegate: Delegate; cpuMs: number; gpuMs: number | null };
 
@@ -22,12 +29,18 @@ export interface FrameResult {
   probs: Float32Array | null;
   delegate: Delegate;
   handMs: number;
+  features: Float32Array | null;
 }
 
 export interface RecognizerClient {
   labels: string[];
   thresholds: Record<string, number>;
-  process(bitmap: ImageBitmap, withPose: boolean, classify: boolean): Promise<FrameResult>;
+  process(
+    bitmap: ImageBitmap,
+    withPose: boolean,
+    classify: boolean,
+    capture?: boolean,
+  ): Promise<FrameResult>;
   close(): void;
 }
 
@@ -51,10 +64,10 @@ export function createRecognizerClient(): Promise<RecognizerClient> {
         resolve({
           labels: data.labels,
           thresholds: data.thresholds,
-          process(bitmap, withPose, classify) {
+          process(bitmap, withPose, classify, capture) {
             return new Promise((done) => {
               pending = done;
-              send({ type: "frame", bitmap, withPose, classify }, [bitmap]);
+              send({ type: "frame", bitmap, withPose, classify, capture }, [bitmap]);
             });
           },
           close: () => worker.terminate(),
@@ -67,6 +80,7 @@ export function createRecognizerClient(): Promise<RecognizerClient> {
           probs: data.probs,
           delegate: data.delegate,
           handMs: data.handMs,
+          features: data.features,
         });
       } else if (data.type === "decided") {
         storeDelegate(data.delegate);
