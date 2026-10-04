@@ -225,7 +225,10 @@ screens 300×640) and `FitPhone` in `feature-preview.tsx` scales it with a `Resi
 fill the space left, so every phone has the same height and keeps its proportions. On phones (and on
 desktops zoomed past the `md` breakpoint) text and phone are stacked and the phone's size is
 computed once from the screen height when the modal opens: tracking the height made the phone
-shrink when the keyboard opened, which moved the name field and made the page bounce.
+shrink when the keyboard opened, which moved the name field and made the page bounce. Also, on touch screens focusing the name
+field centers it instantly (before the keyboard rises) and smooth scrolling is off while a modal
+is open: a half-visible field made the browser scroll the modal smoothly while the keyboard was
+resizing the screen, and the two fought (flicker).
 
 Closing (X, backdrop or Escape) plays the opening animation in reverse (280 ms) before
 unmounting; with `prefers-reduced-motion` it closes at once.

@@ -439,7 +439,7 @@ export function FeaturePreview({ feature, closing }: { feature: FeatureId; closi
     >
       <div
         className={cn(
-          "bg-background relative grid h-full max-h-[960px] w-full max-w-[1280px] grid-cols-1 items-center gap-6 overflow-y-auto rounded-[40px] p-6 pt-16 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-10 md:px-12 md:py-8 lg:px-16",
+          "bg-background relative grid h-full max-h-[960px] w-full max-w-[1280px] grid-cols-1 items-center gap-6 overflow-y-auto overscroll-contain rounded-[40px] p-6 pt-16 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-10 md:px-12 md:py-8 lg:px-16",
           closing ? "landing-modal-card-out" : "landing-modal-card",
         )}
       >

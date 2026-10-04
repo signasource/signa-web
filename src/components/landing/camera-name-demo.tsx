@@ -406,6 +406,10 @@ export function CameraNameDemo({ className }: { className?: string }) {
                 setWarning(null);
               }}
               maxLength={MAX_NAME_LENGTH + 4}
+              onFocus={(e) => {
+                if (window.matchMedia?.("(pointer: coarse)").matches)
+                  e.currentTarget.scrollIntoView({ block: "center", behavior: "instant" });
+              }}
               autoComplete="off"
               placeholder="Nombre"
               disabled={stage === "loading"}
