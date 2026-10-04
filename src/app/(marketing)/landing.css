@@ -2,6 +2,11 @@ html:has(.landing-root) {
   scroll-behavior: smooth;
   scroll-padding-top: 88px;
 }
+@media (min-width: 1024px) {
+  html:has(.landing-root) {
+    zoom: 0.9;
+  }
+}
 
 .landing-btn {
   transition:

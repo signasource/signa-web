@@ -191,6 +191,20 @@ Everything runs on the visitor's device; no frame leaves the browser.
   image (no "open in new tab"/"save image"): `pointer-events: none`, `draggable={false}`,
   `-webkit-touch-callout: none`. This only deters casual copying — the files are public URLs.
 
+## Page zoom
+
+On screens 1024 px and wider the whole landing is rendered at 90% (`zoom: 0.9` on
+`html:has(.landing-root)` in `landing.css`), which is how the design reads best on a desktop
+monitor. It behaves like the browser's own zoom: viewport units are compensated (the hero still
+fills the screen) and pointer coordinates stay consistent with `getBoundingClientRect()`. Phones
+and tablets render at 100%.
+
+## Images are not selectable
+
+`img`, `svg`, `canvas` and `video` are `user-select: none` and not draggable site-wide
+(`globals.css`), so dragging a text selection across a section never highlights Lisa or a photo.
+Text stays selectable.
+
 ## Marquee outline row
 
 The second row is outlined, not filled. Bricolage Grotesque is a variable font whose glyphs are
@@ -198,7 +212,8 @@ built from overlapping contours, so a plain `-webkit-text-stroke` also draws the
 each letter. The row is filled with the page background and stroked at twice the width with
 `paint-order: stroke fill`, so the fill hides the inner half of the stroke and the joints. It
 relies on the row sitting on `bg-background`; over another color, change the fill to match. Both
-rows are `select-none`.
+rows are `select-none`. Each word and its `·` separator are sibling spans, so hovering grows only
+the word; the dot ignores the pointer.
 
 ## Opening the dev server from a phone
 

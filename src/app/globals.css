@@ -55,6 +55,16 @@ body {
   font-family: var(--font-sans);
 }
 
+@layer base {
+  img,
+  svg,
+  canvas,
+  video {
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+}
+
 @keyframes dash-progress-grow {
   from {
     width: 0;

@@ -3,13 +3,49 @@ import type { CSSProperties } from "react";
 
 const delay = (ms: number) => ({ "--delay": `${ms}ms` }) as CSSProperties;
 
-const LESSONS = [
-  { title: "Introducción a la LSA", state: "done" as const },
-  { title: "Cómo nos llamamos", state: "done" as const },
-  { title: "Amigos y familia", state: "current" as const },
-  { title: "Abecedario", state: "locked" as const },
-  { title: "Fórmulas de cortesía", state: "locked" as const },
+type LessonState = "done" | "current" | "locked";
+
+const UNITS: ReadonlyArray<{
+  title: string;
+  icon: "hand" | "people" | "place";
+  lessons: ReadonlyArray<{ title: string; state: LessonState }>;
+}> = [
+  {
+    title: "Presentándonos",
+    icon: "hand",
+    lessons: [
+      { title: "Deletreá tu nombre", state: "done" },
+      { title: "Yo, vos, nombre, sordo, oyente", state: "done" },
+      { title: "Hola, chau, ¿cómo estás?, bien, mal", state: "current" },
+      { title: "Gracias, por favor, perdón, de nada", state: "locked" },
+    ],
+  },
+  {
+    title: "Las personas a nuestro alrededor",
+    icon: "people",
+    lessons: [
+      { title: "Familia, mamá, papá, hermano/a, hijo/a, abuelo/a", state: "locked" },
+      { title: "Amigo/a, novio/a, esposo/a, compañero/a", state: "locked" },
+      { title: "Hombre, mujer, niña, niño, bebé", state: "locked" },
+    ],
+  },
+  {
+    title: "Lugares",
+    icon: "place",
+    lessons: [
+      { title: "Escuela, universidad, museo, jardín de infantes", state: "locked" },
+      { title: "Comercio, plaza, comisaría, hospital", state: "locked" },
+    ],
+  },
 ];
+
+const UNIT_ICONS = {
+  hand: "M7 11V6a1.5 1.5 0 0 1 3 0v4M10 10V4.5a1.5 1.5 0 0 1 3 0V10M13 10V5.5a1.5 1.5 0 0 1 3 0V11M16 11V8.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 15l-1.6-3a1.5 1.5 0 0 1 2.6-1.5L7 12",
+  people:
+    "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
+  place:
+    "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+} as const;
 
 export function LisaIntro() {
   return (
@@ -120,106 +156,133 @@ function HomeScreen() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 px-3.5 pt-3.5 pb-1">
-        <div className="bg-primary-light text-primary flex h-8 w-8 items-center justify-center rounded-xl">
-          <svg
-            aria-hidden="true"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M7 11V6a1.5 1.5 0 0 1 3 0v4M10 10V4.5a1.5 1.5 0 0 1 3 0V10M13 10V5.5a1.5 1.5 0 0 1 3 0V11M16 11V8.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 5 15l-1.6-3a1.5 1.5 0 0 1 2.6-1.5L7 12" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-text-muted text-[8.5px] font-bold tracking-wide">UNIDAD 1 · 2/5</p>
-          <p className="font-display text-[12.5px] font-bold">Conceptos básicos</p>
-        </div>
-      </div>
-
-      <div className="relative flex-1 overflow-hidden px-3.5 pt-1.5 pb-3">
-        <div className="bg-primary/20 absolute top-4 bottom-4 left-[23px] w-[2px]" />
-
-        <ul className="flex flex-col">
-          {LESSONS.map((lesson) => (
-            <li key={lesson.title} className="relative flex items-start gap-2.5 py-[5px]">
-              <div
-                className={`relative z-10 mt-[3px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                  lesson.state === "done"
-                    ? "bg-success"
-                    : lesson.state === "current"
-                      ? "bg-primary ring-primary/30 ring-2"
-                      : "border-border bg-fill border"
-                }`}
-              >
-                {lesson.state === "done" && (
+      <div className="flex-1 overflow-hidden px-3.5 pb-3">
+        {UNITS.map((unit, u) => {
+          const done = unit.lessons.filter((l) => l.state === "done").length;
+          const open = unit.lessons.some((l) => l.state !== "locked");
+          return (
+            <div key={unit.title}>
+              <div className="flex items-center gap-2.5 pt-3.5 pb-1">
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                    open ? "bg-primary-light text-primary" : "bg-fill text-text-muted"
+                  }`}
+                >
                   <svg
                     aria-hidden="true"
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M5 12.5l4.5 4.5L19 7.5" />
-                  </svg>
-                )}
-                {lesson.state === "current" && <div className="h-2 w-2 rounded-full bg-white" />}
-                {lesson.state === "locked" && (
-                  <svg
-                    aria-hidden="true"
-                    width="8"
-                    height="8"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2.5"
+                    strokeWidth="2.2"
                     strokeLinecap="round"
-                    className="text-text-muted"
+                    strokeLinejoin="round"
                   >
-                    <rect x="6" y="11" width="12" height="10" rx="2" />
-                    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                    <path d={UNIT_ICONS[unit.icon]} />
                   </svg>
-                )}
-              </div>
-
-              {lesson.state === "current" ? (
-                <div className="border-primary bg-surface flex-1 rounded-xl border p-2">
-                  <p className="text-primary text-[8px] font-bold tracking-wide">EN CURSO</p>
-                  <p className="font-display text-[12px] leading-tight font-bold">{lesson.title}</p>
-                  <div className="bg-fill mt-1.5 h-1 rounded-full">
-                    <div className="bg-primary h-1 w-[40%] rounded-full" />
-                  </div>
                 </div>
-              ) : (
-                <div className="flex flex-1 items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-text-muted text-[8.5px] font-bold tracking-wide">
+                    UNIDAD {u + 1} · {done}/{unit.lessons.length}
+                  </p>
                   <p
-                    className={`font-display text-[12px] leading-tight font-bold ${
-                      lesson.state === "locked" ? "text-text-muted" : ""
+                    className={`font-display truncate text-[12.5px] font-bold ${
+                      open ? "" : "text-text-muted"
                     }`}
                   >
-                    {lesson.title}
+                    {unit.title}
                   </p>
-                  {lesson.state === "done" && (
-                    <span className="bg-success-light text-success-dark rounded-full px-1.5 py-0.5 text-[8px] font-extrabold">
-                      HECHA
-                    </span>
-                  )}
                 </div>
-              )}
-            </li>
-          ))}
-        </ul>
+              </div>
+
+              <div className="relative pt-1.5">
+                <div className="bg-primary/20 absolute top-3 bottom-3 left-[9px] w-[2px]" />
+                <ul className="flex flex-col">
+                  {unit.lessons.map((lesson) => (
+                    <LessonRow key={lesson.title} {...lesson} />
+                  ))}
+                </ul>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
+  );
+}
+
+function LessonRow({ title, state }: { title: string; state: LessonState }) {
+  return (
+    <li className="relative flex items-start gap-2.5 py-[5px]">
+      <div
+        className={`relative z-10 mt-[3px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+          state === "done"
+            ? "bg-success"
+            : state === "current"
+              ? "bg-primary ring-primary/30 ring-2"
+              : "border-border bg-fill border"
+        }`}
+      >
+        {state === "done" && (
+          <svg
+            aria-hidden="true"
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </svg>
+        )}
+        {state === "current" && <div className="h-2 w-2 rounded-full bg-white" />}
+        {state === "locked" && (
+          <svg
+            aria-hidden="true"
+            width="8"
+            height="8"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            className="text-text-muted"
+          >
+            <rect x="6" y="11" width="12" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+        )}
+      </div>
+
+      {state === "current" ? (
+        <div className="border-primary bg-surface min-w-0 flex-1 rounded-xl border p-2">
+          <p className="text-primary text-[8px] font-bold tracking-wide">EN CURSO</p>
+          <p className="font-display text-[12px] leading-tight font-bold">{title}</p>
+          <div className="bg-fill mt-1.5 h-1 rounded-full">
+            <div className="bg-primary h-1 w-[40%] rounded-full" />
+          </div>
+        </div>
+      ) : (
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-1.5">
+          <p
+            className={`font-display truncate text-[12px] leading-tight font-bold ${
+              state === "locked" ? "text-text-muted" : ""
+            }`}
+          >
+            {title}
+          </p>
+          {state === "done" && (
+            <span className="bg-success-light text-success-dark shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-extrabold">
+              HECHA
+            </span>
+          )}
+        </div>
+      )}
+    </li>
   );
 }
 
