@@ -62,6 +62,20 @@ html:has(.landing-root) body {
 .landing-page-progress {
   transform: scaleX(var(--landing-scroll, 0));
 }
+@supports (animation-timeline: scroll()) {
+  .landing-page-progress {
+    animation: landing-page-progress linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+@keyframes landing-page-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
 
 .landing-spin {
   animation: landing-spin 28s linear infinite;

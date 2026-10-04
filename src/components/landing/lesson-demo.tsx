@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { cn } from "@/lib/utils";
 import { LisaGlbViewer } from "@/components/landing/lisa-glb-viewer";
+import { LandingUIContext } from "@/components/landing/landing-ui-context";
+import { PRELOAD_AHEAD } from "@/lib/glb";
 
 export const DEMO_QUESTIONS = [
   { sign: "hola", answer: "Hola", options: ["Chau", "Hola", "Gracias", "Perdón"] },
@@ -13,22 +15,27 @@ export const DEMO_QUESTIONS = [
 
 const HEARTS = 5;
 
-const PRELOAD = DEMO_QUESTIONS.map((q) => q.sign);
-
 export function LessonDemo({
   className,
   viewerClassName = "h-[300px]",
   viewerDelay,
+  releaseViewerWithModal,
 }: {
   className?: string;
   viewerClassName?: string;
   viewerDelay?: number;
+  releaseViewerWithModal?: boolean;
 }) {
+  const ui = useContext(LandingUIContext);
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
   const [hearts, setHearts] = useState(HEARTS);
 
   const question = DEMO_QUESTIONS[index % DEMO_QUESTIONS.length] ?? DEMO_QUESTIONS[0];
+  const preload = Array.from(
+    { length: PRELOAD_AHEAD },
+    (_, k) => DEMO_QUESTIONS[(index + 1 + k) % DEMO_QUESTIONS.length]!.sign,
+  );
   const correct = picked === question.answer;
   const done = (index % DEMO_QUESTIONS.length) + (picked ? 1 : 0);
 
@@ -90,7 +97,9 @@ export function LessonDemo({
           viewerClassName,
         )}
       >
-        <LisaGlbViewer sign={question.sign} preload={PRELOAD} delay={viewerDelay} />
+        {!(releaseViewerWithModal && ui?.feature) && (
+          <LisaGlbViewer sign={question.sign} preload={preload} delay={viewerDelay} />
+        )}
         <span className="bg-surface text-primary-dark pointer-events-none absolute top-2.5 left-2.5 z-10 rounded-full px-2.5 py-1 text-[10px] font-extrabold">
           3D
         </span>

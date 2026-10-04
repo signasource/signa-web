@@ -1,5 +1,12 @@
 import { buildViewerCsp } from "@/lib/security/csp";
-import { isSafeSign, MAX_PRELOAD, R2_GLB_BASE, VIEWER_MESSAGE, VIEWER_PRELOAD } from "@/lib/glb";
+import {
+  isSafeSign,
+  MAX_LOADED,
+  MAX_PRELOAD,
+  R2_GLB_BASE,
+  VIEWER_MESSAGE,
+  VIEWER_PRELOAD,
+} from "@/lib/glb";
 
 const MODEL_VIEWER_CDN =
   "https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js";
@@ -35,7 +42,7 @@ function buildViewerHtml(sign: string): string {
   <div id="spin" aria-hidden="true"></div>
   <div id="err">No pudimos cargar la seña.</div>
   <script>
-    var WARM_SPEED=4,FOV=${FOV},ENCUADRE=${ENCUADRE},BASE=${JSON.stringify(R2_GLB_BASE)},MAX=${MAX_PRELOAD},
+    var WARM_SPEED=4,FOV=${FOV},ENCUADRE=${ENCUADRE},BASE=${JSON.stringify(R2_GLB_BASE)},MAX=${MAX_PRELOAD},KEEP=${MAX_LOADED},
         SAFE=${String(/^[\p{L}\p{N}_\- ]{1,40}$/u)},b=document.body;
     var cache={},order=[],queue=[],loading=0,shown=null,holding=null,slot=null,warm=null,warming=false,warmed=false,want=${JSON.stringify(sign)};
     function urlOf(sign){return BASE+'/'+encodeURIComponent(sign)+'.glb';}
@@ -52,8 +59,12 @@ function buildViewerHtml(sign: string): string {
       }catch(_){}
     }
     function viewer(sign){
-      if(cache[sign])return cache[sign];
-      if(order.length>=MAX){var old=order.shift();if(cache[old]!==shown){cache[old].remove();delete cache[old];}}
+      if(cache[sign]){order.splice(order.indexOf(sign),1);order.push(sign);return cache[sign];}
+      for(var i=0;order.length>=KEEP&&i<order.length;){
+        var old=cache[order[i]];
+        if(old===shown||order[i]===want||!(old.dataset.loaded||old.dataset.failed)){i++;continue;}
+        old.remove();delete cache[order[i]];order.splice(i,1);
+      }
       var mv=document.createElement('model-viewer');
       mv.setAttribute('loading','eager');
       mv.setAttribute('camera-controls','');

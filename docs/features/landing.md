@@ -229,7 +229,7 @@ fill the space left, so every phone has the same height and keeps its proportion
 desktops zoomed past the `md` breakpoint) text and phone are stacked and the phone's size is
 computed once from the screen height when the modal opens: tracking the height made the phone
 shrink when the keyboard opened, which moved the name field and made the page bounce. Also, on touch screens focusing the name
-field centers it instantly (before the keyboard rises) and smooth scrolling is off while a modal
+field centers the phone instantly (before the keyboard rises) and smooth scrolling is off while a modal
 is open: a half-visible field made the browser scroll the modal smoothly while the keyboard was
 resizing the screen, and the two fought (flicker).
 
@@ -249,6 +249,25 @@ continuous. Going back is a single round arrow button (`src/components/back-butt
 top-left corner of the content, under the top bar: to `/` from Próximamente, Organizaciones and
 the legal pages, to `/organizaciones` from Ingresar and Panel. There are no "Volver a…" text
 links.
+
+## 3D memory, Lisa's thumbnail and the progress bar
+
+- **At most 3 models loaded per viewer** (`MAX_LOADED` in `src/lib/glb.ts`): each sign's GLB
+  carries 18 textures of 1024×1024, ~100 MB of GPU memory. Preloading every letter of a name plus
+  the hero's four questions reached ~1.1 GB, and phones killed the tab (the page reloaded at the
+  top, typically when enlarging Lisa). Lessons and the camera demo preload only the next
+  `PRELOAD_AHEAD` (2) signs, the viewer evicts the oldest loaded model, and the hero releases its
+  viewer while a modal is open (`releaseViewerWithModal`). Measured peak: 11 → 3 models.
+- **Lisa's thumbnail in the camera demo never resizes the 3D canvas.** The viewer is always laid
+  out at the enlarged size; the thumbnail is that same render scaled down and cropped (`inner`
+  transform in `SignPip`), and enlarging animates the box and the scale. Resizing the canvas on
+  every frame made the animation stutter, and resizing it once flashed a tiny Lisa for a frame.
+  Measured with CPU ÷4: 0 dropped frames enlarging or shrinking.
+- **Top progress bar:** driven by the scroll itself (`animation-timeline: scroll(root)`) where
+  supported; elsewhere (Firefox) the JS fallback writes `--landing-scroll` on the bar only, not
+  on `<html>` — that forced a style recalc of the whole page on every scroll frame.
+- **Keyboard on phones:** the viewport declares `interactive-widget=resizes-visual` (the keyboard
+  overlays the page instead of resizing it), and focusing the name field centers the whole phone.
 
 ## Images are not selectable
 

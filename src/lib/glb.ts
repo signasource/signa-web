@@ -4,6 +4,8 @@ export const VIEWER_MESSAGE = "signa:glb-sign";
 export const VIEWER_PRELOAD = "signa:glb-preload";
 
 export const MAX_PRELOAD = 32;
+export const MAX_LOADED = 3;
+export const PRELOAD_AHEAD = MAX_LOADED - 1;
 
 const SAFE_SIGN_RE = /^[\p{L}\p{N}_\- ]{1,40}$/u;
 

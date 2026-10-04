@@ -54,6 +54,7 @@ function FitPhone({
       className="flex w-full items-center justify-center p-5 md:h-full md:min-h-0 md:p-6"
     >
       <div
+        data-phone
         className={cn("relative shrink-0", scale === 0 && "invisible")}
         style={{ width: base.w * scale, height: base.h * scale }}
       >
