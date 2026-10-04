@@ -5,7 +5,14 @@ import {
   type NormalizedLandmark,
 } from "@mediapipe/tasks-vision";
 import { createClassifier, type ClassifierManifest } from "@/lib/alphabet-classifier";
-import { applyLocationRule, faceBlock, type Point } from "@/lib/alphabet-recognizer";
+import {
+  applyLocationRule,
+  faceBlock,
+  pickPrimary,
+  touchWeight,
+  TWO_HANDED,
+  type Point,
+} from "@/lib/alphabet-recognizer";
 import { buildHandFeatures, type Vec3 } from "@/lib/hand-features";
 import { fetchVerified } from "@/lib/integrity";
 import type { Delegate } from "@/lib/delegate-choice";
@@ -33,7 +40,9 @@ export interface HandDetection {
 
 export interface Detection {
   hand: HandDetection | null;
+  other: HandDetection | null;
   pose: Point[] | null;
+  aspect: number;
 }
 
 export interface AlphabetEngine {
@@ -44,7 +53,6 @@ export interface AlphabetEngine {
   switchHands(delegate: Delegate): Promise<boolean>;
   detect(frame: Frame, withPose: boolean): Detection;
   predict(detection: Detection): Float32Array | null;
-  lastFeatures: Float32Array | null;
   close(): void;
 }
 
@@ -68,7 +76,7 @@ function createHands(fileset: Fileset, model: Uint8Array, delegate: Delegate) {
   return HandLandmarker.createFromOptions(fileset, {
     baseOptions: { modelAssetBuffer: model.slice(), delegate },
     runningMode: "IMAGE",
-    numHands: 1,
+    numHands: 2,
     minHandDetectionConfidence: 0.4,
     ...(delegate === "GPU" && typeof OffscreenCanvas !== "undefined"
       ? { canvas: new OffscreenCanvas(1, 1) }
@@ -113,12 +121,22 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
   const [classifier, detectors] = await Promise.all([loadClassifier(), loadDetectors(preferred)]);
   const { labels, thresholds } = classifier.manifest;
   let lastPose: Point[] | null = null;
+  let lastWrist: Point | null = null;
+
+  const classify = (hand: HandDetection, pose: Point[] | null) => {
+    const sign = hand.mirrored ? -1 : 1;
+    const features = buildHandFeatures(
+      hand.landmarks.map((p) => toVec(p, sign)),
+      hand.world.length ? hand.world.map((p) => toVec(p, sign)) : null,
+    );
+    const face = faceBlock(pose, hand.landmarks, hand.mirrored);
+    return Float32Array.from(applyLocationRule(classifier.predict(features, face), labels, face));
+  };
 
   const engine: AlphabetEngine = {
     labels,
     thresholds,
     handDelegate: detectors.handDelegate,
-    lastFeatures: null,
     lastHandMs: 0,
 
     async switchHands(delegate) {
@@ -142,33 +160,33 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       const t0 = performance.now();
       const r = detectors.hands.detect(frame);
       this.lastHandMs = performance.now() - t0;
-      const landmarks = r.landmarks[0];
-      if (!landmarks) return { hand: null, pose: lastPose };
-      const label = r.handedness[0]?.[0]?.categoryName ?? "Right";
-      return {
-        hand: {
-          landmarks: landmarks.map(toPoint),
-          world: (r.worldLandmarks[0] ?? []).map(toPoint),
-          mirrored: label.toLowerCase().startsWith("l"),
-        },
-        pose: lastPose,
-      };
+      const aspect = frame.height / frame.width;
+      const hands = r.landmarks.map((lm, i) => ({
+        landmarks: lm.map(toPoint),
+        world: (r.worldLandmarks[i] ?? []).map(toPoint),
+        mirrored: (r.handedness[i]?.[0]?.categoryName ?? "Right").toLowerCase().startsWith("l"),
+      }));
+      const main = pickPrimary(
+        hands.map((h) => h.landmarks),
+        lastWrist,
+        aspect,
+      );
+      const hand = hands[main] ?? null;
+      lastWrist = hand?.landmarks[0] ?? null;
+      const other = hands.find((_, i) => i !== main) ?? null;
+      return { hand, other, pose: lastPose, aspect };
     },
 
-    predict({ hand, pose }) {
-      this.lastFeatures = null;
+    predict({ hand, other, pose, aspect }) {
       if (!hand) return null;
-      const sign = hand.mirrored ? -1 : 1;
-      const features = buildHandFeatures(
-        hand.landmarks.map((p) => toVec(p, sign)),
-        hand.world.length ? hand.world.map((p) => toVec(p, sign)) : null,
-      );
-      const face = faceBlock(pose, hand.landmarks, hand.mirrored);
-      const all = new Float32Array(features.length + face.length);
-      all.set(features);
-      all.set(face, features.length);
-      this.lastFeatures = all;
-      return applyLocationRule(classifier.predict(features, face), labels, face);
+      const probs = classify(hand, pose);
+      const second = other ? classify(other, pose) : null;
+      const touch = touchWeight(hand.landmarks, other?.landmarks ?? null, aspect);
+      for (const letter of TWO_HANDED) {
+        const i = labels.indexOf(letter);
+        if (i >= 0) probs[i] = Math.max(probs[i]!, second?.[i] ?? 0) * touch;
+      }
+      return probs;
     },
 
     close() {

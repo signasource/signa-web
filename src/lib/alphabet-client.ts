@@ -8,7 +8,6 @@ export type WorkerRequest =
       bitmap: ImageBitmap;
       withPose: boolean;
       classify: boolean;
-      capture?: boolean;
     };
 
 export type WorkerResponse =
@@ -17,30 +16,25 @@ export type WorkerResponse =
   | {
       type: "result";
       landmarks: Point[] | null;
+      other: Point[] | null;
       probs: Float32Array | null;
       delegate: Delegate;
       handMs: number;
-      features: Float32Array | null;
     }
   | { type: "decided"; delegate: Delegate; cpuMs: number; gpuMs: number | null };
 
 export interface FrameResult {
   landmarks: Point[] | null;
+  other: Point[] | null;
   probs: Float32Array | null;
   delegate: Delegate;
   handMs: number;
-  features: Float32Array | null;
 }
 
 export interface RecognizerClient {
   labels: string[];
   thresholds: Record<string, number>;
-  process(
-    bitmap: ImageBitmap,
-    withPose: boolean,
-    classify: boolean,
-    capture?: boolean,
-  ): Promise<FrameResult>;
+  process(bitmap: ImageBitmap, withPose: boolean, classify: boolean): Promise<FrameResult>;
   close(): void;
 }
 
@@ -64,10 +58,10 @@ export function createRecognizerClient(): Promise<RecognizerClient> {
         resolve({
           labels: data.labels,
           thresholds: data.thresholds,
-          process(bitmap, withPose, classify, capture) {
+          process(bitmap, withPose, classify) {
             return new Promise((done) => {
               pending = done;
-              send({ type: "frame", bitmap, withPose, classify, capture }, [bitmap]);
+              send({ type: "frame", bitmap, withPose, classify }, [bitmap]);
             });
           },
           close: () => worker.terminate(),
@@ -77,17 +71,13 @@ export function createRecognizerClient(): Promise<RecognizerClient> {
         pending = null;
         done?.({
           landmarks: data.landmarks,
+          other: data.other,
           probs: data.probs,
           delegate: data.delegate,
           handMs: data.handMs,
-          features: data.features,
         });
       } else if (data.type === "decided") {
         storeDelegate(data.delegate);
-        console.info(
-          `[reconocimiento] ${data.delegate} · CPU ${data.cpuMs.toFixed(0)} ms` +
-            (data.gpuMs === null ? "" : ` · GPU ${data.gpuMs.toFixed(0)} ms`),
-        );
       }
     };
     send({ type: "init", delegate: storedDelegate() });

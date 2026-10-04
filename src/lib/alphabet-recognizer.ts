@@ -53,12 +53,33 @@ const LOCATION_PAIRS: ReadonlyArray<readonly [upper: string, lower: string, thre
 ];
 const LOCATION_SOFTNESS = 0.04;
 
+const FACE_INDEX_X = 2;
+const LOCATION_ZONES: ReadonlyArray<
+  readonly [letter: string, cx: number, cy: number, rx: number, ry: number]
+> = [
+  ["H", 0, 0.9, 1.7, 1.7],
+  ["S", 0.3, 1.65, 0.9, 0.75],
+  ["J", 0.2, 1.6, 1.3, 1.0],
+  ["F", 2.0, 3.0, 1.6, 1.4],
+];
+const ZONE_SOFTNESS = 0.12;
+
+export function zoneWeight(face: Float32Array, cx: number, cy: number, rx: number, ry: number) {
+  const d = Math.hypot((face[FACE_INDEX_X]! - cx) / rx, (face[FACE_INDEX_Y]! - cy) / ry);
+  return 1 / (1 + Math.exp(-(1 - d) / ZONE_SOFTNESS));
+}
+
 export function applyLocationRule(
   probs: Float32Array,
   labels: readonly string[],
   face: Float32Array,
 ): Float32Array {
   if (face[FACE_PRESENT] !== 1) return probs;
+  probs = Float32Array.from(probs);
+  for (const [letter, cx, cy, rx, ry] of LOCATION_ZONES) {
+    const i = labels.indexOf(letter);
+    if (i >= 0) probs[i] = probs[i]! * zoneWeight(face, cx, cy, rx, ry);
+  }
   const height = face[FACE_INDEX_Y]!;
   let out = probs;
   for (const [upper, lower, threshold] of LOCATION_PAIRS) {
@@ -140,4 +161,51 @@ export function parseName(
     .slice(0, MAX_NAME_LENGTH);
   const unsupported = [...new Set(name.split(""))].filter((c) => !supported.includes(c));
   return { name, unsupported };
+}
+
+const MIDDLE_MCP_INDEX = 9;
+const FINGERTIPS = [4, 8, 12, 16, 20];
+export const TWO_HANDED = ["Q", "W"] as const;
+const TOUCH_HANDS = 0.6;
+const TOUCH_SOFTNESS = 0.1;
+
+const gap = (a: Point, b: Point, aspect: number) => Math.hypot(a.x - b.x, (a.y - b.y) * aspect);
+
+export function handSize(hand: readonly Point[], aspect: number): number {
+  return gap(hand[0]!, hand[MIDDLE_MCP_INDEX]!, aspect);
+}
+
+export function touchWeight(
+  a: readonly Point[],
+  b: readonly Point[] | null,
+  aspect: number,
+): number {
+  if (!b) return 0;
+  let min = Infinity;
+  for (const [from, to] of [
+    [a, b],
+    [b, a],
+  ] as const) {
+    for (const i of FINGERTIPS) {
+      for (const q of to) min = Math.min(min, gap(from[i]!, q, aspect));
+    }
+  }
+  const size = Math.max(handSize(a, aspect), handSize(b, aspect), 1e-6);
+  return 1 / (1 + Math.exp((min / size - TOUCH_HANDS) / TOUCH_SOFTNESS));
+}
+
+export function pickPrimary(
+  hands: readonly (readonly Point[])[],
+  last: Point | null,
+  aspect: number,
+): number {
+  if (!hands.length) return -1;
+  let best = 0;
+  for (let i = 1; i < hands.length; i++) {
+    const better = last
+      ? gap(hands[i]![0]!, last, aspect) < gap(hands[best]![0]!, last, aspect)
+      : handSize(hands[i]!, aspect) > handSize(hands[best]!, aspect);
+    if (better) best = i;
+  }
+  return best;
 }

@@ -25,7 +25,7 @@ type Stage = "setup" | "loading" | "practice" | "complete" | "error";
 type Phase = "idle" | "capturing" | "hit";
 
 const FRAME_WIDTH = 480;
-const RECORD_MS = 3000;
+const VIDEO_SETTLE_MS = 120;
 const FRAMES_PER_POSE = 5;
 const COOLDOWN_MS = 1800;
 const HIT_MS = 1300;
@@ -72,78 +72,6 @@ function cssColor(name: string): string {
 
 export function CameraNameDemo({ className }: { className?: string }) {
   const [stage, setStage] = useState<Stage>("setup");
-  const perfRef = useRef({
-    frames: 0,
-    ms: 0,
-    delegate: "",
-    scored: 0,
-    target: 0,
-    rival: new Map<string, number>(),
-  });
-  const [perf, setPerf] = useState<string[] | null>(null);
-  const [tools, setTools] = useState({ perf: false, capture: false });
-  const recording = useRef({ until: 0, letter: "" });
-  const samples = useRef<{ letter: string; features: number[] }[]>([]);
-  const [sampleCount, setSampleCount] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
-
-  useEffect(() => {
-    const q = new URLSearchParams(window.location.search);
-    setTools({ perf: q.has("rendimiento"), capture: q.has("captura") });
-  }, []);
-
-  useEffect(() => {
-    if (stage !== "practice" || !tools.perf) return;
-    const timer = window.setInterval(() => {
-      const s = perfRef.current;
-      const letter = live.current.name[live.current.filled] ?? "";
-      const threshold = engineRef.current?.thresholds[letter];
-      let rival = "";
-      let rivalP = 0;
-      s.rival.forEach((v, k) => {
-        if (v > rivalP) [rival, rivalP] = [k, v];
-      });
-      setPerf([
-        s.frames ? `${s.delegate} · ${(s.ms / s.frames).toFixed(0)} ms · ${s.frames} fps` : "…",
-        s.scored && letter
-          ? `${letter} ${(s.target / s.scored).toFixed(2)} / ${threshold?.toFixed(2) ?? "?"}` +
-            (rival ? ` · ${rival} ${(rivalP / s.scored).toFixed(2)}` : "")
-          : "sin mano",
-      ]);
-      Object.assign(s, { frames: 0, ms: 0, scored: 0, target: 0, rival: new Map() });
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [stage, tools.perf]);
-
-  function record() {
-    const letter = live.current.name[live.current.filled];
-    if (!letter) return;
-    recording.current = { until: performance.now() + RECORD_MS, letter };
-    setIsRecording(true);
-    window.setTimeout(() => {
-      setIsRecording(false);
-      setSampleCount(samples.current.length);
-    }, RECORD_MS);
-  }
-
-  function download() {
-    const blob = new Blob(
-      [
-        JSON.stringify({
-          version: 1,
-          device: navigator.userAgent,
-          delegate: perfRef.current.delegate,
-          samples: samples.current,
-        }),
-      ],
-      { type: "application/json" },
-    );
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `muestras-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
   const [input, setInput] = useState("");
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -166,8 +94,8 @@ export function CameraNameDemo({ className }: { className?: string }) {
     skeleton: true,
     phase: "idle" as Phase,
     cooldownUntil: 0,
-    target: null as Point[] | null,
-    drawn: null as Point[] | null,
+    target: [null, null] as (Point[] | null)[],
+    drawn: [null, null] as (Point[] | null)[],
   });
 
   const target = name[filled] ?? "";
@@ -373,34 +301,12 @@ export function CameraNameDemo({ className }: { className?: string }) {
       busy = true;
       const state = live.current;
       const classify = state.running && state.phase !== "hit" && !!state.name[state.filled];
-      const take = recording.current.until > performance.now();
-      const takeLetter = recording.current.letter;
       void createImageBitmap(frame)
-        .then((bitmap) =>
-          engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify || take, take),
-        )
-        .then(({ landmarks, probs, delegate, handMs, features }) => {
+        .then((bitmap) => engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify))
+        .then(({ landmarks, other, probs }) => {
           if (!alive) return;
-          const s = perfRef.current;
-          s.frames++;
-          s.ms += handMs;
-          s.delegate = delegate;
-          const letter = state.name[state.filled];
-          if (probs && letter) {
-            const k = engine.labels.indexOf(letter);
-            s.scored++;
-            s.target += probs[k] ?? 0;
-            let best = -1;
-            probs.forEach((v, i) => {
-              if (i !== k && (best < 0 || v > (probs[best] ?? 0))) best = i;
-            });
-            const name = engine.labels[best];
-            if (name) s.rival.set(name, (s.rival.get(name) ?? 0) + (probs[best] ?? 0));
-          }
-          if (take && features)
-            samples.current.push({ letter: takeLetter, features: Array.from(features) });
-          live.current.target = landmarks;
-          recognize(classify ? probs : null, landmarks !== null, performance.now());
+          live.current.target = [landmarks, other];
+          recognize(probs, landmarks !== null, performance.now());
         })
         .catch(() => {})
         .finally(() => {
@@ -418,51 +324,57 @@ export function CameraNameDemo({ className }: { className?: string }) {
       }
       octx.setTransform(dpr, 0, 0, dpr, 0, 0);
       octx.clearRect(0, 0, w, h);
-      const { target: tgt, skeleton } = live.current;
-      if (!tgt || !skeleton) return;
-      const drawn = (live.current.drawn ??= tgt.map((p) => ({ ...p })));
-      drawn.forEach((p, i) => {
-        const t = tgt[i]!;
-        p.x += (t.x - p.x) * 0.35;
-        p.y += (t.y - p.y) * 0.35;
-      });
+      const { target: targets, skeleton } = live.current;
+      if (!skeleton) return;
       const vw = video.videoWidth || 4;
       const vh = video.videoHeight || 3;
       const s = Math.max(w / vw, h / vh);
       const ox = (w - vw * s) / 2;
       const oy = (h - vh * s) / 2;
-      const pts = drawn.map((p) => [ox + p.x * vw * s, oy + p.y * vh * s] as const);
       const color = live.current.phase === "hit" ? success : accent;
-      octx.lineCap = "round";
-      for (const [style, width] of [
-        [halo, 5],
-        [color, 2.4],
-      ] as const) {
-        octx.strokeStyle = style;
-        octx.globalAlpha = style === halo ? 0.55 : 1;
-        octx.lineWidth = width;
-        for (const [a, b] of HAND_LINKS) {
-          const pa = pts[a]!;
-          const pb = pts[b]!;
-          octx.beginPath();
-          octx.moveTo(pa[0], pa[1]);
-          octx.lineTo(pb[0], pb[1]);
-          octx.stroke();
+      targets.forEach((tgt, slot) => {
+        if (!tgt) {
+          live.current.drawn[slot] = null;
+          return;
         }
-      }
-      octx.globalAlpha = 1;
-      pts.forEach(([x, y], i) => {
-        const r = i === 0 ? 5.5 : TIPS.has(i) ? 4.6 : 3.4;
-        octx.beginPath();
-        octx.arc(x, y, r + 1.6, 0, Math.PI * 2);
-        octx.globalAlpha = 0.9;
-        octx.fillStyle = halo;
-        octx.fill();
+        const drawn = (live.current.drawn[slot] ??= tgt.map((p) => ({ ...p })));
+        drawn.forEach((p, i) => {
+          const t = tgt[i]!;
+          p.x += (t.x - p.x) * 0.35;
+          p.y += (t.y - p.y) * 0.35;
+        });
+        const pts = drawn.map((p) => [ox + p.x * vw * s, oy + p.y * vh * s] as const);
+        octx.lineCap = "round";
+        for (const [style, width] of [
+          [halo, 5],
+          [color, 2.4],
+        ] as const) {
+          octx.strokeStyle = style;
+          octx.globalAlpha = style === halo ? 0.55 : 1;
+          octx.lineWidth = width;
+          for (const [a, b] of HAND_LINKS) {
+            const pa = pts[a]!;
+            const pb = pts[b]!;
+            octx.beginPath();
+            octx.moveTo(pa[0], pa[1]);
+            octx.lineTo(pb[0], pb[1]);
+            octx.stroke();
+          }
+        }
         octx.globalAlpha = 1;
-        octx.beginPath();
-        octx.arc(x, y, r, 0, Math.PI * 2);
-        octx.fillStyle = color;
-        octx.fill();
+        pts.forEach(([x, y], i) => {
+          const r = i === 0 ? 5.5 : TIPS.has(i) ? 4.6 : 3.4;
+          octx.beginPath();
+          octx.arc(x, y, r + 1.6, 0, Math.PI * 2);
+          octx.globalAlpha = 0.9;
+          octx.fillStyle = halo;
+          octx.fill();
+          octx.globalAlpha = 1;
+          octx.beginPath();
+          octx.arc(x, y, r, 0, Math.PI * 2);
+          octx.fillStyle = color;
+          octx.fill();
+        });
       });
     };
 
@@ -572,11 +484,14 @@ export function CameraNameDemo({ className }: { className?: string }) {
               disableRemotePlayback
               onPlaying={(e) => {
                 const v = e.currentTarget;
-                const reveal = () =>
-                  v.videoWidth
-                    ? requestAnimationFrame(() => requestAnimationFrame(() => setVideoReady(true)))
-                    : window.setTimeout(reveal, 50);
-                reveal();
+                let frames = 0;
+                const show = () => window.setTimeout(() => setVideoReady(true), VIDEO_SETTLE_MS);
+                const onFrame = () => {
+                  if (v.videoWidth && ++frames >= 2) return show();
+                  if ("requestVideoFrameCallback" in v) v.requestVideoFrameCallback(onFrame);
+                  else window.setTimeout(onFrame, 50);
+                };
+                onFrame();
               }}
               className={cn(
                 "absolute inset-0 h-full w-full -scale-x-100 object-cover transition-opacity duration-200",
@@ -603,33 +518,6 @@ export function CameraNameDemo({ className }: { className?: string }) {
                     ? "Capturando seña"
                     : "Listo · esperando manos"}
             </div>
-            {perf && (
-              <div className="bg-text/75 text-on-dark absolute top-11 left-3 z-10 flex flex-col rounded-xl px-2.5 py-1 font-mono text-[10px] font-bold">
-                {perf.map((line) => (
-                  <span key={line}>{line}</span>
-                ))}
-              </div>
-            )}
-            {tools.capture && (
-              <div className="absolute right-3 bottom-3 z-30 flex flex-col items-end gap-1.5">
-                <button
-                  type="button"
-                  onClick={record}
-                  disabled={isRecording}
-                  className="bg-danger text-on-primary rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-70"
-                >
-                  {isRecording ? "Grabando…" : `Grabar «${target}» ${RECORD_MS / 1000} s`}
-                </button>
-                <button
-                  type="button"
-                  onClick={download}
-                  disabled={!sampleCount}
-                  className="bg-surface text-text rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-50"
-                >
-                  Descargar ({sampleCount})
-                </button>
-              </div>
-            )}
 
             <button
               type="button"
