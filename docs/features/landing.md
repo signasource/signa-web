@@ -151,9 +151,9 @@ stops recognizing), and a "¡NOMBRE completado!" screen whose title wraps by who
 progress bar and no debug panel. The modal adds a disclaimer that recognition can be wrong and is
 still being reviewed.
 
-- **Lisa's picture-in-picture** behaves exactly like `nombre.html`: 104×138 in a corner (top-right
+- **Lisa's picture-in-picture** behaves exactly like `nombre.html`: 104×138 in a corner (top-left
   by default), dragged and snapped to the nearest corner, "tocá para agrandar", tapped to fill the
-  viewport with the same spring transition, an X in the corner to shrink it back. While small, a
+  viewport with the same spring transition, an X in the corner to shrink it back. After the last letter it stays during the celebration and fades out (`landing-pip-out`) before the completed screen, instead of vanishing. While small, a
   transparent layer over the `LisaGlbViewer` iframe takes the drag/tap (an iframe swallows pointer
   events); when big it is removed and dragging rotates the model.
 - **Detection runs in a Web Worker** (`src/lib/alphabet-worker.ts`, driven by

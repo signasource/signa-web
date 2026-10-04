@@ -509,7 +509,14 @@ export function CameraNameDemo({ className }: { className?: string }) {
               <BodyIcon filled={showSkeleton} />
             </button>
 
-            {target && <SignPip sign={target} preload={upcoming} viewportRef={viewportRef} />}
+            {name && (
+              <SignPip
+                sign={target || name[name.length - 1]!}
+                preload={upcoming}
+                viewportRef={viewportRef}
+                leaving={!target}
+              />
+            )}
 
             {capturing && running && (
               <div className="absolute inset-x-0 bottom-0 z-10 h-1 overflow-hidden bg-white/35">
@@ -656,13 +663,15 @@ function SignPip({
   sign,
   preload,
   viewportRef,
+  leaving,
 }: {
   sign: string;
   preload: readonly string[];
   viewportRef: RefObject<HTMLDivElement | null>;
+  leaving?: boolean;
 }) {
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [corner, setCorner] = useState<Corner>("tr");
+  const [corner, setCorner] = useState<Corner>("tl");
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const [big, setBig] = useState(false);
   const [hint, setHint] = useState(true);
@@ -743,6 +752,7 @@ function SignPip({
         "bg-fill shadow-text/30 absolute z-20 overflow-hidden border-2 border-white/90 shadow-xl",
         big ? "rounded-[22px]" : "rounded-[18px]",
         drag ? "cursor-grabbing" : PIP_TRANSITION,
+        leaving && "landing-pip-out pointer-events-none",
       )}
     >
       <div
