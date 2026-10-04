@@ -47,6 +47,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
+  allowedDevOrigins: ["192.168.*.*", "10.*.*.*", "*.local"],
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

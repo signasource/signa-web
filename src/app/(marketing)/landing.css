@@ -365,8 +365,9 @@ html:has(.landing-root) {
 }
 
 .landing-marquee-outline {
-  color: transparent;
-  -webkit-text-stroke: 2px var(--color-primary-medallion);
+  color: var(--color-background);
+  -webkit-text-stroke: 4px var(--color-primary-medallion);
+  paint-order: stroke fill;
 }
 .landing-marquee-outline span:hover {
   -webkit-text-stroke-color: var(--color-primary);
@@ -420,6 +421,10 @@ html:has(.landing-root) {
   animation: landing-grow 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) 0.85s both;
 }
 
+.landing-team-card img {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
 .landing-team-card {
   transition:
     transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1),

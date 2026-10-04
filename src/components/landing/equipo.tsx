@@ -4,7 +4,11 @@ import Image from "next/image";
 const MEMBERS = [
   { name: "Agostina Avalle", photo: "/images/equipo/agostina-v2.png", objectPosition: "top" },
   { name: "Paloma Córcoba", photo: "/images/equipo/paloma-v2.png", objectPosition: "top" },
-  { name: "Juan Cruz López Freytas", photo: "/images/equipo/juancruz-v2.png", objectPosition: "center" },
+  {
+    name: "Juan Cruz López Freytas",
+    photo: "/images/equipo/juancruz-v2.png",
+    objectPosition: "center",
+  },
   { name: "Joaquín Miranda", photo: "/images/equipo/joaquin-v2.png", objectPosition: "top" },
   { name: "Mateo Ottonello", photo: "/images/equipo/mateo-v2.png", objectPosition: "top" },
   { name: "Marina Polunosik", photo: "/images/equipo/marina-v2.png", objectPosition: "center" },
@@ -63,11 +67,12 @@ export function Equipo() {
                   alt={member.name}
                   width={600}
                   height={600}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  draggable={false}
+                  className="pointer-events-none h-full w-full object-cover transition-transform duration-500 select-none group-hover:scale-105"
                   style={{ objectPosition: member.objectPosition }}
                 />
               </div>
-              <p className="text-sm font-bold leading-tight text-center">{member.name}</p>
+              <p className="text-center text-sm leading-tight font-bold">{member.name}</p>
             </div>
           ))}
         </div>

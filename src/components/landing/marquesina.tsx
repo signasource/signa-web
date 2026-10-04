@@ -3,7 +3,10 @@ const ROW_2 = ["Por favor", "Perdón", "Nos vemos", "Te quiero", "Bienvenida", "
 
 export function Marquesina() {
   return (
-    <section aria-hidden className="landing-marquee flex flex-col gap-1.5 overflow-hidden py-10">
+    <section
+      aria-hidden
+      className="landing-marquee flex flex-col gap-1.5 overflow-hidden py-10 select-none"
+    >
       <MarqueeRow words={ROW_1} className="text-text" />
       <MarqueeRow words={ROW_2} reverse className="landing-marquee-outline" />
     </section>
