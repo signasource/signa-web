@@ -85,7 +85,7 @@ function LivePhone({ children, className }: { children: ReactNode; className?: s
 function SignsPhone() {
   return (
     <FitPhone base={LIVE_PHONE} around={<></>}>
-      <LivePhone className="hover:ring-primary/30 transition-shadow">
+      <LivePhone>
         <LessonDemo
           className={LIVE_SCREEN}
           viewerClassName="h-[440px]"
