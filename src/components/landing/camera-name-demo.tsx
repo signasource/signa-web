@@ -71,6 +71,22 @@ function cssColor(name: string): string {
 
 export function CameraNameDemo({ className }: { className?: string }) {
   const [stage, setStage] = useState<Stage>("setup");
+  const perfRef = useRef({ frames: 0, ms: 0, delegate: "" });
+  const [perf, setPerf] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (stage !== "practice" || !new URLSearchParams(window.location.search).has("rendimiento"))
+      return;
+    const timer = window.setInterval(() => {
+      const s = perfRef.current;
+      setPerf(
+        s.frames ? `${s.delegate} · ${(s.ms / s.frames).toFixed(0)} ms · ${s.frames} fps` : "…",
+      );
+      s.frames = 0;
+      s.ms = 0;
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [stage]);
   const [input, setInput] = useState("");
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -300,8 +316,12 @@ export function CameraNameDemo({ className }: { className?: string }) {
       const classify = state.running && state.phase !== "hit" && !!state.name[state.filled];
       void createImageBitmap(frame)
         .then((bitmap) => engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify))
-        .then(({ landmarks, probs }) => {
+        .then(({ landmarks, probs, delegate, handMs }) => {
           if (!alive) return;
+          const s = perfRef.current;
+          s.frames++;
+          s.ms += handMs;
+          s.delegate = delegate;
           live.current.target = landmarks;
           recognize(probs, landmarks !== null, performance.now());
         })
@@ -495,6 +515,11 @@ export function CameraNameDemo({ className }: { className?: string }) {
                     ? "Capturando seña"
                     : "Listo · esperando manos"}
             </div>
+            {perf && (
+              <div className="bg-text/75 text-on-dark absolute top-11 left-3 z-10 rounded-full px-2.5 py-1 font-mono text-[10px] font-bold">
+                {perf}
+              </div>
+            )}
 
             <button
               type="button"

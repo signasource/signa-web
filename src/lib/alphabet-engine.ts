@@ -8,6 +8,7 @@ import { createClassifier, type ClassifierManifest } from "@/lib/alphabet-classi
 import { applyLocationRule, faceBlock, type Point } from "@/lib/alphabet-recognizer";
 import { buildHandFeatures, type Vec3 } from "@/lib/hand-features";
 import { fetchVerified } from "@/lib/integrity";
+import type { Delegate } from "@/lib/delegate-choice";
 
 const WASM_PATH = "/mediapipe/wasm";
 const MODELS = "https://storage.googleapis.com/mediapipe-models";
@@ -38,6 +39,9 @@ export interface Detection {
 export interface AlphabetEngine {
   labels: string[];
   thresholds: Record<string, number>;
+  handDelegate: Delegate;
+  lastHandMs: number;
+  switchHands(delegate: Delegate): Promise<boolean>;
   detect(frame: Frame, withPose: boolean): Detection;
   predict(detection: Detection): Float32Array | null;
   close(): void;
@@ -57,25 +61,44 @@ async function loadClassifier() {
   return createClassifier(manifest, weights);
 }
 
-async function loadDetectors() {
-  const [fileset, handModel, poseModel] = await Promise.all([
+type Fileset = Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>;
+
+function createHands(fileset: Fileset, model: Uint8Array, delegate: Delegate) {
+  return HandLandmarker.createFromOptions(fileset, {
+    baseOptions: { modelAssetBuffer: model.slice(), delegate },
+    runningMode: "IMAGE",
+    numHands: 1,
+    minHandDetectionConfidence: 0.4,
+    ...(delegate === "GPU" && typeof OffscreenCanvas !== "undefined"
+      ? { canvas: new OffscreenCanvas(1, 1) }
+      : {}),
+  });
+}
+
+async function startHands(fileset: Fileset, model: Uint8Array, preferred: Delegate) {
+  if (preferred === "GPU") {
+    try {
+      return { hands: await createHands(fileset, model, "GPU"), delegate: "GPU" as Delegate };
+    } catch {}
+  }
+  return { hands: await createHands(fileset, model, "CPU"), delegate: "CPU" as Delegate };
+}
+
+async function loadDetectors(preferred: Delegate) {
+  const [fileset, handBuffer, poseModel] = await Promise.all([
     FilesetResolver.forVisionTasks(WASM_PATH),
     fetchVerified(HAND_MODEL.url, HAND_MODEL.sha256),
     fetchVerified(POSE_MODEL.url, POSE_MODEL.sha256),
   ]);
-  const hands = await HandLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetBuffer: handModel, delegate: "CPU" },
-    runningMode: "IMAGE",
-    numHands: 1,
-    minHandDetectionConfidence: 0.4,
-  });
+  const handModel = new Uint8Array(handBuffer);
+  const { hands, delegate } = await startHands(fileset, handModel, preferred);
   try {
     const pose = await PoseLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetBuffer: poseModel, delegate: "CPU" },
       runningMode: "IMAGE",
       numPoses: 1,
     });
-    return { hands, pose };
+    return { fileset, handModel, hands, handDelegate: delegate, pose };
   } catch (e) {
     hands.close();
     throw e;
@@ -85,21 +108,38 @@ async function loadDetectors() {
 const toPoint = (p: NormalizedLandmark): Point => ({ x: p.x, y: p.y, z: p.z });
 const toVec = (p: Point, sign: number): Vec3 => [sign * p.x, p.y, p.z ?? 0];
 
-export async function createAlphabetEngine(): Promise<AlphabetEngine> {
-  const [classifier, detectors] = await Promise.all([loadClassifier(), loadDetectors()]);
+export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise<AlphabetEngine> {
+  const [classifier, detectors] = await Promise.all([loadClassifier(), loadDetectors(preferred)]);
   const { labels, thresholds } = classifier.manifest;
   let lastPose: Point[] | null = null;
 
-  return {
+  const engine: AlphabetEngine = {
     labels,
     thresholds,
+    handDelegate: detectors.handDelegate,
+    lastHandMs: 0,
+
+    async switchHands(delegate) {
+      if (delegate === this.handDelegate) return true;
+      try {
+        const next = await createHands(detectors.fileset, detectors.handModel, delegate);
+        detectors.hands.close();
+        detectors.hands = next;
+        this.handDelegate = delegate;
+        return true;
+      } catch {
+        return false;
+      }
+    },
 
     detect(frame, withPose) {
       if (withPose || !lastPose) {
         const pose = detectors.pose.detect(frame).landmarks[0];
         lastPose = pose ? pose.map(toPoint) : null;
       }
+      const t0 = performance.now();
       const r = detectors.hands.detect(frame);
+      this.lastHandMs = performance.now() - t0;
       const landmarks = r.landmarks[0];
       if (!landmarks) return { hand: null, pose: lastPose };
       const label = r.handedness[0]?.[0]?.categoryName ?? "Right";
@@ -129,4 +169,5 @@ export async function createAlphabetEngine(): Promise<AlphabetEngine> {
       detectors.pose.close();
     },
   };
+  return engine;
 }

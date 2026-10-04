@@ -166,9 +166,18 @@ still being reviewed.
 
 Everything runs on the visitor's device; no frame leaves the browser.
 
+- **CPU or GPU, chosen per device** (`src/lib/delegate-choice.ts`, run inside the worker).
+  Recognition always starts on the CPU, so startup never waits. If no choice is stored yet, the
+  first frames are timed: a CPU averaging ≤ 30 ms per hand detection is kept and nothing else is
+  tried; a slower one triggers a one-time GPU trial (skipped when WebGL is software-rendered, cut
+  short if the GPU is clearly slower), and the faster one wins (GPU must be ≥ 15% faster). Only the
+  hand detector switches; the pose stays on the CPU. The result is stored in `localStorage`
+  (`signa:reconocimiento:delegado:v1`); later visits switch to a stored GPU after the first frame.
+  Cost: one ~0.5 s tracking pause on the visit that switches. Measured on a laptop with Intel Arc:
+  CPU 75 ms → GPU 22 ms per detection, 10 → 20 fps; without a usable GPU: no trial, no pause.
+  Add `?rendimiento` to the URL to see the delegate, ms per detection and fps in the demo.
 - **Detection:** MediaPipe Tasks (`HandLandmarker` + `PoseLandmarker`, image mode, one hand,
-  on the CPU like signa-ml's demo server — from the worker it processed 6× more frames than the
-  GPU delegate). The library is the npm package `@mediapipe/tasks-vision` (pinned to
+  (see above)). The library is the npm package `@mediapipe/tasks-vision` (pinned to
   `0.10.22-rc.20250304`), bundled, and its WebAssembly is self-hosted under `/mediapipe/wasm`
   (copied from `node_modules` by `scripts/copy-mediapipe-wasm.mjs` before `dev`/`build`;
   `public/mediapipe/` is git-ignored). The `.task` models come from
