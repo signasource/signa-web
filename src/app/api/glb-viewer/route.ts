@@ -33,7 +33,7 @@ function buildViewerHtml(sign: string): string {
   <script>
     var FOV=${FOV},ENCUADRE=${ENCUADRE},BASE=${JSON.stringify(R2_GLB_BASE)},MAX=${MAX_PRELOAD},
         SAFE=${String(/^[\p{L}\p{N}_\- ]{1,40}$/u)},b=document.body;
-    var cache={},order=[],queue=[],loading=0,shown=null,want=${JSON.stringify(sign)};
+    var cache={},order=[],queue=[],loading=0,shown=null,holding=null,slot=null,want=${JSON.stringify(sign)};
     function urlOf(sign){return BASE+'/'+encodeURIComponent(sign)+'.glb';}
     function frame(mv){
       try{
@@ -69,13 +69,13 @@ function buildViewerHtml(sign: string): string {
         mv.dataset.loaded='1';
         loading--;
         if(want===sign)reveal(sign);
-        pump();
+        resume();
       });
       mv.addEventListener('error',function(){
         mv.dataset.failed='1';
         loading--;
         if(want===sign){b.classList.remove('ready');b.classList.add('failed');}
-        pump();
+        resume();
       });
       mv.setAttribute('src',urlOf(sign));
       b.appendChild(mv);
@@ -86,19 +86,38 @@ function buildViewerHtml(sign: string): string {
       var mv=cache[sign];
       if(shown&&shown!==mv){shown.classList.remove('on');shown.pause();}
       shown=mv;
+      holding=null;
       mv.currentTime=0;
       mv.play();
+      arm();
       requestAnimationFrame(function(){requestAnimationFrame(function(){
         if(want!==sign)return;
         mv.classList.add('on');
         b.classList.add('ready');
       });});
     }
-    function pump(){
-      var cur=cache[want];
-      if(loading||!cur||!(cur.dataset.loaded||cur.dataset.failed))return;
+    function arm(){
+      clearTimeout(slot);
       while(queue.length&&cache[queue[0]])queue.shift();
-      if(queue.length)viewer(queue.shift());
+      if(!shown||!queue.length)return;
+      var d=shown.duration||0;
+      var left=d?d-(shown.currentTime%d):1;
+      slot=setTimeout(boundary,Math.max(0,left*1000-40));
+    }
+    function boundary(){
+      if(loading||!shown)return arm();
+      while(queue.length&&cache[queue[0]])queue.shift();
+      if(!queue.length)return;
+      holding=shown;
+      shown.pause();
+      shown.currentTime=0;
+      viewer(queue.shift());
+    }
+    function resume(){
+      var h=holding;
+      holding=null;
+      if(h&&h===shown)h.play();
+      arm();
     }
     function show(sign){
       want=sign;
@@ -119,7 +138,7 @@ function buildViewerHtml(sign: string): string {
       }else if(e.data.type===${JSON.stringify(VIEWER_PRELOAD)}&&Array.isArray(e.data.signs)){
         var signs=e.data.signs.filter(function(s){return typeof s==='string'&&SAFE.test(s);}).slice(0,MAX);
         queue=signs;
-        customElements.whenDefined('model-viewer').then(pump);
+        customElements.whenDefined('model-viewer').then(arm);
       }
     });
   </script>

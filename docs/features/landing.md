@@ -122,7 +122,12 @@ CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
   `safeSignList()`) to load signs ahead of time; switching to a loaded sign only swaps which one
   is visible (measured 0 ms of blocking). Hidden viewers are paused and don't render;
   model-viewer shares one WebGL renderer per page. Preloads are loaded one at a time, so the sign on screen
-  is never queued behind the rest. `LessonDemo` preloads its four questions; the camera demo
+  is never queued behind the rest, and **only at a loop boundary**: preparing a model blocks the
+  page for 300–450 ms, and doing it while Lisa signs made her first sign stutter. The viewer lets
+  the visible sign play its first repetition untouched; when a repetition ends it holds Lisa in
+  her starting pose, loads the next preload, and resumes once it is ready (`arm()`/`boundary()`/
+  `resume()` in the route). Measured: 0 dropped frames during the first sign; a sign picked
+  before its preload is loaded on demand (~1 s). `LessonDemo` preloads its four questions; the camera demo
   preloads every letter of the name but starts recognizing right away — it never waits for the
   models (waiting for all of them used to delay the start by more than 10 s).
 
