@@ -1,18 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { subscribeToWaitlist } from "@/app/(marketing)/proximamente/actions";
+import { useRef, useState } from "react";
+import { MIN_FILL_MS, subscribeToWaitlist } from "@/lib/waitlist";
 
 export function WaitlistForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [trap, setTrap] = useState("");
+  const shownAt = useRef(0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
+    if (trap || (shownAt.current && Date.now() - shownAt.current < MIN_FILL_MS)) {
+      setStatus("done");
+      return;
+    }
     setStatus("loading");
-    await subscribeToWaitlist(email);
-    setStatus("done");
+    setError(null);
+    const result = await subscribeToWaitlist(email);
+    if (result.ok) setStatus("done");
+    else {
+      setError(result.message);
+      setStatus("idle");
+    }
   }
 
   if (status === "done") {
@@ -37,7 +49,22 @@ export function WaitlistForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-start">
+    <form
+      onSubmit={handleSubmit}
+      onFocus={() => (shownAt.current ||= Date.now())}
+      className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start"
+    >
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden
+        value={trap}
+        onChange={(e) => setTrap(e.target.value)}
+        className="absolute h-px w-px opacity-0"
+        style={{ left: "-9999px" }}
+      />
       <label className="flex-1">
         <span className="sr-only">Tu email</span>
         <input
@@ -45,7 +72,11 @@ export function WaitlistForm() {
           required
           placeholder="tu@email.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          maxLength={254}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setError(null);
+          }}
           disabled={status === "loading"}
           className="border-border bg-fill focus:ring-primary h-14 w-full rounded-2xl border px-4 text-base focus:ring-2 focus:outline-none disabled:opacity-60"
         />
@@ -57,6 +88,11 @@ export function WaitlistForm() {
       >
         {status === "loading" ? "Enviando…" : "Avisame"}
       </button>
+      {error && (
+        <p role="alert" className="text-danger basis-full text-sm font-bold">
+          {error}
+        </p>
+      )}
     </form>
   );
 }

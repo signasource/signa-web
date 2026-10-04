@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { authApi } from "@/lib/api/auth";
 import { setOnSessionExpired } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
+import { sessionApi } from "@/lib/api/session";
 import { tokenStore } from "@/lib/api/token-store";
 import type { MyOrganization } from "@/lib/api/types";
 
@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [organization, setOrganization] = useState<MyOrganization | null>(null);
 
   const signOut = useCallback(() => {
-    tokenStore.clear();
+    sessionApi.logout();
     setOrganization(null);
     setStatus("unauthenticated");
   }, []);
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setOnSessionExpired(signOut);
-    const restore = tokenStore.getRefresh()
+    const restore = tokenStore.hasSession()
       ? fetchAdminOrganization().then(signIn)
       : Promise.reject(new Error("no session"));
     restore.catch(signOut);
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (identifier: string, password: string) => {
-      tokenStore.set(await authApi.login(identifier, password));
+      await sessionApi.login(identifier, password);
       try {
         signIn(await fetchAdminOrganization());
       } catch (err) {

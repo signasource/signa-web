@@ -150,15 +150,19 @@ export function visibleRegion(
 
 export const MAX_NAME_LENGTH = 10;
 
+export function nameLetters(raw: string): string {
+  return Array.from(raw.normalize("NFC").toUpperCase(), (c) =>
+    c === "Ñ" ? c : c.normalize("NFD").replace(/\p{M}/gu, ""),
+  )
+    .join("")
+    .replace(/[^A-ZÑ]/g, "");
+}
+
 export function parseName(
   raw: string,
   supported: readonly string[],
 ): { name: string; unsupported: string[] } {
-  const name = raw
-    .normalize("NFC")
-    .toUpperCase()
-    .replace(/[^A-ZÑ]/g, "")
-    .slice(0, MAX_NAME_LENGTH);
+  const name = nameLetters(raw).slice(0, MAX_NAME_LENGTH);
   const unsupported = [...new Set(name.split(""))].filter((c) => !supported.includes(c));
   return { name, unsupported };
 }

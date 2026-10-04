@@ -3,6 +3,8 @@ import {
   applyLocationRule,
   faceBlock,
   LetterVerifier,
+  MAX_NAME_LENGTH,
+  nameLetters,
   parseName,
   pickPrimary,
   touchWeight,
@@ -143,7 +145,7 @@ describe("parseName", () => {
   });
 
   it("caps the length", () => {
-    expect(parseName("a".repeat(30), supported).name).toHaveLength(10);
+    expect(parseName("a".repeat(30), supported).name).toHaveLength(MAX_NAME_LENGTH);
   });
 
   it("reports letters the model doesn't know", () => {
@@ -206,5 +208,16 @@ describe("two hands", () => {
     expect(pickPrimary([small, big], small[0]!, 1)).toBe(0);
     expect(pickPrimary([big, small], small[0]!, 1)).toBe(1);
     expect(pickPrimary([], null, 1)).toBe(-1);
+  });
+});
+
+describe("nameLetters", () => {
+  it("keeps accented vowels as plain letters and keeps Ñ", () => {
+    expect(nameLetters("José Peña")).toBe("JOSEPEÑA");
+    expect(nameLetters("Ágústín")).toBe("AGUSTIN");
+  });
+
+  it("caps parsed names at the maximum length", () => {
+    expect(parseName("Maximiliano Gómez", ["A"]).name).toHaveLength(MAX_NAME_LENGTH);
   });
 });

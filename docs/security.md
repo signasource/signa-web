@@ -6,7 +6,7 @@
 
 ## Why this matters here
 
-The refresh token lives in `localStorage` ([api/session.md](./api/session.md)), so any XSS can read it. CSP is the main mitigation: it blocks injected scripts and, just as important, **blocks exfiltration** — `connect-src` only allows the app and the API origin, and `img-src`/`form-action`/`base-uri` are closed.
+The refresh token lives in an `HttpOnly` cookie that page scripts cannot read ([api/session.md](./api/session.md)). CSP is still the main defense against injected scripts and, just as important, **blocks exfiltration** — `connect-src` only allows the app and the API origin, and `img-src`/`form-action`/`base-uri` are closed.
 
 ## Two tiers
 
@@ -17,7 +17,7 @@ The refresh token lives in `localStorage` ([api/session.md](./api/session.md)), 
 
 Why not nonces everywhere: nonces force dynamic rendering, losing static generation and CDN caching for the landing. Why not Next's experimental SRI: inline RSC/hydration scripts are not covered by hashes, so `script-src 'self'` breaks hydration (tried and rejected).
 
-**Accepted risk:** the relaxed tier permits inline scripts, and the landing shares an origin (and `localStorage`) with the panel. Mitigated by the landing being static content with no user input, and by CSP still blocking exfiltration there. If the landing ever renders user-supplied content, move it to the strict tier or a separate origin.
+**Remaining risk:** the relaxed tier permits inline scripts, and the landing shares an origin with the panel. The refresh token is no longer reachable from scripts (`HttpOnly` cookie, see [api/session.md](./api/session.md)), so an injected script can't take the session away; it could still act as the user while the page is open. Serving the panel from its own subdomain (`panel.…`) removes that too. Mitigated by the landing being static content with no user input, and by CSP still blocking exfiltration there. If the landing ever renders user-supplied content, move it to the strict tier or a separate origin.
 
 ## Rules
 

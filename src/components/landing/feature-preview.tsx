@@ -453,8 +453,8 @@ export function FeaturePreview({ feature, closing }: { feature: FeatureId; closi
           onClick={closeFeature}
           className="absolute top-5 right-5 sm:top-6 sm:right-6"
         />
-        <div className={cn("flex max-w-xl flex-col gap-4", content.note && "md:self-stretch")}>
-          <div className={cn("flex flex-col gap-4", content.note && "md:my-auto")}>
+        <div className="flex max-w-xl flex-col gap-4">
+          <div className="flex flex-col gap-4">
             <p className={`text-sm font-extrabold tracking-[2px] ${content.eyebrowClass}`}>
               {content.eyebrow}
             </p>
@@ -471,7 +471,7 @@ export function FeaturePreview({ feature, closing }: { feature: FeatureId; closi
             ))}
           </div>
           {content.note && (
-            <p className="bg-fill text-text-muted flex gap-2.5 rounded-2xl px-4 py-3 text-sm leading-relaxed">
+            <p className="bg-fill text-text-muted mt-4 flex gap-2.5 rounded-2xl px-4 py-3 text-sm leading-relaxed">
               <svg
                 aria-hidden="true"
                 width="18"
