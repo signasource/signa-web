@@ -1,17 +1,44 @@
 import type { CSSProperties } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const MEMBERS = [
-  { name: "Agostina Avalle", photo: "/images/equipo/agostina-v2.png", objectPosition: "top" },
-  { name: "Paloma Córcoba", photo: "/images/equipo/paloma-v2.png", objectPosition: "top" },
+  {
+    name: "Agostina Avalle",
+    photo: "/images/equipo/agostina-v2.png",
+    objectPosition: "top",
+    linkedin: "https://www.linkedin.com/in/avalleagostina/",
+  },
+  {
+    name: "Paloma Córcoba",
+    photo: "/images/equipo/paloma-v2.png",
+    objectPosition: "top",
+    linkedin: "https://www.linkedin.com/in/paloma-corcoba/",
+  },
   {
     name: "Juan Cruz López Freytas",
     photo: "/images/equipo/juancruz-v2.png",
     objectPosition: "center",
+    linkedin: null,
   },
-  { name: "Joaquín Miranda", photo: "/images/equipo/joaquin-v2.png", objectPosition: "top" },
-  { name: "Mateo Ottonello", photo: "/images/equipo/mateo-v2.png", objectPosition: "top" },
-  { name: "Marina Polunosik", photo: "/images/equipo/marina-v2.png", objectPosition: "center" },
+  {
+    name: "Joaquín Miranda",
+    photo: "/images/equipo/joaquin-v2.png",
+    objectPosition: "top",
+    linkedin: "https://www.linkedin.com/in/joaquin-miranda-025b232b6/",
+  },
+  {
+    name: "Mateo Inti Ottonello",
+    photo: "/images/equipo/mateo-v2.png",
+    objectPosition: "top",
+    linkedin: "https://www.linkedin.com/in/mateottonello/",
+  },
+  {
+    name: "Marina Polunosik",
+    photo: "/images/equipo/marina-v2.png",
+    objectPosition: "center",
+    linkedin: "https://www.linkedin.com/in/marina-polunosik/",
+  },
 ];
 
 export function Equipo() {
@@ -30,9 +57,10 @@ export function Equipo() {
           </div>
           <div data-reveal="up" className="flex flex-col gap-4">
             <p className="text-text-muted text-lg leading-relaxed">
-              Somos el equipo detrás de Signa, estudiantes de Ingeniería en Sistemas de Información
-              de la Universidad Tecnológica Nacional, Facultad Regional Córdoba. Signa es nuestro
-              Proyecto Final, la tesis con la que cerramos la carrera.
+              Somos el equipo detrás de Signa, estudiantes de{" "}
+              <strong>Ingeniería en Sistemas de Información</strong> de la Universidad Tecnológica
+              Nacional, Facultad Regional Córdoba. Signa es nuestro Proyecto Final, la tesis con la
+              que cerramos la carrera.
             </p>
           </div>
         </div>
@@ -50,15 +78,35 @@ export function Equipo() {
                   i % 2 === 0 ? "landing-team-card" : "landing-team-card landing-team-card-alt"
                 }`}
               >
-                <Image
-                  src={member.photo}
-                  alt={member.name}
-                  width={600}
-                  height={600}
-                  draggable={false}
-                  className="pointer-events-none h-full w-full object-cover transition-transform duration-500 select-none group-hover:scale-105"
-                  style={{ objectPosition: member.objectPosition }}
-                />
+                {member.linkedin ? (
+                  <Link
+                    href={member.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`LinkedIn de ${member.name}`}
+                    className="block h-full w-full"
+                  >
+                    <Image
+                      src={member.photo}
+                      alt={member.name}
+                      width={600}
+                      height={600}
+                      draggable={false}
+                      className="pointer-events-none h-full w-full object-cover transition-transform duration-500 select-none group-hover:scale-105"
+                      style={{ objectPosition: member.objectPosition }}
+                    />
+                  </Link>
+                ) : (
+                  <Image
+                    src={member.photo}
+                    alt={member.name}
+                    width={600}
+                    height={600}
+                    draggable={false}
+                    className="pointer-events-none h-full w-full object-cover transition-transform duration-500 select-none group-hover:scale-105"
+                    style={{ objectPosition: member.objectPosition }}
+                  />
+                )}
               </div>
               <p className="text-center text-sm leading-tight font-bold">{member.name}</p>
             </div>
