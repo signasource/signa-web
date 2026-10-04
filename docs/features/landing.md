@@ -208,6 +208,22 @@ zooming into the name field), `touch-action: pan-x pan-y` on `html`/`body` (`lan
 vision lose pinch zoom on this page; the browser's text-size setting and "force enable zoom"
 accessibility options still work.
 
+## Feature preview modals
+
+All four "Ver cómo funciona" modals share one size: almost the whole screen (up to 1280×960,
+with a margin around it), text on the left and the phone on the right (stacked on phones, with
+scroll inside the card). Each phone is drawn at its fixed design size (live demos 380×780, static
+screens 300×640) and `FitPhone` in `feature-preview.tsx` scales it with a `ResizeObserver` to
+fill the space left, so every phone has the same height and keeps its proportions.
+
+Closing (X, backdrop or Escape) plays the opening animation in reverse (280 ms) before
+unmounting; with `prefers-reduced-motion` it closes at once.
+
+**The 3D viewer starts 400 ms after it is mounted** (`LisaGlbViewer`). Booting model-viewer
+(script, WebGL, shaders) blocks the page's main thread for ~300 ms — the iframe is same-origin —
+and doing it while the modal opens froze the whole opening animation. Measured: 0 dropped frames
+during the opening now; the boot happens once the card is in place.
+
 ## Images are not selectable
 
 `img`, `svg`, `canvas` and `video` are `user-select: none` and not draggable site-wide

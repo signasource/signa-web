@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { FeatureId, useLandingUI } from "@/components/landing/landing-ui-context";
 import { CloseButton } from "@/components/landing/close-button";
@@ -10,70 +10,120 @@ import { CameraNameDemo } from "@/components/landing/camera-name-demo";
 
 const LIVE_SCREEN = "h-[760px] w-[360px] overflow-hidden rounded-[37px]";
 
-function LivePhone({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className="landing-live-phone">
-      <div
-        className={cn(
-          "landing-live-phone-canvas bg-text rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10",
-          className,
-        )}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
+const LIVE_PHONE = { w: 380, h: 780 };
+const STATIC_PHONE = { w: 300, h: 640 };
+const MAX_SCALE = 1.25;
 
-function SignsPhone() {
+function FitPhone({
+  base,
+  children,
+  around,
+}: {
+  base: { w: number; h: number };
+  children: ReactNode;
+  around?: ReactNode;
+}) {
+  const slot = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0);
+
+  useEffect(() => {
+    const el = slot.current;
+    if (!el) return;
+    const fit = () => {
+      const { clientWidth, clientHeight } = el;
+      const style = getComputedStyle(el);
+      const w = clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const h = clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      setScale(Math.max(0.3, Math.min(MAX_SCALE, w / base.w, h / base.h)));
+    };
+    fit();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(fit);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [base.w, base.h]);
+
   return (
-    <div className="justify-self-center pb-6">
-      <div className="relative">
+    <div
+      ref={slot}
+      className="flex h-[calc(100dvh-8rem)] min-h-0 w-full items-center justify-center p-5 md:h-full md:p-6"
+    >
+      <div
+        className={cn("relative shrink-0", scale === 0 && "invisible")}
+        style={{ width: base.w * scale, height: base.h * scale }}
+      >
+        {around}
         <div
-          aria-hidden
-          className="landing-phone-ring2 bg-primary/15 absolute -inset-8 rounded-[58px]"
-        />
-        <div
-          aria-hidden
-          className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
-        />
-        <LivePhone className="hover:ring-primary/30 transition-shadow">
-          <LessonDemo className={LIVE_SCREEN} viewerClassName="h-[440px]" />
-        </LivePhone>
-        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
-          <span className="bg-surface landing-floaty flex items-center gap-2 rounded-full py-2.5 pr-4 pl-2.5 text-sm font-bold shadow-xl">
-            <span className="bg-shop-amber-light text-streak-orange flex h-7.5 w-7.5 items-center justify-center rounded-full">
-              <svg
-                aria-hidden="true"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 0 2 1 3 2 3 0-3-1-6.5.5-9z" />
-              </svg>
-            </span>
-            12 días de racha
-          </span>
+          className="absolute top-0 left-0 origin-top-left"
+          style={{ width: base.w, height: base.h, transform: `scale(${scale})` }}
+        >
+          {children}
         </div>
       </div>
     </div>
   );
 }
 
+function LivePhone({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "bg-text h-full w-full rounded-[46px] p-2.5 shadow-2xl ring-4 ring-white/10",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SignsPhone() {
+  return (
+    <FitPhone
+      base={LIVE_PHONE}
+      around={
+        <>
+          <div
+            aria-hidden
+            className="landing-phone-ring2 bg-primary/15 absolute -inset-8 rounded-[58px]"
+          />
+          <div
+            aria-hidden
+            className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
+          />
+        </>
+      }
+    >
+      <LivePhone className="hover:ring-primary/30 transition-shadow">
+        <LessonDemo className={LIVE_SCREEN} viewerClassName="h-[440px]" />
+      </LivePhone>
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
+        <span className="bg-surface landing-floaty flex items-center gap-2 rounded-full py-2.5 pr-4 pl-2.5 text-sm font-bold shadow-xl">
+          <span className="bg-shop-amber-light text-streak-orange flex h-7.5 w-7.5 items-center justify-center rounded-full">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2.5 1.5-4 2.5-5 0 2 1 3 2 3 0-3-1-6.5.5-9z" />
+            </svg>
+          </span>
+          12 días de racha
+        </span>
+      </div>
+    </FitPhone>
+  );
+}
+
 function CameraPhone() {
   return (
-    <div className="justify-self-center">
+    <FitPhone base={LIVE_PHONE}>
       <LivePhone>
         <CameraNameDemo className={LIVE_SCREEN} />
       </LivePhone>
-    </div>
+    </FitPhone>
   );
 }
 
 function StreakPhone() {
   return (
-    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
+    <div className="bg-text rounded-[46px] p-2.5 shadow-2xl">
       <div
         className="flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px] px-5 pt-10 pb-6"
         style={{ backgroundColor: "#FDA55A" }}
@@ -200,7 +250,7 @@ function SocialPhone() {
   ];
 
   return (
-    <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
+    <div className="bg-text rounded-[46px] p-2.5 shadow-2xl">
       <div className="bg-background flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px]">
         <div className="bg-social-wine relative overflow-hidden px-4 pt-7 pb-3 text-white">
           <div
@@ -373,18 +423,26 @@ const CONTENT: Record<
     eyebrowClass: "text-shop-amber",
     title: "Aprendé un poco cada día y mirá cómo crece tu racha.",
     body: "Cada lección te suma XP, tu racha crece y vas desbloqueando logros y desafíos diarios y semanales. Si un día no podés, un protector de racha la cuida por vos. Y si te gusta competir, hay rankings con todo el mundo y con tus amigos.",
-    phone: <StreakPhone />,
+    phone: (
+      <FitPhone base={STATIC_PHONE}>
+        <StreakPhone />
+      </FitPhone>
+    ),
   },
   social: {
     eyebrow: "APRENDÉ CON AMIGOS",
     eyebrowClass: "text-social-wine",
     title: "Sumá a tus amigos y avancen juntos.",
     body: "Mirá cómo vienen tus amigos, qué señas aprendieron y cuántos días llevan de racha. Desde la tienda les podés regalar gemas o un protector de racha, y cada semana un ranking muestra quién va adelante.",
-    phone: <SocialPhone />,
+    phone: (
+      <FitPhone base={STATIC_PHONE}>
+        <SocialPhone />
+      </FitPhone>
+    ),
   },
 };
 
-export function FeaturePreview({ feature }: { feature: FeatureId }) {
+export function FeaturePreview({ feature, closing }: { feature: FeatureId; closing?: boolean }) {
   const { closeFeature } = useLandingUI();
   const content = CONTENT[feature];
 
@@ -394,21 +452,22 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
       aria-modal="true"
       aria-labelledby="feature-preview-title"
       onClick={(e) => e.target === e.currentTarget && closeFeature()}
-      className="landing-modal-in bg-text/55 fixed inset-0 z-50 overflow-y-auto p-3 backdrop-blur-sm sm:p-5"
+      className={cn(
+        "bg-text/55 fixed inset-0 z-50 flex items-center justify-center p-3 backdrop-blur-sm sm:p-6 lg:p-8",
+        closing ? "landing-modal-out pointer-events-none" : "landing-modal-in",
+      )}
     >
       <div
         className={cn(
-          "landing-modal-card bg-background relative mx-auto my-auto grid grid-cols-1 items-center gap-10 rounded-[40px] p-6 pt-16",
-          content.live
-            ? "max-w-5xl md:grid-cols-[minmax(0,1fr)_380px] md:p-12"
-            : "max-w-3xl sm:grid-cols-[minmax(0,1fr)_300px] sm:p-14",
+          "bg-background relative grid h-full max-h-[960px] w-full max-w-[1280px] grid-cols-1 items-center gap-6 overflow-y-auto rounded-[40px] p-6 pt-16 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-10 md:px-12 md:py-8 lg:px-16",
+          closing ? "landing-modal-card-out" : "landing-modal-card",
         )}
       >
         <CloseButton
           onClick={closeFeature}
           className="absolute top-5 right-5 sm:top-6 sm:right-6"
         />
-        <div className={cn("flex flex-col gap-4", content.note && "md:self-stretch")}>
+        <div className={cn("flex max-w-xl flex-col gap-4", content.note && "md:self-stretch")}>
           <div className={cn("flex flex-col gap-4", content.note && "md:my-auto")}>
             <p className={`text-sm font-extrabold tracking-[2px] ${content.eyebrowClass}`}>
               {content.eyebrow}

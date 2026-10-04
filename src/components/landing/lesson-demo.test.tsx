@@ -16,9 +16,9 @@ describe("LessonDemo", () => {
     expect(screen.getByRole("button", { name: "Hola" })).toBeEnabled();
   });
 
-  it("confirms a right answer and moves the iframe to the next sign", () => {
+  it("confirms a right answer and moves the iframe to the next sign", async () => {
     render(<LessonDemo />);
-    const iframe = screen.getByTitle(/Lisa haciendo la seña/);
+    const iframe = await screen.findByTitle(/Lisa haciendo la seña/, {}, { timeout: 2000 });
     const firstSrc = iframe.getAttribute("src");
 
     fireEvent.click(screen.getByRole("button", { name: "Hola" }));
