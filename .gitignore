@@ -13,3 +13,6 @@ next-env.d.ts
 .idea/
 .claude/settings.local.json
 npm-debug.log*
+
+# Copiado de node_modules/@mediapipe/tasks-vision en cada build (scripts/copy-mediapipe-wasm.mjs)
+/public/mediapipe/

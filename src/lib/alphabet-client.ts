@@ -1,6 +1,3 @@
-// Page side of the camera demo's recognizer: starts the worker (alphabet-worker.ts) and sends it
-// frames, one at a time. Docs: docs/features/landing.md
-
 import type { Point } from "@/lib/alphabet-recognizer";
 
 export type WorkerRequest =
@@ -12,16 +9,13 @@ export type WorkerResponse =
   | { type: "result"; landmarks: Point[] | null; probs: Float32Array | null };
 
 export interface FrameResult {
-  /** The hand's landmarks in the frame, or null without a hand. */
   landmarks: Point[] | null;
-  /** Letter probabilities, when `classify` was asked and there was a hand. */
   probs: Float32Array | null;
 }
 
 export interface RecognizerClient {
   labels: string[];
   thresholds: Record<string, number>;
-  /** Detects (and classifies) one frame. The bitmap is transferred: don't use it after. */
   process(bitmap: ImageBitmap, withPose: boolean, classify: boolean): Promise<FrameResult>;
   close(): void;
 }

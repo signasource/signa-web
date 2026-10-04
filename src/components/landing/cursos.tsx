@@ -31,7 +31,6 @@ export function Cursos() {
         </h2>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Basic course — white/light */}
           <div className="landing-rv-l border-border bg-surface relative flex flex-col gap-5.5 overflow-hidden rounded-[36px] border p-11">
             <div
               aria-hidden
@@ -82,7 +81,6 @@ export function Cursos() {
             </Link>
           </div>
 
-          {/* Thematic courses — dark */}
           <div className="landing-rv-r bg-text text-on-dark relative flex flex-col gap-5.5 overflow-hidden rounded-[36px] p-11">
             <div
               aria-hidden

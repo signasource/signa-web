@@ -28,10 +28,10 @@ function hand(wrist: [number, number], indexTip: [number, number]): Point[] {
 describe("faceBlock", () => {
   it("measures the hand in eyes-to-mouth units, with the presence flag", () => {
     const f = faceBlock(pose([0.5, 0.3], [0.5, 0.4]), hand([0.6, 0.6], [0.5, 0.4]), false);
-    expect(f[0]).toBeCloseTo(1); // wrist x: 0.1 right of the eyes = 1 unit
-    expect(f[1]).toBeCloseTo(3); // wrist y: 0.3 below = 3 units
-    expect(f[3]).toBeCloseTo(1); // index tip at the mouth
-    expect(f[6]).toBeCloseTo(0.5); // hand size 0.05 / 0.1
+    expect(f[0]).toBeCloseTo(1);
+    expect(f[1]).toBeCloseTo(3);
+    expect(f[3]).toBeCloseTo(1);
+    expect(f[6]).toBeCloseTo(0.5);
     expect(f[7]).toBe(1);
   });
 

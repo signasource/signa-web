@@ -30,20 +30,20 @@ Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client-side dat
 
 ## Sections (`src/components/landing/`)
 
-| Component                 | Renders                                                                                                                                                                      |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nav.tsx`                 | Sticky header, opaque + blurred background (content never shows through), shadow once scrolled. Below `md` the links collapse into `mobile-menu.tsx`                         |
-| `hero.tsx`                | Headline + CTAs, and a phone mockup running `LessonDemo` next to Lisa waving. Normal document flow (not pinned). `#probar` anchors the demo                                  |
-| `lesson-demo.tsx`         | Playable "¿Qué significa esta seña?": Lisa signs in 3D (`LisaGlbViewer`), the visitor picks an answer, gets right/wrong feedback and hearts, and moves to the next sign      |
-| `marquesina.tsx`          | Two word rows looping forever in opposite directions (pure CSS keyframes, pause on hover, decorative)                                                                        |
-| `lisa-intro.tsx`          | "Conocé a Lisa" (`#lisa`): chat bubbles that pop in one by one, next to the app's home screen and Lisa with arms crossed                                                     |
-| `que-es.tsx`              | Value prop (text fills in with color as it scrolls) + 3 clickable feature cards, each opening a `FeaturePreview` overlay                                                     |
-| `cursos.tsx`              | Free basic course ("Probá una lección" → `/proximamente`) + thematic (paid) courses (Salud, Atención al cliente); org call-out at the bottom opens the organizations overlay |
-| `equipo.tsx`              | Single team photo (`/images/equipo.jpg`) — one image instead of 6 individual cards                                                                                           |
-| `cta-final.tsx`           | Closing CTA + Lisa                                                                                                                                                           |
-| `landing-footer.tsx`      | Footer links (`/privacidad`, `/terminos`, organizations, legal)                                                                                                              |
-| `org-trigger.tsx`         | Link to `/organizaciones`. Replaces the former modal-open button.                                                                                                            |
-| `feature-preview.tsx`     | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature. Two are live, in a wider modal with a larger phone: the 3D one (`LessonDemo`) and the camera one (`CameraNameDemo`) |
+| Component             | Renders                                                                                                                                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nav.tsx`             | Sticky header, opaque + blurred background (content never shows through), shadow once scrolled. Below `md` the links collapse into `mobile-menu.tsx`                                                                |
+| `hero.tsx`            | Headline + CTAs, and a phone mockup running `LessonDemo` next to Lisa waving. Normal document flow (not pinned). `#probar` anchors the demo                                                                         |
+| `lesson-demo.tsx`     | Playable "¿Qué significa esta seña?": Lisa signs in 3D (`LisaGlbViewer`), the visitor picks an answer, gets right/wrong feedback and hearts, and moves to the next sign                                             |
+| `marquesina.tsx`      | Two word rows looping forever in opposite directions (pure CSS keyframes, pause on hover, decorative)                                                                                                               |
+| `lisa-intro.tsx`      | "Conocé a Lisa" (`#lisa`): chat bubbles that pop in one by one, next to the app's home screen and Lisa with arms crossed                                                                                            |
+| `que-es.tsx`          | Value prop (text fills in with color as it scrolls) + 3 clickable feature cards, each opening a `FeaturePreview` overlay                                                                                            |
+| `cursos.tsx`          | Free basic course ("Probá una lección" → `/proximamente`) + thematic (paid) courses (Salud, Atención al cliente); org call-out at the bottom opens the organizations overlay                                        |
+| `equipo.tsx`          | Single team photo (`/images/equipo.jpg`) — one image instead of 6 individual cards                                                                                                                                  |
+| `cta-final.tsx`       | Closing CTA + Lisa                                                                                                                                                                                                  |
+| `landing-footer.tsx`  | Footer links (`/privacidad`, `/terminos`, organizations, legal)                                                                                                                                                     |
+| `org-trigger.tsx`     | Link to `/organizaciones`. Replaces the former modal-open button.                                                                                                                                                   |
+| `feature-preview.tsx` | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature. Two are live, in a wider modal with a larger phone: the 3D one (`LessonDemo`) and the camera one (`CameraNameDemo`) |
 
 ## Interactivity (client boundary)
 
@@ -121,10 +121,10 @@ CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
   correct letter. Pages send `{ type: VIEWER_PRELOAD, signs }` (validated with
   `safeSignList()`) to load signs ahead of time; switching to a loaded sign only swaps which one
   is visible (measured 0 ms of blocking). Hidden viewers are paused and don't render;
-  model-viewer shares one WebGL renderer per page. The iframe reports each loaded (or failed)
-  sign back with `{ type: VIEWER_LOADED, sign }`. `LessonDemo` preloads its four questions; the
-  camera demo preloads every letter of the name and only starts recognizing once they are in
-  ("Preparando las señas…", at most 10 s).
+  model-viewer shares one WebGL renderer per page. Preloads are loaded one at a time, so the sign on screen
+  is never queued behind the rest. `LessonDemo` preloads its four questions; the camera demo
+  preloads every letter of the name but starts recognizing right away — it never waits for the
+  models (waiting for all of them used to delay the start by more than 10 s).
 
 Camera framing logic (torso-up crop, FOV 15°, radius derived from bounding box) mirrors
 `GlbAnimationView.tsx` in signa-mobile so the two surfaces look identical.
@@ -157,9 +157,13 @@ Everything runs on the visitor's device; no frame leaves the browser.
 
 - **Detection:** MediaPipe Tasks (`HandLandmarker` + `PoseLandmarker`, image mode, one hand,
   on the CPU like signa-ml's demo server — from the worker it processed 6× more frames than the
-  GPU delegate) from the CDN, pinned to `0.10.22-rc.20250304`; the `.task` models come
-  from `storage.googleapis.com/mediapipe-models` (hand float16/1, pose lite float16/1) — the same
-  bytes `signa-mobile` ships and the dataset was extracted with. Loaded only when "Empezar" is
+  GPU delegate). The library is the npm package `@mediapipe/tasks-vision` (pinned to
+  `0.10.22-rc.20250304`), bundled, and its WebAssembly is self-hosted under `/mediapipe/wasm`
+  (copied from `node_modules` by `scripts/copy-mediapipe-wasm.mjs` before `dev`/`build`;
+  `public/mediapipe/` is git-ignored). The `.task` models come from
+  `storage.googleapis.com/mediapipe-models` (hand float16/1, pose lite float16/1) — the same bytes
+  `signa-mobile` ships and the dataset was extracted with — and are checked against a pinned
+  SHA-256 before use (`src/lib/integrity.ts`); a changed file is rejected. Loaded only when "Empezar" is
   pressed (`src/lib/alphabet-engine.ts`), so the landing's first load doesn't pay for it.
 - **Classifier:** plain TypeScript (`src/lib/hand-features.ts` + `src/lib/alphabet-classifier.ts`),
   no TFLite/TensorFlow.js — the TFLite web runtime's loader needs `eval`, which the CSP forbids.

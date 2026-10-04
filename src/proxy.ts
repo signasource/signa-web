@@ -1,12 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { buildCsp, MARKETING_PATHS } from "@/lib/security/csp";
 
-// Strict per-request nonce CSP for every route except the static marketing pages, which get their
-// (relaxed) CSP from next.config.ts. Fail-safe: a new public page not listed in MARKETING_PATHS
-// gets the strict policy and must render dynamically — it breaks loudly instead of running unprotected.
 const PASSTHROUGH_PATHS: readonly string[] = [
   ...(MARKETING_PATHS as readonly string[]),
-  // The glb-viewer route handler sets its own CSP via buildViewerCsp().
   "/api/glb-viewer",
 ];
 

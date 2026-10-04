@@ -13,8 +13,6 @@ import { formatCuit, validateCuit } from "@/lib/cuit";
 
 type Tab = "login" | "registro";
 
-// ── Schemas ──────────────────────────────────────────────────────────────────
-
 const loginSchema = z.object({
   identifier: z.string().min(1, "Ingresá tu email."),
   password: z.string().min(1, "Ingresá tu contraseña."),
@@ -40,14 +38,10 @@ const registroSchema = z
 type LoginValues = z.infer<typeof loginSchema>;
 type RegistroValues = z.infer<typeof registroSchema>;
 
-// ── Shared field style ────────────────────────────────────────────────────────
-
 const INPUT =
   "border-border bg-surface focus:ring-primary/30 h-12 w-full rounded-2xl border px-3.5 text-[15px] outline-none focus:ring-2";
 const LABEL = "flex flex-col gap-1.5 text-[13px] font-bold";
 const ERROR = "text-danger text-[12px] font-medium";
-
-// ── Login form ────────────────────────────────────────────────────────────────
 
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const { login } = useAuth();
@@ -108,8 +102,6 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-// ── Register form ─────────────────────────────────────────────────────────────
-
 function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
   const [submitted, setSubmitted] = useState(false);
   const {
@@ -126,7 +118,6 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
   }
 
   async function onSubmit(_values: RegistroValues) {
-    // Registration API not yet available — show confirmation.
     await new Promise((r) => setTimeout(r, 600));
     setSubmitted(true);
     onSuccess();
@@ -187,8 +178,7 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
       </label>
 
       <label className={LABEL}>
-        Teléfono{" "}
-        <span className="text-text-muted font-normal">(opcional)</span>
+        Teléfono <span className="text-text-muted font-normal">(opcional)</span>
         <input
           {...register("telefono")}
           type="tel"
@@ -234,15 +224,12 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export default function IngresarPage() {
   const router = useRouter();
   const { status } = useAuth();
   const [tab, setTab] = useState<Tab>("login");
   const registroRef = useRef<HTMLButtonElement>(null);
 
-  // If the URL contains #registro, switch to the register tab.
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash === "#registro") {
       setTab("registro");
@@ -250,14 +237,12 @@ export default function IngresarPage() {
     }
   }, []);
 
-  // Already authenticated: go to the org panel.
   useEffect(() => {
     if (status === "authenticated") router.replace("/organizaciones/panel");
   }, [status, router]);
 
   return (
     <div className="bg-background text-text flex min-h-screen flex-col">
-      {/* Minimal header */}
       <header className="border-border border-b px-5 py-4 sm:px-8">
         <Link
           href="/organizaciones"
@@ -283,7 +268,6 @@ export default function IngresarPage() {
           <p className="text-text-muted text-[15px]">Signa para organizaciones</p>
         </div>
 
-        {/* Tabs */}
         <div className="bg-fill flex rounded-2xl p-1">
           <button
             type="button"

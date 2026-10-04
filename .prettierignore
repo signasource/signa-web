@@ -3,5 +3,4 @@ node_modules
 coverage
 package-lock.json
 
-# Generado por signa-ml (scripts/export_alphabet_for_web.py)
 src/lib/alphabet-classifier.vectors.json

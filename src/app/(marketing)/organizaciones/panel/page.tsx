@@ -24,7 +24,6 @@ export default function OrgPanelPage() {
 
   return (
     <div className="bg-background text-text flex min-h-screen flex-col">
-      {/* Header */}
       <header className="border-border flex items-center justify-between border-b px-5 py-4 sm:px-8">
         <Link
           href="/organizaciones"
@@ -52,7 +51,6 @@ export default function OrgPanelPage() {
         </div>
       </header>
 
-      {/* Content */}
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-8 px-5 py-16 text-center">
         <div className="relative">
           <Image

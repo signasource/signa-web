@@ -104,7 +104,6 @@ export function LisaIntro() {
 function HomeScreen() {
   return (
     <div className="bg-background flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px]">
-      {/* Header */}
       <div className="bg-primary text-on-primary relative overflow-hidden px-4 pt-8 pb-4">
         <div
           aria-hidden
@@ -121,7 +120,6 @@ function HomeScreen() {
         </div>
       </div>
 
-      {/* Unit header */}
       <div className="flex items-center gap-2.5 px-3.5 pt-3.5 pb-1">
         <div className="bg-primary-light text-primary flex h-8 w-8 items-center justify-center rounded-xl">
           <svg
@@ -144,15 +142,12 @@ function HomeScreen() {
         </div>
       </div>
 
-      {/* Lesson path */}
       <div className="relative flex-1 overflow-hidden px-3.5 pt-1.5 pb-3">
-        {/* Vertical connector line */}
         <div className="bg-primary/20 absolute top-4 bottom-4 left-[23px] w-[2px]" />
 
         <ul className="flex flex-col">
           {LESSONS.map((lesson) => (
             <li key={lesson.title} className="relative flex items-start gap-2.5 py-[5px]">
-              {/* Node */}
               <div
                 className={`relative z-10 mt-[3px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
                   lesson.state === "done"
@@ -196,7 +191,6 @@ function HomeScreen() {
                 )}
               </div>
 
-              {/* Content */}
               {lesson.state === "current" ? (
                 <div className="border-primary bg-surface flex-1 rounded-xl border p-2">
                   <p className="text-primary text-[8px] font-bold tracking-wide">EN CURSO</p>

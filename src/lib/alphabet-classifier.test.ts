@@ -6,8 +6,6 @@ import { faceBlock } from "@/lib/alphabet-recognizer";
 import { buildHandFeatures, type Vec3 } from "@/lib/hand-features";
 import vectors from "@/lib/alphabet-classifier.vectors.json";
 
-// Real hands (dataset photos through the app's detectors) with the features and probabilities
-// signa-ml computes for them: the TypeScript port must give the same numbers.
 interface Case {
   letra: string;
   lm: number[][];
@@ -70,7 +68,6 @@ describe("alphabet classifier (TypeScript port vs signa-ml)", () => {
       const best = p.indexOf(Math.max(...p));
       if (manifest.labels[best] === c.letra) agree++;
     }
-    // Sanity: on its own training photos the model gets most letters right.
     expect(agree / cases.length).toBeGreaterThan(0.75);
   });
 

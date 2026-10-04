@@ -56,7 +56,6 @@ export default function InvitationsPage() {
     queryFn: () => organizationsApi.inviteCodes(orgId!),
     enabled: Boolean(orgId),
   });
-  // Email invitations also show up in this list; the shareable codes are the ones without an email.
   const shareable = (codes.data ?? []).filter((c) => c.active && c.email === null);
 
   const invite = useMutation({

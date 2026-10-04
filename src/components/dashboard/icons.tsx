@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
 
-// Minimal outline icon set for the panel (24×24, stroke). No icon dependency on purpose.
 const PATHS = {
   people: (
     <>

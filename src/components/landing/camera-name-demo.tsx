@@ -23,9 +23,7 @@ import type { RecognizerClient } from "@/lib/alphabet-client";
 type Stage = "setup" | "loading" | "practice" | "complete" | "error";
 type Phase = "idle" | "capturing" | "hit";
 
-/** Frames go to the recognizer at this width, the same as signa-ml's demo page sends its server. */
 const FRAME_WIDTH = 480;
-/** The face reference (pose) is refreshed one frame out of this many: the head moves slowly. */
 const FRAMES_PER_POSE = 5;
 const COOLDOWN_MS = 1800;
 const HIT_MS = 1300;
@@ -55,8 +53,6 @@ const HAND_LINKS: ReadonlyArray<readonly [number, number]> = [
 ];
 const TIPS = new Set([4, 8, 12, 16, 20]);
 
-// The recognizer (MediaPipe + the classifier, in a Web Worker) is started once per page and reused
-// when the preview is opened again.
 let enginePromise: Promise<RecognizerClient> | null = null;
 function getEngine(): Promise<RecognizerClient> {
   enginePromise ??= import("@/lib/alphabet-client")
@@ -88,7 +84,6 @@ export function CameraNameDemo({ className }: { className?: string }) {
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const engineRef = useRef<RecognizerClient | null>(null);
-  // What the animation loop reads every frame without re-rendering.
   const live = useRef({
     name: "",
     filled: 0,
@@ -175,7 +170,6 @@ export function CameraNameDemo({ className }: { className?: string }) {
     setPhase("idle");
   }
 
-  // Attach the stream once the practice screen (and its <video>) is mounted.
   useEffect(() => {
     if (stage !== "practice") return;
     const video = videoRef.current;
@@ -184,9 +178,6 @@ export function CameraNameDemo({ className }: { className?: string }) {
     void video.play().catch(() => {});
   }, [stage]);
 
-  // Detection + recognition + drawing loop, as signa-ml's demo page does it: the recognizer works
-  // apart (there, a server; here, a Web Worker) on one frame at a time, and the page only draws,
-  // every animation frame, easing the skeleton toward the latest detection.
   useEffect(() => {
     if (stage !== "practice") return;
     const engine = engineRef.current;
@@ -215,7 +206,6 @@ export function CameraNameDemo({ className }: { className?: string }) {
       setPhase(p);
     };
 
-    /** The current camera frame, mirrored and with what the viewport doesn't show blanked out. */
     const capture = (): boolean => {
       const vw = video.videoWidth;
       const vh = video.videoHeight;
@@ -226,11 +216,9 @@ export function CameraNameDemo({ className }: { className?: string }) {
         frame.width = w;
         frame.height = h;
       }
-      // Mirrored, like the dataset and the app: the training frames are flipped (cv2.flip).
       fctx.setTransform(-1, 0, 0, 1, w, 0);
       fctx.drawImage(video, 0, 0, w, h);
       fctx.setTransform(1, 0, 0, 1, 0, 0);
-      // Only what the visitor sees counts: blank out what object-fit:cover leaves out of view.
       const vis = visibleRegion(vw, vh, video.clientWidth, video.clientHeight);
       if (vis) {
         fctx.fillStyle = "black";
@@ -293,7 +281,6 @@ export function CameraNameDemo({ className }: { className?: string }) {
       }
     };
 
-    /** One frame in flight: the next one leaves when this one comes back. */
     const send = () => {
       if (busy || video.readyState < 2 || !capture()) return;
       busy = true;
@@ -322,8 +309,6 @@ export function CameraNameDemo({ className }: { className?: string }) {
       }
       octx.setTransform(dpr, 0, 0, dpr, 0, 0);
       octx.clearRect(0, 0, w, h);
-      // Without a hand the skeleton is hidden but remembered, as LandmarkRenderer does in
-      // signa-ml's demo (static/signa.js).
       const { target: tgt, skeleton } = live.current;
       if (!tgt || !skeleton) return;
       const drawn = (live.current.drawn ??= tgt.map((p) => ({ ...p })));
@@ -332,7 +317,6 @@ export function CameraNameDemo({ className }: { className?: string }) {
         p.x += (t.x - p.x) * 0.35;
         p.y += (t.y - p.y) * 0.35;
       });
-      // The <video> is shown with object-fit: cover: map the frame's coordinates the same way.
       const vw = video.videoWidth || 4;
       const vh = video.videoHeight || 3;
       const s = Math.max(w / vw, h / vh);
@@ -619,15 +603,9 @@ export function CameraNameDemo({ className }: { className?: string }) {
   );
 }
 
-// ── Lisa in a picture-in-picture, the same as signa-ml's demo (demo/static/nombre.html) ──
-// 104×138 in a corner, dragged and snapped to the nearest corner, tapped to fill the viewport (where
-// dragging rotates the model) and closed with the X. Sizes are layout pixels of the viewport: the
-// phone around it may be scaled, so pointer deltas are divided by that scale.
-
 const PIP_W = 104;
 const PIP_H = 138;
 const PIP_M = 12;
-/** Corners keep clear of the status badge and skeleton toggle on top, and the bottom bar. */
 const PIP_TOP = 56;
 const PIP_BOTTOM = 52;
 
@@ -672,7 +650,6 @@ function SignPip({
   const start = useRef<{ px: number; py: number; x: number; y: number; moved: boolean } | null>(
     null,
   );
-  // Where the drag is, read on release: state may not have re-rendered after the last move.
   const dragPos = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -703,7 +680,7 @@ function SignPip({
     const k = scale();
     const dx = (e.clientX - s.px) / k;
     const dy = (e.clientY - s.py) / k;
-    if (!s.moved && Math.hypot(dx, dy) < 6) return; // a tap trembles a little
+    if (!s.moved && Math.hypot(dx, dy) < 6) return;
     s.moved = true;
     setHint(false);
     dragPos.current = {

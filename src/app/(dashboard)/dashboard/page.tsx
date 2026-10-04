@@ -57,7 +57,6 @@ export default function DashboardOverviewPage() {
     queryFn: () => organizationsApi.modules(orgId!),
     enabled: Boolean(orgId),
   });
-  // Used only for the "needs a nudge" list; the API has no inactivity filter yet.
   const members = useQuery({
     queryKey: ["organization", orgId, "members", { status: "ACTIVE", size: 100 }],
     queryFn: () => organizationsApi.members(orgId!, { status: "ACTIVE", size: 100 }),
@@ -121,7 +120,11 @@ export default function DashboardOverviewPage() {
               value={participation.activeParticipants}
               hint={`${participation.inactiveParticipants} inactivos`}
             />
-            <StatCard delay={120} label="Progreso promedio" value={`${progress.averageProgressPercentage}%`}>
+            <StatCard
+              delay={120}
+              label="Progreso promedio"
+              value={`${progress.averageProgressPercentage}%`}
+            >
               <ProgressBar
                 percent={progress.averageProgressPercentage}
                 tone="primary"

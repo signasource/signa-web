@@ -12,7 +12,6 @@ describe("LessonDemo", () => {
 
     expect(screen.getByText("Era «Hola»")).toBeInTheDocument();
     expect(screen.getByLabelText("4 vidas")).toBeInTheDocument();
-    // Only the picked and the correct option stay enabled.
     expect(screen.getByRole("button", { name: "Gracias" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Hola" })).toBeEnabled();
   });
@@ -30,7 +29,6 @@ describe("LessonDemo", () => {
     for (const option of next.options) {
       expect(screen.getByRole("button", { name: option })).toBeEnabled();
     }
-    // The sign is swapped in place via postMessage: the iframe is not reloaded.
     expect(screen.getByTitle(/Lisa haciendo la seña/).getAttribute("src")).toBe(firstSrc);
     expect(screen.getByLabelText("5 vidas")).toBeInTheDocument();
   });

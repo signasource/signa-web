@@ -12,14 +12,6 @@ const iframeStyle: CSSProperties = {
   background: "transparent",
 };
 
-/**
- * Lisa signing in 3D (the /api/glb-viewer iframe).
- *
- * `preload` loads those signs ahead of time inside the viewer, so switching to them later is
- * instant: loading a model blocks the page's main thread for a moment (the iframe is same-origin),
- * which is better paid up front than in the middle of an exercise. `onLoaded` reports each sign
- * once it is ready (or failed to load).
- */
 export function LisaGlbViewer({ sign, preload }: { sign: string; preload?: readonly string[] }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [src] = useState(() => `/api/glb-viewer?sign=${encodeURIComponent(sign)}`);

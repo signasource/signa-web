@@ -13,8 +13,6 @@ export const DEMO_QUESTIONS = [
 
 const HEARTS = 5;
 
-// Every sign of the demo is loaded up front, so "Seguir" swaps instantly instead of stalling the
-// page while the next model loads.
 const PRELOAD = DEMO_QUESTIONS.map((q) => q.sign);
 
 export function LessonDemo({

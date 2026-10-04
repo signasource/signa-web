@@ -1,10 +1,5 @@
 @import "tailwindcss";
 
-/*
- * Design tokens — mirror signa-mobile (src/theme/colors.ts, typography.ts) so the brand is shared.
- * Every visual value comes from a token; never hardcode hex in components.
- * Canonical reference: docs/design-system/tokens.md
- */
 @theme {
   --color-primary: #7857ff;
   --color-primary-light: #eee8ff;
@@ -26,14 +21,11 @@
   --color-danger: #e14e22;
   --color-danger-light: #fbe0d8;
 
-  /* Landing accent palette — card backgrounds on the marketing page only. */
   --color-accent-coral: #ff8577;
   --color-accent-amber: #f7b32f;
   --color-accent-teal: #47bfa9;
   --color-accent-violet: #8469ea;
 
-  /* Mirrors signa-mobile's gamification/social palette (colors.ts) — ported for the landing's app
-     mockups, team avatars and org dashboard preview. */
   --color-streak-orange: #fb8b24;
   --color-gems-blue: #29b6e8;
   --color-gems-blue-dark: #1b84ab;
@@ -49,7 +41,6 @@
   --color-avatar-blue-light: #e4f1fb;
   --color-avatar-green-light: #e9f3eb;
 
-  /* Dark ink shades — camera-recognition mockup only. */
   --color-ink-900: #1e1714;
   --color-ink-800: #2a211d;
   --color-ink-700: #3a2f2a;
@@ -64,9 +55,6 @@ body {
   font-family: var(--font-sans);
 }
 
-/* ─── Dashboard animations ──────────────────────────────────────────── */
-
-/* Progress bar grows from 0 on mount */
 @keyframes dash-progress-grow {
   from {
     width: 0;
@@ -76,7 +64,6 @@ body {
   animation: dash-progress-grow 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) 0.08s both;
 }
 
-/* Page content fades up when data resolves */
 @keyframes dash-page-enter {
   from {
     opacity: 0;
@@ -87,7 +74,6 @@ body {
   animation: dash-page-enter 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
-/* Cards stagger in with delay from CSS variable */
 @keyframes dash-card-enter {
   from {
     opacity: 0;
@@ -99,7 +85,6 @@ body {
   animation-delay: var(--delay, 0ms);
 }
 
-/* Three-dot loading indicator */
 @keyframes dash-loading-bounce {
   0%,
   80%,
@@ -122,7 +107,6 @@ body {
   animation-delay: var(--delay, 0s);
 }
 
-/* Avatar hover scale */
 .dash-avatar-hover {
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
@@ -130,7 +114,6 @@ body {
   transform: scale(1.12);
 }
 
-/* Stat value pop on mount */
 @keyframes dash-stat-pop {
   from {
     opacity: 0;

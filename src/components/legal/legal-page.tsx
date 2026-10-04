@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { legal } from "@/lib/legal";
 
-/** Visible marker for a decision the team still has to make. Search the repo for COMPLETAR/REVISAR. */
 export function Todo({ children }: { children: React.ReactNode }) {
   return <mark className="bg-warning/30 rounded px-1">[{children}]</mark>;
 }

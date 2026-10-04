@@ -8,9 +8,6 @@ import { LessonDemo } from "@/components/landing/lesson-demo";
 import { LottiePlayer } from "@/components/landing/lottie-player";
 import { CameraNameDemo } from "@/components/landing/camera-name-demo";
 
-// The two live previews (3D lesson and camera) are drawn on a fixed 380×780 phone and scaled as
-// a whole (`.landing-live-phone` in landing.css), so they shrink or grow with the screen but
-// always keep a phone's proportions.
 const LIVE_SCREEN = "h-[760px] w-[360px] overflow-hidden rounded-[37px]";
 
 function LivePhone({ children, className }: { children: ReactNode; className?: string }) {
@@ -32,12 +29,10 @@ function SignsPhone() {
   return (
     <div className="justify-self-center pb-6">
       <div className="relative">
-        {/* Outer pulsing ring */}
         <div
           aria-hidden
           className="landing-phone-ring2 bg-primary/15 absolute -inset-8 rounded-[58px]"
         />
-        {/* Inner pulsing ring */}
         <div
           aria-hidden
           className="landing-phone-ring bg-primary/30 absolute -inset-5 rounded-[54px]"
@@ -45,7 +40,6 @@ function SignsPhone() {
         <LivePhone className="hover:ring-primary/30 transition-shadow">
           <LessonDemo className={LIVE_SCREEN} viewerClassName="h-[440px]" />
         </LivePhone>
-        {/* Racha badge — bottom center of phone */}
         <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
           <span className="bg-surface landing-floaty flex items-center gap-2 rounded-full py-2.5 pr-4 pl-2.5 text-sm font-bold shadow-xl">
             <span className="bg-shop-amber-light text-streak-orange flex h-7.5 w-7.5 items-center justify-center rounded-full">
@@ -80,17 +74,14 @@ function CameraPhone() {
 function StreakPhone() {
   return (
     <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
-      {/* mirrors AchievementCelebrationScreen (signa-mobile) for a streak achievement */}
       <div
         className="flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px] px-5 pt-10 pb-6"
         style={{ backgroundColor: "#FDA55A" }}
       >
-        {/* streak-fire Lottie — same file used in signa-mobile */}
         <div className="flex flex-1 items-center justify-center">
           <LottiePlayer src="/animations/streak-fire.json" className="h-[220px] w-[160px]" />
         </div>
 
-        {/* headline + subtitle */}
         <div className="text-center">
           <p className="font-display text-[22px] leading-tight font-extrabold tracking-tight text-white">
             ¡Llegaste a 7 días de racha!
@@ -100,9 +91,7 @@ function StreakPhone() {
           </p>
         </div>
 
-        {/* reward card */}
         <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white p-3.5">
-          {/* silver medal Lottie — same file used in signa-mobile (tier "silver" = 7 days) */}
           <LottiePlayer
             src="/animations/medals/silver.json"
             className="h-[60px] w-[60px] shrink-0"
@@ -134,7 +123,6 @@ function StreakPhone() {
           </div>
         </div>
 
-        {/* button */}
         <button
           className="mt-3.5 w-full rounded-2xl py-3 text-[13px] font-extrabold text-white"
           style={{ backgroundColor: "#e07020" }}
@@ -214,7 +202,6 @@ function SocialPhone() {
   return (
     <div className="bg-text justify-self-center rounded-[46px] p-2.5 shadow-2xl">
       <div className="bg-background flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px]">
-        {/* Wine header */}
         <div className="bg-social-wine relative overflow-hidden px-4 pt-7 pb-3 text-white">
           <div
             aria-hidden
@@ -240,7 +227,6 @@ function SocialPhone() {
           </div>
         </div>
 
-        {/* Segmented control */}
         <div className="border-border flex border-b bg-white">
           {["Feed", "Amigos", "Ranking"].map((tab) => (
             <div
@@ -256,9 +242,7 @@ function SocialPhone() {
           ))}
         </div>
 
-        {/* Ranking content */}
         <div className="flex flex-1 flex-col overflow-hidden px-2.5 pt-2">
-          {/* Scope toggle */}
           <div className="bg-fill flex rounded-[10px] p-0.5 text-[9.5px] font-bold">
             <div className="bg-surface text-social-wine flex-1 rounded-[8px] py-1.5 text-center shadow-sm">
               Global (98)
@@ -266,7 +250,6 @@ function SocialPhone() {
             <div className="text-text-muted flex-1 py-1.5 text-center">Mis amigos (8)</div>
           </div>
 
-          {/* Countdown */}
           <div className="border-border mt-1.5 flex items-center gap-1.5 rounded-xl border bg-white px-2.5 py-1.5">
             <svg
               aria-hidden="true"
@@ -286,12 +269,10 @@ function SocialPhone() {
             <p className="font-display text-[10px] font-bold">2d 14:22</p>
           </div>
 
-          {/* Section label */}
           <p className="text-text-muted mt-1.5 text-[8px] font-bold tracking-[0.6px]">
             XP DE ESTA SEMANA
           </p>
 
-          {/* Podium */}
           <div className="border-border mt-1 flex items-end justify-around overflow-hidden rounded-[14px] border bg-white px-2 pt-2">
             {PODIUM.map((p) => (
               <div key={p.rank} className="flex flex-col items-center gap-0.5">
@@ -310,7 +291,6 @@ function SocialPhone() {
             ))}
           </div>
 
-          {/* List rows */}
           <div className="border-border mt-1.5 overflow-hidden rounded-[14px] border bg-white">
             {LIST.map((r, i) => (
               <div
@@ -339,7 +319,6 @@ function SocialPhone() {
             ))}
           </div>
 
-          {/* Sticky me bar */}
           <div className="border-social-wine/40 bg-avatar-wine-light -mx-2.5 mt-auto flex items-center gap-2 border-t px-3.5 py-2">
             <p className="font-display text-social-wine text-[11px] font-bold">#5</p>
             <span className="border-social-wine font-display text-social-wine bg-avatar-wine-light flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-extrabold">
@@ -363,12 +342,9 @@ const CONTENT: Record<
     eyebrow: string;
     eyebrowClass: string;
     title: string;
-    /** One or more paragraphs. */
     body: string | string[];
     phone: React.ReactNode;
-    /** A small disclaimer under the body: one or more paragraphs. */
     note?: string | string[];
-    /** Live, interactive preview: wider modal and a larger phone. */
     live?: boolean;
   }
 > = {
@@ -432,8 +408,6 @@ export function FeaturePreview({ feature }: { feature: FeatureId }) {
           onClick={closeFeature}
           className="absolute top-5 right-5 sm:top-6 sm:right-6"
         />
-        {/* With a disclaimer, the column spans the phone's height on desktop: the copy stays
-            centered and the disclaimer sits at the bottom, level with the phone's base. */}
         <div className={cn("flex flex-col gap-4", content.note && "md:self-stretch")}>
           <div className={cn("flex flex-col gap-4", content.note && "md:my-auto")}>
             <p className={`text-sm font-extrabold tracking-[2px] ${content.eyebrowClass}`}>

@@ -1,15 +1,9 @@
-// Pure logic of the camera alphabet demo ("Deletreá tu nombre" in the landing's camera preview).
-// Ported from signa-ml (src/inference/alphabet_runner.py) and signa-mobile (ModeloAbecedario.kt):
-// the numbers that reach the model must match the ones it was trained on. Docs: docs/features/landing.md
-
-/** A normalized landmark as MediaPipe Tasks returns it (x, y in [0, 1] of the image). */
 export interface Point {
   x: number;
   y: number;
   z?: number;
 }
 
-// BlazePose indices used as the face reference, and hand indices of the face block.
 const LEFT_EYE = 2;
 const RIGHT_EYE = 5;
 const MOUTH_LEFT = 9;
@@ -20,16 +14,9 @@ const MIDDLE_TIP = 12;
 const MIDDLE_MCP = 9;
 
 export const FACE_BLOCK_SIZE = 8;
-/** Position in the face block of the index fingertip height (eyes = 0, mouth = 1). */
 const FACE_INDEX_Y = 3;
 const FACE_PRESENT = 7;
 
-/**
- * Where the hand is relative to the face, in "eyes to mouth" units: 8 values.
- * Same math as `build_face_features` in signa-ml. Without a face (no pose), all zeros —
- * which is what the model learned to ignore. `mirrored` flips x, as the hand itself is flipped
- * when it is a left hand.
- */
 export function faceBlock(
   pose: readonly Point[] | null,
   hand: readonly Point[],
@@ -61,12 +48,6 @@ export function faceBlock(
   return out;
 }
 
-/**
- * T (index on the mouth) and I (index by the eye) share the hand shape; only the height tells
- * them apart, and the model alone doesn't settle it. The fingertip height splits their combined
- * probability, softly around the midpoint between the two clouds of the dataset — same rule as
- * `LOCATION_PAIRS` in signa-ml.
- */
 const LOCATION_PAIRS: ReadonlyArray<readonly [upper: string, lower: string, threshold: number]> = [
   ["I", "T", 0.67],
 ];
@@ -95,19 +76,11 @@ export function applyLocationRule(
 }
 
 export interface VerifierStep {
-  /** Smoothed probability of the requested letter. */
   confidence: number;
-  /** Over its threshold this frame. */
   ok: boolean;
-  /** Held over its threshold for `confirmFrames` frames in a row: the letter counts. */
   confirmed: boolean;
 }
 
-/**
- * "Is this the letter we asked for?" — verification, not identification: the requested letter's
- * probability, averaged over the last frames, against its own calibrated threshold, held for a
- * few consecutive frames. Same as `AlphabetRecognizer.process(target=...)` in signa-ml.
- */
 export class LetterVerifier {
   private readonly window: Float32Array[] = [];
   private streak = 0;
@@ -128,7 +101,6 @@ export class LetterVerifier {
     return { confidence, ok, confirmed: this.streak >= this.confirmFrames };
   }
 
-  /** No hand in view, a new letter, or a pause: start over. */
   reset(): void {
     this.window.length = 0;
     this.streak = 0;
@@ -142,11 +114,6 @@ export interface Region {
   h: number;
 }
 
-/**
- * Part of the camera frame visible in a box shown with `object-fit: cover`, as fractions of the
- * frame. Recognition only looks there: the camera sees wider than the box, and hands outside it
- * (someone next to you) must not count.
- */
 export function visibleRegion(
   videoW: number,
   videoH: number,
@@ -162,10 +129,6 @@ export function visibleRegion(
 
 export const MAX_NAME_LENGTH = 10;
 
-/**
- * The name to spell: uppercase letters of the LSA manual alphabet only. Letters the model doesn't
- * know (Z, which is dynamic in LSA) are reported so the UI can say so instead of never finishing.
- */
 export function parseName(
   raw: string,
   supported: readonly string[],

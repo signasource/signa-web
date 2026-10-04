@@ -3,22 +3,17 @@ import { isSafeSign, MAX_PRELOAD, R2_GLB_BASE, VIEWER_MESSAGE, VIEWER_PRELOAD } 
 
 const MODEL_VIEWER_CDN =
   "https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js";
+const MODEL_VIEWER_SRI = "sha384-Ftcjj/GNLxPvzNDftO/oryXB9aGxsGZY9JGqsXG0uUKgQDl9RfDgsx9NJ/4IVNPe";
 
 const FOV = 15;
 const ENCUADRE = 0.52;
 
-// One <model-viewer> per sign, kept loaded: switching to a sign that is already loaded only swaps
-// which one is visible. Loading a model (parsing it, uploading it to the GPU, compiling shaders)
-// blocks the page's main thread for a moment — this iframe is same-origin, so it shares it with
-// the landing — and in the camera demo that froze the hand skeleton on every correct letter.
-// Pages can ask for signs ahead of time (VIEWER_PRELOAD) so that cost is paid up front; hidden
-// viewers are paused and don't render. model-viewer shares one WebGL renderer per page, so
-// several of them are cheap.
 function buildViewerHtml(sign: string): string {
   return `<!doctype html>
 <html lang="es">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,">
   <style>
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     model-viewer{position:absolute;inset:0;display:block;width:100%;height:100%;--background-color:transparent;--poster-color:transparent;cursor:grab;opacity:0;pointer-events:none;transition:opacity .3s ease}
@@ -30,7 +25,7 @@ function buildViewerHtml(sign: string): string {
     body.failed #err{display:flex}
     @keyframes s{to{transform:rotate(360deg)}}
   </style>
-  <script type="module" src="${MODEL_VIEWER_CDN}"></script>
+  <script type="module" src="${MODEL_VIEWER_CDN}" integrity="${MODEL_VIEWER_SRI}" crossorigin="anonymous"></script>
 </head>
 <body>
   <div id="spin" aria-hidden="true"></div>
@@ -140,7 +135,7 @@ export function GET(request: Request): Response {
     return new Response("Bad Request", { status: 400 });
   }
 
-  return new Response(buildViewerHtml(sign), {
+  return new Response(buildViewerHtml(sign).replace(/\n\s*/g, ""), {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Content-Security-Policy": buildViewerCsp(),

@@ -1,16 +1,10 @@
-// The 258 hand features of the alphabet model, ported line by line from signa-ml
-// (src/data/hand_features.py · build_features). The model only knows these exact numbers:
-// alphabet-classifier.test.ts checks this port against the Python output on real hands.
-
 export type Vec3 = readonly [number, number, number];
 
 const WRIST = 0;
 const INDEX_MCP = 5;
 const MIDDLE_MCP = 9;
 const PINKY_MCP = 17;
-/** Wrist, the 4 knuckles and the 5 fingertips: all their pairwise distances (45). */
 const KEY_POINTS = [0, 5, 9, 13, 17, 4, 8, 12, 16, 20] as const;
-/** Wrist → fingertip chains; flexion is measured at the 3 middle joints of each finger. */
 const FINGER_CHAINS = [
   [0, 1, 2, 3, 4],
   [0, 5, 6, 7, 8],
@@ -35,7 +29,6 @@ function unit(a: Vec3): Vec3 {
   return n > 1e-8 ? scale(a, 1 / n) : [0, 0, 0];
 }
 
-/** The hand's own orthonormal frame: e_y along the palm, e_x across it, e_z its normal. */
 function handFrame(lm: readonly Vec3[]): { axes: [Vec3, Vec3, Vec3]; size: number } {
   const up = sub(lm[MIDDLE_MCP]!, lm[WRIST]!);
   const size = norm(up);
@@ -53,7 +46,6 @@ function handFrame(lm: readonly Vec3[]): { axes: [Vec3, Vec3, Vec3]; size: numbe
   const across = sub(lm[PINKY_MCP]!, lm[INDEX_MCP]!);
   let ex = unit(sub(across, scale(ey, dot(across, ey))));
   if (ex.every((v) => Math.abs(v) <= 1e-8)) {
-    // Palm seen exactly edge-on: any perpendicular will do.
     ex = unit(cross(ey, [0, 0, 1]));
   }
   return { axes: [ex, ey, cross(ex, ey)], size };
@@ -68,11 +60,6 @@ function canonical(lm: readonly Vec3[]): Vec3[] {
   });
 }
 
-/**
- * 258 values: image landmarks keeping orientation (63), in the hand's frame (63), the frame's
- * axes (9), distances between key points (45), joint flexion cosines (15), and the metric
- * ("world") landmarks in the hand's frame (63). `lm` and `world` already flipped for a left hand.
- */
 export function buildHandFeatures(
   lm: readonly Vec3[],
   world: readonly Vec3[] | null,

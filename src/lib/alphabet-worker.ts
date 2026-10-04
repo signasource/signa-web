@@ -1,21 +1,11 @@
-// Web Worker of the camera demo: detection (MediaPipe) and classification off the page's thread.
-//
-// signa-ml's demo page is smooth because detection runs on its Python server: the browser only
-// draws. Run on the page's own thread, every detection (and the pose, every few frames) froze the
-// drawing for a few milliseconds and the skeleton moved in jerks. Here the page only draws, the
-// same as there. Docs: docs/features/landing.md
-
 import { createAlphabetEngine, type AlphabetEngine } from "@/lib/alphabet-engine";
 import type { WorkerRequest, WorkerResponse } from "@/lib/alphabet-client";
 
-// The project's TS lib is "dom"; the worker scope only needs these two members.
 const scope = self as unknown as {
   onmessage: ((e: MessageEvent<WorkerRequest>) => void) | null;
   postMessage(message: WorkerResponse): void;
 };
 
-// MediaPipe's Wasm prints informational lines ("INFO: Created TensorFlow Lite XNNPACK delegate
-// for CPU.") through console.error. They are not errors; anything else still goes through.
 const consoleError = console.error.bind(console);
 console.error = (...args: unknown[]) => {
   if (typeof args[0] === "string" && args[0].startsWith("INFO:")) return;
@@ -42,7 +32,6 @@ scope.onmessage = async ({ data }) => {
       const probs = classify ? engine.predict(detection) : null;
       scope.postMessage({ type: "result", landmarks: detection.hand?.landmarks ?? null, probs });
     } catch {
-      // A frame the detector can't read (the camera still warming up) counts as "no hand".
       scope.postMessage({ type: "result", landmarks: null, probs: null });
     } finally {
       bitmap.close();
