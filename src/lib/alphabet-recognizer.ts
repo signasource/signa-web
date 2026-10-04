@@ -213,3 +213,85 @@ export function pickPrimary(
   }
   return best;
 }
+
+export const TRACED_LETTERS = ["Z"] as const;
+const TRACE_TIPS = [8, 20];
+const TRACE_WINDOW_MS = 1600;
+const TRACE_HOLD_MS = 1200;
+const TRACE_SIMPLIFY = 0.25;
+const TRACE_MIN_STROKE = 0.6;
+const FLAT = 1.7;
+
+export interface TracePoint {
+  x: number;
+  y: number;
+  t: number;
+}
+
+type Vertex = TracePoint;
+
+function simplify(points: readonly Vertex[], eps: number): Vertex[] {
+  if (points.length < 3) return [...points];
+  const a = points[0]!;
+  const b = points[points.length - 1]!;
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1e-9;
+  let far = 0;
+  let at = 0;
+  for (let i = 1; i < points.length - 1; i++) {
+    const p = points[i]!;
+    const d = Math.abs((b.x - a.x) * (a.y - p.y) - (a.x - p.x) * (b.y - a.y)) / len;
+    if (d > far) [far, at] = [d, i];
+  }
+  if (far <= eps) return [a, b];
+  return [
+    ...simplify(points.slice(0, at + 1), eps).slice(0, -1),
+    ...simplify(points.slice(at), eps),
+  ];
+}
+
+export function tracesZ(points: readonly Vertex[]): boolean {
+  const v = simplify(points, TRACE_SIMPLIFY);
+  for (let i = 0; i + 3 < v.length; i++) {
+    const [p0, p1, p2, p3] = [v[i]!, v[i + 1]!, v[i + 2]!, v[i + 3]!];
+    const s1 = { x: p1.x - p0.x, y: p1.y - p0.y };
+    const s2 = { x: p2.x - p1.x, y: p2.y - p1.y };
+    const s3 = { x: p3.x - p2.x, y: p3.y - p2.y };
+    const flat = (s: { x: number; y: number }) =>
+      Math.abs(s.x) >= TRACE_MIN_STROKE && Math.abs(s.x) > FLAT * Math.abs(s.y);
+    if (!flat(s1) || !flat(s3) || Math.sign(s1.x) !== Math.sign(s3.x)) continue;
+    const back = Math.sign(s2.x) === -Math.sign(s1.x) || Math.abs(s2.x) < 0.3 * Math.abs(s2.y);
+    if (back && s2.y >= TRACE_MIN_STROKE * 0.8 && Math.abs(s2.y) > 0.5 * Math.abs(s2.x))
+      return true;
+  }
+  return false;
+}
+
+export class TraceTracker {
+  private readonly paths: TracePoint[][] = TRACE_TIPS.map(() => []);
+  private tracedAt = -Infinity;
+
+  push(hand: readonly Point[] | null, aspect: number, mirrored: boolean, now: number): void {
+    if (!hand) return;
+    const unit = Math.max(handSize(hand, aspect), 1e-6);
+    const sign = mirrored ? -1 : 1;
+    TRACE_TIPS.forEach((tip, k) => {
+      const path = this.paths[k]!;
+      const p = hand[tip]!;
+      path.push({ x: (sign * p.x) / unit, y: (p.y * aspect) / unit, t: now });
+      while (path.length && now - path[0]!.t > TRACE_WINDOW_MS) path.shift();
+      if (tracesZ(path)) {
+        this.tracedAt = now;
+        path.length = 0;
+      }
+    });
+  }
+
+  weight(now: number): number {
+    return now - this.tracedAt <= TRACE_HOLD_MS ? 1 : 0;
+  }
+
+  reset(): void {
+    this.paths.forEach((p) => (p.length = 0));
+    this.tracedAt = -Infinity;
+  }
+}

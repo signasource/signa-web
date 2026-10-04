@@ -9,6 +9,8 @@ import {
   applyLocationRule,
   faceBlock,
   pickPrimary,
+  TraceTracker,
+  TRACED_LETTERS,
   touchWeight,
   TWO_HANDED,
   type Point,
@@ -122,6 +124,8 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
   const { labels, thresholds } = classifier.manifest;
   let lastPose: Point[] | null = null;
   let lastWrist: Point | null = null;
+  const traced = TRACED_LETTERS.map((l) => labels.indexOf(l)).filter((i) => i >= 0);
+  const trace = traced.length ? new TraceTracker() : null;
 
   const classify = (hand: HandDetection, pose: Point[] | null) => {
     const sign = hand.mirrored ? -1 : 1;
@@ -173,6 +177,7 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       );
       const hand = hands[main] ?? null;
       lastWrist = hand?.landmarks[0] ?? null;
+      trace?.push(hand?.landmarks ?? null, aspect, hand?.mirrored ?? false, performance.now());
       const other = hands.find((_, i) => i !== main) ?? null;
       return { hand, other, pose: lastPose, aspect };
     },
@@ -186,6 +191,10 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       for (const letter of TWO_HANDED) {
         const i = labels.indexOf(letter);
         if (i >= 0) probs[i] = probs[i]! * touch;
+      }
+      if (trace) {
+        const open = trace.weight(performance.now());
+        for (const i of traced) probs[i] = probs[i]! * open;
       }
       return probs;
     },

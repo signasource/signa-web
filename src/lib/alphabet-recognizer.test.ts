@@ -8,6 +8,8 @@ import {
   parseName,
   pickPrimary,
   touchWeight,
+  TraceTracker,
+  tracesZ,
   visibleRegion,
   type Point,
 } from "@/lib/alphabet-recognizer";
@@ -219,5 +221,93 @@ describe("nameLetters", () => {
 
   it("caps parsed names at the maximum length", () => {
     expect(parseName("Maximiliano Gómez", ["A"]).name).toHaveLength(MAX_NAME_LENGTH);
+  });
+});
+
+describe("Z trace", () => {
+  const along = (corners: [number, number][], noise = 0.03, seed = 1) => {
+    let s = seed;
+    const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647 - 0.5) * 2 * noise;
+    const out: { x: number; y: number; t: number }[] = [];
+    let t = 0;
+    for (let c = 0; c + 1 < corners.length; c++) {
+      const [ax, ay] = corners[c]!;
+      const [bx, by] = corners[c + 1]!;
+      for (let i = 0; i < 10; i++) {
+        const f = i / 10;
+        out.push({ x: ax + (bx - ax) * f + rnd(), y: ay + (by - ay) * f + rnd(), t: (t += 33) });
+      }
+    }
+    return out;
+  };
+  const Z: [number, number][] = [
+    [0, 0],
+    [1.5, 0],
+    [0, 1.4],
+    [1.5, 1.4],
+  ];
+
+  it("recognizes a Z and its mirror", () => {
+    expect(tracesZ(along(Z))).toBe(true);
+    expect(tracesZ(along(Z.map(([x, y]) => [-x, y] as [number, number])))).toBe(true);
+  });
+
+  it("ignores a still hand, a side-to-side wave and a vertical zigzag", () => {
+    expect(
+      tracesZ(
+        along([
+          [0, 0],
+          [0.05, 0.02],
+          [0, 0.04],
+          [0.04, 0],
+        ]),
+      ),
+    ).toBe(false);
+    expect(
+      tracesZ(
+        along([
+          [0, 0],
+          [1.5, 0],
+          [0, 0.1],
+          [1.5, 0.1],
+        ]),
+      ),
+    ).toBe(false);
+    expect(
+      tracesZ(
+        along([
+          [0, 0],
+          [0, 1.5],
+          [0.3, 0],
+          [0.3, 1.5],
+        ]),
+      ),
+    ).toBe(false);
+  });
+
+  it("ignores a Z too small to be deliberate", () => {
+    expect(
+      tracesZ(
+        along(
+          Z.map(([x, y]) => [x * 0.25, y * 0.25] as [number, number]),
+          0.01,
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it("opens the gate after a traced Z and closes it a moment later", () => {
+    const tracker = new TraceTracker();
+    const hand = (x: number, y: number) =>
+      Array.from({ length: 21 }, (_, i) => ({
+        x: x + (i === 9 ? 0 : 0),
+        y: y - (i === 9 ? 0.1 : 0),
+      }));
+    expect(tracker.weight(0)).toBe(0);
+    const pts = along(Z, 0.01);
+    for (const p of pts) tracker.push(hand(p.x * 0.1, p.y * 0.1), 1, false, p.t);
+    const end = pts[pts.length - 1]!.t;
+    expect(tracker.weight(end + 100)).toBe(1);
+    expect(tracker.weight(end + 2000)).toBe(0);
   });
 });

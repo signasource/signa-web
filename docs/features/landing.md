@@ -181,6 +181,14 @@ Everything runs on the visitor's device; no frame leaves the browser.
   better of the two hands, so a one-handed letter works whichever hand is tracked (both hands are
   already classified; no extra cost). Measured:
   no fps cost (19 vs 19–20 fps with one).
+- **Letters with a movement (Z):** the classifier is static (one frame in, probabilities out), so
+  the movement is checked outside it. `TraceTracker` keeps the last 1.6 s of the index and pinky
+  fingertips of the tracked hand (in hand-size units, mirrored for left hands), simplifies each
+  path (Ramer–Douglas–Peucker) and looks for a Z: a horizontal stroke, a diagonal going down and
+  back, and another horizontal stroke in the first one's direction, each ≥ 0.6 hand sizes, either
+  way round (`tracesZ`). For 1.2 s after a Z is traced, the Z probability passes through; otherwise
+  it is zeroed, so the final hand shape alone never counts. Only `TRACED_LETTERS` are affected and
+  the tracker only exists when the model has one of them. Measured: 4.5 µs per frame.
 - **The camera fades in** once two frames have been decoded at the final size, plus 120 ms
   (`videoReady`, `requestVideoFrameCallback`): iOS Safari showed it letterboxed for a moment
   before applying `object-fit: cover`.
