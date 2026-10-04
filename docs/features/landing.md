@@ -177,7 +177,9 @@ Everything runs on the visitor's device; no frame leaves the browser.
 - **Two hands:** MediaPipe looks for up to 2 hands. The tracked hand is the one closest to the
   previous one (`pickPrimary`), so the skeleton no longer jumps between hands; both are drawn,
   each with its own smoothing. Q and W need both hands touching (a fingertip within 0.6 hand
-  sizes of the other hand, `touchWeight`), and their shape may come from either hand. Measured:
+  sizes of the other hand, `touchWeight`), and their shape may come from either hand. With two hands in view every letter takes the
+  better of the two hands, so a one-handed letter works whichever hand is tracked (both hands are
+  already classified; no extra cost). Measured:
   no fps cost (19 vs 19–20 fps with one).
 - **The camera fades in** once two frames have been decoded at the final size, plus 120 ms
   (`videoReady`, `requestVideoFrameCallback`): iOS Safari showed it letterboxed for a moment
