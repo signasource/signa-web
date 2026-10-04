@@ -13,8 +13,6 @@ const LIVE_SCREEN = "h-[760px] w-[360px] overflow-hidden rounded-[37px]";
 const LIVE_PHONE = { w: 380, h: 780 };
 const STATIC_PHONE = { w: 300, h: 640 };
 const MAX_SCALE = 1.5;
-const MOBILE_CHROME = 128;
-const MODAL_OPEN_MS = 400;
 
 function FitPhone({
   base,
@@ -31,15 +29,12 @@ function FitPhone({
   useEffect(() => {
     const el = slot.current;
     if (!el) return;
-    const screenHeight = window.innerHeight;
     const fit = () => {
       const { clientWidth, clientHeight } = el;
       const style = getComputedStyle(el);
-      const padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-      const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-      const wide = window.matchMedia?.("(min-width: 768px)").matches ?? true;
-      const h = wide ? clientHeight - padY : screenHeight - MOBILE_CHROME - padY;
-      setScale(Math.max(0.3, Math.min(MAX_SCALE, (clientWidth - padX) / base.w, h / base.h)));
+      const w = clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const h = clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      setScale(Math.max(0.3, Math.min(MAX_SCALE, w / base.w, h / base.h)));
     };
     fit();
     if (typeof ResizeObserver === "undefined") return;
@@ -51,7 +46,7 @@ function FitPhone({
   return (
     <div
       ref={slot}
-      className="flex w-full items-center justify-center p-5 md:h-full md:min-h-0 md:p-6"
+      className="flex h-[calc(100dvh-8rem)] min-h-0 w-full items-center justify-center p-5 md:h-full md:p-6"
     >
       <div
         className={cn("relative shrink-0", scale === 0 && "invisible")}
@@ -85,12 +80,8 @@ function LivePhone({ children, className }: { children: ReactNode; className?: s
 function SignsPhone() {
   return (
     <FitPhone base={LIVE_PHONE} around={<></>}>
-      <LivePhone>
-        <LessonDemo
-          className={LIVE_SCREEN}
-          viewerClassName="h-[440px]"
-          viewerDelay={MODAL_OPEN_MS}
-        />
+      <LivePhone className="hover:ring-primary/30 transition-shadow">
+        <LessonDemo className={LIVE_SCREEN} viewerClassName="h-[440px]" />
       </LivePhone>
     </FitPhone>
   );
@@ -444,7 +435,7 @@ export function FeaturePreview({ feature, closing }: { feature: FeatureId; closi
     >
       <div
         className={cn(
-          "bg-background relative grid h-full max-h-[960px] w-full max-w-[1280px] grid-cols-1 items-center gap-6 overflow-y-auto overscroll-contain rounded-[40px] p-6 pt-16 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-10 md:px-12 md:py-8 lg:px-16",
+          "bg-background relative grid h-full max-h-[960px] w-full max-w-[1280px] grid-cols-1 items-center gap-6 overflow-y-auto rounded-[40px] p-6 pt-16 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-10 md:px-12 md:py-8 lg:px-16",
           closing ? "landing-modal-card-out" : "landing-modal-card",
         )}
       >

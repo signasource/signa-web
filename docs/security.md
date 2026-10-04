@@ -66,8 +66,6 @@ The Route Handler at `src/app/api/glb-viewer/route.ts` has its own third CSP tie
 - `X-Frame-Options: SAMEORIGIN` — set both by the Route Handler response and by a specific rule in
   `next.config.ts` (overrides the global `DENY`), so the landing page iframe can embed it.
 - `src/proxy.ts` skips this path so the middleware does not inject a conflicting nonce CSP.
-- Served with `Cache-Control: no-cache`: the HTML carries the viewer's script, so a long cache
-  kept visitors on an old viewer for up to a day after a change.
 
 ## Other headers (`next.config.ts`, all routes)
 
