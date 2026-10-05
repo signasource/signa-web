@@ -188,7 +188,9 @@ Everything runs on the visitor's device; no frame leaves the browser.
   look for straight lines: it finds the horizontal turning points (a reversal counts once the tip
   comes back 0.2 hand sizes) and accepts go–back–go strokes (first ≥ 0.35, last ≥ 0.35 and ≥ 75% of the diagonal's width — not of the first stroke,
   which can include the hand moving into place) and only once the
-  tip has stopped for 300 ms (within 0.2 hand sizes) at the fourth corner, so it never fires mid-stroke and slow Z still
+  tip has stopped at the fourth corner (speed ≤ 0.6 hand sizes/s, measured against a frame
+  ≥ 150 ms earlier so it works at 3–5 fps on phones and ignores jitter; smoothing only averages
+  frames ≤ 80 ms apart), so it never fires mid-stroke and slow Z still
   work with the middle one going down
   (≥ 0.15) and the end lower than the top-right corner (≥ 0.25). Curvy, uneven or small strokes pass; a still
   hand, a side-to-side wave or a vertical zigzag don't. The Z's shape is `pinkyOnly` (pinky out,

@@ -321,6 +321,11 @@ describe("Z trace", () => {
     expect(tracesZ(along(approach, 0.03))).toBe(true);
   });
 
+  it("notices the stop even at three frames per second", () => {
+    const slow = along(Z, 0.01).filter((_, i) => i % 10 === 0);
+    expect(tracesZ(slow.map((p, i) => ({ ...p, t: i * 333 })))).toBe(true);
+  });
+
   it("waits for the hand to stop at the fourth corner", () => {
     const moving = along(Z, 0.01).slice(0, -12);
     expect(tracesZ(moving)).toBe(false);

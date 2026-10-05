@@ -221,8 +221,9 @@ const TURN = 0.2;
 const MIN_DROP = 0.25;
 const MIN_STROKE = 0.35;
 const LAST_STROKE = 0.75;
-const STILL_MS = 300;
-const STILL_RANGE = 0.2;
+const STOP_SPEED = 0.6;
+const STOP_SPAN_MS = 150;
+const SMOOTH_MS = 80;
 const MIN_DIAGONAL_DROP = 0.15;
 const PINKY_TIP = 20;
 const RELEASED = 0.3;
@@ -235,9 +236,14 @@ export interface TracePoint {
 
 function smooth(points: readonly TracePoint[]): TracePoint[] {
   return points.map((p, i) => {
-    const a = points[Math.max(0, i - 1)]!;
-    const b = points[Math.min(points.length - 1, i + 1)]!;
-    return { x: (a.x + p.x + b.x) / 3, y: (a.y + p.y + b.y) / 3, t: p.t };
+    const near = [points[i - 1], p, points[i + 1]].filter(
+      (q): q is TracePoint => !!q && Math.abs(q.t - p.t) <= SMOOTH_MS,
+    );
+    return {
+      x: near.reduce((s, q) => s + q.x, 0) / near.length,
+      y: near.reduce((s, q) => s + q.y, 0) / near.length,
+      t: p.t,
+    };
   });
 }
 
@@ -265,20 +271,19 @@ function turningPoints(points: readonly TracePoint[]): TracePoint[] {
 function stopped(points: readonly TracePoint[]): boolean {
   const end = points[points.length - 1];
   if (!end) return false;
-  const tail = points.filter((p) => end.t - p.t <= STILL_MS);
-  if (tail.length < 2 || end.t - tail[0]!.t < STILL_MS * 0.6) return false;
-  const xs = tail.map((p) => p.x);
-  const ys = tail.map((p) => p.y);
-  return (
-    Math.max(...xs) - Math.min(...xs) <= STILL_RANGE &&
-    Math.max(...ys) - Math.min(...ys) <= STILL_RANGE
-  );
+  let prev: TracePoint | undefined;
+  for (let i = points.length - 2; i >= 0; i--) {
+    prev = points[i];
+    if (end.t - prev!.t >= STOP_SPAN_MS) break;
+  }
+  if (!prev || end.t <= prev.t) return false;
+  const speed = (Math.hypot(end.x - prev.x, end.y - prev.y) * 1000) / (end.t - prev.t);
+  return speed <= STOP_SPEED;
 }
 
 export function tracesZ(points: readonly TracePoint[]): boolean {
-  const path = smooth(points);
-  if (!stopped(path)) return false;
-  const turns = turningPoints(path);
+  if (!stopped(points)) return false;
+  const turns = turningPoints(smooth(points));
   for (let i = 0; i + 3 < turns.length; i++) {
     const [a, b, c, d] = [turns[i]!, turns[i + 1]!, turns[i + 2]!, turns[i + 3]!];
     const s1 = b.x - a.x;
