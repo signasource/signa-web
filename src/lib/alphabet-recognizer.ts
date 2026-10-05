@@ -170,6 +170,7 @@ export function parseName(
 const MIDDLE_MCP_INDEX = 9;
 const FINGERTIPS = [4, 8, 12, 16, 20];
 export const TWO_HANDED = ["Q", "W"] as const;
+export const BOTH_HANDS_LETTERS: readonly string[] = ["Q", "W", "U", "X"];
 const TOUCH_HANDS = 0.6;
 const TOUCH_SOFTNESS = 0.1;
 

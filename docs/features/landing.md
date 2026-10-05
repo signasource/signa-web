@@ -178,9 +178,10 @@ Everything runs on the visitor's device; no frame leaves the browser.
   frame and tracking jumped between them, e.g. a visitor standing full-body at the fair). The
   tracked hand starts as the **raised** one (the signing hand, not the one hanging by the side)
   and then follows proximity (`pickPrimary`; its position is kept for 1 s when no hand is seen).
-  Only its skeleton is drawn; the other hand's appears for Q and W, which need both hands touching
-  (a fingertip within 0.6 hand sizes of the other hand, `touchWeight`) and may take their shape
-  from either hand. With two hands in view every letter takes the better of the two.
+  Both skeletons are drawn, but only the tracked hand is classified, except for
+  `BOTH_HANDS_LETTERS` (Q, W, U, X), where the better of the two hands counts; so the hands don't
+  compete and the second classification is skipped for every other letter. Q and W also need both
+  hands touching (a fingertip within 0.6 hand sizes of the other hand, `touchWeight`).
 - **Letters with a movement (Z):** the classifier is static (one frame in, probabilities out), so
   the movement is checked outside it, with two simple parts:
   - **Shape:** the index or the pinky is out (`fingerUp`, 3D fingertip-to-wrist reach). The other

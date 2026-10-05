@@ -56,7 +56,7 @@ export interface AlphabetEngine {
   lastHandMs: number;
   switchHands(delegate: Delegate): Promise<boolean>;
   detect(frame: Frame, withPose: boolean): Detection;
-  predict(detection: Detection): Float32Array | null;
+  predict(detection: Detection, bothHands?: boolean): Float32Array | null;
   resetTrace(): void;
   lastFeatures: Float32Array | null;
   close(): void;
@@ -199,11 +199,11 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       return { hand, other, pose: lastPose, aspect };
     },
 
-    predict({ hand, other, pose, aspect }) {
+    predict({ hand, other, pose, aspect }, bothHands = false) {
       if (!hand) return null;
       const probs = classify(hand, pose);
       this.lastFeatures = lastClassified;
-      const second = other ? classify(other, pose) : null;
+      const second = bothHands && other ? classify(other, pose) : null;
       if (second) for (let i = 0; i < probs.length; i++) probs[i] = Math.max(probs[i]!, second[i]!);
       const touch = touchWeight(hand.landmarks, other?.landmarks ?? null, aspect);
       for (const letter of TWO_HANDED) {

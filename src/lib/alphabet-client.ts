@@ -10,6 +10,7 @@ export type WorkerRequest =
       withPose: boolean;
       classify: boolean;
       capture?: boolean;
+      bothHands?: boolean;
     };
 
 export type WorkerResponse =
@@ -43,6 +44,7 @@ export interface RecognizerClient {
     withPose: boolean,
     classify: boolean,
     capture?: boolean,
+    bothHands?: boolean,
   ): Promise<FrameResult>;
   resetTrace(): void;
   close(): void;
@@ -68,10 +70,10 @@ export function createRecognizerClient(): Promise<RecognizerClient> {
         resolve({
           labels: data.labels,
           thresholds: data.thresholds,
-          process(bitmap, withPose, classify, capture) {
+          process(bitmap, withPose, classify, capture, bothHands) {
             return new Promise((done) => {
               pending = done;
-              send({ type: "frame", bitmap, withPose, classify, capture }, [bitmap]);
+              send({ type: "frame", bitmap, withPose, classify, capture, bothHands }, [bitmap]);
             });
           },
           resetTrace: () => send({ type: "reset-trace" }),

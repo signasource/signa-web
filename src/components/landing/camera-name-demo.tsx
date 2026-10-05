@@ -15,7 +15,7 @@ import { PRELOAD_AHEAD } from "@/lib/glb";
 import {
   LetterVerifier,
   nameLetters,
-  TWO_HANDED,
+  BOTH_HANDS_LETTERS,
   parseName,
   visibleRegion,
   MAX_NAME_LENGTH,
@@ -363,7 +363,13 @@ export function CameraNameDemo({ className }: { className?: string }) {
       const takeLetter = recording.current.letter;
       void createImageBitmap(frame)
         .then((bitmap) =>
-          engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify || take, take),
+          engine.process(
+            bitmap,
+            count++ % FRAMES_PER_POSE === 0,
+            classify || take,
+            take,
+            BOTH_HANDS_LETTERS.includes(state.name[state.filled] ?? ""),
+          ),
         )
         .then(({ landmarks, other, probs, features }) => {
           if (!alive) return;
@@ -382,10 +388,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
             landmarks && other && d0 && d1
               ? gap(d0, other) + gap(d1, landmarks) < gap(d0, landmarks) + gap(d1, other)
               : !!(d1 && landmarks && !other && gap(d1, landmarks) < gap(d0, landmarks));
-          const pair = (TWO_HANDED as readonly string[]).includes(state.name[state.filled] ?? "");
-          live.current.target = swap
-            ? [pair ? other : null, landmarks]
-            : [landmarks, pair ? other : null];
+          live.current.target = swap ? [other, landmarks] : [landmarks, other];
           recognize(classify ? probs : null, landmarks !== null, performance.now());
         })
         .catch(() => {})
