@@ -176,6 +176,7 @@ function SocialPhone() {
   const [tab, setTab] = useState<"feed" | "amigos" | "ranking">("ranking");
   const [scope, setScope] = useState<"global" | "friends">("global");
   const [liked, setLiked] = useState<ReadonlySet<number>>(new Set());
+  const [amigosSub, setAmigosSub] = useState<"amigos" | "solicitudes">("amigos");
 
   const PODIUM = [
     { rank: 2, initials: "SG", firstName: "Sofia", xp: "1.890", avatar: "bg-primary-light text-primary-dark", ring: "ring-[#86868B]", bar: "bg-[#86868B]/20", barH: "h-[26px]", size: "h-9 w-9" },
@@ -204,82 +205,110 @@ function SocialPhone() {
     { id: 2, initials: "JP", name: "Juan P.", avatarClass: "bg-shop-amber-light text-shop-amber-dark", time: "hace 5h", pre: "Llegó a", highlight: "10 días de racha 🔥", iconBg: "bg-[#FDA55A]/20", iconColor: "", iconChar: "🔥" },
   ];
 
-  const AMIGOS = [
+  const AMIGOS_LIST = [
     { initials: "MR", name: "Matías R.", handle: "@mati", streak: "21", xp: "8.4k", avatar: "bg-avatar-teal-light text-avatar-teal-dark" },
     { initials: "SG", name: "Sofía G.", handle: "@sofi", streak: "14", xp: "5.7k", avatar: "bg-primary-light text-primary-dark" },
     { initials: "JP", name: "Juan P.", handle: "@juanp", streak: "10", xp: "3.2k", avatar: "bg-shop-amber-light text-shop-amber-dark" },
     { initials: "AL", name: "Ana L.", handle: "@anal", streak: "8", xp: "2.9k", avatar: "bg-avatar-blue-light text-gems-blue-dark" },
   ];
 
+  const SOLICITUDES = [
+    { initials: "VR", name: "Valentina R.", handle: "@vale", mutual: "3 amigos en común", avatar: "bg-avatar-green-light text-avatar-teal-dark" },
+    { initials: "PG", name: "Pablo G.", handle: "@pablog", mutual: "1 amigo en común", avatar: "bg-primary-light text-primary-dark" },
+  ];
+
   const currentList = scope === "global" ? GLOBAL_LIST : FRIENDS_LIST;
   const meRank = scope === "global" ? 7 : 5;
   const meGap = scope === "global" ? "220 XP detrás del #6" : "290 XP detrás del #4";
 
-  const TABS: { key: "feed" | "amigos" | "ranking"; label: string }[] = [
+  const TABS: { key: "feed" | "amigos" | "ranking"; label: string; badge?: number }[] = [
     { key: "feed", label: "Feed" },
-    { key: "amigos", label: "Amigos" },
+    { key: "amigos", label: "Amigos", badge: 2 },
     { key: "ranking", label: "Ranking" },
   ];
 
   return (
     <div className="bg-text rounded-[46px] p-2.5 shadow-2xl">
       <div className="bg-background flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px]">
-        {/* Header */}
-        <div className="bg-social-wine relative shrink-0 overflow-hidden px-4 pt-7 pb-3 text-white">
-          <div aria-hidden className="absolute -top-10 -right-8 h-[130px] w-[130px] rounded-full bg-white/10" />
-          <p className="font-display relative text-2xl font-bold tracking-tight">Social</p>
-          <p className="relative mt-0.5 text-[10.5px] opacity-85">Mirá qué están logrando tus amigos.</p>
-          <div className="relative mt-2.5 flex gap-2">
-            {[{ label: "AMIGOS", value: "8" }, { label: "SOLICITUDES", value: "2" }].map((s) => (
-              <div key={s.label} className="flex flex-1 items-center justify-between rounded-xl bg-white/15 px-2.5 py-1.5">
-                <p className="text-[7.5px] font-bold tracking-wide opacity-80">{s.label}</p>
-                <p className="font-display text-sm font-bold">{s.value}</p>
+        {/* Header — matches ScreenHeader with stats strip */}
+        <div className="bg-social-wine relative shrink-0 overflow-hidden px-4 pt-7 pb-4 text-white">
+          <div aria-hidden className="absolute -top-16 -right-10 h-[200px] w-[200px] rounded-full bg-white/9" />
+          <p className="font-display relative text-2xl font-bold tracking-tight leading-none">Social</p>
+          <p className="relative mt-1.5 text-[10.5px] leading-snug opacity-88">
+            Mirá qué están logrando tus amigos y sumá los tuyos.
+          </p>
+          {/* Stats strip: vertical layout — label above, icon + value below */}
+          <div className="relative mt-3 flex gap-2">
+            <div className="flex flex-1 flex-col rounded-2xl bg-white/16 px-2.5 py-2">
+              <p className="text-[7px] font-semibold tracking-[0.8px] opacity-75">AMIGOS</p>
+              <div className="mt-1 flex items-center gap-1">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-[13px] w-[13px] shrink-0">
+                  <path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                </svg>
+                <p className="font-display text-[18px] font-bold leading-none">8</p>
               </div>
-            ))}
+            </div>
+            <div className="flex flex-1 flex-col rounded-2xl bg-white/16 px-2.5 py-2">
+              <p className="text-[7px] font-semibold tracking-[0.8px] opacity-75">SOLICITUDES</p>
+              <div className="mt-1 flex items-center gap-1">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="h-[13px] w-[13px] shrink-0">
+                  <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z" />
+                </svg>
+                <p className="font-display text-[18px] font-bold leading-none">2</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Tabs — full width */}
-        <div className="border-border flex shrink-0 border-b bg-white">
-          {TABS.map(({ key, label }) => (
+        {/* SegmentedControl — pill style, dark active */}
+        <div className="flex shrink-0 gap-1.5 px-2.5 pt-2.5 pb-2">
+          {TABS.map(({ key, label, badge }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
               className={cn(
-                "flex-1 pb-2 pt-2 text-center text-[10.5px] font-bold",
-                tab === key ? "border-social-wine text-social-wine border-b-2" : "text-text-muted",
+                "flex flex-1 items-center justify-center gap-1 rounded-[10px] py-[9px] text-[10.5px] font-semibold",
+                tab === key ? "bg-text text-on-dark" : "bg-fill text-text-muted",
               )}
             >
               {label}
+              {!!badge && (
+                <span className={cn("rounded-[5px] px-1 py-px text-[9px] font-bold leading-none", tab === key ? "bg-white/20 text-on-dark" : "bg-text text-on-dark")}>
+                  {badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
         {/* Ranking */}
         {tab === "ranking" && (
-          <div className="flex flex-1 flex-col overflow-hidden px-2.5 pt-2">
-            <div className="bg-fill flex shrink-0 rounded-[10px] p-0.5 text-[9.5px] font-bold">
+          <div className="flex flex-1 flex-col overflow-hidden px-2.5 pt-1">
+            {/* Scope toggle — matches SubTabs/RankingTab style */}
+            <div className="bg-fill flex shrink-0 rounded-[14px] p-1 text-[9.5px] font-semibold">
               <button
                 onClick={() => setScope("global")}
                 className={cn(
-                  "flex-1 rounded-[8px] py-1.5 text-center",
-                  scope === "global" ? "bg-surface text-social-wine shadow-sm" : "text-text-muted",
+                  "flex flex-1 items-center justify-center gap-1 rounded-[11px] py-[7px]",
+                  scope === "global" ? "bg-surface text-text shadow-sm" : "text-text-muted",
                 )}
               >
-                Global (98)
+                Global
+                <span className={cn("font-bold opacity-70", scope === "global" ? "text-text" : "text-text-muted")}>98</span>
               </button>
               <button
                 onClick={() => setScope("friends")}
                 className={cn(
-                  "flex-1 rounded-[8px] py-1.5 text-center",
-                  scope === "friends" ? "bg-surface text-social-wine shadow-sm" : "text-text-muted",
+                  "flex flex-1 items-center justify-center gap-1 rounded-[11px] py-[7px]",
+                  scope === "friends" ? "bg-surface text-text shadow-sm" : "text-text-muted",
                 )}
               >
-                Mis amigos (8)
+                Mis amigos
+                <span className={cn("font-bold opacity-70", scope === "friends" ? "text-text" : "text-text-muted")}>8</span>
               </button>
             </div>
 
-            <div className="border-border mt-1.5 flex shrink-0 items-center gap-1.5 rounded-xl border bg-white px-2.5 py-1.5">
+            <div className="border-border mt-1.5 flex shrink-0 items-center gap-1.5 rounded-xl border bg-surface px-2.5 py-1.5">
               <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="text-social-wine shrink-0">
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 6v6l4 2" />
@@ -288,9 +317,9 @@ function SocialPhone() {
               <p className="font-display text-[10px] font-bold">2d 14:22</p>
             </div>
 
-            <p className="text-text-muted mt-1.5 shrink-0 text-[8px] font-bold tracking-[0.6px]">XP DE ESTA SEMANA</p>
+            <p className="text-text-muted mt-1.5 shrink-0 text-[8px] font-semibold tracking-[0.6px]">XP DE ESTA SEMANA</p>
 
-            <div className="border-border mt-1 flex shrink-0 items-end justify-around overflow-hidden rounded-[14px] border bg-white px-2 pt-2">
+            <div className="border-border mt-1 flex shrink-0 items-end justify-around overflow-hidden rounded-[18px] border bg-surface px-2 pt-2">
               {PODIUM.map((p) => (
                 <div key={p.rank} className="flex flex-col items-center gap-0.5">
                   <div className={cn("font-display flex shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ring-2", p.avatar, p.size, p.ring)}>
@@ -299,13 +328,13 @@ function SocialPhone() {
                   <div className="bg-social-wine rounded-full px-1.5 py-px text-[7px] font-extrabold text-white">#{p.rank}</div>
                   <p className="text-[8.5px] font-semibold">{p.firstName}</p>
                   <p className="text-text-muted text-[7.5px]">⚡ {p.xp}</p>
-                  <div className={cn("w-full rounded-t-sm", p.bar, p.barH)} />
+                  <div className={cn("w-full rounded-t-[8px]", p.bar, p.barH)} />
                 </div>
               ))}
             </div>
 
             <div className="mt-1.5 flex-1 overflow-y-auto">
-              <div className="border-border overflow-hidden rounded-[14px] border bg-white">
+              <div className="border-border overflow-hidden rounded-[18px] border bg-surface">
                 {currentList.map((r, i) => (
                   <div
                     key={r.rank}
@@ -332,14 +361,15 @@ function SocialPhone() {
               </div>
             </div>
 
-            <div className="border-social-wine/40 bg-avatar-wine-light -mx-2.5 mt-auto flex shrink-0 items-center gap-2 border-t px-3.5 py-2">
+            {/* Me bar — border-border, not wine */}
+            <div className="border-border bg-avatar-wine-light -mx-2.5 mt-auto flex shrink-0 items-center gap-2 border-t px-3.5 py-2">
               <p className="font-display text-social-wine text-[11px] font-bold">#{meRank}</p>
               <span className="border-social-wine font-display text-social-wine bg-avatar-wine-light flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-extrabold">
                 TU
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-display text-social-wine text-[11px] font-bold">Vos</p>
-                <p className="text-social-wine/65 text-[8px]">{meGap}</p>
+                <p className="text-social-wine text-[8px]">{meGap}</p>
               </div>
               <p className="font-display text-social-wine text-[10px] font-extrabold">⚡ 460</p>
             </div>
@@ -348,28 +378,28 @@ function SocialPhone() {
 
         {/* Feed */}
         {tab === "feed" && (
-          <div className="flex-1 overflow-y-auto px-2.5 pt-2 pb-2">
-            <p className="text-text-muted mb-1.5 text-[8px] font-bold tracking-[0.6px]">ACTIVIDAD RECIENTE</p>
+          <div className="flex-1 overflow-y-auto px-2.5 pt-1.5 pb-2">
+            <p className="text-text-muted mb-2 text-[8px] font-semibold tracking-[0.6px]">ACTIVIDAD RECIENTE</p>
             <div className="flex flex-col gap-2">
               {FEED.map((item) => (
-                <div key={item.id} className="border-border rounded-[14px] border bg-white p-2.5">
+                <div key={item.id} className="border-border rounded-[18px] border bg-surface p-3">
                   <div className="flex items-center gap-2">
-                    <span className={cn("font-display flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold", item.avatarClass)}>
+                    <span className={cn("font-display flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold", item.avatarClass)}>
                       {item.initials}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-display text-[11px] font-bold">{item.name}</p>
+                      <p className="font-display text-[11px] font-semibold">{item.name}</p>
                       <p className="text-text-muted text-[8px]">{item.time}</p>
                     </div>
-                    <div className={cn("flex h-6 w-6 items-center justify-center rounded-[8px] text-[12px]", item.iconBg)}>
+                    <div className={cn("flex h-[30px] w-[30px] items-center justify-center rounded-[10px] text-[14px]", item.iconBg)}>
                       <span className={item.iconColor}>{item.iconChar}</span>
                     </div>
                   </div>
-                  <p className="mt-1.5 text-[10px] leading-snug text-text-muted">
+                  <p className="mt-2 text-[10.5px] leading-snug text-text-muted">
                     {item.pre}{" "}
                     <span className="font-bold text-text">{item.highlight}</span>
                   </p>
-                  <div className="border-border mt-2 border-t pt-1.5">
+                  <div className="border-border mt-2 border-t pt-2">
                     <button
                       onClick={() =>
                         setLiked((prev) => {
@@ -380,7 +410,7 @@ function SocialPhone() {
                         })
                       }
                       className={cn(
-                        "flex items-center gap-1 rounded-[8px] px-2 py-1 text-[9px] font-semibold",
+                        "flex items-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-[9px] font-semibold",
                         liked.has(item.id) ? "bg-avatar-wine-light text-social-wine" : "bg-fill text-text-muted",
                       )}
                     >
@@ -396,34 +426,84 @@ function SocialPhone() {
 
         {/* Amigos */}
         {tab === "amigos" && (
-          <div className="flex-1 overflow-y-auto px-2.5 pt-2">
-            <div className="border-border mb-2 flex items-center gap-1.5 rounded-xl border bg-white px-2.5 py-1.5">
+          <div className="flex-1 overflow-y-auto px-2.5 pt-1.5">
+            {/* Search bar */}
+            <div className="border-border mb-2 flex items-center gap-1.5 rounded-[14px] border bg-surface px-2.5 py-2">
               <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted shrink-0">
                 <circle cx="11" cy="11" r="7" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
               <p className="text-text-muted flex-1 text-[9px]">Buscar por nombre o usuario</p>
             </div>
-            <div className="border-border overflow-hidden rounded-[14px] border bg-white">
-              {AMIGOS.map((friend, i) => (
-                <div
-                  key={friend.initials}
-                  className={cn("flex items-center gap-2 px-2.5 py-2", i < AMIGOS.length - 1 && "border-border border-b")}
-                >
-                  <span className={cn("font-display flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold", friend.avatar)}>
-                    {friend.initials}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-[11px] font-bold">{friend.name}</p>
-                    <p className="text-text-muted text-[8px]">{friend.handle}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[8px]">
-                    <span className="text-text-muted">🔥{friend.streak}</span>
-                    <span className="font-display font-bold">⚡{friend.xp}</span>
-                  </div>
-                </div>
-              ))}
+            {/* SubTabs — Mis amigos / Solicitudes */}
+            <div className="bg-fill mb-2 flex rounded-[14px] p-1 text-[9.5px] font-semibold">
+              <button
+                onClick={() => setAmigosSub("amigos")}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-1 rounded-[11px] py-[7px]",
+                  amigosSub === "amigos" ? "bg-surface text-text shadow-sm" : "text-text-muted",
+                )}
+              >
+                Mis amigos
+                <span className={cn("font-bold opacity-70", amigosSub === "amigos" ? "text-text" : "text-text-muted")}>4</span>
+              </button>
+              <button
+                onClick={() => setAmigosSub("solicitudes")}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-1 rounded-[11px] py-[7px]",
+                  amigosSub === "solicitudes" ? "bg-surface text-text shadow-sm" : "text-text-muted",
+                )}
+              >
+                Solicitudes
+                <span className={cn("font-bold opacity-70", amigosSub === "solicitudes" ? "text-text" : "text-text-muted")}>2</span>
+              </button>
             </div>
+            {/* Friends list */}
+            {amigosSub === "amigos" && (
+              <div className="border-border overflow-hidden rounded-[18px] border bg-surface">
+                {AMIGOS_LIST.map((friend, i) => (
+                  <div
+                    key={friend.initials}
+                    className={cn("flex items-center gap-2 px-2.5 py-2.5", i < AMIGOS_LIST.length - 1 && "border-border border-b")}
+                  >
+                    <span className={cn("font-display flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold", friend.avatar)}>
+                      {friend.initials}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-[11px] font-semibold">{friend.name}</p>
+                      <p className="text-text-muted text-[8px]">{friend.handle}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[8px]">
+                      <span className="text-text-muted">🔥{friend.streak}</span>
+                      <span className="font-display font-bold">⚡{friend.xp}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Solicitudes */}
+            {amigosSub === "solicitudes" && (
+              <div className="border-border overflow-hidden rounded-[18px] border bg-surface">
+                {SOLICITUDES.map((req, i) => (
+                  <div
+                    key={req.initials}
+                    className={cn("flex items-center gap-2 px-2.5 py-2.5", i < SOLICITUDES.length - 1 && "border-border border-b")}
+                  >
+                    <span className={cn("font-display flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold", req.avatar)}>
+                      {req.initials}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-[11px] font-semibold">{req.name}</p>
+                      <p className="text-text-muted text-[8px]">{req.mutual}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button className="bg-social-wine rounded-[8px] px-2 py-1 text-[8px] font-bold text-white">✓</button>
+                      <button className="bg-fill text-text-muted rounded-[8px] px-2 py-1 text-[8px] font-bold">✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
