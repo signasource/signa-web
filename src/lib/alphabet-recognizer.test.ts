@@ -343,6 +343,30 @@ describe("Z trace", () => {
   });
 });
 
+describe("Z after a confirmed letter", () => {
+  it("needs the pinky to come down before the next Z can open", () => {
+    const tracker = new TraceTracker();
+    const hand = (x: number, y: number) =>
+      Array.from({ length: 21 }, (_, i) => ({ x, y: y - (i === 9 ? 0.1 : 0) }));
+    const z = (t0: number) =>
+      [0, 1.5, 0, 1.5].flatMap((x, c, all) =>
+        c + 1 < all.length
+          ? Array.from({ length: 10 }, (_, i) => ({
+              x: (x + ((all[c + 1]! - x) * i) / 10) * 0.1,
+              y: (c === 0 ? 0 : c === 1 ? (1.4 * i) / 10 : 1.4) * 0.1,
+              t: t0 + (c * 10 + i) * 50,
+            }))
+          : [],
+      );
+    tracker.reset();
+    for (const p of z(0)) tracker.push(hand(p.x, p.y), 1, false, p.t);
+    expect(tracker.weight(1600)).toBe(0);
+    tracker.release(0.1);
+    for (const p of z(2000)) tracker.push(hand(p.x, p.y), 1, false, p.t);
+    expect(tracker.weight(3600)).toBe(1);
+  });
+});
+
 describe("pinkyOnly", () => {
   const hand = (reaches: [number, number, number, number]) => {
     const pts = Array.from({ length: 21 }, () => ({ x: 0, y: 0, z: 0 }));

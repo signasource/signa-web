@@ -221,6 +221,7 @@ const TURN = 0.2;
 const MIN_DROP = 0.25;
 const MIN_DIAGONAL_DROP = 0.15;
 const PINKY_TIP = 20;
+const RELEASED = 0.3;
 
 export interface TracePoint {
   x: number;
@@ -274,9 +275,14 @@ export function tracesZ(points: readonly TracePoint[]): boolean {
 export class TraceTracker {
   private readonly paths: TracePoint[][] = [[], []];
   private tracedAt = -Infinity;
+  private armed = true;
+
+  release(shape: number): void {
+    if (shape < RELEASED) this.armed = true;
+  }
 
   push(hand: readonly Point[] | null, aspect: number, mirrored: boolean, now: number): void {
-    if (!hand) return;
+    if (!hand || !this.armed) return;
     const unit = Math.max(handSize(hand, aspect), 1e-6);
     const sign = mirrored ? -1 : 1;
     const tip = hand[PINKY_TIP]!;
@@ -303,6 +309,7 @@ export class TraceTracker {
   reset(): void {
     this.paths.forEach((p) => (p.length = 0));
     this.tracedAt = -Infinity;
+    this.armed = false;
   }
 }
 

@@ -210,7 +210,9 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
         const open = trace.weight(performance.now());
         const shape = (h: HandDetection | null) =>
           h ? pinkyOnly(h.world.length ? h.world : h.landmarks) : 0;
-        const z = Math.max(shape(hand), shape(other)) * open;
+        const pinky = Math.max(shape(hand), shape(other));
+        trace.release(pinky);
+        const z = pinky * open;
         for (const i of traced) probs[i] = z;
       }
       return probs;
