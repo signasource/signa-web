@@ -222,7 +222,7 @@ const MIN_DROP = 0.25;
 const MIN_STROKE = 0.35;
 const LAST_STROKE = 1;
 const MIN_DIAGONAL_DROP = 0.15;
-const PINKY_TIP = 20;
+const PALM = [0, 5, 9, 13, 17];
 const RELEASED = 0.3;
 
 export interface TracePoint {
@@ -279,7 +279,7 @@ export function tracesZ(points: readonly TracePoint[]): boolean {
 }
 
 export class TraceTracker {
-  private readonly paths: (TracePoint & { size: number })[][] = [[], []];
+  private readonly path: (TracePoint & { size: number })[] = [];
   private tracedAt = -Infinity;
   private armed = true;
 
@@ -289,24 +289,23 @@ export class TraceTracker {
 
   push(hand: readonly Point[] | null, aspect: number, mirrored: boolean, now: number): void {
     if (!hand || !this.armed) return;
-    const size = handSize(hand, aspect);
-    const sign = mirrored ? -1 : 1;
-    const tip = hand[PINKY_TIP]!;
-    const wrist = hand[0]!;
-    const views = [
-      { x: tip.x, y: tip.y },
-      { x: tip.x - wrist.x, y: tip.y - wrist.y },
-    ];
-    views.forEach((v, k) => {
-      const path = this.paths[k]!;
-      path.push({ x: sign * v.x, y: v.y * aspect, t: now, size });
-      while (path.length && now - path[0]!.t > TRACE_WINDOW_MS) path.shift();
-      const unit = Math.max(...path.map((q) => q.size), 1e-6);
-      if (tracesZ(path.map((q) => ({ x: q.x / unit, y: q.y / unit, t: q.t })))) {
-        this.tracedAt = now;
-        this.paths.forEach((q) => (q.length = 0));
-      }
+    const path = this.path;
+    const center = PALM.reduce((s, i) => ({ x: s.x + hand[i]!.x, y: s.y + hand[i]!.y }), {
+      x: 0,
+      y: 0,
     });
+    path.push({
+      x: ((mirrored ? -1 : 1) * center.x) / PALM.length,
+      y: (center.y * aspect) / PALM.length,
+      t: now,
+      size: handSize(hand, aspect),
+    });
+    while (path.length && now - path[0]!.t > TRACE_WINDOW_MS) path.shift();
+    const unit = Math.max(...path.map((q) => q.size), 1e-6);
+    if (tracesZ(path.map((q) => ({ x: q.x / unit, y: q.y / unit, t: q.t })))) {
+      this.tracedAt = now;
+      path.length = 0;
+    }
   }
 
   weight(now: number): number {
@@ -314,30 +313,22 @@ export class TraceTracker {
   }
 
   reset(): void {
-    this.paths.forEach((p) => (p.length = 0));
+    this.path.length = 0;
     this.tracedAt = -Infinity;
     this.armed = false;
   }
 }
 
-const PINKY_OUT = 1.35;
-const OTHERS_IN = 1.3;
+const FINGER_OUT = 1.35;
 const FINGER_SOFTNESS = 0.08;
-const FINGERS = [
-  [8, 5],
-  [12, 9],
-  [16, 13],
-] as const;
 
 const reach = (hand: readonly Point[], tip: number, mcp: number) => {
   const d = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y, (a.z ?? 0) - (b.z ?? 0));
   return d(hand[tip]!, hand[0]!) / Math.max(d(hand[mcp]!, hand[0]!), 1e-6);
 };
-const soft = (x: number) => 1 / (1 + Math.exp(-x / FINGER_SOFTNESS));
 
-export function pinkyOnly(hand: readonly Point[]): number {
-  let others = 1;
-  for (const [tip, mcp] of FINGERS)
-    others = Math.min(others, soft(OTHERS_IN - reach(hand, tip, mcp)));
-  return soft(reach(hand, 20, 17) - PINKY_OUT) * others;
+export function fingerUp(hand: readonly Point[]): number {
+  const out = (tip: number, mcp: number) =>
+    1 / (1 + Math.exp(-(reach(hand, tip, mcp) - FINGER_OUT) / FINGER_SOFTNESS));
+  return Math.max(out(8, 5), out(20, 17));
 }
