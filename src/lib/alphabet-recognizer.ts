@@ -220,7 +220,9 @@ const TRACE_HOLD_MS = 2500;
 const TURN = 0.2;
 const MIN_DROP = 0.25;
 const MIN_STROKE = 0.35;
-const LAST_STROKE = 0.6;
+const LAST_STROKE = 0.75;
+const STILL_MS = 300;
+const STILL_RANGE = 0.12;
 const MIN_DIAGONAL_DROP = 0.15;
 const PINKY_TIP = 20;
 const RELEASED = 0.3;
@@ -260,8 +262,23 @@ function turningPoints(points: readonly TracePoint[]): TracePoint[] {
   return turns;
 }
 
+function stopped(points: readonly TracePoint[]): boolean {
+  const end = points[points.length - 1];
+  if (!end) return false;
+  const tail = points.filter((p) => end.t - p.t <= STILL_MS);
+  if (tail.length < 2 || end.t - tail[0]!.t < STILL_MS * 0.6) return false;
+  const xs = tail.map((p) => p.x);
+  const ys = tail.map((p) => p.y);
+  return (
+    Math.max(...xs) - Math.min(...xs) <= STILL_RANGE &&
+    Math.max(...ys) - Math.min(...ys) <= STILL_RANGE
+  );
+}
+
 export function tracesZ(points: readonly TracePoint[]): boolean {
-  const turns = turningPoints(smooth(points));
+  const path = smooth(points);
+  if (!stopped(path)) return false;
+  const turns = turningPoints(path);
   for (let i = 0; i + 3 < turns.length; i++) {
     const [a, b, c, d] = [turns[i]!, turns[i + 1]!, turns[i + 2]!, turns[i + 3]!];
     const s1 = b.x - a.x;

@@ -239,6 +239,8 @@ describe("Z trace", () => {
         out.push({ x: ax + (bx - ax) * f + rnd(), y: ay + (by - ay) * f + rnd(), t: (t += 33) });
       }
     }
+    const [lx, ly] = corners[corners.length - 1]!;
+    for (let i = 0; i < 12; i++) out.push({ x: lx + rnd() / 3, y: ly + rnd() / 3, t: (t += 33) });
     return out;
   };
   const Z: [number, number][] = [
@@ -307,6 +309,12 @@ describe("Z trace", () => {
     expect(tracesZ(along(wobbly, 0.04))).toBe(true);
   });
 
+  it("waits for the hand to stop at the fourth corner", () => {
+    const moving = along(Z, 0.01).slice(0, -12);
+    expect(tracesZ(moving)).toBe(false);
+    expect(tracesZ(along(Z, 0.01))).toBe(true);
+  });
+
   it("waits until the bottom stroke is drawn", () => {
     const halfway: [number, number][] = [
       [0, 0],
@@ -359,21 +367,25 @@ describe("Z after a confirmed letter", () => {
     const hand = (x: number, y: number) =>
       Array.from({ length: 21 }, (_, i) => ({ x, y: y - (i === 9 ? 0.1 : 0) }));
     const z = (t0: number) =>
-      [0, 1.5, 0, 1.5].flatMap((x, c, all) =>
-        c + 1 < all.length
-          ? Array.from({ length: 10 }, (_, i) => ({
-              x: (x + ((all[c + 1]! - x) * i) / 10) * 0.1,
-              y: (c === 0 ? 0 : c === 1 ? (1.4 * i) / 10 : 1.4) * 0.1,
-              t: t0 + (c * 10 + i) * 50,
-            }))
-          : [],
-      );
+      [0, 1.5, 0, 1.5]
+        .flatMap((x, c, all) =>
+          c + 1 < all.length
+            ? Array.from({ length: 10 }, (_, i) => ({
+                x: (x + ((all[c + 1]! - x) * i) / 10) * 0.1,
+                y: (c === 0 ? 0 : c === 1 ? (1.4 * i) / 10 : 1.4) * 0.1,
+                t: t0 + (c * 10 + i) * 50,
+              }))
+            : [],
+        )
+        .concat(
+          Array.from({ length: 8 }, (_, k) => ({ x: 0.135, y: 0.14, t: t0 + 1500 + k * 50 })),
+        );
     tracker.reset();
     for (const p of z(0)) tracker.push(hand(p.x, p.y), 1, false, p.t);
-    expect(tracker.weight(1600)).toBe(0);
+    expect(tracker.weight(1950)).toBe(0);
     tracker.release(0.1);
     for (const p of z(2000)) tracker.push(hand(p.x, p.y), 1, false, p.t);
-    expect(tracker.weight(3600)).toBe(1);
+    expect(tracker.weight(3950)).toBe(1);
   });
 });
 
