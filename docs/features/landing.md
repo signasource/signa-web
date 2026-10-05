@@ -178,9 +178,10 @@ Everything runs on the visitor's device; no frame leaves the browser.
   frame and tracking jumped between them, e.g. a visitor standing full-body at the fair). The
   tracked hand starts as the **raised** one (the signing hand, not the one hanging by the side)
   and then follows proximity (`pickPrimary`; its position is kept for 1 s when no hand is seen).
-  Both skeletons are drawn, but only the tracked hand is classified, except for
-  `BOTH_HANDS_LETTERS` (Q, W, U, X), where the better of the two hands counts; so the hands don't
-  compete and the second classification is skipped for every other letter. Q and W also need both
+  Both skeletons are drawn and every letter takes the better of the two hands.
+  Measured with a full-body video (two hands in view, CPU): frame rate is the same with 1 or 2
+  hands (~11 fps); looking for 1 hand made tracking jump 4–5 times in 30 s; classifying only the
+  tracked hand dropped clear signs from 18% to 10% of hand frames. Q and W also need both
   hands touching (a fingertip within 0.6 hand sizes of the other hand, `touchWeight`).
 - **Letters with a movement (Z):** the classifier is static (one frame in, probabilities out), so
   the movement is checked outside it, with two simple parts:

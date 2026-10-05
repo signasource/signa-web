@@ -199,7 +199,7 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       return { hand, other, pose: lastPose, aspect };
     },
 
-    predict({ hand, other, pose, aspect }, bothHands = false) {
+    predict({ hand, other, pose, aspect }, bothHands = true) {
       if (!hand) return null;
       const probs = classify(hand, pose);
       this.lastFeatures = lastClassified;
