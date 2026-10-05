@@ -15,7 +15,6 @@ import { PRELOAD_AHEAD } from "@/lib/glb";
 import {
   LetterVerifier,
   nameLetters,
-  TWO_HANDED,
   parseName,
   visibleRegion,
   MAX_NAME_LENGTH,
@@ -363,13 +362,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
       const takeLetter = recording.current.letter;
       void createImageBitmap(frame)
         .then((bitmap) =>
-          engine.process(
-            bitmap,
-            count++ % FRAMES_PER_POSE === 0,
-            classify || take,
-            take,
-            (TWO_HANDED as readonly string[]).includes(state.name[state.filled] ?? ""),
-          ),
+          engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify || take, take),
         )
         .then(({ landmarks, other, probs, features }) => {
           if (!alive) return;

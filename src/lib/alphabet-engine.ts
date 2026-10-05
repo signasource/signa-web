@@ -56,7 +56,6 @@ export interface AlphabetEngine {
   lastHandMs: number;
   switchHands(delegate: Delegate): Promise<boolean>;
   detect(frame: Frame, withPose: boolean): Detection;
-  setHandCount(count: 1 | 2): Promise<void>;
   predict(detection: Detection): Float32Array | null;
   resetTrace(): void;
   lastFeatures: Float32Array | null;
@@ -83,7 +82,7 @@ function createHands(fileset: Fileset, model: Uint8Array, delegate: Delegate) {
   return HandLandmarker.createFromOptions(fileset, {
     baseOptions: { modelAssetBuffer: model.slice(), delegate },
     runningMode: "IMAGE",
-    numHands: 1,
+    numHands: 2,
     minHandDetectionConfidence: 0.4,
     ...(delegate === "GPU" && typeof OffscreenCanvas !== "undefined"
       ? { canvas: new OffscreenCanvas(1, 1) }
@@ -130,7 +129,6 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
   let lastPose: Point[] | null = null;
   let lastWrist: Point | null = null;
   let lastSeen = 0;
-  let handCount: 1 | 2 = 1;
   let lastClassified: Float32Array | null = null;
   const traced = TRACED_LETTERS.map((l) => labels.indexOf(l)).filter((i) => i >= 0);
   const trace = traced.length ? new TraceTracker() : null;
@@ -164,7 +162,6 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       if (delegate === this.handDelegate) return true;
       try {
         const next = await createHands(detectors.fileset, detectors.handModel, delegate);
-        await next.setOptions({ numHands: handCount });
         detectors.hands.close();
         detectors.hands = next;
         this.handDelegate = delegate;
@@ -172,12 +169,6 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       } catch {
         return false;
       }
-    },
-
-    async setHandCount(count) {
-      if (count === handCount) return;
-      handCount = count;
-      await detectors.hands.setOptions({ numHands: count });
     },
 
     detect(frame, withPose) {

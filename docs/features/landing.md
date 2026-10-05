@@ -174,10 +174,7 @@ Everything runs on the visitor's device; no frame leaves the browser.
   (`signa:reconocimiento:delegado:v1`); later visits switch to a stored GPU after the first frame.
   Cost: one ~0.5 s tracking pause on the visit that switches. Measured on a laptop with Intel Arc:
   CPU 75 ms → GPU 22 ms per detection, 10 → 20 fps; without a usable GPU: no trial, no pause.
-- **Two hands:** MediaPipe looks for 2 hands only while the requested letter is Q or W
-  (`setHandCount`, switched live with `setOptions`); every other letter uses 1. Looking for two
-  hands runs the hand model twice and halved the frame rate on phones, which made every letter
-  harder whenever both hands were in view. The tracked hand is the one closest to the
+- **Two hands:** MediaPipe looks for up to 2 hands. The tracked hand is the one closest to the
   previous one (`pickPrimary`; its position is kept for 1 s when no hand is seen, so a dropped
   frame doesn't reset the choice), and each drawn skeleton follows the hand nearest to it, so they
   don't swap places on screen. Q and W need both hands touching (a fingertip within 0.6 hand

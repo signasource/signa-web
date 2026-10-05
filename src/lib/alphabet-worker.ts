@@ -70,10 +70,9 @@ scope.onmessage = async ({ data }) => {
     return;
   }
   if (data.type === "frame") {
-    const { bitmap, withPose, classify, capture, twoHands } = data;
+    const { bitmap, withPose, classify, capture } = data;
     try {
       if (!engine) throw new Error("El reconocedor no está listo");
-      await engine.setHandCount(twoHands ? 2 : 1);
       const detection = engine.detect(bitmap, withPose);
       const probs = classify ? engine.predict(detection) : null;
       const handMs = engine.lastHandMs;
