@@ -19,7 +19,7 @@ const MEMBERS = [
     name: "Juan Cruz López Freytas",
     photo: "/images/equipo/juancruz-v2.png",
     objectPosition: "center",
-    linkedin: null,
+    linkedin: "https://www.linkedin.com/in/juan-cruz-lopez-freytas/",
   },
   {
     name: "Joaquín Miranda",
