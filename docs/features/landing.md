@@ -175,8 +175,9 @@ Everything runs on the visitor's device; no frame leaves the browser.
   Cost: one ~0.5 s tracking pause on the visit that switches. Measured on a laptop with Intel Arc:
   CPU 75 ms → GPU 22 ms per detection, 10 → 20 fps; without a usable GPU: no trial, no pause.
 - **Two hands:** MediaPipe looks for up to 2 hands. The tracked hand is the one closest to the
-  previous one (`pickPrimary`), so the skeleton no longer jumps between hands; both are drawn,
-  each with its own smoothing. Q and W need both hands touching (a fingertip within 0.6 hand
+  previous one (`pickPrimary`; its position is kept for 1 s when no hand is seen, so a dropped
+  frame doesn't reset the choice), and each drawn skeleton follows the hand nearest to it, so they
+  don't swap places on screen. Q and W need both hands touching (a fingertip within 0.6 hand
   sizes of the other hand, `touchWeight`), and their shape may come from either hand. With two hands in view every letter takes the
   better of the two hands, so a one-handed letter works whichever hand is tracked (both hands are
   already classified; no extra cost). Measured:
@@ -189,7 +190,9 @@ Everything runs on the visitor's device; no frame leaves the browser.
     before it can join the next one), with no smoothing (it rounded the corners of fast Z),
     mirrored for left hands and measured in units of the largest hand size seen in the window
     (turning the hand shrinks it in the image; dividing by the per-frame size made the path jump).
-    `tracesZ` finds horizontal turning points (a reversal counts after 0.2 hand sizes) and accepts
+    `tracesZ` finds horizontal turning points (a reversal counts after 0.15 hand sizes; strokes ≥ 0.25, so a
+    small Z by the face works: 5 of 6 recordings still pass shrunk to 25%, and a nearly still hand
+    gives no false Z) and accepts
     go–back–go strokes where the last one is at least 90% as wide as the diagonal, the diagonal goes
     down and the trace ends lower.
     Z score = shape × open gate (2.5 s after a traced Z; cleared when a letter is confirmed and

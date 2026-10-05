@@ -21,6 +21,7 @@ import { fetchVerified } from "@/lib/integrity";
 import type { Delegate } from "@/lib/delegate-choice";
 
 const WASM_PATH = "/mediapipe/wasm";
+const KEEP_TRACK_MS = 1000;
 const MODELS = "https://storage.googleapis.com/mediapipe-models";
 const HAND_MODEL = {
   url: `${MODELS}/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
@@ -127,6 +128,7 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
   const { labels, thresholds } = classifier.manifest;
   let lastPose: Point[] | null = null;
   let lastWrist: Point | null = null;
+  let lastSeen = 0;
   let lastClassified: Float32Array | null = null;
   const traced = TRACED_LETTERS.map((l) => labels.indexOf(l)).filter((i) => i >= 0);
   const trace = traced.length ? new TraceTracker() : null;
@@ -189,7 +191,9 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
         aspect,
       );
       const hand = hands[main] ?? null;
-      lastWrist = hand?.landmarks[0] ?? null;
+      const now = performance.now();
+      if (hand) [lastWrist, lastSeen] = [hand.landmarks[0]!, now];
+      else if (now - lastSeen > KEEP_TRACK_MS) lastWrist = null;
       trace?.push(hand?.landmarks ?? null, aspect, hand?.mirrored ?? false, performance.now());
       const other = hands.find((_, i) => i !== main) ?? null;
       return { hand, other, pose: lastPose, aspect };

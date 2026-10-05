@@ -374,7 +374,14 @@ export function CameraNameDemo({ className }: { className?: string }) {
             });
           if (take && features)
             samples.current.push({ letter: takeLetter, features: Array.from(features) });
-          live.current.target = [landmarks, other];
+          const [d0, d1] = live.current.drawn;
+          const gap = (a: Point[] | null | undefined, b: Point[] | null | undefined) =>
+            a && b ? Math.hypot(a[0]!.x - b[0]!.x, a[0]!.y - b[0]!.y) : 0;
+          const swap =
+            landmarks && other && d0 && d1
+              ? gap(d0, other) + gap(d1, landmarks) < gap(d0, landmarks) + gap(d1, other)
+              : !!(d1 && landmarks && !other && gap(d1, landmarks) < gap(d0, landmarks));
+          live.current.target = swap ? [other, landmarks] : [landmarks, other];
           recognize(classify ? probs : null, landmarks !== null, performance.now());
         })
         .catch(() => {})
