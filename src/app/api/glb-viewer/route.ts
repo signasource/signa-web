@@ -60,40 +60,48 @@ function buildViewerHtml(sign: string): string {
     }
     function viewer(sign){
       if(cache[sign]){order.splice(order.indexOf(sign),1);order.push(sign);return cache[sign];}
-      for(var i=0;order.length>=KEEP&&i<order.length;){
+      var mv=null;
+      for(var i=0;order.length>=KEEP&&i<order.length;i++){
         var old=cache[order[i]];
-        if(old===shown||order[i]===want||!(old.dataset.loaded||old.dataset.failed)){i++;continue;}
-        old.remove();delete cache[order[i]];order.splice(i,1);
+        if(old===shown||order[i]===want||!(old.dataset.loaded||old.dataset.failed))continue;
+        mv=old;delete cache[order[i]];order.splice(i,1);
+        mv.classList.remove('on');
+        delete mv.dataset.loaded;delete mv.dataset.failed;
+        break;
       }
-      var mv=document.createElement('model-viewer');
-      mv.setAttribute('loading','eager');
-      mv.setAttribute('camera-controls','');
-      mv.setAttribute('disable-zoom','');
-      mv.setAttribute('disable-pan','');
-      mv.setAttribute('touch-action','pan-y');
-      mv.setAttribute('interaction-prompt','none');
-      mv.setAttribute('shadow-intensity','0');
-      mv.setAttribute('exposure','1');
-      mv.setAttribute('camera-orbit','0deg 85deg 100%');
-      mv.setAttribute('field-of-view',FOV+'deg');
-      mv.setAttribute('alt','Lisa haciendo la seña en 3D. Arrastrá para girarla.');
+      var fresh=!mv;
+      if(fresh){
+        mv=document.createElement('model-viewer');
+        mv.setAttribute('loading','eager');
+        mv.setAttribute('camera-controls','');
+        mv.setAttribute('disable-zoom','');
+        mv.setAttribute('disable-pan','');
+        mv.setAttribute('touch-action','pan-y');
+        mv.setAttribute('interaction-prompt','none');
+        mv.setAttribute('shadow-intensity','0');
+        mv.setAttribute('exposure','1');
+        mv.setAttribute('camera-orbit','0deg 85deg 100%');
+        mv.setAttribute('field-of-view',FOV+'deg');
+        mv.setAttribute('alt','Lisa haciendo la seña en 3D. Arrastrá para girarla.');
+        mv.addEventListener('load',function(){
+          frame(mv);
+          mv.pause();
+          mv.dataset.loaded='1';
+          loading--;
+          if(want===mv.sign)reveal(mv.sign);
+          resume();
+        });
+        mv.addEventListener('error',function(){
+          mv.dataset.failed='1';
+          loading--;
+          if(want===mv.sign){b.classList.remove('ready');b.classList.add('failed');}
+          resume();
+        });
+      }
       loading++;
-      mv.addEventListener('load',function(){
-        frame(mv);
-        mv.pause();
-        mv.dataset.loaded='1';
-        loading--;
-        if(want===sign)reveal(sign);
-        resume();
-      });
-      mv.addEventListener('error',function(){
-        mv.dataset.failed='1';
-        loading--;
-        if(want===sign){b.classList.remove('ready');b.classList.add('failed');}
-        resume();
-      });
+      mv.sign=sign;
       mv.setAttribute('src',urlOf(sign));
-      b.appendChild(mv);
+      if(fresh)b.appendChild(mv);
       cache[sign]=mv;order.push(sign);
       return mv;
     }
