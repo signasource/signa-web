@@ -296,6 +296,15 @@ describe("Z trace", () => {
     ).toBe(false);
   });
 
+  it("recognizes a slow Z that takes over two seconds", () => {
+    const tracker = new TraceTracker();
+    const hand = (x: number, y: number) =>
+      Array.from({ length: 21 }, (_, i) => ({ x, y: y - (i === 9 ? 0.1 : 0) }));
+    const pts = along(Z, 0.01).map((p, i) => ({ ...p, t: i * 80 }));
+    for (const p of pts) tracker.push(hand(p.x * 0.1, p.y * 0.1), 1, false, p.t);
+    expect(tracker.weight(pts[pts.length - 1]!.t + 1500)).toBe(1);
+  });
+
   it("opens the gate after a traced Z and closes it a moment later", () => {
     const tracker = new TraceTracker();
     const hand = (x: number, y: number) =>
@@ -308,6 +317,6 @@ describe("Z trace", () => {
     for (const p of pts) tracker.push(hand(p.x * 0.1, p.y * 0.1), 1, false, p.t);
     const end = pts[pts.length - 1]!.t;
     expect(tracker.weight(end + 100)).toBe(1);
-    expect(tracker.weight(end + 2000)).toBe(0);
+    expect(tracker.weight(end + 3000)).toBe(0);
   });
 });

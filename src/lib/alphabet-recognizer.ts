@@ -216,10 +216,10 @@ export function pickPrimary(
 
 export const TRACED_LETTERS = ["Z"] as const;
 const TRACE_TIPS = [8, 20];
-const TRACE_WINDOW_MS = 1600;
-const TRACE_HOLD_MS = 1200;
+const TRACE_WINDOW_MS = 3000;
+const TRACE_HOLD_MS = 2500;
 const TRACE_SIMPLIFY = 0.25;
-const TRACE_MIN_STROKE = 0.6;
+const TRACE_MIN_STROKE = 0.45;
 const FLAT = 1.7;
 
 export interface TracePoint {
