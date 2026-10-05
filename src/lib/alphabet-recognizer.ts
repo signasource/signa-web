@@ -222,7 +222,7 @@ const MIN_DROP = 0.25;
 const MIN_STROKE = 0.35;
 const LAST_STROKE = 0.75;
 const STILL_MS = 300;
-const STILL_RANGE = 0.12;
+const STILL_RANGE = 0.2;
 const MIN_DIAGONAL_DROP = 0.15;
 const PINKY_TIP = 20;
 const RELEASED = 0.3;
@@ -286,11 +286,11 @@ export function tracesZ(points: readonly TracePoint[]): boolean {
     const s3 = d.x - c.x;
     if (
       Math.abs(s1) < MIN_STROKE ||
-      Math.abs(s3) < Math.max(MIN_STROKE, LAST_STROKE * Math.abs(s1))
+      Math.abs(s3) < Math.max(MIN_STROKE, LAST_STROKE * Math.abs(s2))
     )
       continue;
     if (Math.sign(s1) !== Math.sign(s3) || Math.sign(s2) !== -Math.sign(s1)) continue;
-    if (c.y - b.y >= MIN_DIAGONAL_DROP && d.y - a.y >= MIN_DROP) return true;
+    if (c.y - b.y >= MIN_DIAGONAL_DROP && d.y - b.y >= MIN_DROP) return true;
   }
   return false;
 }

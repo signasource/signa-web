@@ -309,6 +309,18 @@ describe("Z trace", () => {
     expect(tracesZ(along(wobbly, 0.04))).toBe(true);
   });
 
+  it("recognizes a Z that starts after the hand moved into place", () => {
+    const approach: [number, number][] = [
+      [-1.2, 2.2],
+      [-0.4, 1.0],
+      [0, 0],
+      [1.4, 0.1],
+      [0.1, 1.3],
+      [1.2, 1.4],
+    ];
+    expect(tracesZ(along(approach, 0.03))).toBe(true);
+  });
+
   it("waits for the hand to stop at the fourth corner", () => {
     const moving = along(Z, 0.01).slice(0, -12);
     expect(tracesZ(moving)).toBe(false);
