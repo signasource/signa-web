@@ -204,12 +204,12 @@ describe("two hands", () => {
     expect(touchWeight(hand(0), null, 1)).toBe(0);
   });
 
-  it("keeps following the same hand instead of jumping to the bigger one", () => {
-    const small = hand(0);
-    const big = hand(0.4).map((p, i) => (i === 9 ? { x: p.x, y: p.y - 0.2 } : p));
-    expect(pickPrimary([small, big], null, 1)).toBe(1);
-    expect(pickPrimary([small, big], small[0]!, 1)).toBe(0);
-    expect(pickPrimary([big, small], small[0]!, 1)).toBe(1);
+  it("starts with the raised hand and keeps following it", () => {
+    const resting = hand(0, 0.3);
+    const raised = hand(0.4, -0.2);
+    expect(pickPrimary([resting, raised], null, 1)).toBe(1);
+    expect(pickPrimary([resting, raised], resting[0]!, 1)).toBe(0);
+    expect(pickPrimary([raised, resting], resting[0]!, 1)).toBe(1);
     expect(pickPrimary([], null, 1)).toBe(-1);
   });
 });

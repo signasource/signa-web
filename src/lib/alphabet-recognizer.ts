@@ -208,7 +208,7 @@ export function pickPrimary(
   for (let i = 1; i < hands.length; i++) {
     const better = last
       ? gap(hands[i]![0]!, last, aspect) < gap(hands[best]![0]!, last, aspect)
-      : handSize(hands[i]!, aspect) > handSize(hands[best]!, aspect);
+      : hands[i]![0]!.y < hands[best]![0]!.y;
     if (better) best = i;
   }
   return best;

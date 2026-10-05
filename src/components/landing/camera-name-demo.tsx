@@ -15,6 +15,7 @@ import { PRELOAD_AHEAD } from "@/lib/glb";
 import {
   LetterVerifier,
   nameLetters,
+  TWO_HANDED,
   parseName,
   visibleRegion,
   MAX_NAME_LENGTH,
@@ -381,7 +382,10 @@ export function CameraNameDemo({ className }: { className?: string }) {
             landmarks && other && d0 && d1
               ? gap(d0, other) + gap(d1, landmarks) < gap(d0, landmarks) + gap(d1, other)
               : !!(d1 && landmarks && !other && gap(d1, landmarks) < gap(d0, landmarks));
-          live.current.target = swap ? [other, landmarks] : [landmarks, other];
+          const pair = (TWO_HANDED as readonly string[]).includes(state.name[state.filled] ?? "");
+          live.current.target = swap
+            ? [pair ? other : null, landmarks]
+            : [landmarks, pair ? other : null];
           recognize(classify ? probs : null, landmarks !== null, performance.now());
         })
         .catch(() => {})
