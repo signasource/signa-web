@@ -86,6 +86,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const engineRef = useRef<RecognizerClient | null>(null);
   const live = useRef({
@@ -184,6 +185,12 @@ export function CameraNameDemo({ className }: { className?: string }) {
     setFilled(0);
     setPhase("idle");
   }
+
+  useEffect(() => {
+    if (stage === "setup" && !window.matchMedia?.("(pointer: coarse)").matches) {
+      inputRef.current?.focus();
+    }
+  }, [stage]);
 
   useEffect(() => {
     if (stage !== "practice" && stage !== "complete") return;
@@ -424,6 +431,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
           </p>
           <label className="bg-surface border-border mt-5 flex flex-col gap-1 rounded-2xl border px-4 py-3">
             <input
+              ref={inputRef}
               value={input}
               onChange={(e) => {
                 if (nameLetters(e.target.value).length > MAX_NAME_LENGTH) return;
