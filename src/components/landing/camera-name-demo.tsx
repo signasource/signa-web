@@ -81,7 +81,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
   );
   const recording = useRef({ until: 0, letter: "" });
   const samples = useRef<{ letter: string; features: number[] }[]>([]);
-  const traces = useRef<{ kind: string; frames: { t: number; hand: number[] | null }[] }[]>([]);
+  const traces = useRef<{ kind: string; frames: { t: number; hand: number[] | null; other: number[] | null }[] }[]>([]);
   const traceRec = useRef<{ until: number; kind: string } | null>(null);
   const [sampleCount, setSampleCount] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -111,7 +111,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
     const blob = new Blob(
       [
         JSON.stringify({
-          version: 2,
+          version: 3,
           device: navigator.userAgent,
           aspect: v && v.videoWidth ? v.videoHeight / v.videoWidth : 0.75,
           samples: samples.current,
@@ -387,6 +387,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
             traces.current[traces.current.length - 1]!.frames.push({
               t: performance.now(),
               hand: landmarks ? landmarks.flatMap((q) => [q.x, q.y, q.z ?? 0]) : null,
+              other: other ? other.flatMap((q) => [q.x, q.y, q.z ?? 0]) : null,
             });
           if (take && features)
             samples.current.push({ letter: takeLetter, features: Array.from(features) });

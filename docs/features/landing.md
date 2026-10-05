@@ -187,18 +187,33 @@ Everything runs on the visitor's device; no frame leaves the browser.
   the movement is checked outside it, with two simple parts:
   - **Shape:** the index or the pinky is out (`fingerUp`, 3D fingertip-to-wrist reach). The other
     fingers and where the hand points don't matter.
-  - **Movement:** `TraceTracker` follows the **palm center** (wrist + the four knuckles) for 2 s (a failed attempt is forgotten
-    before it can join the next one), with no smoothing (it rounded the corners of fast Z),
-    mirrored for left hands and measured in units of the largest hand size seen in the window
-    (turning the hand shrinks it in the image; dividing by the per-frame size made the path jump).
-    `tracesZ` finds horizontal turning points (a reversal counts after 0.2 hand sizes; strokes ≥ 0.35 — lower
-    minimums accepted small Z in replays but fired with the hands down and idle on a phone) and accepts
-    go–back–go strokes where the last one is at least 90% as wide as the diagonal, the diagonal goes
-    down and the trace ends lower.
-    Z score = shape × open gate (2.5 s after a traced Z; cleared when a letter is confirmed and
-    re-armed only once the finger comes down). Checked on recorded traces: the Z was found in all 6
-    recordings with 1 early detection (5 with the first version). With `?captura`, «Grabar Z 8 s»
-    records the tracked hand frame by frame for this kind of check.
+  - **Movement:** `TraceTracker` follows the **palm center** (wrist + the four knuckles) of
+    **every visible hand**, each on its own path (hands are paired with the nearest path, no
+    distance limit: at 10 fps a fast Z moves the palm over 2 hand sizes between frames, and a
+    limit split the path). Before, only the primary hand was followed, so a Z drawn with the
+    other hand, or a tracking swap mid-Z, never completed — that was the "Z is impossible with
+    two hands in view". A path only collects frames with the index or pinky out; with the finger
+    down for over 250 ms it is cleared, so a movement made before raising the finger can't count.
+    The path lasts 2 s, has no smoothing (it rounded the corners of fast Z) and is measured in
+    units of the largest hand size seen in it (turning the hand shrinks it in the image; dividing
+    by the per-frame size made the path jump). It is not mirrored: the Z is accepted in both
+    directions, and the handedness label flickers.
+    `tracesZ` finds horizontal turning points (a reversal counts after 0.12 hand sizes) and accepts
+    go–back–go strokes measured **relative to the Z's own width**, so a small Z counts the same as a
+    big one: width ≥ 0.3 hand sizes, top and bottom strokes ≥ 40% of the width, the last one at
+    least 90% as wide as the diagonal (so it doesn't fire at the third vertex), the diagonal
+    drops ≥ 30% of the width and the end is ≥ 40% lower than the start (recorded Z are flat,
+    about 0.6 as tall as wide).
+    Z score = shape × open gate (1.5 s after a traced Z, enough for the verifier on a slow phone;
+    it was 2.5 s and any earlier movement plus a raised finger within that time fired a Z;
+    cleared when a letter is confirmed and re-armed only once the finger comes down).
+    Measured: the 6 recorded Z are found at full size, at 2× speed, and 4 of 6 at 30% of their
+    size (2 of 6 before); synthetic raises, diagonal drops, waves and a still far hand never
+    fire; the 30 s full-body two-hands video fires no Z. Lower minimums (reversal 0.08, width
+    0.2) added little and fired 7/40 times with a still, far, jittery hand — the false Z seen
+    on a phone with the hands down.
+    With `?captura`, «Grabar Z 8 s» and «Grabar «no Z» 8 s» record both hands frame by frame for
+    this kind of check.
 - **The camera fades in** once two frames have been decoded at the final size, plus 120 ms
   (`videoReady`, `requestVideoFrameCallback`): iOS Safari showed it letterboxed for a moment
   before applying `object-fit: cover`.

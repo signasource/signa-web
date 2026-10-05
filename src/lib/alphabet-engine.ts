@@ -122,6 +122,7 @@ async function loadDetectors(preferred: Delegate) {
 
 const toPoint = (p: NormalizedLandmark): Point => ({ x: p.x, y: p.y, z: p.z });
 const toVec = (p: Point, sign: number): Vec3 => [sign * p.x, p.y, p.z ?? 0];
+const shapeOf = (h: HandDetection) => fingerUp(h.world.length ? h.world : h.landmarks);
 
 export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise<AlphabetEngine> {
   const [classifier, detectors] = await Promise.all([loadClassifier(), loadDetectors(preferred)]);
@@ -194,7 +195,11 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       const now = performance.now();
       if (hand) [lastWrist, lastSeen] = [hand.landmarks[0]!, now];
       else if (now - lastSeen > KEEP_TRACK_MS) lastWrist = null;
-      trace?.push(hand?.landmarks ?? null, aspect, hand?.mirrored ?? false, performance.now());
+      trace?.push(
+        hands.map((h) => ({ landmarks: h.landmarks, shape: shapeOf(h) })),
+        aspect,
+        now,
+      );
       const other = hands.find((_, i) => i !== main) ?? null;
       return { hand, other, pose: lastPose, aspect };
     },
@@ -212,9 +217,7 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       }
       if (trace) {
         const open = trace.weight(performance.now());
-        const shape = (h: HandDetection | null) =>
-          h ? fingerUp(h.world.length ? h.world : h.landmarks) : 0;
-        const pinky = Math.max(shape(hand), shape(other));
+        const pinky = Math.max(hand ? shapeOf(hand) : 0, other ? shapeOf(other) : 0);
         trace.release(pinky);
         const z = pinky * open;
         for (const i of traced) probs[i] = z;
