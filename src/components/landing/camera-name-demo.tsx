@@ -186,6 +186,15 @@ export function CameraNameDemo({ className }: { className?: string }) {
   }
 
   useEffect(() => {
+    if (stage !== "practice" && stage !== "complete") return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Enter") restart();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [stage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (stage !== "practice") return;
     const video = videoRef.current;
     if (!video || !streamRef.current) return;
