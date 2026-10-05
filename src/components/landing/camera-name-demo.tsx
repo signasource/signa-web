@@ -27,6 +27,7 @@ type Phase = "idle" | "capturing" | "hit";
 
 const FRAME_WIDTH = 480;
 const RECORD_MS = 3000;
+const TRACE_REC_MS = 4000;
 const VIDEO_SETTLE_MS = 120;
 const FRAMES_PER_POSE = 5;
 const COOLDOWN_MS = 1800;
@@ -80,6 +81,8 @@ export function CameraNameDemo({ className }: { className?: string }) {
   );
   const recording = useRef({ until: 0, letter: "" });
   const samples = useRef<{ letter: string; features: number[] }[]>([]);
+  const traces = useRef<{ kind: string; frames: { t: number; hand: number[] | null }[] }[]>([]);
+  const traceRec = useRef<{ until: number; kind: string } | null>(null);
   const [sampleCount, setSampleCount] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
 
@@ -92,9 +95,29 @@ export function CameraNameDemo({ className }: { className?: string }) {
     }, RECORD_MS);
   }
 
+  function recordTrace(kind: string) {
+    traces.current.push({ kind, frames: [] });
+    traceRec.current = { until: performance.now() + TRACE_REC_MS, kind };
+    setIsRecording(true);
+    window.setTimeout(() => {
+      traceRec.current = null;
+      setIsRecording(false);
+      setSampleCount(samples.current.length + traces.current.length);
+    }, TRACE_REC_MS);
+  }
+
   function download() {
+    const v = videoRef.current;
     const blob = new Blob(
-      [JSON.stringify({ version: 1, device: navigator.userAgent, samples: samples.current })],
+      [
+        JSON.stringify({
+          version: 2,
+          device: navigator.userAgent,
+          aspect: v && v.videoWidth ? v.videoHeight / v.videoWidth : 0.75,
+          samples: samples.current,
+          traces: traces.current,
+        }),
+      ],
       { type: "application/json" },
     );
     const a = document.createElement("a");
@@ -343,6 +366,12 @@ export function CameraNameDemo({ className }: { className?: string }) {
         )
         .then(({ landmarks, other, probs, features }) => {
           if (!alive) return;
+          const tr = traceRec.current;
+          if (tr && performance.now() < tr.until)
+            traces.current[traces.current.length - 1]!.frames.push({
+              t: performance.now(),
+              hand: landmarks ? landmarks.flatMap((q) => [q.x, q.y, q.z ?? 0]) : null,
+            });
           if (take && features)
             samples.current.push({ letter: takeLetter, features: Array.from(features) });
           live.current.target = [landmarks, other];
@@ -568,6 +597,22 @@ export function CameraNameDemo({ className }: { className?: string }) {
                   className="bg-danger text-on-primary rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-70"
                 >
                   {isRecording ? "Grabando…" : `Grabar «${name[filled] ?? ""}» 3 s`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => recordTrace("z")}
+                  disabled={isRecording}
+                  className="bg-primary text-on-primary rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-70"
+                >
+                  Grabar Z 4 s
+                </button>
+                <button
+                  type="button"
+                  onClick={() => recordTrace("no-z")}
+                  disabled={isRecording}
+                  className="bg-text text-on-dark rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-70"
+                >
+                  Grabar «no Z» 4 s
                 </button>
                 <button
                   type="button"

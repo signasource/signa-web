@@ -286,11 +286,32 @@ describe("Z trace", () => {
     ).toBe(false);
   });
 
+  it("accepts a small Z made with the pinky alone and a wobbly one", () => {
+    expect(
+      tracesZ(
+        along(
+          Z.map(([x, y]) => [x * 0.3, y * 0.3] as [number, number]),
+          0.01,
+        ),
+      ),
+    ).toBe(true);
+    const wobbly: [number, number][] = [
+      [0, 0],
+      [0.7, 0.15],
+      [1.3, -0.1],
+      [0.6, 0.6],
+      [0.1, 1.1],
+      [0.8, 1.3],
+      [1.4, 1.0],
+    ];
+    expect(tracesZ(along(wobbly, 0.04))).toBe(true);
+  });
+
   it("ignores a Z too small to be deliberate", () => {
     expect(
       tracesZ(
         along(
-          Z.map(([x, y]) => [x * 0.25, y * 0.25] as [number, number]),
+          Z.map(([x, y]) => [x * 0.1, y * 0.1] as [number, number]),
           0.01,
         ),
       ),

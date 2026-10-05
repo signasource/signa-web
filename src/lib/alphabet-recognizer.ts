@@ -215,12 +215,12 @@ export function pickPrimary(
 }
 
 export const TRACED_LETTERS = ["Z"] as const;
-const TRACE_TIPS = [8, 20];
 const TRACE_WINDOW_MS = 3000;
 const TRACE_HOLD_MS = 2500;
-const TRACE_SIMPLIFY = 0.25;
-const TRACE_MIN_STROKE = 0.45;
-const FLAT = 1.7;
+const TURN = 0.2;
+const MIN_DROP = 0.25;
+const MIN_DIAGONAL_DROP = 0.15;
+const PINKY_TIP = 20;
 
 export interface TracePoint {
   x: number;
@@ -228,60 +228,70 @@ export interface TracePoint {
   t: number;
 }
 
-type Vertex = TracePoint;
-
-function simplify(points: readonly Vertex[], eps: number): Vertex[] {
-  if (points.length < 3) return [...points];
-  const a = points[0]!;
-  const b = points[points.length - 1]!;
-  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1e-9;
-  let far = 0;
-  let at = 0;
-  for (let i = 1; i < points.length - 1; i++) {
-    const p = points[i]!;
-    const d = Math.abs((b.x - a.x) * (a.y - p.y) - (a.x - p.x) * (b.y - a.y)) / len;
-    if (d > far) [far, at] = [d, i];
-  }
-  if (far <= eps) return [a, b];
-  return [
-    ...simplify(points.slice(0, at + 1), eps).slice(0, -1),
-    ...simplify(points.slice(at), eps),
-  ];
+function smooth(points: readonly TracePoint[]): TracePoint[] {
+  return points.map((p, i) => {
+    const a = points[Math.max(0, i - 1)]!;
+    const b = points[Math.min(points.length - 1, i + 1)]!;
+    return { x: (a.x + p.x + b.x) / 3, y: (a.y + p.y + b.y) / 3, t: p.t };
+  });
 }
 
-export function tracesZ(points: readonly Vertex[]): boolean {
-  const v = simplify(points, TRACE_SIMPLIFY);
-  for (let i = 0; i + 3 < v.length; i++) {
-    const [p0, p1, p2, p3] = [v[i]!, v[i + 1]!, v[i + 2]!, v[i + 3]!];
-    const s1 = { x: p1.x - p0.x, y: p1.y - p0.y };
-    const s2 = { x: p2.x - p1.x, y: p2.y - p1.y };
-    const s3 = { x: p3.x - p2.x, y: p3.y - p2.y };
-    const flat = (s: { x: number; y: number }) =>
-      Math.abs(s.x) >= TRACE_MIN_STROKE && Math.abs(s.x) > FLAT * Math.abs(s.y);
-    if (!flat(s1) || !flat(s3) || Math.sign(s1.x) !== Math.sign(s3.x)) continue;
-    const back = Math.sign(s2.x) === -Math.sign(s1.x) || Math.abs(s2.x) < 0.3 * Math.abs(s2.y);
-    if (back && s2.y >= TRACE_MIN_STROKE * 0.8 && Math.abs(s2.y) > 0.5 * Math.abs(s2.x))
-      return true;
+function turningPoints(points: readonly TracePoint[]): TracePoint[] {
+  if (!points.length) return [];
+  const start = points[0]!;
+  const turns: TracePoint[] = [start];
+  let dir = 0;
+  let extreme = start;
+  for (const p of points) {
+    if (dir === 0) {
+      if (Math.abs(p.x - start.x) >= TURN) [dir, extreme] = [Math.sign(p.x - start.x), p];
+      continue;
+    }
+    if ((p.x - extreme.x) * dir > 0) extreme = p;
+    else if ((extreme.x - p.x) * dir >= TURN) {
+      turns.push(extreme);
+      [dir, extreme] = [-dir, p];
+    }
+  }
+  if (dir !== 0) turns.push(extreme);
+  return turns;
+}
+
+export function tracesZ(points: readonly TracePoint[]): boolean {
+  const turns = turningPoints(smooth(points));
+  for (let i = 0; i + 3 < turns.length; i++) {
+    const [a, b, c, d] = [turns[i]!, turns[i + 1]!, turns[i + 2]!, turns[i + 3]!];
+    const s1 = b.x - a.x;
+    const s2 = c.x - b.x;
+    const s3 = d.x - c.x;
+    if (Math.abs(s1) < TURN || Math.abs(s3) < TURN) continue;
+    if (Math.sign(s1) !== Math.sign(s3) || Math.sign(s2) !== -Math.sign(s1)) continue;
+    if (c.y - b.y >= MIN_DIAGONAL_DROP && d.y - a.y >= MIN_DROP) return true;
   }
   return false;
 }
 
 export class TraceTracker {
-  private readonly paths: TracePoint[][] = TRACE_TIPS.map(() => []);
+  private readonly paths: TracePoint[][] = [[], []];
   private tracedAt = -Infinity;
 
   push(hand: readonly Point[] | null, aspect: number, mirrored: boolean, now: number): void {
     if (!hand) return;
     const unit = Math.max(handSize(hand, aspect), 1e-6);
     const sign = mirrored ? -1 : 1;
-    TRACE_TIPS.forEach((tip, k) => {
+    const tip = hand[PINKY_TIP]!;
+    const wrist = hand[0]!;
+    const views = [
+      { x: tip.x, y: tip.y },
+      { x: tip.x - wrist.x, y: tip.y - wrist.y },
+    ];
+    views.forEach((v, k) => {
       const path = this.paths[k]!;
-      const p = hand[tip]!;
-      path.push({ x: (sign * p.x) / unit, y: (p.y * aspect) / unit, t: now });
+      path.push({ x: (sign * v.x) / unit, y: (v.y * aspect) / unit, t: now });
       while (path.length && now - path[0]!.t > TRACE_WINDOW_MS) path.shift();
       if (tracesZ(path)) {
         this.tracedAt = now;
-        path.length = 0;
+        this.paths.forEach((q) => (q.length = 0));
       }
     });
   }

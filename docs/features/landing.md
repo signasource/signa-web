@@ -182,18 +182,17 @@ Everything runs on the visitor's device; no frame leaves the browser.
   already classified; no extra cost). Measured:
   no fps cost (19 vs 19–20 fps with one).
 - **Letters with a movement (Z):** the classifier is static (one frame in, probabilities out), so
-  the movement is checked outside it. `TraceTracker` keeps the last 3 s of the index and pinky
-  fingertips of the tracked hand (in hand-size units, mirrored for left hands), simplifies each
-  path (Ramer–Douglas–Peucker) and looks for a Z: a horizontal stroke, a diagonal going down and
-  back, and another horizontal stroke in the first one's direction, each ≥ 0.45 hand sizes, either
-  way round (`tracesZ`). The Z's shape is not taken from the classifier (13 photos from one
-  signer made it depend on position and hand): it is `pinkyOnly`, pinky out and index/middle/ring
-  folded, measured as 3D fingertip-to-wrist reach (cutoffs 1.35 / 1.30 tuned on the dataset
-  photos: 77% of Z photos, the misses are mid-movement frames; besides Y only one W and one I
-  pass). Either hand counts, anywhere, pointing anywhere. The Z score is that shape × an open
-  trace gate (2.5 s after a traced Z; cleared when a letter is confirmed, so each Z must be
-  traced). Only `TRACED_LETTERS` are affected and
-  the tracker only exists when the model has one of them. Measured: 4.5 µs per frame.
+  the movement is checked outside it. `TraceTracker` keeps 3 s of two paths of the tracked hand, in
+  hand-size units and mirrored for left hands: the pinky tip in the image (Z made with the whole
+  hand) and the pinky tip relative to the wrist (Z made with the pinky alone). `tracesZ` does not
+  look for straight lines: it finds the horizontal turning points (a reversal counts once the tip
+  comes back 0.2 hand sizes) and accepts go–back–go strokes with the middle one going down
+  (≥ 0.15) and the whole trace ending lower (≥ 0.25). Curvy, uneven or small strokes pass; a still
+  hand, a side-to-side wave or a vertical zigzag don't. The Z's shape is `pinkyOnly` (pinky out,
+  index/middle/ring folded, 3D reach; cutoffs 1.35 / 1.30 tuned on the dataset photos), from either
+  hand, anywhere. Z score = shape × open gate (2.5 s after a traced Z; cleared when a letter is
+  confirmed, so each Z must be traced). With `?captura`, «Grabar Z 4 s» / «Grabar «no Z» 4 s»
+  record the tracked hand frame by frame to tune this on real traces.
 - **The camera fades in** once two frames have been decoded at the final size, plus 120 ms
   (`videoReady`, `requestVideoFrameCallback`): iOS Safari showed it letterboxed for a moment
   before applying `object-fit: cover`.
