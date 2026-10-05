@@ -26,6 +26,7 @@ type Stage = "setup" | "loading" | "practice" | "complete" | "error";
 type Phase = "idle" | "capturing" | "hit";
 
 const FRAME_WIDTH = 480;
+const RECORD_MS = 3000;
 const VIDEO_SETTLE_MS = 120;
 const FRAMES_PER_POSE = 5;
 const COOLDOWN_MS = 1800;
@@ -73,6 +74,35 @@ function cssColor(name: string): string {
 
 export function CameraNameDemo({ className }: { className?: string }) {
   const [stage, setStage] = useState<Stage>("setup");
+  const [captureMode] = useState(
+    () =>
+      typeof window !== "undefined" && new URLSearchParams(window.location.search).has("captura"),
+  );
+  const recording = useRef({ until: 0, letter: "" });
+  const samples = useRef<{ letter: string; features: number[] }[]>([]);
+  const [sampleCount, setSampleCount] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+
+  function record(letter: string) {
+    recording.current = { until: performance.now() + RECORD_MS, letter };
+    setIsRecording(true);
+    window.setTimeout(() => {
+      setIsRecording(false);
+      setSampleCount(samples.current.length);
+    }, RECORD_MS);
+  }
+
+  function download() {
+    const blob = new Blob(
+      [JSON.stringify({ version: 1, device: navigator.userAgent, samples: samples.current })],
+      { type: "application/json" },
+    );
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `muestras-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
   const [input, setInput] = useState("");
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -278,6 +308,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
       const step = verifier.push(probs, index, engine.thresholds[letter] ?? 0.5);
       if (step.confirmed && now >= state.cooldownUntil) {
         verifier.reset();
+        engine.resetTrace();
         state.cooldownUntil = now + COOLDOWN_MS;
         const next = state.filled + 1;
         state.filled = next;
@@ -304,12 +335,18 @@ export function CameraNameDemo({ className }: { className?: string }) {
       busy = true;
       const state = live.current;
       const classify = state.running && state.phase !== "hit" && !!state.name[state.filled];
+      const take = recording.current.until > performance.now();
+      const takeLetter = recording.current.letter;
       void createImageBitmap(frame)
-        .then((bitmap) => engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify))
-        .then(({ landmarks, other, probs }) => {
+        .then((bitmap) =>
+          engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify || take, take),
+        )
+        .then(({ landmarks, other, probs, features }) => {
           if (!alive) return;
+          if (take && features)
+            samples.current.push({ letter: takeLetter, features: Array.from(features) });
           live.current.target = [landmarks, other];
-          recognize(probs, landmarks !== null, performance.now());
+          recognize(classify ? probs : null, landmarks !== null, performance.now());
         })
         .catch(() => {})
         .finally(() => {
@@ -522,6 +559,26 @@ export function CameraNameDemo({ className }: { className?: string }) {
                     ? "Capturando seña"
                     : "Listo · esperando manos"}
             </div>
+            {captureMode && (
+              <div className="absolute right-3 bottom-3 z-30 flex flex-col items-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => record(name[filled] ?? "")}
+                  disabled={isRecording}
+                  className="bg-danger text-on-primary rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-70"
+                >
+                  {isRecording ? "Grabando…" : `Grabar «${name[filled] ?? ""}» 3 s`}
+                </button>
+                <button
+                  type="button"
+                  onClick={download}
+                  disabled={!sampleCount}
+                  className="bg-surface text-text rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-50"
+                >
+                  Descargar ({sampleCount})
+                </button>
+              </div>
+            )}
 
             <button
               type="button"

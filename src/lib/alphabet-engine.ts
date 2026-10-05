@@ -55,6 +55,8 @@ export interface AlphabetEngine {
   switchHands(delegate: Delegate): Promise<boolean>;
   detect(frame: Frame, withPose: boolean): Detection;
   predict(detection: Detection): Float32Array | null;
+  resetTrace(): void;
+  lastFeatures: Float32Array | null;
   close(): void;
 }
 
@@ -124,6 +126,7 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
   const { labels, thresholds } = classifier.manifest;
   let lastPose: Point[] | null = null;
   let lastWrist: Point | null = null;
+  let lastClassified: Float32Array | null = null;
   const traced = TRACED_LETTERS.map((l) => labels.indexOf(l)).filter((i) => i >= 0);
   const trace = traced.length ? new TraceTracker() : null;
 
@@ -134,6 +137,10 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       hand.world.length ? hand.world.map((p) => toVec(p, sign)) : null,
     );
     const face = faceBlock(pose, hand.landmarks, hand.mirrored);
+    const all = new Float32Array(features.length + face.length);
+    all.set(features);
+    all.set(face, features.length);
+    lastClassified = all;
     return Float32Array.from(applyLocationRule(classifier.predict(features, face), labels, face));
   };
 
@@ -142,6 +149,11 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
     thresholds,
     handDelegate: detectors.handDelegate,
     lastHandMs: 0,
+    lastFeatures: null,
+
+    resetTrace() {
+      trace?.reset();
+    },
 
     async switchHands(delegate) {
       if (delegate === this.handDelegate) return true;
@@ -185,6 +197,7 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
     predict({ hand, other, pose, aspect }) {
       if (!hand) return null;
       const probs = classify(hand, pose);
+      this.lastFeatures = lastClassified;
       const second = other ? classify(other, pose) : null;
       if (second) for (let i = 0; i < probs.length; i++) probs[i] = Math.max(probs[i]!, second[i]!);
       const touch = touchWeight(hand.landmarks, other?.landmarks ?? null, aspect);
