@@ -174,14 +174,13 @@ Everything runs on the visitor's device; no frame leaves the browser.
   (`signa:reconocimiento:delegado:v1`); later visits switch to a stored GPU after the first frame.
   Cost: one ~0.5 s tracking pause on the visit that switches. Measured on a laptop with Intel Arc:
   CPU 75 ms → GPU 22 ms per detection, 10 → 20 fps; without a usable GPU: no trial, no pause.
-- **Two hands:** MediaPipe looks for up to 2 hands. The tracked hand is the one closest to the
-  previous one (`pickPrimary`; its position is kept for 1 s when no hand is seen, so a dropped
-  frame doesn't reset the choice), and each drawn skeleton follows the hand nearest to it, so they
-  don't swap places on screen. Q and W need both hands touching (a fingertip within 0.6 hand
-  sizes of the other hand, `touchWeight`), and their shape may come from either hand. With two hands in view every letter takes the
-  better of the two hands, so a one-handed letter works whichever hand is tracked (both hands are
-  already classified; no extra cost). Measured:
-  no fps cost (19 vs 19–20 fps with one).
+- **Two hands:** MediaPipe always looks for up to 2 hands (with only 1 it picks either hand each
+  frame and tracking jumped between them, e.g. a visitor standing full-body at the fair). The
+  tracked hand starts as the **raised** one (the signing hand, not the one hanging by the side)
+  and then follows proximity (`pickPrimary`; its position is kept for 1 s when no hand is seen).
+  Only its skeleton is drawn; the other hand's appears for Q and W, which need both hands touching
+  (a fingertip within 0.6 hand sizes of the other hand, `touchWeight`) and may take their shape
+  from either hand. With two hands in view every letter takes the better of the two.
 - **Letters with a movement (Z):** the classifier is static (one frame in, probabilities out), so
   the movement is checked outside it, with two simple parts:
   - **Shape:** the index or the pinky is out (`fingerUp`, 3D fingertip-to-wrist reach). The other
