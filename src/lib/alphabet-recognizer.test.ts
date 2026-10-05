@@ -326,6 +326,11 @@ describe("Z trace", () => {
     expect(tracesZ(slow.map((p, i) => ({ ...p, t: i * 333 })))).toBe(true);
   });
 
+  it("doesn't close an old Z when the hand stops somewhere else", () => {
+    const moved = along([...Z, [1.5, 3.2]], 0.01);
+    expect(tracesZ(moved)).toBe(false);
+  });
+
   it("waits for the hand to stop at the fourth corner", () => {
     const moving = along(Z, 0.01).slice(0, -12);
     expect(tracesZ(moving)).toBe(false);
@@ -360,6 +365,17 @@ describe("Z trace", () => {
     const pts = along(Z, 0.01).map((p, i) => ({ ...p, t: i * 80 }));
     for (const p of pts) tracker.push(hand(p.x * 0.1, p.y * 0.1), 1, false, p.t);
     expect(tracker.weight(pts[pts.length - 1]!.t + 1500)).toBe(1);
+  });
+
+  it("forgets the trace when the hand leaves the camera", () => {
+    const tracker = new TraceTracker();
+    const hand = (x: number, y: number) =>
+      Array.from({ length: 21 }, (_, i) => ({ x, y: y - (i === 9 ? 0.1 : 0) }));
+    const pts = along(Z, 0.01);
+    pts.forEach((p, i) =>
+      tracker.push(hand(p.x * 0.1, p.y * 0.1), 1, false, p.t + (i >= 15 ? 800 : 0)),
+    );
+    expect(tracker.weight(pts[pts.length - 1]!.t + 900)).toBe(0);
   });
 
   it("opens the gate after a traced Z and closes it a moment later", () => {

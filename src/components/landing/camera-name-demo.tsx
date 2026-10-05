@@ -15,6 +15,8 @@ import { PRELOAD_AHEAD } from "@/lib/glb";
 import {
   LetterVerifier,
   nameLetters,
+  TRACED_CONFIRM_FRAMES,
+  TRACED_LETTERS,
   parseName,
   visibleRegion,
   MAX_NAME_LENGTH,
@@ -328,7 +330,12 @@ export function CameraNameDemo({ className }: { className?: string }) {
       setLivePhase("capturing");
       const index = engine.labels.indexOf(letter);
       if (!probs || index < 0) return;
-      const step = verifier.push(probs, index, engine.thresholds[letter] ?? 0.5);
+      const step = verifier.push(
+        probs,
+        index,
+        engine.thresholds[letter] ?? 0.5,
+        TRACED_LETTERS.includes(letter) ? TRACED_CONFIRM_FRAMES : undefined,
+      );
       if (step.confirmed && now >= state.cooldownUntil) {
         verifier.reset();
         engine.resetTrace();

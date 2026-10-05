@@ -190,7 +190,10 @@ Everything runs on the visitor's device; no frame leaves the browser.
   which can include the hand moving into place) and only once the
   tip has stopped at the fourth corner (speed ≤ 0.6 hand sizes/s, measured against a frame
   ≥ 150 ms earlier so it works at 3–5 fps on phones and ignores jitter; smoothing only averages
-  frames ≤ 80 ms apart), so it never fires mid-stroke and slow Z still
+  frames ≤ 80 ms apart) and the stop must be at the last corner (≤ 0.35 hand sizes from it), so
+  an unrecognized Z can't be closed later by stopping elsewhere; the path is dropped when the hand
+  is lost for 500 ms. A traced letter confirms after 2 frames over its threshold instead of 5
+  (`TRACED_CONFIRM_FRAMES`): the trace is already the evidence, so it never fires mid-stroke and slow Z still
   work with the middle one going down
   (≥ 0.15) and the end lower than the top-right corner (≥ 0.25). Curvy, uneven or small strokes pass; a still
   hand, a side-to-side wave or a vertical zigzag don't. The Z's shape is `pinkyOnly` (pinky out,

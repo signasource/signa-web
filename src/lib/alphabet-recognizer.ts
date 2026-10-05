@@ -111,7 +111,12 @@ export class LetterVerifier {
     private readonly confirmFrames = 5,
   ) {}
 
-  push(probs: Float32Array, targetIndex: number, threshold: number): VerifierStep {
+  push(
+    probs: Float32Array,
+    targetIndex: number,
+    threshold: number,
+    confirmFrames = this.confirmFrames,
+  ): VerifierStep {
     this.window.push(probs);
     if (this.window.length > this.windowSize) this.window.shift();
     let sum = 0;
@@ -119,7 +124,7 @@ export class LetterVerifier {
     const confidence = sum / this.window.length;
     const ok = confidence >= threshold;
     this.streak = ok ? this.streak + 1 : 0;
-    return { confidence, ok, confirmed: this.streak >= this.confirmFrames };
+    return { confidence, ok, confirmed: this.streak >= confirmFrames };
   }
 
   reset(): void {
@@ -214,7 +219,8 @@ export function pickPrimary(
   return best;
 }
 
-export const TRACED_LETTERS = ["Z"] as const;
+export const TRACED_LETTERS: readonly string[] = ["Z"];
+export const TRACED_CONFIRM_FRAMES = 2;
 const TRACE_WINDOW_MS = 3000;
 const TRACE_HOLD_MS = 2500;
 const TURN = 0.2;
@@ -222,6 +228,8 @@ const MIN_DROP = 0.25;
 const MIN_STROKE = 0.35;
 const LAST_STROKE = 0.75;
 const STOP_SPEED = 0.6;
+const AT_CORNER = 0.35;
+const LOST_MS = 500;
 const STOP_SPAN_MS = 150;
 const SMOOTH_MS = 80;
 const MIN_DIAGONAL_DROP = 0.15;
@@ -283,9 +291,12 @@ function stopped(points: readonly TracePoint[]): boolean {
 
 export function tracesZ(points: readonly TracePoint[]): boolean {
   if (!stopped(points)) return false;
-  const turns = turningPoints(smooth(points));
+  const path = smooth(points);
+  const end = path[path.length - 1]!;
+  const turns = turningPoints(path);
   for (let i = 0; i + 3 < turns.length; i++) {
     const [a, b, c, d] = [turns[i]!, turns[i + 1]!, turns[i + 2]!, turns[i + 3]!];
+    if (i + 3 !== turns.length - 1 || Math.hypot(end.x - d.x, end.y - d.y) > AT_CORNER) continue;
     const s1 = b.x - a.x;
     const s2 = c.x - b.x;
     const s3 = d.x - c.x;
@@ -321,6 +332,7 @@ export class TraceTracker {
     ];
     views.forEach((v, k) => {
       const path = this.paths[k]!;
+      if (path.length && now - path[path.length - 1]!.t > LOST_MS) path.length = 0;
       path.push({ x: (sign * v.x) / unit, y: (v.y * aspect) / unit, t: now });
       while (path.length && now - path[0]!.t > TRACE_WINDOW_MS) path.shift();
       if (tracesZ(path)) {
