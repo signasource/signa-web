@@ -182,27 +182,19 @@ Everything runs on the visitor's device; no frame leaves the browser.
   already classified; no extra cost). Measured:
   no fps cost (19 vs 19–20 fps with one).
 - **Letters with a movement (Z):** the classifier is static (one frame in, probabilities out), so
-  the movement is checked outside it. `TraceTracker` keeps 3 s of two paths of the tracked hand, mirrored
-  for left hands and measured in units of the **largest** hand size seen in the window (turning the
-  hand shrinks its size in the image to almost zero; dividing by the per-frame size made the path
-  jump by tens of hand sizes, which hid real Z and invented fake ones): the pinky tip in the image (Z made with the whole
-  hand) and the pinky tip relative to the wrist (Z made with the pinky alone). `tracesZ` does not
-  look for straight lines: it finds the horizontal turning points (a reversal counts once the tip
-  comes back 0.2 hand sizes) and accepts go–back–go strokes (first ≥ 0.35, last ≥ 0.35 and ≥ 75% of the diagonal's width — not of the first stroke,
-  which can include the hand moving into place) and only once the
-  tip has stopped at the fourth corner (speed ≤ 0.6 hand sizes/s, measured against a frame
-  ≥ 150 ms earlier so it works at 3–5 fps on phones and ignores jitter; smoothing only averages
-  frames ≤ 80 ms apart) and the stop must be at the last corner (≤ 0.35 hand sizes from it), so
-  an unrecognized Z can't be closed later by stopping elsewhere; the path is dropped when the hand
-  is lost for 500 ms. A traced letter confirms after 2 frames over its threshold instead of 5
-  (`TRACED_CONFIRM_FRAMES`): the trace is already the evidence, so it never fires mid-stroke and slow Z still
-  work with the middle one going down
-  (≥ 0.15) and the end lower than the top-right corner (≥ 0.25). Curvy, uneven or small strokes pass; a still
-  hand, a side-to-side wave or a vertical zigzag don't. The Z's shape is `pinkyOnly` (pinky out,
-  index/middle/ring folded, 3D reach; cutoffs 1.35 / 1.30 tuned on the dataset photos), from either
-  hand, anywhere. Z score = shape × open gate (2.5 s after a traced Z; cleared when a letter is confirmed, and the next Z
-  only arms once the pinky has come down, so a Z can't chain into the next one). With `?captura`, «Grabar Z 4 s» / «Grabar «no Z» 4 s»
-  record the tracked hand frame by frame to tune this on real traces.
+  the movement is checked outside it. `TraceTracker` keeps 3 s of two paths of the tracked hand —
+  the pinky tip in the image (Z made with the whole hand) and the pinky tip relative to the wrist
+  (Z made with the pinky alone) — mirrored for left hands and measured in units of the **largest**
+  hand size seen in the window (turning the hand shrinks it in the image to almost zero; dividing by
+  the per-frame size made the path jump by tens of hand sizes, hiding real Z and inventing fake
+  ones). `tracesZ` finds the horizontal turning points (a reversal counts once the tip comes back
+  0.2 hand sizes) and accepts go–back–go strokes where the last one is at least as wide as the
+  diagonal (so it fires at the fourth corner, not halfway), the diagonal goes down and the trace
+  ends lower. Tuned on recorded traces: with these two rules early detections went from 5 to 2 and
+  every recording still had its Z. The Z's shape is `pinkyOnly` (pinky out, index/middle/ring
+  folded, 3D reach), from either hand, anywhere. Z score = shape × open gate (2.5 s after a traced
+  Z; cleared when a letter is confirmed, and re-armed only once the pinky comes down). With
+  `?captura`, «Grabar Z 8 s» records the tracked hand frame by frame to tune this on real traces.
 - **The camera fades in** once two frames have been decoded at the final size, plus 120 ms
   (`videoReady`, `requestVideoFrameCallback`): iOS Safari showed it letterboxed for a moment
   before applying `object-fit: cover`.

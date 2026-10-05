@@ -111,12 +111,7 @@ export class LetterVerifier {
     private readonly confirmFrames = 5,
   ) {}
 
-  push(
-    probs: Float32Array,
-    targetIndex: number,
-    threshold: number,
-    confirmFrames = this.confirmFrames,
-  ): VerifierStep {
+  push(probs: Float32Array, targetIndex: number, threshold: number): VerifierStep {
     this.window.push(probs);
     if (this.window.length > this.windowSize) this.window.shift();
     let sum = 0;
@@ -124,7 +119,7 @@ export class LetterVerifier {
     const confidence = sum / this.window.length;
     const ok = confidence >= threshold;
     this.streak = ok ? this.streak + 1 : 0;
-    return { confidence, ok, confirmed: this.streak >= confirmFrames };
+    return { confidence, ok, confirmed: this.streak >= this.confirmFrames };
   }
 
   reset(): void {
@@ -219,19 +214,13 @@ export function pickPrimary(
   return best;
 }
 
-export const TRACED_LETTERS: readonly string[] = ["Z"];
-export const TRACED_CONFIRM_FRAMES = 2;
+export const TRACED_LETTERS = ["Z"] as const;
 const TRACE_WINDOW_MS = 3000;
 const TRACE_HOLD_MS = 2500;
 const TURN = 0.2;
 const MIN_DROP = 0.25;
 const MIN_STROKE = 0.35;
-const LAST_STROKE = 0.75;
-const STOP_SPEED = 0.6;
-const AT_CORNER = 0.35;
-const LOST_MS = 500;
-const STOP_SPAN_MS = 150;
-const SMOOTH_MS = 80;
+const LAST_STROKE = 1;
 const MIN_DIAGONAL_DROP = 0.15;
 const PINKY_TIP = 20;
 const RELEASED = 0.3;
@@ -244,14 +233,9 @@ export interface TracePoint {
 
 function smooth(points: readonly TracePoint[]): TracePoint[] {
   return points.map((p, i) => {
-    const near = [points[i - 1], p, points[i + 1]].filter(
-      (q): q is TracePoint => !!q && Math.abs(q.t - p.t) <= SMOOTH_MS,
-    );
-    return {
-      x: near.reduce((s, q) => s + q.x, 0) / near.length,
-      y: near.reduce((s, q) => s + q.y, 0) / near.length,
-      t: p.t,
-    };
+    const a = points[Math.max(0, i - 1)]!;
+    const b = points[Math.min(points.length - 1, i + 1)]!;
+    return { x: (a.x + p.x + b.x) / 3, y: (a.y + p.y + b.y) / 3, t: p.t };
   });
 }
 
@@ -276,27 +260,10 @@ function turningPoints(points: readonly TracePoint[]): TracePoint[] {
   return turns;
 }
 
-function stopped(points: readonly TracePoint[]): boolean {
-  const end = points[points.length - 1];
-  if (!end) return false;
-  let prev: TracePoint | undefined;
-  for (let i = points.length - 2; i >= 0; i--) {
-    prev = points[i];
-    if (end.t - prev!.t >= STOP_SPAN_MS) break;
-  }
-  if (!prev || end.t <= prev.t) return false;
-  const speed = (Math.hypot(end.x - prev.x, end.y - prev.y) * 1000) / (end.t - prev.t);
-  return speed <= STOP_SPEED;
-}
-
 export function tracesZ(points: readonly TracePoint[]): boolean {
-  if (!stopped(points)) return false;
-  const path = smooth(points);
-  const end = path[path.length - 1]!;
-  const turns = turningPoints(path);
+  const turns = turningPoints(smooth(points));
   for (let i = 0; i + 3 < turns.length; i++) {
     const [a, b, c, d] = [turns[i]!, turns[i + 1]!, turns[i + 2]!, turns[i + 3]!];
-    if (i + 3 !== turns.length - 1 || Math.hypot(end.x - d.x, end.y - d.y) > AT_CORNER) continue;
     const s1 = b.x - a.x;
     const s2 = c.x - b.x;
     const s3 = d.x - c.x;
@@ -306,7 +273,7 @@ export function tracesZ(points: readonly TracePoint[]): boolean {
     )
       continue;
     if (Math.sign(s1) !== Math.sign(s3) || Math.sign(s2) !== -Math.sign(s1)) continue;
-    if (c.y - b.y >= MIN_DIAGONAL_DROP && d.y - b.y >= MIN_DROP) return true;
+    if (c.y - b.y >= MIN_DIAGONAL_DROP && d.y - a.y >= MIN_DROP) return true;
   }
   return false;
 }
@@ -332,7 +299,6 @@ export class TraceTracker {
     ];
     views.forEach((v, k) => {
       const path = this.paths[k]!;
-      if (path.length && now - path[path.length - 1]!.t > LOST_MS) path.length = 0;
       path.push({ x: sign * v.x, y: v.y * aspect, t: now, size });
       while (path.length && now - path[0]!.t > TRACE_WINDOW_MS) path.shift();
       const unit = Math.max(...path.map((q) => q.size), 1e-6);
