@@ -186,8 +186,13 @@ Everything runs on the visitor's device; no frame leaves the browser.
   fingertips of the tracked hand (in hand-size units, mirrored for left hands), simplifies each
   path (Ramer–Douglas–Peucker) and looks for a Z: a horizontal stroke, a diagonal going down and
   back, and another horizontal stroke in the first one's direction, each ≥ 0.45 hand sizes, either
-  way round (`tracesZ`). For 2.5 s after a Z is traced, the Z probability passes through; otherwise
-  it is zeroed, so the final hand shape alone never counts. Only `TRACED_LETTERS` are affected and
+  way round (`tracesZ`). The Z's shape is not taken from the classifier (13 photos from one
+  signer made it depend on position and hand): it is `pinkyOnly`, pinky out and index/middle/ring
+  folded, measured as 3D fingertip-to-wrist reach (cutoffs 1.35 / 1.30 tuned on the dataset
+  photos: 77% of Z photos, the misses are mid-movement frames; besides Y only one W and one I
+  pass). Either hand counts, anywhere, pointing anywhere. The Z score is that shape × an open
+  trace gate (2.5 s after a traced Z; cleared when a letter is confirmed, so each Z must be
+  traced). Only `TRACED_LETTERS` are affected and
   the tracker only exists when the model has one of them. Measured: 4.5 µs per frame.
 - **The camera fades in** once two frames have been decoded at the final size, plus 120 ms
   (`videoReady`, `requestVideoFrameCallback`): iOS Safari showed it letterboxed for a moment

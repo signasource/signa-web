@@ -295,3 +295,25 @@ export class TraceTracker {
     this.tracedAt = -Infinity;
   }
 }
+
+const PINKY_OUT = 1.35;
+const OTHERS_IN = 1.3;
+const FINGER_SOFTNESS = 0.08;
+const FINGERS = [
+  [8, 5],
+  [12, 9],
+  [16, 13],
+] as const;
+
+const reach = (hand: readonly Point[], tip: number, mcp: number) => {
+  const d = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y, (a.z ?? 0) - (b.z ?? 0));
+  return d(hand[tip]!, hand[0]!) / Math.max(d(hand[mcp]!, hand[0]!), 1e-6);
+};
+const soft = (x: number) => 1 / (1 + Math.exp(-x / FINGER_SOFTNESS));
+
+export function pinkyOnly(hand: readonly Point[]): number {
+  let others = 1;
+  for (const [tip, mcp] of FINGERS)
+    others = Math.min(others, soft(OTHERS_IN - reach(hand, tip, mcp)));
+  return soft(reach(hand, 20, 17) - PINKY_OUT) * others;
+}

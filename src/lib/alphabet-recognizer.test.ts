@@ -7,6 +7,7 @@ import {
   nameLetters,
   parseName,
   pickPrimary,
+  pinkyOnly,
   touchWeight,
   TraceTracker,
   tracesZ,
@@ -318,5 +319,28 @@ describe("Z trace", () => {
     const end = pts[pts.length - 1]!.t;
     expect(tracker.weight(end + 100)).toBe(1);
     expect(tracker.weight(end + 3000)).toBe(0);
+  });
+});
+
+describe("pinkyOnly", () => {
+  const hand = (reaches: [number, number, number, number]) => {
+    const pts = Array.from({ length: 21 }, () => ({ x: 0, y: 0, z: 0 }));
+    const fingers: [number, number][] = [
+      [8, 5],
+      [12, 9],
+      [16, 13],
+      [20, 17],
+    ];
+    fingers.forEach(([tip, mcp], k) => {
+      pts[mcp] = { x: 0, y: -1, z: 0 };
+      pts[tip] = { x: 0.3, y: -reaches[k]!, z: 0.2 };
+    });
+    return pts;
+  };
+
+  it("is high only with the pinky out and the other fingers folded", () => {
+    expect(pinkyOnly(hand([1, 1, 1, 1.8]))).toBeGreaterThan(0.9);
+    expect(pinkyOnly(hand([1, 1, 1, 1]))).toBeLessThan(0.05);
+    expect(pinkyOnly(hand([1.8, 1.8, 1.8, 1.8]))).toBeLessThan(0.05);
   });
 });

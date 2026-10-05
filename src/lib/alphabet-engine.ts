@@ -9,6 +9,7 @@ import {
   applyLocationRule,
   faceBlock,
   pickPrimary,
+  pinkyOnly,
   TraceTracker,
   TRACED_LETTERS,
   touchWeight,
@@ -207,7 +208,10 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       }
       if (trace) {
         const open = trace.weight(performance.now());
-        for (const i of traced) probs[i] = probs[i]! * open;
+        const shape = (h: HandDetection | null) =>
+          h ? pinkyOnly(h.world.length ? h.world : h.landmarks) : 0;
+        const z = Math.max(shape(hand), shape(other)) * open;
+        for (const i of traced) probs[i] = z;
       }
       return probs;
     },
