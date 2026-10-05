@@ -217,11 +217,11 @@ export function pickPrimary(
 export const TRACED_LETTERS = ["Z"] as const;
 const TRACE_WINDOW_MS = 2000;
 const TRACE_HOLD_MS = 2500;
-const TURN = 0.15;
-const MIN_DROP = 0.15;
-const MIN_STROKE = 0.25;
+const TURN = 0.2;
+const MIN_DROP = 0.25;
+const MIN_STROKE = 0.35;
 const LAST_STROKE = 0.9;
-const MIN_DIAGONAL_DROP = 0.1;
+const MIN_DIAGONAL_DROP = 0.15;
 const PALM = [0, 5, 9, 13, 17];
 const RELEASED = 0.3;
 

@@ -190,9 +190,8 @@ Everything runs on the visitor's device; no frame leaves the browser.
     before it can join the next one), with no smoothing (it rounded the corners of fast Z),
     mirrored for left hands and measured in units of the largest hand size seen in the window
     (turning the hand shrinks it in the image; dividing by the per-frame size made the path jump).
-    `tracesZ` finds horizontal turning points (a reversal counts after 0.15 hand sizes; strokes ≥ 0.25, so a
-    small Z by the face works: 5 of 6 recordings still pass shrunk to 25%, and a nearly still hand
-    gives no false Z) and accepts
+    `tracesZ` finds horizontal turning points (a reversal counts after 0.2 hand sizes; strokes ≥ 0.35 — lower
+    minimums accepted small Z in replays but fired with the hands down and idle on a phone) and accepts
     go–back–go strokes where the last one is at least 90% as wide as the diagonal, the diagonal goes
     down and the trace ends lower.
     Z score = shape × open gate (2.5 s after a traced Z; cleared when a letter is confirmed and
