@@ -185,11 +185,12 @@ Everything runs on the visitor's device; no frame leaves the browser.
   the movement is checked outside it, with two simple parts:
   - **Shape:** the index or the pinky is out (`fingerUp`, 3D fingertip-to-wrist reach). The other
     fingers and where the hand points don't matter.
-  - **Movement:** `TraceTracker` follows the **palm center** (wrist + the four knuckles) for 3 s,
+  - **Movement:** `TraceTracker` follows the **palm center** (wrist + the four knuckles) for 2 s (a failed attempt is forgotten
+    before it can join the next one), with no smoothing (it rounded the corners of fast Z),
     mirrored for left hands and measured in units of the largest hand size seen in the window
     (turning the hand shrinks it in the image; dividing by the per-frame size made the path jump).
     `tracesZ` finds horizontal turning points (a reversal counts after 0.2 hand sizes) and accepts
-    go–back–go strokes where the last one is at least as wide as the diagonal, the diagonal goes
+    go–back–go strokes where the last one is at least 90% as wide as the diagonal, the diagonal goes
     down and the trace ends lower.
     Z score = shape × open gate (2.5 s after a traced Z; cleared when a letter is confirmed and
     re-armed only once the finger comes down). Checked on recorded traces: the Z was found in all 6
