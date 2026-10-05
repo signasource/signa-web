@@ -182,8 +182,10 @@ Everything runs on the visitor's device; no frame leaves the browser.
   already classified; no extra cost). Measured:
   no fps cost (19 vs 19–20 fps with one).
 - **Letters with a movement (Z):** the classifier is static (one frame in, probabilities out), so
-  the movement is checked outside it. `TraceTracker` keeps 3 s of two paths of the tracked hand, in
-  hand-size units and mirrored for left hands: the pinky tip in the image (Z made with the whole
+  the movement is checked outside it. `TraceTracker` keeps 3 s of two paths of the tracked hand, mirrored
+  for left hands and measured in units of the **largest** hand size seen in the window (turning the
+  hand shrinks its size in the image to almost zero; dividing by the per-frame size made the path
+  jump by tens of hand sizes, which hid real Z and invented fake ones): the pinky tip in the image (Z made with the whole
   hand) and the pinky tip relative to the wrist (Z made with the pinky alone). `tracesZ` does not
   look for straight lines: it finds the horizontal turning points (a reversal counts once the tip
   comes back 0.2 hand sizes) and accepts go–back–go strokes (first ≥ 0.35, last ≥ 0.35 and ≥ 75% of the diagonal's width — not of the first stroke,

@@ -312,7 +312,7 @@ export function tracesZ(points: readonly TracePoint[]): boolean {
 }
 
 export class TraceTracker {
-  private readonly paths: TracePoint[][] = [[], []];
+  private readonly paths: (TracePoint & { size: number })[][] = [[], []];
   private tracedAt = -Infinity;
   private armed = true;
 
@@ -322,7 +322,7 @@ export class TraceTracker {
 
   push(hand: readonly Point[] | null, aspect: number, mirrored: boolean, now: number): void {
     if (!hand || !this.armed) return;
-    const unit = Math.max(handSize(hand, aspect), 1e-6);
+    const size = handSize(hand, aspect);
     const sign = mirrored ? -1 : 1;
     const tip = hand[PINKY_TIP]!;
     const wrist = hand[0]!;
@@ -333,9 +333,10 @@ export class TraceTracker {
     views.forEach((v, k) => {
       const path = this.paths[k]!;
       if (path.length && now - path[path.length - 1]!.t > LOST_MS) path.length = 0;
-      path.push({ x: (sign * v.x) / unit, y: (v.y * aspect) / unit, t: now });
+      path.push({ x: sign * v.x, y: v.y * aspect, t: now, size });
       while (path.length && now - path[0]!.t > TRACE_WINDOW_MS) path.shift();
-      if (tracesZ(path)) {
+      const unit = Math.max(...path.map((q) => q.size), 1e-6);
+      if (tracesZ(path.map((q) => ({ x: q.x / unit, y: q.y / unit, t: q.t })))) {
         this.tracedAt = now;
         this.paths.forEach((q) => (q.length = 0));
       }
