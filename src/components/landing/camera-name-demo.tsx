@@ -29,7 +29,7 @@ type Phase = "idle" | "capturing" | "hit";
 
 const FRAME_WIDTH = 480;
 const RECORD_MS = 3000;
-const TRACE_REC_MS = 4000;
+const TRACE_REC_MS = 8000;
 const VIDEO_SETTLE_MS = 120;
 const FRAMES_PER_POSE = 5;
 const COOLDOWN_MS = 1800;
@@ -611,7 +611,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
                   disabled={isRecording}
                   className="bg-primary text-on-primary rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-70"
                 >
-                  Grabar Z 4 s
+                  Grabar Z 8 s
                 </button>
                 <button
                   type="button"
@@ -619,7 +619,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
                   disabled={isRecording}
                   className="bg-text text-on-dark rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-70"
                 >
-                  Grabar «no Z» 4 s
+                  Grabar «no Z» 8 s
                 </button>
                 <button
                   type="button"
