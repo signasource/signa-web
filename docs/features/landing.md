@@ -186,7 +186,8 @@ Everything runs on the visitor's device; no frame leaves the browser.
   hand-size units and mirrored for left hands: the pinky tip in the image (Z made with the whole
   hand) and the pinky tip relative to the wrist (Z made with the pinky alone). `tracesZ` does not
   look for straight lines: it finds the horizontal turning points (a reversal counts once the tip
-  comes back 0.2 hand sizes) and accepts go–back–go strokes with the middle one going down
+  comes back 0.2 hand sizes) and accepts go–back–go strokes (first ≥ 0.35, last ≥ 0.35 and ≥ 60% of the first, so a
+  half-drawn bottom stroke doesn't count) with the middle one going down
   (≥ 0.15) and the whole trace ending lower (≥ 0.25). Curvy, uneven or small strokes pass; a still
   hand, a side-to-side wave or a vertical zigzag don't. The Z's shape is `pinkyOnly` (pinky out,
   index/middle/ring folded, 3D reach; cutoffs 1.35 / 1.30 tuned on the dataset photos), from either

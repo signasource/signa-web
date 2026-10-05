@@ -307,6 +307,16 @@ describe("Z trace", () => {
     expect(tracesZ(along(wobbly, 0.04))).toBe(true);
   });
 
+  it("waits until the bottom stroke is drawn", () => {
+    const halfway: [number, number][] = [
+      [0, 0],
+      [1.5, 0],
+      [0, 1.4],
+      [0.6, 1.4],
+    ];
+    expect(tracesZ(along(halfway, 0.01))).toBe(false);
+  });
+
   it("ignores a Z too small to be deliberate", () => {
     expect(
       tracesZ(
