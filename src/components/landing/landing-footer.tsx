@@ -19,6 +19,10 @@ export function LandingFooter() {
           </Link>
           <span className="font-normal">© {new Date().getFullYear()} Signa</span>
         </div>
+        <p className="border-border w-full border-t pt-4 text-xs leading-relaxed">
+          Todo lo que hacemos en Signa sigue los lineamientos de la Confederación Argentina de
+          Sordos (CAS) y cuenta con el respaldo y la consulta de personas de la comunidad sorda.
+        </p>
       </div>
     </footer>
   );
