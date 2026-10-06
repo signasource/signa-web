@@ -31,6 +31,7 @@ const TRACE_REC_MS = 8000;
 const VIDEO_SETTLE_MS = 120;
 const FRAMES_PER_POSE = 5;
 const COOLDOWN_MS = 1800;
+const HAND_GONE_MS = 400;
 const HIT_MS = 1300;
 
 const HAND_LINKS: ReadonlyArray<readonly [number, number]> = [
@@ -289,6 +290,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
     let busy = false;
     let count = 0;
     let lastTarget = "";
+    let handSeenAt = -Infinity;
     let hitTimer: ReturnType<typeof setTimeout> | undefined;
 
     const setLivePhase = (p: Phase) => {
@@ -341,10 +343,13 @@ export function CameraNameDemo({ className }: { className?: string }) {
         return;
       }
       if (!hand) {
-        verifier.reset();
-        setLivePhase("idle");
+        if (now - handSeenAt > HAND_GONE_MS) {
+          verifier.reset();
+          setLivePhase("idle");
+        }
         return;
       }
+      handSeenAt = now;
       setLivePhase("capturing");
       const index = engine.labels.indexOf(letter);
       if (!probs || index < 0) return;

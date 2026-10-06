@@ -354,6 +354,10 @@ const reach = (hand: readonly Point[], tip: number, mcp: number) => {
   return d(hand[tip]!, hand[0]!) / Math.max(d(hand[mcp]!, hand[0]!), 1e-6);
 };
 
+export function handShape(world: readonly Point[], image: readonly Point[]): number {
+  return Math.max(world.length ? fingerUp(world) : 0, fingerUp(image));
+}
+
 export function fingerUp(hand: readonly Point[]): number {
   const out = (tip: number, mcp: number) =>
     1 / (1 + Math.exp(-(reach(hand, tip, mcp) - FINGER_OUT) / FINGER_SOFTNESS));

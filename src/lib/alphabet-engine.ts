@@ -8,7 +8,7 @@ import { createClassifier, type ClassifierManifest } from "@/lib/alphabet-classi
 import {
   applyLocationRule,
   faceBlock,
-  fingerUp,
+  handShape,
   TraceTracker,
   TRACED_LETTERS,
   touchWeight,
@@ -122,7 +122,7 @@ async function loadDetectors(preferred: Delegate) {
 
 const toPoint = (p: NormalizedLandmark): Point => ({ x: p.x, y: p.y, z: p.z });
 const toVec = (p: Point, sign: number): Vec3 => [sign * p.x, p.y, p.z ?? 0];
-const shapeOf = (h: HandDetection) => fingerUp(h.world.length ? h.world : h.landmarks);
+const shapeOf = (h: HandDetection) => handShape(h.world, h.landmarks);
 
 export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise<AlphabetEngine> {
   const [classifier, detectors] = await Promise.all([loadClassifier(), loadDetectors(preferred)]);

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import zTraces from "./__fixtures__/z-trazos.json";
+import zLeft from "./__fixtures__/z-trazos-izquierda.json";
 import fullBody from "./__fixtures__/dos-manos-cuerpo-entero.json";
-import { TraceTracker, fingerUp, type Point } from "./alphabet-recognizer";
+import { TraceTracker, fingerUp, handShape, type Point } from "./alphabet-recognizer";
 import { HandTracks } from "./hand-tracks";
 
 type Frame = { t: number; hand: Point[] | null };
@@ -53,6 +54,14 @@ describe("Z recorded on a phone", () => {
   });
 });
 
+describe("Z recorded with the left hand", () => {
+  it("is found in every recording (made twice in most of them)", () => {
+    for (const trace of zLeft.traces) {
+      expect(zDetected(scaled(trace.frames, 1, 1), zLeft.aspect)).toBe(true);
+    }
+  });
+});
+
 describe("30 s of a full-body visitor with both hands in view", () => {
   const run = () => {
     const tracks = new HandTracks();
@@ -80,7 +89,7 @@ describe("30 s of a full-body visitor with both hands in view", () => {
       const shapes = seen.map((t) => ({
         id: t.id,
         landmarks: t.landmarks,
-        shape: fingerUp(t.world),
+        shape: handShape(t.world, t.landmarks),
       }));
       trace.push(shapes, fullBody.aspect, f.t);
       if (trace.weight(f.t)) falseZ++;

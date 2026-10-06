@@ -218,6 +218,15 @@ Everything runs on the visitor's device; no frame leaves the browser.
     came down, checked on both hands: a relaxed hand hanging by the side has its fingers out, so
     with both hands in view it re-armed in only 13% of the frames of the full-body video and a
     well-made Z after another letter often didn't count.
+  - **Left hand:** recorded with the left hand (6 recordings, `z-trazos-izquierda.json`) the
+    trajectory is found in all of them, but live it never confirmed. Two differences with the
+    right hand: MediaPipe loses the left hand for an instant 5–10 times per recording (0–3 with
+    the right one), and every frame without a hand reset the verifier (5 frames in a row are
+    needed); and live the shape was measured only on MediaPipe's 3D metric estimate, while the
+    recordings only have image coordinates, where the left hand's finger is up 79–90% of the
+    time. Now a gap under 400 ms doesn't reset the verifier (`HAND_GONE_MS`), and the shape is
+    the larger of the two measures (`handShape`): with the right hand it can only go up, and
+    the trajectory still decides. The full-body video still fires no Z.
   - Following a fingertip instead of the palm was measured and is worse: the palm's path is
     closer to the Z template (mean 0.10 vs 0.13–0.22 for the index, the pinky or whichever
     finger is up).
