@@ -192,6 +192,10 @@ Everything runs on the visitor's device; no frame leaves the browser.
   - The main hand starts as the raised one and passes to the other hand once it is over 2 hand
     sizes higher (it only matters for `?captura`, which records the main hand's letters).
   - Skeletons are drawn per track, so they don't cross over.
+  - With two hands MediaPipe sometimes returns the same hand twice, overlapping and slightly
+    shifted: a second skeleton drawn off the hand that also stole its track. Two sightings
+    whose 21 points are on average under half a hand size apart are one hand (the more
+    confident one stays); two hands touching (Q, W) never match point by point.
   Measured in Chromium with the video as the camera: same frame rate (~10 fps), clear signs
   (top probability ≥ 0.6) went from ~20% to 38% of the frames with a hand. Q and W also need
   both hands touching (a fingertip within 0.6 hand sizes of the other hand, `touchWeight`).

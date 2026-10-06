@@ -5,6 +5,7 @@ const GATE = 3;
 const GATE_GROWTH_MS = 100;
 const VOTE = 0.25;
 const RAISED = 2;
+const DUPLICATE = 0.5;
 
 export interface HandSighting {
   landmarks: Point[];
@@ -29,12 +30,27 @@ const wristGap = (a: readonly Point[], b: readonly Point[], aspect: number) =>
 const sizeOf = (h: readonly Point[], aspect: number) =>
   Math.hypot(h[9]!.x - h[0]!.x, (h[9]!.y - h[0]!.y) * aspect);
 
+const meanGap = (a: readonly Point[], b: readonly Point[], aspect: number) =>
+  a.reduce((s, p, i) => s + Math.hypot(p.x - b[i]!.x, (p.y - b[i]!.y) * aspect), 0) / a.length;
+
+function withoutDuplicates(
+  found: readonly HandSighting[],
+  aspect: number,
+): readonly HandSighting[] {
+  if (found.length !== 2) return found;
+  const [a, b] = found as [HandSighting, HandSighting];
+  const size = Math.max(sizeOf(a.landmarks, aspect), sizeOf(b.landmarks, aspect));
+  if (meanGap(a.landmarks, b.landmarks, aspect) >= DUPLICATE * size) return found;
+  return [a.score >= b.score ? a : b];
+}
+
 export class HandTracks {
   private tracks: Track[] = [];
   private nextId = 1;
   private primaryId: number | null = null;
 
-  update(sightings: readonly HandSighting[], aspect: number, now: number): Track[] {
+  update(found: readonly HandSighting[], aspect: number, now: number): Track[] {
+    const sightings = withoutDuplicates(found, aspect);
     this.tracks = this.tracks.filter((t) => now - t.seenAt <= KEEP_MS);
     const cost = (t: Track, s: HandSighting) => {
       const d = wristGap(t.landmarks, s.landmarks, aspect);

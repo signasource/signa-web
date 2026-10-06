@@ -56,3 +56,21 @@ describe("HandTracks", () => {
     expect(real!.id).not.toBe(face!.id);
   });
 });
+
+describe("HandTracks duplicates", () => {
+  it("keeps one hand when MediaPipe returns the same hand twice", () => {
+    const tracks = new HandTracks();
+    const seen = tracks.update(
+      [sight(0.5, 0.5, false, 0.9), sight(0.505, 0.502, false, 0.6)],
+      1,
+      0,
+    );
+    expect(seen).toHaveLength(1);
+  });
+
+  it("keeps two hands that touch but are not the same hand", () => {
+    const tracks = new HandTracks();
+    const seen = tracks.update([sight(0.5, 0.5, false), sight(0.56, 0.5, true)], 1, 0);
+    expect(seen).toHaveLength(2);
+  });
+});
