@@ -24,12 +24,14 @@ export function FeatureCard({
   icon,
   title,
   description,
+  cta = "Probalo ahora",
   delayMs = 0,
 }: {
   id: FeatureId;
   icon: string;
   title: string;
   description?: string;
+  cta?: string;
   delayMs?: number;
 }) {
   const { openFeature } = useLandingUI();
@@ -44,6 +46,12 @@ export function FeatureCard({
           ACCENT_BG[id],
         )}
       >
+        <div className="flex w-full justify-start">
+          <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-bold backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+            Interactivo
+          </div>
+        </div>
         <Image
           src={icon}
           alt=""
@@ -57,7 +65,7 @@ export function FeatureCard({
           <p className={cn("text-[17px] leading-relaxed", ACCENT_TEXT[id])}>{description}</p>
         )}
         <span className="mt-auto flex items-center gap-1.5 rounded-full bg-white/25 px-4 py-2 text-sm font-extrabold transition-colors group-hover:bg-white/40">
-          Ver cómo funciona
+          {cta}
           <svg
             aria-hidden="true"
             width="16"

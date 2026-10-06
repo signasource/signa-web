@@ -15,19 +15,19 @@ const UNITS: ReadonlyArray<{
     title: "Presentándonos",
     icon: "hand",
     lessons: [
-      { title: "Deletreá tu nombre", state: "done" },
-      { title: "Yo, vos, nombre, sordo, oyente", state: "done" },
-      { title: "Hola, chau, ¿cómo estás?, bien, mal", state: "current" },
-      { title: "Gracias, por favor, perdón, de nada", state: "locked" },
+      { title: "Introducción a la LSA", state: "done" },
+      { title: "Quiénes somos", state: "done" },
+      { title: "Saludos", state: "current" },
+      { title: "Cortesías", state: "locked" },
     ],
   },
   {
     title: "Las personas a nuestro alrededor",
     icon: "people",
     lessons: [
-      { title: "Familia, mamá, papá, hermano/a, hijo/a, abuelo/a", state: "locked" },
-      { title: "Amigo/a, novio/a, esposo/a, compañero/a", state: "locked" },
-      { title: "Hombre, mujer, niña, niño, bebé", state: "locked" },
+      { title: "Familia y amigos", state: "locked" },
+      { title: "Relaciones", state: "locked" },
+      { title: "Personas", state: "locked" },
     ],
   },
   {

@@ -10,7 +10,7 @@ const MEMBERS = [
     linkedin: "https://www.linkedin.com/in/avalleagostina/",
   },
   {
-    name: "Paloma Córcoba",
+    name: "Paloma Corcoba",
     photo: "/images/equipo/paloma-v2.png",
     objectPosition: "top",
     linkedin: "https://www.linkedin.com/in/paloma-corcoba/",

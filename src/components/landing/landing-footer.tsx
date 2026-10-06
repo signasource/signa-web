@@ -11,12 +11,6 @@ export function LandingFooter() {
           Proyecto Final · Ingeniería en Sistemas de Información · UTN FRC
         </p>
         <div className="text-text flex flex-wrap items-center gap-4 text-xs font-bold md:ml-auto">
-          <Link href="#que-es" className="hover:text-primary-dark">
-            Qué es
-          </Link>
-          <Link href="#equipo" className="hover:text-primary-dark">
-            Equipo
-          </Link>
           <Link href="/privacidad" className="text-text-muted font-normal hover:underline">
             Privacidad
           </Link>

@@ -26,7 +26,7 @@ export function Nav() {
           Signa
         </Link>
         <div className="ml-auto hidden items-center gap-7 md:flex">
-          {NAV_LINKS.slice(0, 3).map((link) => (
+          {NAV_LINKS.slice(0, 2).map((link) => (
             <Link
               key={link.href}
               href={link.href}
