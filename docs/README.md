@@ -8,19 +8,21 @@ Detailed implementation docs for `signa-web`. Entry point and mandatory rules: [
 
 ## Map
 
-| Question                                                   | Doc                                                  |
-| ---------------------------------------------------------- | ---------------------------------------------------- |
-| Why this stack? What was rejected?                         | [stack.md](./stack.md)                               |
-| How is the code organized? What are the providers?         | [architecture.md](./architecture.md)                 |
-| What routes/layouts exist? Which are public vs guarded?    | [routing.md](./routing.md)                           |
-| How does the HTTP client behave? How is env configured?    | [api/http-client.md](./api/http-client.md)           |
-| Which endpoints does the web call?                         | [api/endpoints.md](./api/endpoints.md)               |
-| What are the DTO shapes?                                   | [api/types.md](./api/types.md)                       |
-| Where are tokens stored? How does login/guard/logout work? | [api/session.md](./api/session.md)                   |
-| What color/font tokens exist?                              | [design-system/tokens.md](./design-system/tokens.md) |
-| State of the landing page?                                 | [features/landing.md](./features/landing.md)         |
-| State of the admin dashboard?                              | [features/dashboard.md](./features/dashboard.md)     |
-| What is real vs stub? What is the tech debt?               | [status.md](./status.md)                             |
+| Question                                                                          | Doc                                                  |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Why this stack? What was rejected?                                                | [stack.md](./stack.md)                               |
+| How is the code organized? What are the providers?                                | [architecture.md](./architecture.md)                 |
+| What routes/layouts exist? Which are public vs guarded?                           | [routing.md](./routing.md)                           |
+| How does the HTTP client behave? How is env configured?                           | [api/http-client.md](./api/http-client.md)           |
+| Which endpoints does the web call?                                                | [api/endpoints.md](./api/endpoints.md)               |
+| What are the DTO shapes?                                                          | [api/types.md](./api/types.md)                       |
+| Where are tokens stored? How does login/guard/logout work?                        | [api/session.md](./api/session.md)                   |
+| Which security headers/CSP apply? How to add a public page or third-party script? | [security.md](./security.md)                         |
+| What do the privacy policy/terms claim? What legal decisions are open?            | [legal.md](./legal.md)                               |
+| What color/font tokens exist?                                                     | [design-system/tokens.md](./design-system/tokens.md) |
+| State of the landing page?                                                        | [features/landing.md](./features/landing.md)         |
+| State of the admin dashboard?                                                     | [features/dashboard.md](./features/dashboard.md)     |
+| What is real vs stub? What is the tech debt?                                      | [status.md](./status.md)                             |
 
 ## Rules for these docs
 

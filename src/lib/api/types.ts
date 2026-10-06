@@ -1,12 +1,16 @@
-// DTO shapes mirror signa-api (camelCase after the client's key conversion).
-// Canonical reference: docs/api/types.md
-
 export type AuthResponse = { accessToken: string; refreshToken: string };
 
 export type MemberRole = "ADMIN" | "MEMBER";
 export type MemberStatus = "ACTIVE" | "REMOVED";
 
-export type CourseSummary = { id: string; [key: string]: unknown };
+export type CourseSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+  coverUrl: string | null;
+  isFree: boolean;
+  signLanguageCode: string;
+};
 
 export type MyOrganization = {
   id: string;
@@ -24,7 +28,11 @@ export type RedeemInviteCodeResponse = {
   role: MemberRole;
 };
 
-export type WeeklyPerformance = Record<string, unknown>;
+export type WeeklyPerformance = {
+  weekStart: string;
+  exerciseAttempts: number;
+  correctPercentage: number;
+};
 
 export type OrganizationOverview = {
   participation: {
@@ -65,6 +73,63 @@ export type OrganizationMemberSummary = {
   lastActivityAt: string | null;
   progressPercentage: number;
   currentModule: string | null;
+};
+
+export type MemberCourseProgress = {
+  courseId: string;
+  courseName: string;
+  totalLessons: number;
+  completedLessons: number;
+  progressPercentage: number;
+};
+
+export type MemberProgress = {
+  userId: string;
+  name: string;
+  lastName: string;
+  email: string;
+  status: MemberStatus;
+  joinedAt: string;
+  lastActivityAt: string | null;
+  progressPercentage: number;
+  completedLessons: number;
+  totalLessons: number;
+  modulesCompleted: number;
+  currentModule: string | null;
+  exerciseAttempts: number;
+  correctAnswers: number;
+  correctPercentage: number;
+  signsLearned: number;
+  currentStreak: number;
+  learningMinutes: number;
+  activeDaysLast30: number;
+  courses: MemberCourseProgress[];
+};
+
+export type ModuleStats = {
+  courseId: string;
+  courseName: string;
+  topicId: string;
+  title: string;
+  order: number;
+  totalLessons: number;
+  participantsCompleted: number;
+  participantsInProgress: number;
+  completionPercentage: number;
+  exerciseAttempts: number;
+  correctPercentage: number;
+};
+
+export type InviteCode = {
+  id: string;
+  code: string;
+  organizationId: string;
+  email: string | null;
+  memberRole: MemberRole;
+  expiresAt: string | null;
+  maxUses: number | null;
+  useCount: number;
+  active: boolean;
 };
 
 export type Page<T> = {

@@ -1,0 +1,59 @@
+"use client";
+
+import { useEffect } from "react";
+import { elementProgress } from "@/lib/landing-scroll";
+
+export function LandingScrollEffects() {
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute("data-landing-js", "");
+
+    const reveal = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.setAttribute("data-in", "");
+          reveal.unobserve(entry.target);
+        }
+      },
+      { rootMargin: "0px 0px -8% 0px" },
+    );
+    document.querySelectorAll("[data-reveal]").forEach((el) => reveal.observe(el));
+
+    const nav = document.querySelector("[data-landing-nav]");
+    const bar = CSS.supports?.("animation-timeline: scroll()")
+      ? null
+      : document.querySelector<HTMLElement>(".landing-page-progress");
+    const tracked = Array.from(document.querySelectorAll<HTMLElement>("[data-progress]"));
+
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const max = root.scrollHeight - window.innerHeight;
+      bar?.style.setProperty("--landing-scroll", (max > 0 ? window.scrollY / max : 0).toFixed(4));
+      nav?.toggleAttribute("data-scrolled", window.scrollY > 8);
+      for (const el of tracked) {
+        const p = elementProgress(el.getBoundingClientRect().top, window.innerHeight);
+        el.style.setProperty("--p", p.toFixed(3));
+      }
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+
+    return () => {
+      reveal.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      root.removeAttribute("data-landing-js");
+      bar?.style.removeProperty("--landing-scroll");
+    };
+  }, []);
+
+  return null;
+}

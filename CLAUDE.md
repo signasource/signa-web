@@ -19,19 +19,21 @@ These docs are the project's memory and must **self-maintain** — every change 
 
 If reality already diverged from a doc, **the code wins**: fix the doc first (re-read the files in its `Sources` header). Router:
 
-| Change                                                   | Update                                                                                                                                                                              |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Add/rename a route, page, or layout                      | [docs/routing.md](./docs/routing.md)                                                                                                                                                |
-| Add/change an endpoint call                              | [docs/api/endpoints.md](./docs/api/endpoints.md)                                                                                                                                    |
-| Change the HTTP client, casing, refresh, or env          | [docs/api/http-client.md](./docs/api/http-client.md)                                                                                                                                |
-| Add/change a DTO                                         | [docs/api/types.md](./docs/api/types.md)                                                                                                                                            |
-| Change token storage, login, guard, or logout            | [docs/api/session.md](./docs/api/session.md)                                                                                                                                        |
-| Add/change a color, font, or UI primitive                | [docs/design-system/tokens.md](./docs/design-system/tokens.md)                                                                                                                      |
-| Advance the landing or a dashboard section               | the feature's doc under [docs/features/](./docs/features/) ([landing](./docs/features/landing.md) · [dashboard](./docs/features/dashboard.md)) + [docs/status.md](./docs/status.md) |
-| Change folder structure, alias, providers, or tooling    | [docs/architecture.md](./docs/architecture.md)                                                                                                                                      |
-| Add/replace a dependency or change a stack decision      | [docs/stack.md](./docs/stack.md)                                                                                                                                                    |
-| Add/resolve tech debt, or flip stub↔real                 | [docs/status.md](./docs/status.md)                                                                                                                                                  |
-| Change API contract assumptions (CORS, roles, panel URL) | [docs/api/http-client.md](./docs/api/http-client.md) **and** the matching section in `signa-api/CLAUDE.md`                                                                          |
+| Change                                                                                                                                                                    | Update                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Add/rename a route, page, or layout                                                                                                                                       | [docs/routing.md](./docs/routing.md)                                                                                                                                                |
+| Add/change an endpoint call                                                                                                                                               | [docs/api/endpoints.md](./docs/api/endpoints.md)                                                                                                                                    |
+| Change the HTTP client, casing, refresh, or env                                                                                                                           | [docs/api/http-client.md](./docs/api/http-client.md)                                                                                                                                |
+| Add/change a DTO                                                                                                                                                          | [docs/api/types.md](./docs/api/types.md)                                                                                                                                            |
+| Change what personal data is collected/shown/shared/deleted (here, in `signa-api`, or in `signa-mobile`), add a third-party SDK/analytics, or edit the privacy/terms text | [docs/legal.md](./docs/legal.md) + the pages under `src/app/(marketing)/` (bump `lastUpdated` in `src/lib/legal.ts`)                                                                |
+| Add a public static page or third-party script/origin, or change headers/CSP                                                                                              | [docs/security.md](./docs/security.md)                                                                                                                                              |
+| Change token storage, login, guard, or logout                                                                                                                             | [docs/api/session.md](./docs/api/session.md)                                                                                                                                        |
+| Add/change a color, font, or UI primitive                                                                                                                                 | [docs/design-system/tokens.md](./docs/design-system/tokens.md)                                                                                                                      |
+| Advance the landing or a dashboard section                                                                                                                                | the feature's doc under [docs/features/](./docs/features/) ([landing](./docs/features/landing.md) · [dashboard](./docs/features/dashboard.md)) + [docs/status.md](./docs/status.md) |
+| Change folder structure, alias, providers, or tooling                                                                                                                     | [docs/architecture.md](./docs/architecture.md)                                                                                                                                      |
+| Add/replace a dependency or change a stack decision                                                                                                                       | [docs/stack.md](./docs/stack.md)                                                                                                                                                    |
+| Add/resolve tech debt, or flip stub↔real                                                                                                                                  | [docs/status.md](./docs/status.md)                                                                                                                                                  |
+| Change API contract assumptions (CORS, roles, panel URL)                                                                                                                  | [docs/api/http-client.md](./docs/api/http-client.md) **and** the matching section in `signa-api/CLAUDE.md`                                                                          |
 
 A new cross-cutting convention goes in this file (§ Rules). A new doc goes in the router above **and** in [docs/README.md](./docs/README.md).
 
@@ -46,7 +48,7 @@ A new cross-cutting convention goes in this file (§ Rules). A new doc goes in t
 **Rendering model**
 
 - Server Components by default. Add `"use client"` only for state, effects, or browser APIs, and keep the client boundary as low in the tree as possible.
-- **Landing (`(marketing)`)** is static/SEO: no client-side data fetching, `metadata` per page, no auth code.
+- **Landing (`(marketing)`)** is static/SEO: no client-side data fetching, `metadata` per page, no auth code. A new public static page must be added to `MARKETING_PATHS` (`src/lib/security/csp.ts`); every other route gets the strict nonce CSP and must render dynamically — see [docs/security.md](./docs/security.md).
 - **Dashboard (`(dashboard)`)** is client-rendered behind the `AuthProvider` guard. The API is bearer-only (no cookies), so there is no server session — do not add server-side auth checks that pretend otherwise. Authorization is enforced by `signa-api`; the client guard is UX only.
 
 **Styling**
@@ -103,6 +105,9 @@ through a PR from a new branch.
 - **To `develop`:** PR with **squash merge**. The squash message must follow Angular Commit Conventions
   (`type(scope): description`; `feat` → minor, `fix` → patch, `BREAKING CHANGE:` footer → major) because it
   drives automatic versioning. Commits inside the branch are free-form.
+  The repo squashes with the **PR title** as the commit message, so the PR title must follow the convention.
+- **Protection (`develop`, `master`):** PR required, 1 approval, stale approvals dismissed, branch must be
+  up to date, no force-push or deletion. Only squash merge is enabled; merged branches are auto-deleted.
 - **To `master`:** only from `release/*` or `hotfix/*` PRs.
 - **Gates:** `ci.yml` runs on every push (format, lint, typecheck, tests, build); `branch-policy.yml`
   fails PRs with an invalid branch name/target.
@@ -110,3 +115,13 @@ through a PR from a new branch.
 - Never commit `.env*` (except `.env.example`).
 
 Workflow files: [`.github/workflows/`](./.github/workflows/) — update this section if they change.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

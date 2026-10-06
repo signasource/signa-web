@@ -1,19 +1,51 @@
-import Link from "next/link";
+﻿import type { Metadata, Viewport } from "next";
+import { LandingUIProvider } from "@/components/landing/landing-ui-provider";
+import { Nav } from "@/components/landing/nav";
+import { Hero } from "@/components/landing/hero";
+import { LisaIntro } from "@/components/landing/lisa-intro";
+import { LandingScrollEffects } from "@/components/landing/landing-scroll-effects";
+import { Marquesina } from "@/components/landing/marquesina";
+import { QueEs } from "@/components/landing/que-es";
+import { Cursos } from "@/components/landing/cursos";
+import { Equipo } from "@/components/landing/equipo";
+import { CtaFinal } from "@/components/landing/cta-final";
+import { LandingFooter } from "@/components/landing/landing-footer";
+import "./landing.css";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  interactiveWidget: "resizes-visual",
+};
 
 export default function LandingPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-6 px-6 text-center">
-      <h1 className="font-display text-5xl font-extrabold">Signa</h1>
-      <p className="text-text-muted text-lg">
-        Aprendé Lengua de Señas Argentina con reconocimiento por cámara. Capacitá a tu equipo con
-        cursos a medida.
-      </p>
-      <Link
-        href="/login"
-        className="bg-text text-on-dark rounded-xl px-6 py-3 font-semibold transition hover:opacity-90"
+    <LandingUIProvider>
+      <div
+        id="top"
+        className="landing-root bg-background text-text relative min-h-screen overflow-x-clip"
       >
-        Ingresar al panel
-      </Link>
-    </main>
+        <LandingScrollEffects />
+        <div
+          aria-hidden
+          className="landing-page-progress bg-primary pointer-events-none fixed top-0 left-0 z-50 h-1 w-full origin-left"
+        />
+        <Nav />
+        <Hero />
+        <Marquesina />
+        <QueEs />
+        <LisaIntro />
+        <Cursos />
+        <Equipo />
+        <CtaFinal />
+        <LandingFooter />
+      </div>
+    </LandingUIProvider>
   );
 }
