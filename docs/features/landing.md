@@ -196,9 +196,9 @@ Everything runs on the visitor's device; no frame leaves the browser.
     shifted: a second skeleton drawn off the hand that also stole its track. Two sightings
     whose 21 points are on average under half a hand size apart are one hand (the more
     confident one stays); two hands touching (Q, W) never match point by point.
-  Measured in Chromium with the video as the camera: same frame rate (~10 fps), clear signs
-  (top probability ≥ 0.6) went from ~20% to 38% of the frames with a hand. Q and W also need
-  both hands touching (a fingertip within 0.6 hand sizes of the other hand, `touchWeight`).
+    Measured in Chromium with the video as the camera: same frame rate (~10 fps), clear signs
+    (top probability ≥ 0.6) went from ~20% to 38% of the frames with a hand. Q and W also need
+    both hands touching (a fingertip within 0.6 hand sizes of the other hand, `touchWeight`).
 - **Letters with a movement (Z):** the classifier is static (one frame in, probabilities out), so
   the movement is checked outside it:
   - **Shape:** the index or the pinky is out (`fingerUp`, 3D fingertip-to-wrist reach) in at

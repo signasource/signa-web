@@ -28,7 +28,7 @@ export function CtaFinal() {
             <button
               type="button"
               onClick={() => openFeature("camera")}
-              className="landing-btn flex w-fit min-h-14.5 items-center gap-2.5 rounded-full border border-on-primary/30 bg-on-primary/10 px-7.5 text-[17px] font-extrabold hover:bg-on-primary/20"
+              className="landing-btn border-on-primary/30 bg-on-primary/10 hover:bg-on-primary/20 flex min-h-14.5 w-fit items-center gap-2.5 rounded-full border px-7.5 text-[17px] font-extrabold"
             >
               <svg
                 aria-hidden="true"
@@ -59,11 +59,19 @@ export function CtaFinal() {
   );
 }
 
-function SpellingTile({ letter, state }: { letter: string; state: "done" | "current" | "pending" }) {
+function SpellingTile({
+  letter,
+  state,
+}: {
+  letter: string;
+  state: "done" | "current" | "pending";
+}) {
   if (state === "done") {
     return (
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-teal sm:h-16 sm:w-16">
-        <span className="font-display text-2xl font-extrabold text-white sm:text-3xl">{letter}</span>
+      <div className="bg-accent-teal flex h-14 w-14 items-center justify-center rounded-2xl sm:h-16 sm:w-16">
+        <span className="font-display text-2xl font-extrabold text-white sm:text-3xl">
+          {letter}
+        </span>
       </div>
     );
   }
@@ -71,14 +79,18 @@ function SpellingTile({ letter, state }: { letter: string; state: "done" | "curr
   if (state === "current") {
     return (
       <div className="landing-floaty flex h-14 w-14 items-center justify-center rounded-2xl border-4 border-white sm:h-16 sm:w-16">
-        <span className="font-display text-2xl font-extrabold text-white sm:text-3xl">{letter}</span>
+        <span className="font-display text-2xl font-extrabold text-white sm:text-3xl">
+          {letter}
+        </span>
       </div>
     );
   }
 
   return (
     <div className="flex h-14 w-14 items-center justify-center rounded-2xl border-4 border-dashed border-white/30 sm:h-16 sm:w-16">
-      <span className="font-display text-2xl font-extrabold text-white/30 sm:text-3xl">{letter}</span>
+      <span className="font-display text-2xl font-extrabold text-white/30 sm:text-3xl">
+        {letter}
+      </span>
     </div>
   );
 }
