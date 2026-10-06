@@ -31,6 +31,7 @@ const TRACE_REC_MS = 8000;
 const VIDEO_SETTLE_MS = 120;
 const FRAMES_PER_POSE = 5;
 const COOLDOWN_MS = 1800;
+const HAND_GONE_MS = 400;
 const HIT_MS = 1300;
 
 const HAND_LINKS: ReadonlyArray<readonly [number, number]> = [
@@ -81,7 +82,9 @@ export function CameraNameDemo({ className }: { className?: string }) {
   );
   const recording = useRef({ until: 0, letter: "" });
   const samples = useRef<{ letter: string; features: number[] }[]>([]);
-  const traces = useRef<{ kind: string; frames: { t: number; hand: number[] | null }[] }[]>([]);
+  const traces = useRef<
+    { kind: string; frames: { t: number; hand: number[] | null; other: number[] | null }[] }[]
+  >([]);
   const traceRec = useRef<{ until: number; kind: string } | null>(null);
   const [sampleCount, setSampleCount] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -111,7 +114,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
     const blob = new Blob(
       [
         JSON.stringify({
-          version: 2,
+          version: 3,
           device: navigator.userAgent,
           aspect: v && v.videoWidth ? v.videoHeight / v.videoWidth : 0.75,
           samples: samples.current,
@@ -151,6 +154,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
     cooldownUntil: 0,
     target: [null, null] as (Point[] | null)[],
     drawn: [null, null] as (Point[] | null)[],
+    slots: [null, null] as (number | null)[],
   });
 
   const target = name[filled] ?? "";
@@ -261,6 +265,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
     setVideoReady(false);
     live.current.target = [null, null];
     live.current.drawn = [null, null];
+    live.current.slots = [null, null];
     video.srcObject = streamRef.current;
     void video.play().catch(() => {});
   }, [stage]);
@@ -285,6 +290,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
     let busy = false;
     let count = 0;
     let lastTarget = "";
+    let handSeenAt = -Infinity;
     let hitTimer: ReturnType<typeof setTimeout> | undefined;
 
     const setLivePhase = (p: Phase) => {
@@ -337,10 +343,13 @@ export function CameraNameDemo({ className }: { className?: string }) {
         return;
       }
       if (!hand) {
-        verifier.reset();
-        setLivePhase("idle");
+        if (now - handSeenAt > HAND_GONE_MS) {
+          verifier.reset();
+          setLivePhase("idle");
+        }
         return;
       }
+      handSeenAt = now;
       setLivePhase("capturing");
       const index = engine.labels.indexOf(letter);
       if (!probs || index < 0) return;
@@ -380,24 +389,37 @@ export function CameraNameDemo({ className }: { className?: string }) {
         .then((bitmap) =>
           engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify || take, take, true),
         )
-        .then(({ landmarks, other, probs, features }) => {
+        .then(({ landmarks, other, ids, probs, features }) => {
           if (!alive) return;
           const tr = traceRec.current;
           if (tr && performance.now() < tr.until)
             traces.current[traces.current.length - 1]!.frames.push({
               t: performance.now(),
               hand: landmarks ? landmarks.flatMap((q) => [q.x, q.y, q.z ?? 0]) : null,
+              other: other ? other.flatMap((q) => [q.x, q.y, q.z ?? 0]) : null,
             });
           if (take && features)
             samples.current.push({ letter: takeLetter, features: Array.from(features) });
-          const [d0, d1] = live.current.drawn;
-          const gap = (a: Point[] | null | undefined, b: Point[] | null | undefined) =>
-            a && b ? Math.hypot(a[0]!.x - b[0]!.x, a[0]!.y - b[0]!.y) : 0;
-          const swap =
-            landmarks && other && d0 && d1
-              ? gap(d0, other) + gap(d1, landmarks) < gap(d0, landmarks) + gap(d1, other)
-              : !!(d1 && landmarks && !other && gap(d1, landmarks) < gap(d0, landmarks));
-          live.current.target = swap ? [other, landmarks] : [landmarks, other];
+          const slots = live.current.slots;
+          const target: (Point[] | null)[] = [null, null];
+          const incoming = [
+            [ids[0], landmarks],
+            [ids[1], other],
+          ] as const;
+          for (const [id, hand] of incoming) {
+            if (id === null || !hand) continue;
+            const slot = slots.indexOf(id);
+            if (slot >= 0) target[slot] = hand;
+          }
+          for (const [id, hand] of incoming) {
+            if (id === null || !hand || slots.includes(id)) continue;
+            const free = target[0] ? 1 : 0;
+            if (target[free]) continue;
+            slots[free] = id;
+            live.current.drawn[free] = null;
+            target[free] = hand;
+          }
+          live.current.target = target;
           recognize(classify ? probs : null, landmarks !== null, performance.now());
         })
         .catch(() => {})
