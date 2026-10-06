@@ -6,7 +6,6 @@ import {
   MAX_NAME_LENGTH,
   nameLetters,
   parseName,
-  pickPrimary,
   fingerUp,
   touchWeight,
   TraceTracker,
@@ -203,15 +202,6 @@ describe("two hands", () => {
     expect(touchWeight(hand(0), hand(0.4), 1)).toBeLessThan(0.01);
     expect(touchWeight(hand(0), null, 1)).toBe(0);
   });
-
-  it("starts with the raised hand and keeps following it", () => {
-    const resting = hand(0, 0.3);
-    const raised = hand(0.4, -0.2);
-    expect(pickPrimary([resting, raised], null, 1)).toBe(1);
-    expect(pickPrimary([resting, raised], resting[0]!, 1)).toBe(0);
-    expect(pickPrimary([raised, resting], resting[0]!, 1)).toBe(1);
-    expect(pickPrimary([], null, 1)).toBe(-1);
-  });
 });
 
 describe("nameLetters", () => {
@@ -336,7 +326,7 @@ describe("Z trace", () => {
       Array.from({ length: 21 }, (_, i) => ({ x, y: y - (i === 9 ? 0.1 : 0) }));
     const pts = along(Z, 0.01).map((p, i) => ({ ...p, t: i * 80 }));
     for (const p of pts)
-      tracker.push([{ landmarks: hand(p.x * 0.1, p.y * 0.1), shape: 1 }], 1, p.t);
+      tracker.push([{ id: 1, landmarks: hand(p.x * 0.1, p.y * 0.1), shape: 1 }], 1, p.t);
     expect(tracker.weight(pts[pts.length - 1]!.t + 1200)).toBe(1);
   });
 
@@ -350,7 +340,7 @@ describe("Z trace", () => {
     expect(tracker.weight(0)).toBe(0);
     const pts = along(Z, 0.01);
     for (const p of pts)
-      tracker.push([{ landmarks: hand(p.x * 0.1, p.y * 0.1), shape: 1 }], 1, p.t);
+      tracker.push([{ id: 1, landmarks: hand(p.x * 0.1, p.y * 0.1), shape: 1 }], 1, p.t);
     const end = pts[pts.length - 1]!.t;
     expect(tracker.weight(end + 100)).toBe(1);
     expect(tracker.weight(end + 3000)).toBe(0);
@@ -378,8 +368,8 @@ describe("Z with both hands in view", () => {
     for (const drawerFirst of [true, false]) {
       const tracker = new TraceTracker();
       path.forEach((p, i) => {
-        const drawer = { landmarks: hand(0.3 + p.x, 0.3 + p.y), shape: 1 };
-        const still = { landmarks: hand(0.8, 0.8), shape: 1 };
+        const drawer = { id: 1, landmarks: hand(0.3 + p.x, 0.3 + p.y), shape: 1 };
+        const still = { id: 2, landmarks: hand(0.8, 0.8), shape: 1 };
         tracker.push(drawerFirst ? [drawer, still] : [still, drawer], 1, i * 50);
       });
       expect(tracker.weight(path.length * 50)).toBe(1);
@@ -388,7 +378,9 @@ describe("Z with both hands in view", () => {
 
   it("ignores the path drawn with the fingers down", () => {
     const tracker = new TraceTracker();
-    path.forEach((p, i) => tracker.push([{ landmarks: hand(p.x, p.y), shape: 0 }], 1, i * 50));
+    path.forEach((p, i) =>
+      tracker.push([{ id: 1, landmarks: hand(p.x, p.y), shape: 0 }], 1, i * 50),
+    );
     expect(tracker.weight(path.length * 50)).toBe(0);
   });
 });
@@ -411,10 +403,10 @@ describe("Z after a confirmed letter", () => {
         )
         .concat([{ x: 0.15, y: 0.14, t: t0 + 1500 }]);
     tracker.reset();
-    for (const p of z(0)) tracker.push([{ landmarks: hand(p.x, p.y), shape: 1 }], 1, p.t);
+    for (const p of z(0)) tracker.push([{ id: 1, landmarks: hand(p.x, p.y), shape: 1 }], 1, p.t);
     expect(tracker.weight(1600)).toBe(0);
     tracker.release(0.1);
-    for (const p of z(2000)) tracker.push([{ landmarks: hand(p.x, p.y), shape: 1 }], 1, p.t);
+    for (const p of z(2000)) tracker.push([{ id: 1, landmarks: hand(p.x, p.y), shape: 1 }], 1, p.t);
     expect(tracker.weight(3600)).toBe(1);
   });
 });

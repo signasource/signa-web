@@ -8,7 +8,6 @@ import { createClassifier, type ClassifierManifest } from "@/lib/alphabet-classi
 import {
   applyLocationRule,
   faceBlock,
-  pickPrimary,
   fingerUp,
   TraceTracker,
   TRACED_LETTERS,
@@ -19,9 +18,9 @@ import {
 import { buildHandFeatures, type Vec3 } from "@/lib/hand-features";
 import { fetchVerified } from "@/lib/integrity";
 import type { Delegate } from "@/lib/delegate-choice";
+import { HandTracks, type Track } from "@/lib/hand-tracks";
 
 const WASM_PATH = "/mediapipe/wasm";
-const KEEP_TRACK_MS = 1000;
 const MODELS = "https://storage.googleapis.com/mediapipe-models";
 const HAND_MODEL = {
   url: `${MODELS}/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
@@ -37,6 +36,7 @@ const CLASSIFIER_WEIGHTS = "/reconocedor/alfabeto.bin";
 export type Frame = HTMLCanvasElement | ImageBitmap;
 
 export interface HandDetection {
+  id: number;
   landmarks: Point[];
   world: Point[];
   mirrored: boolean;
@@ -128,8 +128,7 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
   const [classifier, detectors] = await Promise.all([loadClassifier(), loadDetectors(preferred)]);
   const { labels, thresholds } = classifier.manifest;
   let lastPose: Point[] | null = null;
-  let lastWrist: Point | null = null;
-  let lastSeen = 0;
+  const tracks = new HandTracks();
   let lastClassified: Float32Array | null = null;
   const traced = TRACED_LETTERS.map((l) => labels.indexOf(l)).filter((i) => i >= 0);
   const trace = traced.length ? new TraceTracker() : null;
@@ -181,26 +180,31 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       const r = detectors.hands.detect(frame);
       this.lastHandMs = performance.now() - t0;
       const aspect = frame.height / frame.width;
-      const hands = r.landmarks.map((lm, i) => ({
-        landmarks: lm.map(toPoint),
-        world: (r.worldLandmarks[i] ?? []).map(toPoint),
-        mirrored: (r.handedness[i]?.[0]?.categoryName ?? "Right").toLowerCase().startsWith("l"),
-      }));
-      const main = pickPrimary(
-        hands.map((h) => h.landmarks),
-        lastWrist,
-        aspect,
-      );
-      const hand = hands[main] ?? null;
       const now = performance.now();
-      if (hand) [lastWrist, lastSeen] = [hand.landmarks[0]!, now];
-      else if (now - lastSeen > KEEP_TRACK_MS) lastWrist = null;
-      trace?.push(
-        hands.map((h) => ({ landmarks: h.landmarks, shape: shapeOf(h) })),
+      const seen = tracks.update(
+        r.landmarks.map((lm, i) => ({
+          landmarks: lm.map(toPoint),
+          world: (r.worldLandmarks[i] ?? []).map(toPoint),
+          left: (r.handedness[i]?.[0]?.categoryName ?? "Right").toLowerCase().startsWith("l"),
+          score: r.handedness[i]?.[0]?.score ?? 0.5,
+        })),
         aspect,
         now,
       );
-      const other = hands.find((_, i) => i !== main) ?? null;
+      const asDetection = (t: Track): HandDetection => ({
+        id: t.id,
+        landmarks: t.landmarks,
+        world: t.world,
+        mirrored: t.mirrored,
+      });
+      const visible = seen.map(asDetection);
+      const hand = visible.find((h) => h.id === tracks.primary) ?? visible[0] ?? null;
+      const other = visible.find((h) => h !== hand) ?? null;
+      trace?.push(
+        visible.map((h) => ({ id: h.id, landmarks: h.landmarks, shape: shapeOf(h) })),
+        aspect,
+        now,
+      );
       return { hand, other, pose: lastPose, aspect };
     },
 

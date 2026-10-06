@@ -20,6 +20,7 @@ export type WorkerResponse =
       type: "result";
       landmarks: Point[] | null;
       other: Point[] | null;
+      ids: [number | null, number | null];
       features: Float32Array | null;
       probs: Float32Array | null;
       delegate: Delegate;
@@ -30,6 +31,7 @@ export type WorkerResponse =
 export interface FrameResult {
   landmarks: Point[] | null;
   other: Point[] | null;
+  ids: [number | null, number | null];
   features: Float32Array | null;
   probs: Float32Array | null;
   delegate: Delegate;
@@ -85,6 +87,7 @@ export function createRecognizerClient(): Promise<RecognizerClient> {
         done?.({
           landmarks: data.landmarks,
           other: data.other,
+          ids: data.ids,
           features: data.features,
           probs: data.probs,
           delegate: data.delegate,

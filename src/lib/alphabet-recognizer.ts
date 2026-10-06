@@ -170,7 +170,6 @@ export function parseName(
 const MIDDLE_MCP_INDEX = 9;
 const FINGERTIPS = [4, 8, 12, 16, 20];
 export const TWO_HANDED = ["Q", "W"] as const;
-export const BOTH_HANDS_LETTERS: readonly string[] = ["Q", "W", "U", "X"];
 const TOUCH_HANDS = 0.6;
 const TOUCH_SOFTNESS = 0.1;
 
@@ -199,36 +198,21 @@ export function touchWeight(
   return 1 / (1 + Math.exp((min / size - TOUCH_HANDS) / TOUCH_SOFTNESS));
 }
 
-export function pickPrimary(
-  hands: readonly (readonly Point[])[],
-  last: Point | null,
-  aspect: number,
-): number {
-  if (!hands.length) return -1;
-  let best = 0;
-  for (let i = 1; i < hands.length; i++) {
-    const better = last
-      ? gap(hands[i]![0]!, last, aspect) < gap(hands[best]![0]!, last, aspect)
-      : hands[i]![0]!.y < hands[best]![0]!.y;
-    if (better) best = i;
-  }
-  return best;
-}
-
 export const TRACED_LETTERS = ["Z"] as const;
-const TRACE_WINDOW_MS = 2000;
+const TRACE_WINDOW_MS = 3000;
 const TRACE_HOLD_MS = 1500;
-const TURN = 0.12;
-const MIN_WIDTH = 0.3;
-const MIN_SIDE = 0.4;
-const LAST_STROKE = 0.9;
-const MIN_DIAGONAL_DROP = 0.3;
-const MIN_DROP = 0.4;
+const MIN_TRACE_MS = 250;
+const MIN_WIDTH = 0.25;
+const MIN_TALL = 0.2;
+const MAX_TALL = 2;
+const MAX_MISMATCH = 0.165;
+const CORNER = 0.25;
+const END_HEIGHT = 0.45;
+const RESAMPLED = 24;
 const PALM = [0, 5, 9, 13, 17];
 const RELEASED = 0.3;
 const SHAPED = 0.5;
-const SHAPE_GRACE_MS = 250;
-const PATH_LOST_MS = 500;
+const MIN_SHAPED = 0.6;
 
 export interface TracePoint {
   x: number;
@@ -236,56 +220,91 @@ export interface TracePoint {
   t: number;
 }
 
-function turningPoints(points: readonly TracePoint[]): TracePoint[] {
-  if (!points.length) return [];
-  const start = points[0]!;
-  const turns: TracePoint[] = [start];
-  let dir = 0;
-  let extreme = start;
-  for (const p of points) {
-    if (dir === 0) {
-      if (Math.abs(p.x - start.x) >= TURN) [dir, extreme] = [Math.sign(p.x - start.x), p];
-      continue;
-    }
-    if ((p.x - extreme.x) * dir > 0) extreme = p;
-    else if ((extreme.x - p.x) * dir >= TURN) {
-      turns.push(extreme);
-      [dir, extreme] = [-dir, p];
-    }
+function resample(points: readonly TracePoint[], n: number): [number, number][] | null {
+  const len: number[] = [0];
+  for (let i = 1; i < points.length; i++)
+    len.push(
+      len[i - 1]! + Math.hypot(points[i]!.x - points[i - 1]!.x, points[i]!.y - points[i - 1]!.y),
+    );
+  const total = len[len.length - 1]!;
+  if (total <= 0) return null;
+  const out: [number, number][] = [];
+  let j = 0;
+  for (let k = 0; k < n; k++) {
+    const at = (total * k) / (n - 1);
+    while (j < points.length - 2 && len[j + 1]! < at) j++;
+    const span = len[j + 1]! - len[j]!;
+    const u = span > 0 ? Math.min(1, (at - len[j]!) / span) : 0;
+    const [p, q] = [points[j]!, points[j + 1]!];
+    out.push([p.x + (q.x - p.x) * u, p.y + (q.y - p.y) * u]);
   }
-  if (dir !== 0) turns.push(extreme);
-  return turns;
+  return out;
+}
+
+const Z_CORNERS: [number, number][] = [
+  [0, 0],
+  [1, 0],
+  [0, 1],
+  [1, 1],
+];
+const TEMPLATES = [Z_CORNERS, Z_CORNERS.map(([x, y]) => [1 - x, y] as [number, number])].map((c) =>
+  resample(
+    c.map(([x, y], i) => ({ x, y, t: i })),
+    RESAMPLED,
+  )!,
+);
+
+export function zMismatch(points: readonly TracePoint[]): number {
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const [x0, w] = [Math.min(...xs), Math.max(...xs) - Math.min(...xs)];
+  const [y0, h] = [Math.min(...ys), Math.max(...ys) - Math.min(...ys)];
+  if (w < MIN_WIDTH || h < MIN_TALL * w || h > MAX_TALL * w) return Infinity;
+  const [first, last] = [points[0]!, points[points.length - 1]!];
+  const fx = (first.x - x0) / w;
+  const lx = (last.x - x0) / w;
+  if (
+    (first.y - y0) / h > END_HEIGHT ||
+    (last.y - y0) / h < 1 - END_HEIGHT ||
+    Math.min(fx, 1 - fx) > CORNER ||
+    Math.min(lx, 1 - lx) > CORNER ||
+    Math.round(fx) === Math.round(lx)
+  )
+    return Infinity;
+  const shape = resample(
+    points.map((p) => ({ x: (p.x - x0) / w, y: (p.y - y0) / h, t: p.t })),
+    RESAMPLED,
+  );
+  if (!shape) return Infinity;
+  return Math.min(
+    ...TEMPLATES.map(
+      (tpl) =>
+        shape.reduce((s, [x, y], i) => s + Math.hypot(x - tpl[i]![0], y - tpl[i]![1]), 0) /
+        RESAMPLED,
+    ),
+  );
 }
 
 export function tracesZ(points: readonly TracePoint[]): boolean {
-  const turns = turningPoints(points);
-  for (let i = 0; i + 3 < turns.length; i++) {
-    const [a, b, c, d] = [turns[i]!, turns[i + 1]!, turns[i + 2]!, turns[i + 3]!];
-    const s1 = b.x - a.x;
-    const s2 = c.x - b.x;
-    const s3 = d.x - c.x;
-    if (Math.sign(s1) !== Math.sign(s3) || Math.sign(s2) !== -Math.sign(s1)) continue;
-    const width = Math.max(Math.abs(s1), Math.abs(s3));
-    if (
-      width < MIN_WIDTH ||
-      Math.abs(s1) < MIN_SIDE * width ||
-      Math.abs(s3) < Math.max(MIN_SIDE * width, LAST_STROKE * Math.abs(s2))
-    )
-      continue;
-    if (c.y - b.y >= MIN_DIAGONAL_DROP * width && d.y - a.y >= MIN_DROP * width) return true;
+  const end = points[points.length - 1];
+  if (!end) return false;
+  for (let i = points.length - 4; i >= 0; i--) {
+    if (end.t - points[i]!.t < MIN_TRACE_MS) continue;
+    if (zMismatch(points.slice(i)) <= MAX_MISMATCH) return true;
   }
   return false;
 }
 
 export interface TracedHand {
+  id: number;
   landmarks: readonly Point[];
   shape: number;
 }
 
-type Path = { points: (TracePoint & { size: number })[]; last: TracePoint; shapedAt: number };
+type Path = { points: (TracePoint & { size: number; shaped: boolean })[]; seenAt: number };
 
 export class TraceTracker {
-  private paths: Path[] = [];
+  private paths = new Map<number, Path>();
   private tracedAt = -Infinity;
   private armed = true;
 
@@ -294,62 +313,33 @@ export class TraceTracker {
   }
 
   push(hands: readonly TracedHand[], aspect: number, now: number): void {
-    const points = hands.map((hand) => {
+    for (const [id, path] of this.paths)
+      if (now - path.seenAt > TRACE_WINDOW_MS) this.paths.delete(id);
+    for (const hand of hands) {
       const center = PALM.reduce(
         (s, i) => ({ x: s.x + hand.landmarks[i]!.x, y: s.y + hand.landmarks[i]!.y }),
         { x: 0, y: 0 },
       );
-      return {
+      const path = this.paths.get(hand.id) ?? { points: [], seenAt: now };
+      this.paths.set(hand.id, path);
+      path.seenAt = now;
+      const points = path.points;
+      points.push({
         x: center.x / PALM.length,
         y: (center.y * aspect) / PALM.length,
         t: now,
         size: handSize(hand.landmarks, aspect),
-      };
-    });
-    this.paths = this.paths.filter((q) => now - q.last.t <= PATH_LOST_MS);
-    const owner = this.match(points);
-    owner.forEach((path, i) => {
-      const hand = hands[i]!;
-      const p = points[i]!;
-      path.last = p;
-      if (hand.shape >= SHAPED) path.shapedAt = now;
-      else if (now - path.shapedAt > SHAPE_GRACE_MS) path.points.length = 0;
-      if (!this.armed || hand.shape < SHAPED) return;
-      path.points.push(p);
-      while (path.points.length && now - path.points[0]!.t > TRACE_WINDOW_MS) path.points.shift();
-      const unit = Math.max(...path.points.map((q) => q.size), 1e-6);
-      if (tracesZ(path.points.map((q) => ({ x: q.x / unit, y: q.y / unit, t: q.t })))) {
+        shaped: hand.shape >= SHAPED,
+      });
+      while (points.length && now - points[0]!.t > TRACE_WINDOW_MS) points.shift();
+      if (!this.armed || !points[points.length - 1]!.shaped) continue;
+      if (points.filter((q) => q.shaped).length < MIN_SHAPED * points.length) continue;
+      const unit = Math.max(...points.map((q) => q.size), 1e-6);
+      if (tracesZ(points.map((q) => ({ x: q.x / unit, y: q.y / unit, t: q.t })))) {
         this.tracedAt = now;
-        for (const q of this.paths) q.points.length = 0;
+        for (const q of this.paths.values()) q.points.length = 0;
       }
-    });
-  }
-
-  private match(points: readonly TracePoint[]): Path[] {
-    const dist = (p: TracePoint, q: Path) => Math.hypot(p.x - q.last.x, p.y - q.last.y);
-    const paths = this.paths;
-    let owner: (Path | undefined)[] = points.map(() => undefined);
-    if (points.length === 1) {
-      owner = [
-        paths.reduce<Path | undefined>(
-          (b, q) => (!b || dist(points[0]!, q) < dist(points[0]!, b) ? q : b),
-          undefined,
-        ),
-      ];
-    } else if (points.length === 2 && paths.length >= 2) {
-      const [p, r] = points as [TracePoint, TracePoint];
-      const [q, u] = paths as [Path, Path];
-      owner = dist(p, q) + dist(r, u) <= dist(p, u) + dist(r, q) ? [q, u] : [u, q];
-    } else if (points.length === 2 && paths.length === 1) {
-      const q = paths[0]!;
-      owner = dist(points[0]!, q) <= dist(points[1]!, q) ? [q, undefined] : [undefined, q];
     }
-    return owner.map((path, i) => {
-      if (path) return path;
-      const fresh: Path = { points: [], last: points[i]!, shapedAt: points[i]!.t };
-      this.paths.push(fresh);
-      return fresh;
-    });
   }
 
   weight(now: number): number {
@@ -357,7 +347,7 @@ export class TraceTracker {
   }
 
   reset(): void {
-    for (const q of this.paths) q.points.length = 0;
+    for (const q of this.paths.values()) q.points.length = 0;
     this.tracedAt = -Infinity;
     this.armed = false;
   }
