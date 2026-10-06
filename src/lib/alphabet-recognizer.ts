@@ -210,7 +210,6 @@ const CORNER = 0.25;
 const END_HEIGHT = 0.45;
 const RESAMPLED = 24;
 const PALM = [0, 5, 9, 13, 17];
-const RELEASED = 0.3;
 const SHAPED = 0.5;
 const MIN_SHAPED = 0.6;
 
@@ -306,11 +305,6 @@ type Path = { points: (TracePoint & { size: number; shaped: boolean })[]; seenAt
 export class TraceTracker {
   private paths = new Map<number, Path>();
   private tracedAt = -Infinity;
-  private armed = true;
-
-  release(shape: number): void {
-    if (shape < RELEASED) this.armed = true;
-  }
 
   push(hands: readonly TracedHand[], aspect: number, now: number): void {
     for (const [id, path] of this.paths)
@@ -332,7 +326,7 @@ export class TraceTracker {
         shaped: hand.shape >= SHAPED,
       });
       while (points.length && now - points[0]!.t > TRACE_WINDOW_MS) points.shift();
-      if (!this.armed || !points[points.length - 1]!.shaped) continue;
+      if (!points[points.length - 1]!.shaped) continue;
       if (points.filter((q) => q.shaped).length < MIN_SHAPED * points.length) continue;
       const unit = Math.max(...points.map((q) => q.size), 1e-6);
       if (tracesZ(points.map((q) => ({ x: q.x / unit, y: q.y / unit, t: q.t })))) {
@@ -349,7 +343,6 @@ export class TraceTracker {
   reset(): void {
     for (const q of this.paths.values()) q.points.length = 0;
     this.tracedAt = -Infinity;
-    this.armed = false;
   }
 }
 

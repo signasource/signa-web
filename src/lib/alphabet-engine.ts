@@ -222,7 +222,6 @@ export async function createAlphabetEngine(preferred: Delegate = "CPU"): Promise
       if (trace) {
         const open = trace.weight(performance.now());
         const pinky = Math.max(hand ? shapeOf(hand) : 0, other ? shapeOf(other) : 0);
-        trace.release(pinky);
         const z = pinky * open;
         for (const i of traced) probs[i] = z;
       }

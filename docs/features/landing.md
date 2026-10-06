@@ -213,8 +213,14 @@ Everything runs on the visitor's device; no frame leaves the browser.
     noise added turning points mid-diagonal and broke the sequence, and lowering the threshold
     to accept small Z fired with a still hand. Comparing the whole shape doesn't depend on
     each corner.
-  - Z score = shape × open gate (1.5 s after a traced Z; cleared when a letter is confirmed and
-    re-armed only once the finger comes down).
+  - Z score = shape × open gate (1.5 s after a traced Z). Confirming a letter clears every
+    path, so the next Z has to be drawn whole again. It used to stay disarmed until the finger
+    came down, checked on both hands: a relaxed hand hanging by the side has its fingers out, so
+    with both hands in view it re-armed in only 13% of the frames of the full-body video and a
+    well-made Z after another letter often didn't count.
+  - Following a fingertip instead of the palm was measured and is worse: the palm's path is
+    closer to the Z template (mean 0.10 vs 0.13–0.22 for the index, the pinky or whichever
+    finger is up).
   - Measured (`recorded-tracking.test.ts`, with the recordings in `__fixtures__`): the 6 Z
     recorded on a phone are found as recorded, at 45% of their size, twice as fast, small and
     fast, and slower (at 30% of their size, 3 of 6); the 30 s full-body video never traces a
