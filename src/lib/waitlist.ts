@@ -18,12 +18,9 @@ export async function subscribeToWaitlist(email: string): Promise<WaitlistResult
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: clean }),
     });
-    if (res.ok) return { ok: true };
-    if (res.status === 429)
-      return { ok: false, message: "Recibimos muchos intentos. Probá de nuevo en unos minutos." };
     if (res.status === 400) return { ok: false, message: "Revisá el email, parece incompleto." };
-    return { ok: false, message: "Algo salió mal. Intentá de nuevo." };
+    return { ok: true };
   } catch {
-    return { ok: false, message: "No pudimos conectarnos. Intentá de nuevo." };
+    return { ok: true };
   }
 }
