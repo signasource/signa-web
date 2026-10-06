@@ -5,3 +5,4 @@ package-lock.json
 
 src/lib/alphabet-classifier.vectors.json
 public/animations
+src/lib/__fixtures__/

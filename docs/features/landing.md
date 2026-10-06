@@ -175,30 +175,72 @@ Everything runs on the visitor's device; no frame leaves the browser.
   Cost: one ~0.5 s tracking pause on the visit that switches. Measured on a laptop with Intel Arc:
   CPU 75 ms → GPU 22 ms per detection, 10 → 20 fps; without a usable GPU: no trial, no pause.
 - **Two hands:** MediaPipe always looks for up to 2 hands (with only 1 it picks either hand each
-  frame and tracking jumped between them, e.g. a visitor standing full-body at the fair). The
-  tracked hand starts as the **raised** one (the signing hand, not the one hanging by the side)
-  and then follows proximity (`pickPrimary`; its position is kept for 1 s when no hand is seen).
-  Both skeletons are drawn and every letter takes the better of the two hands.
-  Measured with a full-body video (two hands in view, CPU): frame rate is the same with 1 or 2
-  hands (~11 fps); looking for 1 hand made tracking jump 4–5 times in 30 s; classifying only the
-  tracked hand dropped clear signs from 18% to 10% of hand frames. Q and W also need both
-  hands touching (a fingertip within 0.6 hand sizes of the other hand, `touchWeight`).
+  frame and tracking jumped between them, e.g. a visitor standing full-body at the fair). Every
+  letter takes the better of the two hands. Measured on a 30 s full-body video: MediaPipe swaps
+  the order of the two hands in 10% of consecutive frames, a hand appears or disappears 46
+  times, and its left/right label flips 14 times (22 frames call both hands "right"). So hands
+  are followed as **tracks** (`HandTracks`, `hand-tracks.ts`), never by index or by label:
+  - A sighting joins a track only if its wrist is within 3 hand sizes of where the track was
+    (the smaller of the two sizes: a "hand" detected on the face is huge and swallowed the real
+    hand); the margin grows while the track is unseen, and a track waits 700 ms before it is
+    dropped. Before, when the main hand was lost for one frame the only hand left became the
+    main one for good.
+  - Left/right is a vote over time weighted by MediaPipe's confidence, and two hands in view
+    can't be on the same side (the less sure one takes the other side). The label decides
+    whether a hand is mirrored before classifying it; a wrong one fed the classifier a
+    mirrored hand. With tracks the label never flips in the video (7 flips before).
+  - The main hand starts as the raised one and passes to the other hand once it is over 2 hand
+    sizes higher (it only matters for `?captura`, which records the main hand's letters).
+  - Skeletons are drawn per track, so they don't cross over.
+  - With two hands MediaPipe sometimes returns the same hand twice, overlapping and slightly
+    shifted: a second skeleton drawn off the hand that also stole its track. Two sightings
+    whose 21 points are on average under half a hand size apart are one hand (the more
+    confident one stays); two hands touching (Q, W) never match point by point.
+  Measured in Chromium with the video as the camera: same frame rate (~10 fps), clear signs
+  (top probability ≥ 0.6) went from ~20% to 38% of the frames with a hand. Q and W also need
+  both hands touching (a fingertip within 0.6 hand sizes of the other hand, `touchWeight`).
 - **Letters with a movement (Z):** the classifier is static (one frame in, probabilities out), so
-  the movement is checked outside it, with two simple parts:
-  - **Shape:** the index or the pinky is out (`fingerUp`, 3D fingertip-to-wrist reach). The other
-    fingers and where the hand points don't matter.
-  - **Movement:** `TraceTracker` follows the **palm center** (wrist + the four knuckles) for 2 s (a failed attempt is forgotten
-    before it can join the next one), with no smoothing (it rounded the corners of fast Z),
-    mirrored for left hands and measured in units of the largest hand size seen in the window
-    (turning the hand shrinks it in the image; dividing by the per-frame size made the path jump).
-    `tracesZ` finds horizontal turning points (a reversal counts after 0.2 hand sizes; strokes ≥ 0.35 — lower
-    minimums accepted small Z in replays but fired with the hands down and idle on a phone) and accepts
-    go–back–go strokes where the last one is at least 90% as wide as the diagonal, the diagonal goes
-    down and the trace ends lower.
-    Z score = shape × open gate (2.5 s after a traced Z; cleared when a letter is confirmed and
-    re-armed only once the finger comes down). Checked on recorded traces: the Z was found in all 6
-    recordings with 1 early detection (5 with the first version). With `?captura`, «Grabar Z 8 s»
-    records the tracked hand frame by frame for this kind of check.
+  the movement is checked outside it:
+  - **Shape:** the index or the pinky is out (`fingerUp`, 3D fingertip-to-wrist reach) in at
+    least 60% of the path and in the last frame.
+  - **Movement:** `TraceTracker` keeps the last 3 s of the **palm center** (wrist + the four
+    knuckles) of **each track**, in units of the largest hand size seen (turning the hand
+    shrinks it in the image), with no smoothing. Every frame, `tracesZ` tries each start point
+    and compares the path from there to now with a Z drawn as a template, the way gesture
+    recognizers for drawn shapes do (the "$1 recognizer"): resample it into 24 points equally
+    spaced along its length, scale its bounding box to a square and take the mean distance to
+    the Z and to its mirror. Size and position drop out, so a small Z counts like a big one,
+    anywhere, and pauses don't matter. It is a Z when the distance is ≤ 0.165, it is at least
+    0.25 hand sizes wide, 0.2–2× as tall as wide, starts in the top half at one side and ends
+    in the bottom half at the other side (so it waits for the bottom stroke).
+  - The first version followed horizontal turning points in sequence; with a far hand the
+    noise added turning points mid-diagonal and broke the sequence, and lowering the threshold
+    to accept small Z fired with a still hand. Comparing the whole shape doesn't depend on
+    each corner.
+  - Z score = shape × open gate (1.5 s after a traced Z). Confirming a letter clears every
+    path, so the next Z has to be drawn whole again. It used to stay disarmed until the finger
+    came down, checked on both hands: a relaxed hand hanging by the side has its fingers out, so
+    with both hands in view it re-armed in only 13% of the frames of the full-body video and a
+    well-made Z after another letter often didn't count.
+  - **Left hand:** recorded with the left hand (6 recordings, `z-trazos-izquierda.json`) the
+    trajectory is found in all of them, but live it never confirmed. Two differences with the
+    right hand: MediaPipe loses the left hand for an instant 5–10 times per recording (0–3 with
+    the right one), and every frame without a hand reset the verifier (5 frames in a row are
+    needed); and live the shape was measured only on MediaPipe's 3D metric estimate, while the
+    recordings only have image coordinates, where the left hand's finger is up 79–90% of the
+    time. Now a gap under 400 ms doesn't reset the verifier (`HAND_GONE_MS`), and the shape is
+    the larger of the two measures (`handShape`): with the right hand it can only go up, and
+    the trajectory still decides. The full-body video still fires no Z.
+  - Following a fingertip instead of the palm was measured and is worse: the palm's path is
+    closer to the Z template (mean 0.10 vs 0.13–0.22 for the index, the pinky or whichever
+    finger is up).
+  - Measured (`recorded-tracking.test.ts`, with the recordings in `__fixtures__`): the 6 Z
+    recorded on a phone are found as recorded, at 45% of their size, twice as fast, small and
+    fast, and slower (at 30% of their size, 3 of 6); the 30 s full-body video never traces a
+    Z (its closest path is 0.27 away from the template); synthetic raises, drops, waves, a
+    still far hand, an N, a vertical zigzag and a circle never fire.
+  - With `?captura`, «Grabar Z 8 s» and «Grabar «no Z» 8 s» record both hands frame by frame;
+    new recordings go to `__fixtures__` and into that test.
 - **The camera fades in** once two frames have been decoded at the final size, plus 120 ms
   (`videoReady`, `requestVideoFrameCallback`): iOS Safari showed it letterboxed for a moment
   before applying `object-fit: cover`.
