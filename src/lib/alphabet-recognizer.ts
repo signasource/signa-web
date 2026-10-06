@@ -170,6 +170,7 @@ export function parseName(
 const MIDDLE_MCP_INDEX = 9;
 const FINGERTIPS = [4, 8, 12, 16, 20];
 export const TWO_HANDED = ["Q", "W"] as const;
+export const BOTH_HANDS_LETTERS: readonly string[] = ["Q", "W", "U", "X"];
 const TOUCH_HANDS = 0.6;
 const TOUCH_SOFTNESS = 0.1;
 
@@ -208,8 +209,119 @@ export function pickPrimary(
   for (let i = 1; i < hands.length; i++) {
     const better = last
       ? gap(hands[i]![0]!, last, aspect) < gap(hands[best]![0]!, last, aspect)
-      : handSize(hands[i]!, aspect) > handSize(hands[best]!, aspect);
+      : hands[i]![0]!.y < hands[best]![0]!.y;
     if (better) best = i;
   }
   return best;
+}
+
+export const TRACED_LETTERS = ["Z"] as const;
+const TRACE_WINDOW_MS = 2000;
+const TRACE_HOLD_MS = 2500;
+const TURN = 0.2;
+const MIN_DROP = 0.25;
+const MIN_STROKE = 0.35;
+const LAST_STROKE = 0.9;
+const MIN_DIAGONAL_DROP = 0.15;
+const PALM = [0, 5, 9, 13, 17];
+const RELEASED = 0.3;
+
+export interface TracePoint {
+  x: number;
+  y: number;
+  t: number;
+}
+
+function turningPoints(points: readonly TracePoint[]): TracePoint[] {
+  if (!points.length) return [];
+  const start = points[0]!;
+  const turns: TracePoint[] = [start];
+  let dir = 0;
+  let extreme = start;
+  for (const p of points) {
+    if (dir === 0) {
+      if (Math.abs(p.x - start.x) >= TURN) [dir, extreme] = [Math.sign(p.x - start.x), p];
+      continue;
+    }
+    if ((p.x - extreme.x) * dir > 0) extreme = p;
+    else if ((extreme.x - p.x) * dir >= TURN) {
+      turns.push(extreme);
+      [dir, extreme] = [-dir, p];
+    }
+  }
+  if (dir !== 0) turns.push(extreme);
+  return turns;
+}
+
+export function tracesZ(points: readonly TracePoint[]): boolean {
+  const turns = turningPoints(points);
+  for (let i = 0; i + 3 < turns.length; i++) {
+    const [a, b, c, d] = [turns[i]!, turns[i + 1]!, turns[i + 2]!, turns[i + 3]!];
+    const s1 = b.x - a.x;
+    const s2 = c.x - b.x;
+    const s3 = d.x - c.x;
+    if (
+      Math.abs(s1) < MIN_STROKE ||
+      Math.abs(s3) < Math.max(MIN_STROKE, LAST_STROKE * Math.abs(s2))
+    )
+      continue;
+    if (Math.sign(s1) !== Math.sign(s3) || Math.sign(s2) !== -Math.sign(s1)) continue;
+    if (c.y - b.y >= MIN_DIAGONAL_DROP && d.y - a.y >= MIN_DROP) return true;
+  }
+  return false;
+}
+
+export class TraceTracker {
+  private readonly path: (TracePoint & { size: number })[] = [];
+  private tracedAt = -Infinity;
+  private armed = true;
+
+  release(shape: number): void {
+    if (shape < RELEASED) this.armed = true;
+  }
+
+  push(hand: readonly Point[] | null, aspect: number, mirrored: boolean, now: number): void {
+    if (!hand || !this.armed) return;
+    const path = this.path;
+    const center = PALM.reduce((s, i) => ({ x: s.x + hand[i]!.x, y: s.y + hand[i]!.y }), {
+      x: 0,
+      y: 0,
+    });
+    path.push({
+      x: ((mirrored ? -1 : 1) * center.x) / PALM.length,
+      y: (center.y * aspect) / PALM.length,
+      t: now,
+      size: handSize(hand, aspect),
+    });
+    while (path.length && now - path[0]!.t > TRACE_WINDOW_MS) path.shift();
+    const unit = Math.max(...path.map((q) => q.size), 1e-6);
+    if (tracesZ(path.map((q) => ({ x: q.x / unit, y: q.y / unit, t: q.t })))) {
+      this.tracedAt = now;
+      path.length = 0;
+    }
+  }
+
+  weight(now: number): number {
+    return now - this.tracedAt <= TRACE_HOLD_MS ? 1 : 0;
+  }
+
+  reset(): void {
+    this.path.length = 0;
+    this.tracedAt = -Infinity;
+    this.armed = false;
+  }
+}
+
+const FINGER_OUT = 1.35;
+const FINGER_SOFTNESS = 0.08;
+
+const reach = (hand: readonly Point[], tip: number, mcp: number) => {
+  const d = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y, (a.z ?? 0) - (b.z ?? 0));
+  return d(hand[tip]!, hand[0]!) / Math.max(d(hand[mcp]!, hand[0]!), 1e-6);
+};
+
+export function fingerUp(hand: readonly Point[]): number {
+  const out = (tip: number, mcp: number) =>
+    1 / (1 + Math.exp(-(reach(hand, tip, mcp) - FINGER_OUT) / FINGER_SOFTNESS));
+  return Math.max(out(8, 5), out(20, 17));
 }

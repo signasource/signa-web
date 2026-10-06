@@ -65,17 +65,22 @@ scope.onmessage = async ({ data }) => {
     }
     return;
   }
+  if (data.type === "reset-trace") {
+    engine?.resetTrace();
+    return;
+  }
   if (data.type === "frame") {
-    const { bitmap, withPose, classify } = data;
+    const { bitmap, withPose, classify, capture, bothHands } = data;
     try {
       if (!engine) throw new Error("El reconocedor no está listo");
       const detection = engine.detect(bitmap, withPose);
-      const probs = classify ? engine.predict(detection) : null;
+      const probs = classify ? engine.predict(detection, bothHands) : null;
       const handMs = engine.lastHandMs;
       scope.postMessage({
         type: "result",
         landmarks: detection.hand?.landmarks ?? null,
         other: detection.other?.landmarks ?? null,
+        features: capture && probs ? engine.lastFeatures : null,
         probs,
         delegate: engine.handDelegate,
         handMs,
@@ -86,6 +91,7 @@ scope.onmessage = async ({ data }) => {
         type: "result",
         landmarks: null,
         other: null,
+        features: null,
         probs: null,
         delegate: engine?.handDelegate ?? "CPU",
         handMs: 0,

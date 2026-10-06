@@ -26,6 +26,8 @@ type Stage = "setup" | "loading" | "practice" | "complete" | "error";
 type Phase = "idle" | "capturing" | "hit";
 
 const FRAME_WIDTH = 480;
+const RECORD_MS = 3000;
+const TRACE_REC_MS = 8000;
 const VIDEO_SETTLE_MS = 120;
 const FRAMES_PER_POSE = 5;
 const COOLDOWN_MS = 1800;
@@ -73,6 +75,57 @@ function cssColor(name: string): string {
 
 export function CameraNameDemo({ className }: { className?: string }) {
   const [stage, setStage] = useState<Stage>("setup");
+  const [captureMode] = useState(
+    () =>
+      typeof window !== "undefined" && new URLSearchParams(window.location.search).has("captura"),
+  );
+  const recording = useRef({ until: 0, letter: "" });
+  const samples = useRef<{ letter: string; features: number[] }[]>([]);
+  const traces = useRef<{ kind: string; frames: { t: number; hand: number[] | null }[] }[]>([]);
+  const traceRec = useRef<{ until: number; kind: string } | null>(null);
+  const [sampleCount, setSampleCount] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+
+  function record(letter: string) {
+    recording.current = { until: performance.now() + RECORD_MS, letter };
+    setIsRecording(true);
+    window.setTimeout(() => {
+      setIsRecording(false);
+      setSampleCount(samples.current.length);
+    }, RECORD_MS);
+  }
+
+  function recordTrace(kind: string) {
+    traces.current.push({ kind, frames: [] });
+    traceRec.current = { until: performance.now() + TRACE_REC_MS, kind };
+    setIsRecording(true);
+    window.setTimeout(() => {
+      traceRec.current = null;
+      setIsRecording(false);
+      setSampleCount(samples.current.length + traces.current.length);
+    }, TRACE_REC_MS);
+  }
+
+  function download() {
+    const v = videoRef.current;
+    const blob = new Blob(
+      [
+        JSON.stringify({
+          version: 2,
+          device: navigator.userAgent,
+          aspect: v && v.videoWidth ? v.videoHeight / v.videoWidth : 0.75,
+          samples: samples.current,
+          traces: traces.current,
+        }),
+      ],
+      { type: "application/json" },
+    );
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `muestras-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
   const [input, setInput] = useState("");
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -294,6 +347,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
       const step = verifier.push(probs, index, engine.thresholds[letter] ?? 0.5);
       if (step.confirmed && now >= state.cooldownUntil) {
         verifier.reset();
+        engine.resetTrace();
         state.cooldownUntil = now + COOLDOWN_MS;
         const next = state.filled + 1;
         state.filled = next;
@@ -320,12 +374,31 @@ export function CameraNameDemo({ className }: { className?: string }) {
       busy = true;
       const state = live.current;
       const classify = state.running && state.phase !== "hit" && !!state.name[state.filled];
+      const take = recording.current.until > performance.now();
+      const takeLetter = recording.current.letter;
       void createImageBitmap(frame)
-        .then((bitmap) => engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify))
-        .then(({ landmarks, other, probs }) => {
+        .then((bitmap) =>
+          engine.process(bitmap, count++ % FRAMES_PER_POSE === 0, classify || take, take, true),
+        )
+        .then(({ landmarks, other, probs, features }) => {
           if (!alive) return;
-          live.current.target = [landmarks, other];
-          recognize(probs, landmarks !== null, performance.now());
+          const tr = traceRec.current;
+          if (tr && performance.now() < tr.until)
+            traces.current[traces.current.length - 1]!.frames.push({
+              t: performance.now(),
+              hand: landmarks ? landmarks.flatMap((q) => [q.x, q.y, q.z ?? 0]) : null,
+            });
+          if (take && features)
+            samples.current.push({ letter: takeLetter, features: Array.from(features) });
+          const [d0, d1] = live.current.drawn;
+          const gap = (a: Point[] | null | undefined, b: Point[] | null | undefined) =>
+            a && b ? Math.hypot(a[0]!.x - b[0]!.x, a[0]!.y - b[0]!.y) : 0;
+          const swap =
+            landmarks && other && d0 && d1
+              ? gap(d0, other) + gap(d1, landmarks) < gap(d0, landmarks) + gap(d1, other)
+              : !!(d1 && landmarks && !other && gap(d1, landmarks) < gap(d0, landmarks));
+          live.current.target = swap ? [other, landmarks] : [landmarks, other];
+          recognize(classify ? probs : null, landmarks !== null, performance.now());
         })
         .catch(() => {})
         .finally(() => {
@@ -539,6 +612,42 @@ export function CameraNameDemo({ className }: { className?: string }) {
                     ? "Capturando seña"
                     : "Listo · esperando manos"}
             </div>
+            {captureMode && (
+              <div className="absolute right-3 bottom-3 z-30 flex flex-col items-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => record(name[filled] ?? "")}
+                  disabled={isRecording}
+                  className="bg-danger text-on-primary rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-70"
+                >
+                  {isRecording ? "Grabando…" : `Grabar «${name[filled] ?? ""}» 3 s`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => recordTrace("z")}
+                  disabled={isRecording}
+                  className="bg-primary text-on-primary rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-70"
+                >
+                  Grabar Z 8 s
+                </button>
+                <button
+                  type="button"
+                  onClick={() => recordTrace("no-z")}
+                  disabled={isRecording}
+                  className="bg-text text-on-dark rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-70"
+                >
+                  Grabar «no Z» 8 s
+                </button>
+                <button
+                  type="button"
+                  onClick={download}
+                  disabled={!sampleCount}
+                  className="bg-surface text-text rounded-full px-3 py-1.5 text-[11px] font-extrabold disabled:opacity-50"
+                >
+                  Descargar ({sampleCount})
+                </button>
+              </div>
+            )}
 
             <button
               type="button"

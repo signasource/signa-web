@@ -11,7 +11,7 @@
 - `/login` and the guarded dashboard: overview, members list + detail (remove), contents, invitations — see [features/dashboard.md](./features/dashboard.md).
 - Landing page (`/`) — full one-page site with a playable 3D lesson demo; scroll effects work in
   every browser (no CSS scroll timelines). See [features/landing.md](./features/landing.md).
-- Landing camera demo ("Tu cámara te corrige") — real in-browser recognition: spell your name with the LSA alphabet, signa-ml v6 (v5 plus S and O recorded on an iPhone; the native app still ships v5). See [features/landing.md](./features/landing.md).
+- Landing camera demo ("Tu cámara te corrige") — real in-browser recognition: spell your name with the LSA alphabet, signa-ml v8 (v5 plus S, O and C recorded on an iPhone and the Z, which also needs its trace; the native app still ships v5). See [features/landing.md](./features/landing.md).
 - `/proximamente` — coming-soon page with waitlist email form: the browser calls signa-api `POST /waitlist` directly (202 for valid emails; rate limiting is done by Cloudflare in front of the API), validates the email first, has a hidden honeypot field and a minimum fill time, and shows the real result. All "Empezá gratis" CTAs link here.
 
 ## Stub / placeholder

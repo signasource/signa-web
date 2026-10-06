@@ -3,11 +3,14 @@ import { storedDelegate, storeDelegate, type Delegate } from "@/lib/delegate-cho
 
 export type WorkerRequest =
   | { type: "init"; delegate: Delegate | null }
+  | { type: "reset-trace" }
   | {
       type: "frame";
       bitmap: ImageBitmap;
       withPose: boolean;
       classify: boolean;
+      capture?: boolean;
+      bothHands?: boolean;
     };
 
 export type WorkerResponse =
@@ -17,6 +20,7 @@ export type WorkerResponse =
       type: "result";
       landmarks: Point[] | null;
       other: Point[] | null;
+      features: Float32Array | null;
       probs: Float32Array | null;
       delegate: Delegate;
       handMs: number;
@@ -26,6 +30,7 @@ export type WorkerResponse =
 export interface FrameResult {
   landmarks: Point[] | null;
   other: Point[] | null;
+  features: Float32Array | null;
   probs: Float32Array | null;
   delegate: Delegate;
   handMs: number;
@@ -34,7 +39,14 @@ export interface FrameResult {
 export interface RecognizerClient {
   labels: string[];
   thresholds: Record<string, number>;
-  process(bitmap: ImageBitmap, withPose: boolean, classify: boolean): Promise<FrameResult>;
+  process(
+    bitmap: ImageBitmap,
+    withPose: boolean,
+    classify: boolean,
+    capture?: boolean,
+    bothHands?: boolean,
+  ): Promise<FrameResult>;
+  resetTrace(): void;
   close(): void;
 }
 
@@ -58,12 +70,13 @@ export function createRecognizerClient(): Promise<RecognizerClient> {
         resolve({
           labels: data.labels,
           thresholds: data.thresholds,
-          process(bitmap, withPose, classify) {
+          process(bitmap, withPose, classify, capture, bothHands) {
             return new Promise((done) => {
               pending = done;
-              send({ type: "frame", bitmap, withPose, classify }, [bitmap]);
+              send({ type: "frame", bitmap, withPose, classify, capture, bothHands }, [bitmap]);
             });
           },
+          resetTrace: () => send({ type: "reset-trace" }),
           close: () => worker.terminate(),
         });
       } else if (data.type === "result") {
@@ -72,6 +85,7 @@ export function createRecognizerClient(): Promise<RecognizerClient> {
         done?.({
           landmarks: data.landmarks,
           other: data.other,
+          features: data.features,
           probs: data.probs,
           delegate: data.delegate,
           handMs: data.handMs,
