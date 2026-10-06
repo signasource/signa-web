@@ -24,14 +24,15 @@ export function CtaFinal() {
             ¿Te animás a empezar deletreando tu nombre en señas?
           </h2>
 
-          <div className="flex items-center justify-between gap-6">
+          <div className="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={() => openFeature("camera")}
-              className="landing-btn border-on-primary/30 bg-on-primary/10 hover:bg-on-primary/20 flex min-h-14.5 w-fit items-center gap-2.5 rounded-full border px-7.5 text-[17px] font-extrabold"
+              className="landing-btn border-on-primary/30 bg-on-primary/10 hover:bg-on-primary/20 flex min-h-14.5 w-full items-center justify-center gap-2.5 rounded-full border px-6 text-[17px] font-extrabold whitespace-nowrap sm:w-fit sm:px-7.5"
             >
               <svg
                 aria-hidden="true"
+                className="shrink-0"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -46,7 +47,7 @@ export function CtaFinal() {
               </svg>
               Prender la cámara y probar
             </button>
-            <div className="flex shrink-0 items-center gap-3" aria-hidden>
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3" aria-hidden>
               <SpellingTile letter="L" state="done" />
               <SpellingTile letter="I" state="done" />
               <SpellingTile letter="S" state="current" />
