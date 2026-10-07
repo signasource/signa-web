@@ -12,6 +12,8 @@ import {
 import { cn } from "@/lib/utils";
 import { LisaGlbViewer } from "@/components/landing/lisa-glb-viewer";
 import { PRELOAD_AHEAD } from "@/lib/glb";
+import { cameraMessage, engineMessage } from "@/lib/start-errors";
+import { SpeedCheck } from "@/lib/speed-check";
 import {
   LetterVerifier,
   nameLetters,
@@ -58,6 +60,11 @@ const HAND_LINKS: ReadonlyArray<readonly [number, number]> = [
   [0, 17],
 ];
 const TIPS = new Set([4, 8, 12, 16, 20]);
+
+class StartError extends Error {}
+
+const TOO_SLOW =
+  "Este dispositivo no llega a mover el reconocimiento en vivo: va a menos de 2 imágenes por segundo. Probá desde una compu o un celular más nuevo; en la app de Signa va a andar mejor.";
 
 let enginePromise: Promise<RecognizerClient> | null = null;
 function getEngine(): Promise<RecognizerClient> {
@@ -203,13 +210,17 @@ export function CameraNameDemo({ className }: { className?: string }) {
       return;
     }
     setStage("loading");
+    const camera = navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "user", width: { ideal: 640 } }, audio: false })
+      .catch((e: unknown) => {
+        throw new StartError(cameraMessage(e, navigator.userAgent));
+      });
     try {
       const [stream, engine] = await Promise.all([
-        navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 640 } },
-          audio: false,
+        camera,
+        getEngine().catch((e: unknown) => {
+          throw new StartError(engineMessage(e, navigator.userAgent, navigator.onLine));
         }),
-        getEngine(),
       ]);
       const unsupported = parseName(parsed.name, engine.labels).unsupported;
       if (unsupported.length) {
@@ -226,11 +237,11 @@ export function CameraNameDemo({ className }: { className?: string }) {
       setRunning(true);
       setStage("practice");
     } catch (err) {
-      const denied = err instanceof DOMException && err.name === "NotAllowedError";
+      void camera.then((st) => st.getTracks().forEach((t) => t.stop())).catch(() => {});
       setError(
-        denied
-          ? "Necesitamos permiso para usar la cámara. Habilitalo en tu navegador y volvé a intentar."
-          : "No pudimos iniciar el reconocimiento en este navegador.",
+        err instanceof StartError
+          ? err.message
+          : engineMessage(err, navigator.userAgent, navigator.onLine),
       );
       setStage("error");
     }
@@ -292,6 +303,12 @@ export function CameraNameDemo({ className }: { className?: string }) {
     let lastTarget = "";
     let handSeenAt = -Infinity;
     let hitTimer: ReturnType<typeof setTimeout> | undefined;
+    const speed = new SpeedCheck();
+    let measuring = false;
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && measuring) speed.restart(performance.now());
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     const setLivePhase = (p: Phase) => {
       if (live.current.phase === p) return;
@@ -391,6 +408,11 @@ export function CameraNameDemo({ className }: { className?: string }) {
         )
         .then(({ landmarks, other, ids, probs, features }) => {
           if (!alive) return;
+          if (!measuring) {
+            measuring = true;
+            speed.restart(performance.now());
+          }
+          speed.record(performance.now());
           const tr = traceRec.current;
           if (tr && performance.now() < tr.until)
             traces.current[traces.current.length - 1]!.frames.push({
@@ -493,6 +515,13 @@ export function CameraNameDemo({ className }: { className?: string }) {
     };
 
     const loop = () => {
+      if (measuring && document.visibilityState === "visible" && speed.tooSlow(performance.now())) {
+        alive = false;
+        stopCamera();
+        setError(TOO_SLOW);
+        setStage("error");
+        return;
+      }
       raf = requestAnimationFrame(loop);
       send();
       draw();
@@ -502,6 +531,7 @@ export function CameraNameDemo({ className }: { className?: string }) {
       alive = false;
       cancelAnimationFrame(raf);
       clearTimeout(hitTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [stage, stopCamera]);
 
