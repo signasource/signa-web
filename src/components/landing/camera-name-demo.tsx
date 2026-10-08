@@ -64,7 +64,7 @@ const TIPS = new Set([4, 8, 12, 16, 20]);
 class StartError extends Error {}
 
 const TOO_SLOW =
-  "Este dispositivo no llega a mover el reconocimiento en vivo: va a menos de 2 imágenes por segundo. Probá desde una compu o un celular más nuevo; en la app de Signa va a andar mejor.";
+  "Tu dispositivo no llega a mover el reconocimiento en vivo. Intentá más tarde o desde otro equipo; en la app, al no ser web, anda mejor.";
 
 let enginePromise: Promise<RecognizerClient> | null = null;
 function getEngine(): Promise<RecognizerClient> {

@@ -23,7 +23,7 @@ describe("start errors", () => {
     expect(cameraMessage(new DOMException("x", "NotFoundError"), CHROME)).toContain(
       "ninguna cámara",
     );
-    expect(cameraMessage(new DOMException("x", "NotReadableError"), CHROME)).toContain("otra app");
+    expect(cameraMessage(new DOMException("x", "NotReadableError"), CHROME)).toContain("Otra app");
   });
 
   it("blames the connection, not the browser, when a download fails", () => {
