@@ -14,7 +14,7 @@ export function inAppBrowser(ua: string): string | null {
 }
 
 const openOutside = (app: string) =>
-  `Estás en el navegador de ${app}, que no deja usar bien la cámara. Abrí esta página en Chrome o Safari (en el menú ··· de ${app}, «Abrir en el navegador»).`;
+  `El navegador de ${app} no deja usar la cámara. Abrí la página en Chrome o Safari.`;
 
 const NETWORK = /fetch|network|load failed|HTTP 5\d\d|timed? ?out/i;
 
@@ -24,21 +24,21 @@ export function cameraMessage(error: unknown, ua: string): string {
   if (name === "NotAllowedError" || name === "SecurityError")
     return app
       ? openOutside(app)
-      : "Necesitamos permiso para usar la cámara. Habilitalo en tu navegador y volvé a intentar.";
+      : "Necesitamos permiso para usar la cámara. Habilitalo y volvé a intentar.";
   if (name === "NotFoundError" || name === "OverconstrainedError")
     return "No encontramos ninguna cámara en este dispositivo.";
   if (name === "NotReadableError" || name === "AbortError")
-    return "La cámara la está usando otra app o pestaña. Cerrala y volvé a intentar.";
-  return app ? openOutside(app) : "No pudimos abrir la cámara en este navegador.";
+    return "Otra app o pestaña está usando la cámara. Cerrala y volvé a intentar.";
+  return app ? openOutside(app) : "No pudimos abrir la cámara. Intentá de nuevo más tarde.";
 }
 
 export function engineMessage(error: unknown, ua: string, online: boolean): string {
   const text = error instanceof Error ? error.message : String(error);
   if (!online || NETWORK.test(text))
-    return "No pudimos descargar el reconocedor. Revisá tu conexión a internet y volvé a intentar.";
+    return "No pudimos descargar el reconocedor. Revisá tu conexión o intentá más tarde.";
   const app = inAppBrowser(ua);
   if (app) return openOutside(app);
   if (typeof WebAssembly === "undefined" || typeof Worker === "undefined")
-    return "Este navegador es muy viejo para el reconocimiento. Probá con Chrome, Edge, Firefox o Safari actualizados.";
-  return "No pudimos iniciar el reconocimiento en este navegador. Probá con Chrome, Edge, Firefox o Safari actualizados.";
+    return "Tu navegador no soporta el reconocimiento. Probá con Chrome, Edge, Firefox o Safari.";
+  return "No pudimos iniciar el reconocimiento. Probá con Chrome, Edge, Firefox o Safari, o intentá más tarde.";
 }
