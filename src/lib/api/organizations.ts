@@ -14,6 +14,25 @@ import type {
 export const organizationsApi = {
   me: () => api<MyOrganization>("/organizations/me"),
 
+  register: (data: {
+    orgName: string;
+    cuit: string;
+    contactEmail: string;
+    contactPhone?: string;
+    memberLimit: number;
+    adminName: string;
+    adminPassword: string;
+  }) =>
+    api<{ organizationId: string; organizationName: string; status: string }>(
+      "/organizations/register",
+      { method: "POST", body: data, anonymous: true },
+    ),
+
+  getPricing: () =>
+    api<{ pricePerPerson: number; currency: string }>("/organizations/pricing", {
+      anonymous: true,
+    }),
+
   redeemInviteCode: (code: string) =>
     api<RedeemInviteCodeResponse>("/organizations/invite-codes/redeem", {
       method: "POST",

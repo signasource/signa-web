@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { BackButton } from "@/components/back-button";
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
+import { organizationsApi } from "@/lib/api/organizations";
 import { formatCuit, validateCuit } from "@/lib/cuit";
 
 type Tab = "login" | "registro";
@@ -26,8 +27,13 @@ const registroSchema = z
       .string()
       .min(1, "Ingresá el CUIT de tu organización.")
       .refine((v) => validateCuit(v), "El CUIT no es válido."),
+    adminName: z.string().min(2, "Ingresá tu nombre completo."),
     email: z.string().email("Ingresá un email válido."),
     telefono: z.string().optional(),
+    memberLimit: z
+      .number({ invalid_type_error: "Ingresá la cantidad de personas." })
+      .min(1, "Mínimo 1 persona.")
+      .max(10000),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
     confirmPassword: z.string().min(1, "Confirmá tu contraseña."),
   })
@@ -104,13 +110,28 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
-  const [submitted, setSubmitted] = useState(false);
+  const { login } = useAuth();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [pricing, setPricing] = useState<{ pricePerPerson: number; currency: string } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    organizationsApi
+      .getPricing()
+      .then((data) => setPricing(data))
+      .catch(() => {});
+  }, []);
+
   const {
     register,
     handleSubmit,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegistroValues>({ resolver: zodResolver(registroSchema) });
+
+  const watchedMemberLimit = useWatch({ control, name: "memberLimit" });
 
   function handleCuitChange(e: React.ChangeEvent<HTMLInputElement>) {
     const formatted = formatCuit(e.target.value);
@@ -118,25 +139,27 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
     e.target.value = formatted;
   }
 
-  async function onSubmit(_values: RegistroValues) {
-    await new Promise((r) => setTimeout(r, 600));
-    setSubmitted(true);
-    onSuccess();
-  }
-
-  if (submitted) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-8 text-center">
-        <div className="bg-primary/10 text-primary flex h-16 w-16 items-center justify-center rounded-full text-3xl">
-          ✓
-        </div>
-        <h3 className="font-display text-2xl font-bold">¡Recibimos tu solicitud!</h3>
-        <p className="text-text-muted max-w-xs text-[15px] leading-relaxed">
-          Estamos finalizando el módulo organizacional. Te avisamos en cuanto el registro esté
-          disponible.
-        </p>
-      </div>
-    );
+  async function onSubmit(values: RegistroValues) {
+    setServerError(null);
+    try {
+      await organizationsApi.register({
+        orgName: values.organizacion,
+        cuit: values.cuit,
+        contactEmail: values.email,
+        contactPhone: values.telefono || undefined,
+        memberLimit: values.memberLimit,
+        adminName: values.adminName,
+        adminPassword: values.password,
+      });
+      await login(values.email, values.password);
+      onSuccess();
+    } catch (err) {
+      setServerError(
+        err instanceof ApiError
+          ? err.message
+          : "No pudimos registrar la organización. Intentalo de nuevo.",
+      );
+    }
   }
 
   return (
@@ -167,6 +190,18 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
       </label>
 
       <label className={LABEL}>
+        Nombre del responsable
+        <input
+          {...register("adminName")}
+          type="text"
+          autoComplete="name"
+          placeholder="Juan García"
+          className={INPUT}
+        />
+        {errors.adminName && <span className={ERROR}>{errors.adminName.message}</span>}
+      </label>
+
+      <label className={LABEL}>
         Email de contacto
         <input
           {...register("email")}
@@ -188,6 +223,30 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
           className={INPUT}
         />
       </label>
+
+      <label className={LABEL}>
+        Cantidad de personas
+        <input
+          {...register("memberLimit", { valueAsNumber: true })}
+          type="number"
+          min={1}
+          placeholder="50"
+          className={INPUT}
+        />
+        {errors.memberLimit && <span className={ERROR}>{errors.memberLimit.message}</span>}
+      </label>
+
+      {pricing && !isNaN(watchedMemberLimit) && watchedMemberLimit >= 1 && (
+        <div className="bg-primary/5 border-primary/20 rounded-2xl border p-4">
+          <p className="text-text-muted text-[13px]">
+            Para <span className="text-text font-bold">{watchedMemberLimit} personas</span>
+          </p>
+          <p className="font-display text-text text-2xl font-extrabold tracking-tight">
+            ${(watchedMemberLimit * pricing.pricePerPerson).toLocaleString("es-AR")}{" "}
+            <span className="text-text-muted text-base font-normal">{pricing.currency}/mes</span>
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className={LABEL}>
@@ -214,12 +273,14 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
         </label>
       </div>
 
+      {serverError && <p className={ERROR}>{serverError}</p>}
+
       <button
         type="submit"
         disabled={isSubmitting}
         className="bg-text text-on-dark mt-2 min-h-14 rounded-2xl font-extrabold disabled:opacity-60"
       >
-        {isSubmitting ? "Enviando solicitud…" : "Registrar organización"}
+        {isSubmitting ? "Registrando…" : "Registrar organización"}
       </button>
     </form>
   );
