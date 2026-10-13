@@ -60,7 +60,7 @@ export default function InvitationsPage() {
   const [emailColumn, setEmailColumn] = useState("");
   const [excelError, setExcelError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isExcelInvite = useRef(false);
+  const [isExcelInvite, setIsExcelInvite] = useState(false);
   const datalistId = useId();
 
   const flash = (message: string) => {
@@ -113,9 +113,9 @@ export default function InvitationsPage() {
       if (okCount < results.length) {
         form.setError("emails", { message: "No pudimos enviar algunas invitaciones." });
       }
-      if (isExcelInvite.current) {
+      if (isExcelInvite) {
         resetExcel();
-        isExcelInvite.current = false;
+        setIsExcelInvite(false);
       }
     },
   });
@@ -156,6 +156,7 @@ export default function InvitationsPage() {
       const sheetName = workbook.SheetNames[0];
       if (!sheetName) throw new Error("El archivo no tiene hojas.");
       const sheet = workbook.Sheets[sheetName];
+      if (!sheet) throw new Error("El archivo no tiene hojas.");
       const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
       if (rows.length < 2) throw new Error("El archivo no tiene datos.");
       const headers = (rows[0] as unknown[]).map(String);
@@ -163,8 +164,7 @@ export default function InvitationsPage() {
       const dataRows = (rows.slice(1) as unknown[][]).map((r) =>
         headers.map((_, i) => String((r as unknown[])[i] ?? "")),
       );
-      const autoCol =
-        headers.find((h) => h.toLowerCase().includes("mail")) ?? headers[0] ?? "";
+      const autoCol = headers.find((h) => h.toLowerCase().includes("mail")) ?? headers[0] ?? "";
       setExcelHeaders(headers);
       setExcelDataRows(dataRows);
       setEmailColumn(autoCol);
@@ -224,7 +224,7 @@ export default function InvitationsPage() {
               </span>
             ) : null}
             <button type="submit" disabled={invite.isPending} className={primaryButton}>
-              {invite.isPending && !isExcelInvite.current ? "Enviando…" : "Enviar invitaciones"}
+              {invite.isPending && !isExcelInvite ? "Enviando…" : "Enviar invitaciones"}
             </button>
           </form>
           {sent.length > 0 ? (
@@ -345,9 +345,7 @@ export default function InvitationsPage() {
                   Elegir archivo
                 </button>
               </div>
-              {excelError ? (
-                <ErrorState>{excelError}</ErrorState>
-              ) : null}
+              {excelError ? <ErrorState>{excelError}</ErrorState> : null}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -440,7 +438,7 @@ export default function InvitationsPage() {
                 <button
                   type="button"
                   onClick={resetExcel}
-                  disabled={invite.isPending && isExcelInvite.current}
+                  disabled={invite.isPending && isExcelInvite}
                   className={pillButton}
                 >
                   Cancelar
@@ -449,12 +447,12 @@ export default function InvitationsPage() {
                   type="button"
                   disabled={validEmails.length === 0 || invite.isPending}
                   onClick={() => {
-                    isExcelInvite.current = true;
+                    setIsExcelInvite(true);
                     invite.mutate(validEmails);
                   }}
                   className={primaryButton}
                 >
-                  {invite.isPending && isExcelInvite.current
+                  {invite.isPending && isExcelInvite
                     ? "Enviando…"
                     : `Enviar ${validEmails.length} invitación${validEmails.length !== 1 ? "es" : ""}`}
                 </button>

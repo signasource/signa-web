@@ -1,6 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Fragment } from "react";
+import { CourseSelect } from "@/components/dashboard/course-select";
 import {
   EmptyState,
   ErrorState,
@@ -9,6 +11,7 @@ import {
   ProgressBar,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
+import { useCourseFilter } from "@/features/dashboard/use-course-filter";
 import { organizationsApi } from "@/lib/api/organizations";
 
 const NUMBER = new Intl.NumberFormat("es-AR");
@@ -16,17 +19,20 @@ const NUMBER = new Intl.NumberFormat("es-AR");
 export default function ModulesPage() {
   const { organization } = useAuth();
   const orgId = organization?.id;
-  const courseName = organization?.courses[0]?.name;
+  const { courseId, courses } = useCourseFilter();
+  const groupByCourse = !courseId && courses.length > 1;
 
   const overview = useQuery({
-    queryKey: ["organization", orgId, "overview"],
-    queryFn: () => organizationsApi.overview(orgId!),
+    queryKey: ["organization", orgId, "overview", { courseId }],
+    queryFn: () => organizationsApi.overview(orgId!, courseId),
     enabled: Boolean(orgId),
+    placeholderData: keepPreviousData,
   });
   const { data, isPending, error } = useQuery({
-    queryKey: ["organization", orgId, "modules"],
-    queryFn: () => organizationsApi.modules(orgId!),
+    queryKey: ["organization", orgId, "modules", { courseId }],
+    queryFn: () => organizationsApi.modules(orgId!, courseId),
     enabled: Boolean(orgId),
+    placeholderData: keepPreviousData,
   });
   const total = overview.data?.participation.totalParticipants ?? 0;
 
@@ -36,11 +42,7 @@ export default function ModulesPage() {
         title="Contenidos contratados"
         subtitle={`Todas las personas activas de ${organization?.name} acceden a estos módulos desde la app. Cada una avanza a su ritmo.`}
       >
-        {courseName ? (
-          <span className="bg-shop-amber-light text-shop-amber-dark rounded-full px-3.5 py-2 text-[13px] font-extrabold">
-            Curso: {courseName}
-          </span>
-        ) : null}
+        <CourseSelect />
       </PageHeading>
 
       {isPending ? <LoadingState>Cargando contenidos…</LoadingState> : null}
@@ -54,53 +56,65 @@ export default function ModulesPage() {
 
       <ul className="flex flex-col gap-3">
         {data?.map((m, index) => (
-          <li
-            key={m.topicId}
-            className="border-border bg-surface flex flex-wrap items-center gap-x-8 gap-y-5 rounded-2xl border p-5"
-          >
-            <div className="flex min-w-0 flex-[1_1_280px] items-center gap-3.5">
-              <span className="bg-primary text-on-primary font-display flex size-12 shrink-0 items-center justify-center rounded-full text-lg font-extrabold">
-                {index + 1}
-              </span>
-              <div className="min-w-0">
-                <p className="font-display text-xl font-bold tracking-tight">{m.title}</p>
-                <p className="text-text-muted mt-0.5 text-[13px]">{m.totalLessons} lecciones</p>
+          <Fragment key={m.topicId}>
+            {groupByCourse && m.courseId !== data[index - 1]?.courseId ? (
+              <li className="font-display mt-2 text-lg font-bold first:mt-0">{m.courseName}</li>
+            ) : null}
+            <li className="border-border bg-surface flex flex-wrap items-center gap-x-8 gap-y-5 rounded-2xl border p-5">
+              <div className="flex min-w-0 flex-[1_1_280px] items-center gap-3.5">
+                <span className="bg-primary text-on-primary font-display flex size-12 shrink-0 items-center justify-center rounded-full text-lg font-extrabold">
+                  {groupByCourse
+                    ? data.slice(0, index + 1).filter((x) => x.courseId === m.courseId).length
+                    : index + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-display text-xl font-bold tracking-tight">{m.title}</p>
+                  <p className="text-text-muted mt-0.5 text-[13px]">
+                    {m.totalLessons} {m.totalLessons === 1 ? "lección" : "lecciones"}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="grid flex-[2_1_520px] grid-cols-[repeat(auto-fit,minmax(130px,1fr))] items-center gap-5">
-              <div className="flex flex-col gap-1.5">
-                <span className="text-text-muted text-[13px] font-bold">Lo completaron</span>
-                <span className="flex items-center gap-2">
-                  <ProgressBar
-                    percent={m.completionPercentage}
-                    tone="success"
-                    className="flex-1"
-                    label={`Completaron ${m.title}`}
-                  />
-                  <span className="text-sm font-extrabold whitespace-nowrap">
-                    {m.participantsCompleted}
-                    {total ? `/${total}` : ""}
+              <div className="grid flex-[2_1_520px] grid-cols-[repeat(auto-fit,minmax(130px,1fr))] items-center gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-text-muted text-[13px] font-bold">Lo completaron</span>
+                  <span className="flex items-center gap-2">
+                    <ProgressBar
+                      percent={m.completionPercentage}
+                      tone="success"
+                      className="flex-1"
+                      label={`Completaron ${m.title}`}
+                    />
+                    <span className="text-sm font-extrabold whitespace-nowrap">
+                      {m.participantsCompleted}
+                      {total ? `/${total}` : ""}
+                    </span>
                   </span>
-                </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-text-muted text-[13px] font-bold">En curso</span>
+                  <span className="font-display text-2xl font-extrabold">
+                    {m.participantsInProgress}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-text-muted text-[13px] font-bold">
+                    Respuestas correctas
+                  </span>
+                  <span className="font-display text-2xl font-extrabold">
+                    {m.exerciseAttempts > 0 ? `${m.correctPercentage}%` : "—"}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-text-muted text-[13px] font-bold">
+                    Ejercicios realizados
+                  </span>
+                  <span className="font-display text-2xl font-extrabold">
+                    {NUMBER.format(m.exerciseAttempts)}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-text-muted text-[13px] font-bold">En curso</span>
-                <span className="font-display text-2xl font-extrabold">
-                  {m.participantsInProgress}
-                </span>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-text-muted text-[13px] font-bold">Respuestas correctas</span>
-                <span className="font-display text-2xl font-extrabold">{m.correctPercentage}%</span>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-text-muted text-[13px] font-bold">Ejercicios realizados</span>
-                <span className="font-display text-2xl font-extrabold">
-                  {NUMBER.format(m.exerciseAttempts)}
-                </span>
-              </div>
-            </div>
-          </li>
+            </li>
+          </Fragment>
         ))}
       </ul>
       <p className="text-text-muted text-sm">

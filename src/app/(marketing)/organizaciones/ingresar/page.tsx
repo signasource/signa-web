@@ -31,7 +31,7 @@ const registroSchema = z
     email: z.string().email("Ingresá un email válido."),
     telefono: z.string().optional(),
     memberLimit: z
-      .number({ invalid_type_error: "Ingresá la cantidad de personas." })
+      .number({ error: "Ingresá la cantidad de personas." })
       .min(1, "Mínimo 1 persona.")
       .max(10000),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
@@ -112,9 +112,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
   const { login } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [pricing, setPricing] = useState<{ pricePerPerson: number; currency: string } | null>(
-    null,
-  );
+  const [pricing, setPricing] = useState<{ pricePerPerson: number; currency: string } | null>(null);
 
   useEffect(() => {
     organizationsApi
@@ -301,7 +299,7 @@ export default function IngresarPage() {
   }, []);
 
   useEffect(() => {
-    if (status === "authenticated") router.replace("/organizaciones/panel");
+    if (status === "authenticated") router.replace("/dashboard");
   }, [status, router]);
 
   return (
@@ -356,7 +354,7 @@ export default function IngresarPage() {
           </div>
 
           {tab === "login" ? (
-            <LoginForm onSuccess={() => router.push("/organizaciones/panel")} />
+            <LoginForm onSuccess={() => router.push("/dashboard")} />
           ) : (
             <RegistroForm onSuccess={() => {}} />
           )}
