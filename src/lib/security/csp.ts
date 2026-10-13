@@ -4,6 +4,7 @@ export const MARKETING_PATHS = [
   "/terminos",
   "/proximamente",
   "/organizaciones",
+  "/eliminar-cuenta",
 ] as const;
 
 const isDev = process.env.NODE_ENV === "development";

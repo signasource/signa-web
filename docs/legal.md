@@ -8,12 +8,13 @@
 
 ## Pages
 
-| URL           | File                              | Notes                       |
-| ------------- | --------------------------------- | --------------------------- |
-| `/privacidad` | `(marketing)/privacidad/page.tsx` | Privacy policy (Ley 25.326) |
-| `/terminos`   | `(marketing)/terminos/page.tsx`   | Terms and conditions        |
+| URL                | File                                   | Notes                                                                        |
+| ------------------ | -------------------------------------- | ---------------------------------------------------------------------------- |
+| `/privacidad`      | `(marketing)/privacidad/page.tsx`      | Privacy policy (Ley 25.326)                                                  |
+| `/terminos`        | `(marketing)/terminos/page.tsx`        | Terms and conditions                                                         |
+| `/eliminar-cuenta` | `(marketing)/eliminar-cuenta/page.tsx` | Account-deletion instructions (Play Console "URL de eliminación de cuentas") |
 
-Both are static, listed in `MARKETING_PATHS` ([security.md](./security.md)), and linked from the landing footer. Shared pieces: `LegalPage`/`Section`/`Todo` (`src/components/legal/legal-page.tsx`) and `src/lib/legal.ts` (contact email, institution, **`lastUpdated`** — bump it on every text change).
+All three are static, listed in `MARKETING_PATHS` ([security.md](./security.md)), and linked from the landing footer. `/eliminar-cuenta` must stay publicly reachable and match `UserService.deleteAccount`: Google Play checks it. Shared pieces: `LegalPage`/`Section`/`Todo` (`src/components/legal/legal-page.tsx`) and `src/lib/legal.ts` (contact email, institution, **`lastUpdated`** — bump it on every text change).
 
 ## The text must match the system
 
@@ -24,15 +25,15 @@ The policy makes factual claims. When the code changes, re-verify the claim (**c
 | Data collected (name, last name, email, username, progress, XP, streak, social, device token, Play purchase token) | `signa-api` entities: `User`, `UserStats`, `Friendship`, `DeviceToken`, `GemPurchase`, `UserDailyActivity` |
 | Camera analysis is fully on-device; nothing uploaded                                                               | `signa-mobile/docs/features/ml.md`                                                                         |
 | What org admins see per participant                                                                                | `signa-api` `MemberProgressResponse`, `OrganizationMemberSummaryResponse`, `OrganizationOverviewResponse`  |
-| What account deletion does                                                                                         | `signa-api` `UserService.deleteAccount`                                                                    |
+| What account deletion erases and keeps (privacy §6 and `/eliminar-cuenta`)                                         | `signa-api` `UserService.deleteAccount`, `AccountErasureRepository`                                        |
 | Third parties (Google login/Play, Firebase FCM, Cloudflare R2, mail, hosting)                                      | `signa-api/.env.example`, `signa-api/CLAUDE.md` §4                                                         |
 
 Adding a new third-party SDK, analytics, a new personal-data field, or a new thing admins can see **requires updating both pages and `lastUpdated` in the same PR**.
 
 ## Open decisions (search the pages for `COMPLETAR` / `REVISAR`)
 
-1. **Team names and contact email** (`src/lib/legal.ts`, both pages).
-2. **Data retention after account deletion.** Today `deleteAccount` only disables the account, anonymizes the **email**, and removes tokens/device tokens; **name, last name, username, and progress remain**. The policy says so honestly, but this likely falls short of the right to erasure (Ley 25.326) — decide between fixing the system (anonymize/delete) or a stated retention period.
+1. **Team names** (both pages). The contact email is set in `src/lib/legal.ts`.
+2. **Backups and retention of purchase records.** Account deletion now erases personal and activity data and anonymizes the `users` row (`signa-api` PR #92); purchase, gem-purchase and gift records are kept without identity. Decide whether to state a retention period for backups and for those records. Email invites sent to people who never registered keep their email in `invite_codes` until a retention rule exists.
 3. **Roles with organizations** (controller vs processor) and whether a data-processing agreement is signed with each organization.
 4. **AAIP database registration** — ask the faculty/advisor whether it applies.
 5. **Minimum age** and parental authorization.

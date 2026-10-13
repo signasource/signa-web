@@ -31,6 +31,7 @@ export type AdminStats = {
   totalUsers: number;
   activeUsersLast7Days: number;
   waitlistCount: number;
+  totalSigns: number;
 };
 
 export type ReportStatus = "PENDING" | "REVIEWED" | "RESOLVED" | "REJECTED";
@@ -74,6 +75,9 @@ export type AdminUser = {
   enabled: boolean;
   verified: boolean;
   organizationName: string | null;
+  authProvider: "GOOGLE" | "EMAIL";
+  currentStreak: number;
+  lastStreakDate: string | null;
 };
 
 export type AdminWaitlistEntry = {
