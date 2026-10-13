@@ -23,6 +23,9 @@ export function LandingFooter() {
           <Link href="/terminos" className="text-text-muted font-normal hover:underline">
             Términos
           </Link>
+          <Link href="/eliminar-cuenta" className="text-text-muted font-normal hover:underline">
+            Eliminar cuenta
+          </Link>
           <span className="font-normal">© {new Date().getFullYear()} Signa</span>
         </div>
       </div>

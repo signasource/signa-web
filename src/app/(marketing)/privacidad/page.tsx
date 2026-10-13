@@ -137,16 +137,15 @@ export default function PrivacyPage() {
       <Section title="6. Cuánto tiempo conservamos tus datos">
         <p>
           Conservamos tus datos mientras tu cuenta esté activa. Si eliminás tu cuenta, se desactiva
-          de inmediato: no podrás iniciar sesión, tu perfil deja de mostrarse a otras personas y
-          dejás de aparecer en las búsquedas. Tu email se reemplaza por un valor anónimo y borramos
-          tus sesiones y los tokens de tus dispositivos.
+          de inmediato y borramos tus datos personales y de actividad: nombre, apellido, email,
+          usuario, progreso, estadísticas, logros, amistades, notificaciones, configuraciones, tu
+          pertenencia a organizaciones, las invitaciones enviadas a tu email y las sesiones y tokens
+          de tus dispositivos.
         </p>
         <p>
-          <Todo>
-            COMPLETAR: hoy la baja NO borra el nombre, apellido, usuario ni el progreso. Definir si
-            se eliminan o anonimizan definitivamente, en qué plazo, y ajustar este texto o el
-            sistema en consecuencia
-          </Todo>
+          Lo único que conservamos es el historial de compras y regalos de gemas, por obligaciones
+          contables y fiscales, sin ningún dato que te identifique. Podés ver cómo eliminar tu
+          cuenta en <a href="/eliminar-cuenta">esta página</a>.
         </p>
       </Section>
 

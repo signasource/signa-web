@@ -25,7 +25,7 @@ Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client-side dat
 | `cursos.tsx`              | Free basic course (CTA → the hero demo) + thematic (paid) courses; each thematic course opens the organizations overlay                                                    |
 | `equipo.tsx`              | The 6-person team, UTN FRC Proyecto Final                                                                                                                                  |
 | `cta-final.tsx`           | Closing CTA + Lisa                                                                                                                                                         |
-| `landing-footer.tsx`      | Footer links (`/privacidad`, `/terminos`, organizations, legal)                                                                                                            |
+| `landing-footer.tsx`      | Footer links (`/privacidad`, `/terminos`, `/eliminar-cuenta`, organizations, legal)                                                                                        |
 | `organizations-modal.tsx` | "Signa para organizaciones" overlay: how it works, an example org dashboard, contact form. Triggered from the nav, hero, audience cards, thematic courses, footer, and CTA |
 | `feature-preview.tsx`     | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature (the 3D one is a live `LessonDemo`)                                         |
 
