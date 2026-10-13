@@ -22,7 +22,7 @@
 - `/organizaciones/panel` — holding page only; shows "finalizando el módulo" message. Will be replaced by the real org dashboard when the module is complete.
 - `/proximamente` — `POST /waitlist` only exists from signa-api PR #88 on (before that the form never stored anything); no captcha yet (Cloudflare Turnstile needs an account); `/images/equipo.jpg` team photo is a placeholder — replace with actual photo.
 - `Equipo` section shows `/images/equipo.jpg` — file does not exist yet; replace with the actual team photo.
-- Dashboard screens omit some prototype data the API does not expose (sort, inactivity filters, per-module member progress, activity feed) — [features/dashboard.md](./features/dashboard.md).
+- Dashboard screens omit some prototype data the API does not expose (per-module member progress, activity feed) — [features/dashboard.md](./features/dashboard.md).
 
 - Security headers + two-tier CSP (strict nonce for panel, relaxed static for landing) — [security.md](./security.md).
 

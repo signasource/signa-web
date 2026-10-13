@@ -1,7 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { Fragment } from "react";
+import { CourseSelect } from "@/components/dashboard/course-select";
 import { Icon } from "@/components/dashboard/icons";
 import {
   Avatar,
@@ -15,12 +17,14 @@ import {
   SectionIcon,
   StatCard,
   StatRows,
+  headerChip,
   primaryButton,
 } from "@/components/dashboard/ui";
 import { WeeklyEvolution } from "@/components/dashboard/weekly-evolution";
 import { useAuth } from "@/features/auth/auth-context";
+import { useCourseFilter, useWithCourse } from "@/features/dashboard/use-course-filter";
 import { organizationsApi } from "@/lib/api/organizations";
-import type { OrganizationMemberSummary } from "@/lib/api/types";
+import { cn } from "@/lib/utils";
 import {
   ACTIVE_WINDOW_DAYS,
   daysSince,
@@ -31,36 +35,38 @@ import {
 
 const NUMBER = new Intl.NumberFormat("es-AR");
 
-function needsNudge(members: OrganizationMemberSummary[]) {
-  return members
-    .map((m) => ({ member: m, days: daysSince(m.lastActivityAt) }))
-    .filter(
-      (x): x is { member: OrganizationMemberSummary; days: number } =>
-        x.days !== null && x.days > ACTIVE_WINDOW_DAYS && x.member.progressPercentage < 100,
-    )
-    .sort((a, b) => b.days - a.days)
-    .slice(0, 4);
-}
+/** Longest-idle participants first: who to nudge. */
+const NUDGE_QUERY = {
+  status: "ACTIVE",
+  activity: "INACTIVE",
+  sort: { by: "lastActivity", direction: "asc" },
+  size: 4,
+} as const;
 
 export default function DashboardOverviewPage() {
   const { organization } = useAuth();
   const orgId = organization?.id;
-  const courseName = organization?.courses[0]?.name;
+  const { courseId, courses } = useCourseFilter();
+  const showCourses = !courseId && courses.length > 1;
+  const withCourse = useWithCourse();
 
   const overview = useQuery({
-    queryKey: ["organization", orgId, "overview"],
-    queryFn: () => organizationsApi.overview(orgId!),
+    queryKey: ["organization", orgId, "overview", { courseId }],
+    queryFn: () => organizationsApi.overview(orgId!, courseId),
     enabled: Boolean(orgId),
+    placeholderData: keepPreviousData,
   });
   const modules = useQuery({
-    queryKey: ["organization", orgId, "modules"],
-    queryFn: () => organizationsApi.modules(orgId!),
+    queryKey: ["organization", orgId, "modules", { courseId }],
+    queryFn: () => organizationsApi.modules(orgId!, courseId),
     enabled: Boolean(orgId),
+    placeholderData: keepPreviousData,
   });
   const members = useQuery({
-    queryKey: ["organization", orgId, "members", { status: "ACTIVE", size: 100 }],
-    queryFn: () => organizationsApi.members(orgId!, { status: "ACTIVE", size: 100 }),
+    queryKey: ["organization", orgId, "members", { ...NUDGE_QUERY, courseId }],
+    queryFn: () => organizationsApi.members(orgId!, { ...NUDGE_QUERY, courseId }),
     enabled: Boolean(orgId),
+    placeholderData: keepPreviousData,
   });
 
   if (overview.isPending) return <LoadingState>Cargando métricas…</LoadingState>;
@@ -75,20 +81,19 @@ export default function DashboardOverviewPage() {
     { label: "Iniciaron", value: participation.participantsStarted, tone: "bg-accent-violet" },
     { label: "Completaron", value: progress.participantsCompletedAll, tone: "bg-success" },
   ];
-  const nudges = needsNudge(members.data?.content ?? []);
+  const nudges = (members.data?.content ?? []).map((member) => ({
+    member,
+    days: daysSince(member.lastActivityAt),
+  }));
 
   return (
     <section className="flex flex-col gap-6">
       <PageHeading title="Resumen">
-        <div className="flex flex-wrap gap-2">
-          {courseName ? (
-            <span className="bg-shop-amber-light text-shop-amber-dark rounded-full px-3.5 py-2 text-[13px] font-extrabold">
-              Curso: {courseName}
-            </span>
-          ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <CourseSelect />
           {modules.data ? (
-            <span className="bg-fill rounded-full px-3.5 py-2 text-[13px] font-bold">
-              {moduleList.length} módulos contratados
+            <span className={cn(headerChip, "bg-fill font-bold")}>
+              {moduleList.length} {moduleList.length === 1 ? "módulo" : "módulos"}
             </span>
           ) : null}
         </div>
@@ -100,7 +105,7 @@ export default function DashboardOverviewPage() {
           title="Todavía no hay participantes"
           body="Invitá a tu equipo para que empiece la capacitación. Las métricas aparecen acá apenas alguien complete su primera lección."
           action={
-            <Link href="/dashboard/invitations" className={primaryButton}>
+            <Link href={withCourse("/dashboard/invitations")} className={primaryButton}>
               Invitar personas
             </Link>
           }
@@ -258,7 +263,7 @@ export default function DashboardOverviewPage() {
               <div className="flex items-center justify-between gap-3">
                 <CardTitle>Desempeño por módulo</CardTitle>
                 <Link
-                  href="/dashboard/modules"
+                  href={withCourse("/dashboard/modules")}
                   className="text-primary-dark text-sm font-bold hover:underline"
                 >
                   Ver contenidos
@@ -270,25 +275,43 @@ export default function DashboardOverviewPage() {
                 <p className="text-text-muted text-sm">Todavía no hay módulos para mostrar.</p>
               ) : null}
               <ul className="flex flex-col">
-                {moduleList.map((m, index) => (
-                  <li
-                    key={m.topicId}
-                    className="border-fill grid grid-cols-[28px_minmax(0,1fr)_120px_44px] items-center gap-3 border-b py-2.5 last:border-b-0"
-                  >
-                    <span className="bg-primary text-on-primary font-display flex size-7 items-center justify-center rounded-full text-[13px] font-extrabold">
-                      {index + 1}
-                    </span>
-                    <span className="truncate text-sm font-bold">{m.title}</span>
-                    <ProgressBar
-                      percent={m.correctPercentage}
-                      tone={m.correctPercentage >= 85 ? "success" : "primary"}
-                      label={`Respuestas correctas en ${m.title}`}
-                    />
-                    <span className="text-right text-sm font-extrabold">
-                      {m.correctPercentage}%
-                    </span>
-                  </li>
-                ))}
+                {moduleList.map((m, index) => {
+                  const firstOfCourse = m.courseId !== moduleList[index - 1]?.courseId;
+                  const number = moduleList
+                    .slice(0, index + 1)
+                    .filter((x) => x.courseId === m.courseId).length;
+                  return (
+                    <Fragment key={m.topicId}>
+                      {showCourses && firstOfCourse ? (
+                        <li className="text-text-muted pt-3 pb-1 text-xs font-extrabold tracking-wider uppercase first:pt-0">
+                          {m.courseName}
+                        </li>
+                      ) : null}
+                      <li className="border-fill grid grid-cols-[28px_minmax(0,1fr)_120px_44px] items-center gap-3 border-b py-2.5 last:border-b-0">
+                        <span className="bg-primary text-on-primary font-display flex size-7 items-center justify-center rounded-full text-[13px] font-extrabold">
+                          {number}
+                        </span>
+                        <span className="truncate text-sm font-bold">{m.title}</span>
+                        {m.exerciseAttempts > 0 ? (
+                          <>
+                            <ProgressBar
+                              percent={m.correctPercentage}
+                              tone={m.correctPercentage >= 85 ? "success" : "primary"}
+                              label={`Respuestas correctas en ${m.title}`}
+                            />
+                            <span className="text-right text-sm font-extrabold">
+                              {m.correctPercentage}%
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-text-muted col-span-2 text-right text-[13px]">
+                            Sin ejercicios
+                          </span>
+                        )}
+                      </li>
+                    </Fragment>
+                  );
+                })}
               </ul>
               <p className="text-text-muted text-[13px]">
                 Porcentaje de respuestas correctas en los ejercicios de cada módulo.
@@ -304,7 +327,7 @@ export default function DashboardOverviewPage() {
                   </p>
                 </div>
                 <Link
-                  href="/dashboard/members"
+                  href={withCourse("/dashboard/members")}
                   className="text-primary-dark text-sm font-bold hover:underline"
                 >
                   Ver todos
@@ -323,7 +346,7 @@ export default function DashboardOverviewPage() {
                 {nudges.map(({ member, days }) => (
                   <li key={member.userId} className="border-fill border-b last:border-b-0">
                     <Link
-                      href={`/dashboard/members/${member.userId}`}
+                      href={withCourse(`/dashboard/members/${member.userId}`)}
                       className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_92px] items-center gap-3 py-2.5"
                     >
                       <span className="flex min-w-0 items-center gap-2.5 text-[15px] font-bold">

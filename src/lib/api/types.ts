@@ -2,6 +2,8 @@ export type AuthResponse = { accessToken: string; refreshToken: string };
 
 export type MemberRole = "ADMIN" | "MEMBER";
 export type MemberStatus = "ACTIVE" | "REMOVED";
+export type MemberActivityStatus = "ACTIVE" | "INACTIVE" | "NOT_STARTED" | "COMPLETED" | "REMOVED";
+export type OrganizationStatus = "PENDING" | "ACTIVE" | "REJECTED" | "SUSPENDED";
 
 export type CourseSummary = {
   id: string;
@@ -15,6 +17,7 @@ export type CourseSummary = {
 export type MyOrganization = {
   id: string;
   name: string;
+  status: OrganizationStatus;
   role: MemberRole;
   joinedAt: string;
   courses: CourseSummary[];
@@ -73,7 +76,11 @@ export type OrganizationMemberSummary = {
   lastActivityAt: string | null;
   progressPercentage: number;
   currentModule: string | null;
+  currentCourse: string | null;
+  activityStatus: MemberActivityStatus;
 };
+
+export type MemberSort = "name" | "progress" | "lastActivity" | "joinedAt";
 
 export type MemberCourseProgress = {
   courseId: string;
@@ -89,6 +96,7 @@ export type MemberProgress = {
   lastName: string;
   email: string;
   status: MemberStatus;
+  activityStatus: MemberActivityStatus;
   joinedAt: string;
   lastActivityAt: string | null;
   progressPercentage: number;

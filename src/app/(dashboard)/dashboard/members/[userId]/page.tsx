@@ -16,13 +16,14 @@ import {
   pillButton,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
+import { useWithCourse } from "@/features/dashboard/use-course-filter";
 import { organizationsApi } from "@/lib/api/organizations";
 import {
+  currentModuleLabel,
   daysSince,
   formatDate,
   formatMinutes,
   formatRelativeDays,
-  memberDisplayStatus,
 } from "@/lib/dashboard-format";
 
 function Metric({ label, children }: { label: string; children: React.ReactNode }) {
@@ -43,6 +44,7 @@ export default function MemberDetailPage() {
   const { organization } = useAuth();
   const orgId = organization?.id;
   const [confirming, setConfirming] = useState(false);
+  const withCourse = useWithCourse();
 
   const { data, isPending, error } = useQuery({
     queryKey: ["organization", orgId, "members", "detail", userId],
@@ -54,13 +56,13 @@ export default function MemberDetailPage() {
     mutationFn: () => organizationsApi.removeMember(orgId!, userId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["organization", orgId] });
-      router.replace("/dashboard/members");
+      router.replace(withCourse("/dashboard/members"));
     },
   });
 
   const back = (
     <Link
-      href="/dashboard/members"
+      href={withCourse("/dashboard/members")}
       className="text-text-muted flex items-center gap-1 self-start text-sm font-bold"
     >
       <Icon name="chevronBack" className="size-4" />
@@ -97,7 +99,7 @@ export default function MemberDetailPage() {
             <h1 className="font-display text-3xl leading-9 font-bold">
               {m.name} {m.lastName}
             </h1>
-            <StatusPill status={memberDisplayStatus(m)} />
+            <StatusPill status={m.activityStatus} />
           </div>
           <p className="text-text-muted text-sm">
             {m.email} · Se incorporó el {formatDate(m.joinedAt)} · Última vez:{" "}
@@ -168,7 +170,7 @@ export default function MemberDetailPage() {
             {[
               [
                 "Módulo actual",
-                m.progressPercentage >= 100 ? "Curso completo" : (m.currentModule ?? "—"),
+                currentModuleLabel({ ...m, currentCourse: null }, m.courses.length > 1).text,
               ],
               ["Módulos completados", m.modulesCompleted],
               ["Días activos (últimos 30)", m.activeDaysLast30],

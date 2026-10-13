@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  currentModuleLabel,
   daysSince,
   formatDate,
   formatMinutes,
   formatRelativeDays,
   initials,
   isEmail,
-  memberDisplayStatus,
   parseEmails,
   progressTone,
 } from "@/lib/dashboard-format";
@@ -44,17 +44,33 @@ describe("dashboard formatters", () => {
     expect(initials("carla", "Romero")).toBe("CR");
   });
 
-  it("derives the display status", () => {
-    const recent = new Date().toISOString();
-    const old = new Date(Date.now() - 20 * 86_400_000).toISOString();
-    const base = { status: "ACTIVE" as const, progressPercentage: 50, lastActivityAt: recent };
-    expect(memberDisplayStatus(base)).toBe("active");
-    expect(memberDisplayStatus({ ...base, lastActivityAt: old })).toBe("inactive");
-    expect(memberDisplayStatus({ ...base, progressPercentage: 100 })).toBe("completed");
-    expect(memberDisplayStatus({ ...base, progressPercentage: 0, lastActivityAt: null })).toBe(
-      "notStarted",
+  it("labels the current module", () => {
+    const base = {
+      activityStatus: "ACTIVE" as const,
+      currentModule: "Unidad 2",
+      currentCourse: "Curso Básico",
+    };
+    expect(currentModuleLabel(base, false)).toEqual({
+      text: "Unidad 2",
+      detail: null,
+      finished: false,
+    });
+    expect(currentModuleLabel(base, true).detail).toBe("Curso Básico");
+    expect(currentModuleLabel({ ...base, activityStatus: "COMPLETED" }, false)).toEqual({
+      text: "Terminó el curso",
+      detail: null,
+      finished: true,
+    });
+    expect(currentModuleLabel({ ...base, activityStatus: "COMPLETED" }, true).text).toBe(
+      "Terminó todo",
     );
-    expect(memberDisplayStatus({ ...base, status: "REMOVED" })).toBe("removed");
+    expect(
+      currentModuleLabel({ ...base, activityStatus: "NOT_STARTED", currentModule: null }, false)
+        .text,
+    ).toBe("Todavía no empezó");
+    expect(
+      currentModuleLabel({ ...base, activityStatus: "INACTIVE", currentModule: null }, false).text,
+    ).toBe("—");
   });
 
   it("parses and validates emails", () => {

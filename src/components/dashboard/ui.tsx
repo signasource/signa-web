@@ -1,12 +1,8 @@
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import { Icon, type IconName } from "@/components/dashboard/icons";
-import {
-  initials,
-  progressTone,
-  type DisplayStatus,
-  type ProgressTone,
-} from "@/lib/dashboard-format";
+import type { MemberActivityStatus } from "@/lib/api/types";
+import { initials, progressTone, type ProgressTone } from "@/lib/dashboard-format";
 import { cn } from "@/lib/utils";
 
 export function PageHeading({
@@ -158,15 +154,15 @@ export function Avatar({
   );
 }
 
-const STATUS: Record<DisplayStatus, { label: string; className: string }> = {
-  completed: { label: "Completó", className: "bg-primary-light text-primary-dark" },
-  active: { label: "Activo", className: "bg-success-light text-success-dark" },
-  inactive: { label: "Inactivo", className: "bg-shop-amber-light text-shop-amber-dark" },
-  notStarted: { label: "Sin iniciar", className: "bg-fill text-text" },
-  removed: { label: "Quitado", className: "bg-danger-light text-danger" },
+const STATUS: Record<MemberActivityStatus, { label: string; className: string }> = {
+  COMPLETED: { label: "Completó", className: "bg-primary-light text-primary-dark" },
+  ACTIVE: { label: "Activo", className: "bg-success-light text-success-dark" },
+  INACTIVE: { label: "Inactivo", className: "bg-shop-amber-light text-shop-amber-dark" },
+  NOT_STARTED: { label: "Sin iniciar", className: "bg-fill text-text" },
+  REMOVED: { label: "Quitado", className: "bg-danger-light text-danger" },
 };
 
-export function StatusPill({ status }: { status: DisplayStatus }) {
+export function StatusPill({ status }: { status: MemberActivityStatus }) {
   const { label, className } = STATUS[status];
   return (
     <span
@@ -208,6 +204,10 @@ export function StatRows({ rows }: { rows: { label: string; value: ReactNode }[]
 
 export const primaryButton =
   "bg-text text-on-dark inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3 text-[15px] font-semibold disabled:cursor-not-allowed disabled:opacity-60";
+/** Compact header control: the course picker and the header actions share this size. */
+export const headerChip =
+  "inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-extrabold whitespace-nowrap";
+export const headerButton = `${headerChip} bg-text text-on-dark cursor-pointer transition-opacity hover:opacity-90`;
 export const pillButton =
   "border-border bg-surface inline-flex cursor-pointer items-center gap-1 rounded-full border px-3.5 py-2 text-[13px] font-bold whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50";
 

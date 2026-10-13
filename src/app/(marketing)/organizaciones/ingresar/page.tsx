@@ -299,7 +299,7 @@ export default function IngresarPage() {
   }, []);
 
   useEffect(() => {
-    if (status === "authenticated") router.replace("/organizaciones/panel");
+    if (status === "authenticated") router.replace("/dashboard");
   }, [status, router]);
 
   return (
@@ -354,7 +354,7 @@ export default function IngresarPage() {
           </div>
 
           {tab === "login" ? (
-            <LoginForm onSuccess={() => router.push("/organizaciones/panel")} />
+            <LoginForm onSuccess={() => router.push("/dashboard")} />
           ) : (
             <RegistroForm onSuccess={() => {}} />
           )}
