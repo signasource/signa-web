@@ -31,7 +31,7 @@ const registroSchema = z
     email: z.string().email("Ingresá un email válido."),
     telefono: z.string().optional(),
     memberLimit: z
-      .number({ invalid_type_error: "Ingresá la cantidad de personas." })
+      .number({ error: "Ingresá la cantidad de personas." })
       .min(1, "Mínimo 1 persona.")
       .max(10000),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),

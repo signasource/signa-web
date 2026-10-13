@@ -156,6 +156,7 @@ export default function InvitationsPage() {
       const sheetName = workbook.SheetNames[0];
       if (!sheetName) throw new Error("El archivo no tiene hojas.");
       const sheet = workbook.Sheets[sheetName];
+      if (!sheet) throw new Error("El archivo no tiene hojas.");
       const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
       if (rows.length < 2) throw new Error("El archivo no tiene datos.");
       const headers = (rows[0] as unknown[]).map(String);
