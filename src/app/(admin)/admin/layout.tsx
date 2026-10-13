@@ -28,6 +28,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (status === "unauthenticated") router.replace("/admin/login");
   }, [status, router]);
 
+  if (pathname === "/admin/login") {
+    return <>{children}</>;
+  }
+
   if (status !== "authenticated" || !admin) {
     return (
       <div className="bg-ink-900 flex min-h-screen items-center justify-center">
