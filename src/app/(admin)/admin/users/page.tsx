@@ -173,9 +173,11 @@ function UsersTab() {
       (window as Window & { _userSearchTimeout?: ReturnType<typeof setTimeout> })
         ._userSearchTimeout,
     );
-    (window as Window & {
-      _userSearchTimeout?: ReturnType<typeof setTimeout>;
-    })._userSearchTimeout = setTimeout(() => {
+    (
+      window as Window & {
+        _userSearchTimeout?: ReturnType<typeof setTimeout>;
+      }
+    )._userSearchTimeout = setTimeout(() => {
       setDebouncedQuery(e.target.value);
       setPage(0);
     }, 300);
@@ -294,10 +296,7 @@ function UsersTab() {
                         {user.authProvider === "GOOGLE" ? "Google" : "Email"}
                       </span>
                       <span
-                        className={cn(
-                          "ml-1",
-                          user.verified ? "text-success-dark" : "text-warning",
-                        )}
+                        className={cn("ml-1", user.verified ? "text-success-dark" : "text-warning")}
                       >
                         · {user.verified ? "verificada" : "sin verificar"}
                       </span>

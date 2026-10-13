@@ -140,12 +140,7 @@ export const adminApi = {
       body: { status, adminNote },
     }),
 
-  users: (params?: {
-    query?: string;
-    role?: UserRole;
-    page?: number;
-    size?: number;
-  }) =>
+  users: (params?: { query?: string; role?: UserRole; page?: number; size?: number }) =>
     api<Page<AdminUser>>("/admin/users", {
       query: params as Record<string, string | number | boolean | undefined>,
     }),

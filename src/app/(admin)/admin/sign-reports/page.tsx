@@ -2,7 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { adminApi, type AdminSignReportGroup, type ReportReason, type ReportStatus } from "@/lib/api/admin";
+import {
+  adminApi,
+  type AdminSignReportGroup,
+  type ReportReason,
+  type ReportStatus,
+} from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 
 const STATUS_LABELS: Record<ReportStatus, string> = {
@@ -44,13 +49,7 @@ function relativeDate(iso: string) {
   return `Hace ${days} días`;
 }
 
-function DetailPanel({
-  group,
-  onClose,
-}: {
-  group: AdminSignReportGroup;
-  onClose: () => void;
-}) {
+function DetailPanel({ group, onClose }: { group: AdminSignReportGroup; onClose: () => void }) {
   const qc = useQueryClient();
   const [adminNote, setAdminNote] = useState("");
 
@@ -67,7 +66,7 @@ function DetailPanel({
     <div className="border-border bg-surface flex w-96 shrink-0 flex-col overflow-hidden rounded-2xl border">
       <div className="flex items-start justify-between border-b border-inherit px-5 py-4">
         <div>
-          <h2 className="font-display text-text text-lg font-bold uppercase tracking-wide">
+          <h2 className="font-display text-text text-lg font-bold tracking-wide uppercase">
             {group.signMeaning}
           </h2>
           <p className="text-text-muted mt-0.5 text-xs">
@@ -102,14 +101,14 @@ function DetailPanel({
             </div>
             <p className="text-text-muted text-xs font-medium">{REASON_LABELS[r.reason]}</p>
             {r.description && (
-              <p className="text-text-muted mt-1 text-xs">"{r.description}"</p>
+              <p className="text-text-muted mt-1 text-xs">&ldquo;{r.description}&rdquo;</p>
             )}
           </div>
         ))}
       </div>
 
       <div className="border-border space-y-3 border-t px-5 py-4">
-        <label className="flex flex-col gap-1.5 text-xs font-semibold text-text">
+        <label className="text-text flex flex-col gap-1.5 text-xs font-semibold">
           Nota interna
           <textarea
             value={adminNote}
@@ -234,7 +233,7 @@ export default function SignReportsPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-text font-semibold uppercase tracking-wide">
+                      <span className="text-text font-semibold tracking-wide uppercase">
                         {group.signMeaning}
                       </span>
                       <span className="text-text-muted text-xs">{group.signLanguage}</span>
@@ -262,9 +261,7 @@ export default function SignReportsPage() {
           )}
         </div>
 
-        {selected && (
-          <DetailPanel group={selected} onClose={() => setSelected(null)} />
-        )}
+        {selected && <DetailPanel group={selected} onClose={() => setSelected(null)} />}
       </div>
     </div>
   );

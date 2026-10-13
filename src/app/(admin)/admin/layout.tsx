@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 function NavBadge({ count }: { count: number }) {
   if (count === 0) return null;
   return (
-    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[10px] font-bold text-white">
+    <span className="bg-danger ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white">
       {count > 99 ? "99+" : count}
     </span>
   );
@@ -26,8 +26,18 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { href: "/admin", label: "Resumen", icon: GridIcon },
-  { href: "/admin/organizations", label: "Organizaciones", icon: BuildingIcon, badgeKey: "pendingOrganizations" },
-  { href: "/admin/sign-reports", label: "Reportes de señas", icon: FlagIcon, badgeKey: "openSignReports" },
+  {
+    href: "/admin/organizations",
+    label: "Organizaciones",
+    icon: BuildingIcon,
+    badgeKey: "pendingOrganizations",
+  },
+  {
+    href: "/admin/sign-reports",
+    label: "Reportes de señas",
+    icon: FlagIcon,
+    badgeKey: "openSignReports",
+  },
   { href: "/admin/content", label: "Cursos y señas", icon: BookIcon },
   { href: "/admin/users", label: "Usuarios", icon: UsersIcon },
   { href: "/admin/admins", label: "Administradores", icon: ShieldIcon },
