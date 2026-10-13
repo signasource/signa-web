@@ -3,12 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useLandingUI } from "@/components/landing/landing-ui-context";
 import { NAV_LINKS } from "@/components/landing/nav-links";
 
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
-  const { openOrg } = useLandingUI();
 
   useEffect(() => {
     if (!open) return;
@@ -61,16 +59,13 @@ export function MobileMenu() {
             </li>
           ))}
           <li>
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                openOrg();
-              }}
-              className="flex min-h-12 w-full cursor-pointer items-center text-left text-lg font-bold"
+            <Link
+              href="/organizaciones"
+              onClick={() => setOpen(false)}
+              className="flex min-h-12 items-center text-lg font-bold"
             >
               Organizaciones
-            </button>
+            </Link>
           </li>
         </ul>
       </div>

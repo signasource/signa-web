@@ -8,19 +8,16 @@ function parse(iso: string): Date {
   return new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
 }
 
-/** "2 oct 2026" — local-time calendar date. Pass an ISO instant or a yyyy-mm-dd date. */
 export function formatDate(iso: string): string {
   const d = parse(iso);
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-/** "5 oct" — week labels for charts. */
 export function formatDayMonth(iso: string): string {
   const d = parse(iso);
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
-/** Whole calendar days between `iso` and `now`, or null when there is no date. */
 export function daysSince(iso: string | null, now: Date = new Date()): number | null {
   if (!iso) return null;
   const start = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -51,7 +48,6 @@ export function initials(name: string, lastName: string): string {
 
 export type ProgressTone = "success" | "warning" | "primary";
 
-/** Done → green, barely started → orange, otherwise brand violet. */
 export function progressTone(percent: number): ProgressTone {
   if (percent >= 100) return "success";
   if (percent < 25) return "warning";
@@ -72,7 +68,6 @@ export function memberDisplayStatus(member: {
   return days > ACTIVE_WINDOW_DAYS ? "inactive" : "active";
 }
 
-/** Splits "a@x.com, b@x.com\nc@x.com" into trimmed, non-empty entries. */
 export function parseEmails(raw: string): string[] {
   return raw
     .split(/[\s,;]+/)

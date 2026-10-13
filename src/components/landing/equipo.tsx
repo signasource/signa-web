@@ -1,29 +1,45 @@
 import type { CSSProperties } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
-const TEAM = [
-  { initials: "PC", name: "Paloma Corcoba", className: "bg-primary-light text-primary-dark" },
+const MEMBERS = [
   {
-    initials: "JM",
-    name: "Joaquín Miranda",
-    className: "bg-avatar-teal-light text-avatar-teal-dark",
+    name: "Agostina Avalle",
+    photo: "/images/equipo/agostina-v2.png",
+    objectPosition: "top",
+    linkedin: "https://www.linkedin.com/in/avalleagostina/",
   },
   {
-    initials: "JL",
+    name: "Paloma Corcoba",
+    photo: "/images/equipo/paloma-v2.png",
+    objectPosition: "top",
+    linkedin: "https://www.linkedin.com/in/paloma-corcoba/",
+  },
+  {
     name: "Juan Cruz López Freytas",
-    className: "bg-avatar-wine-light text-social-wine",
+    photo: "/images/equipo/juancruz-v2.png",
+    objectPosition: "center",
+    linkedin: "https://www.linkedin.com/in/juan-cruz-lopez-freytas/",
   },
   {
-    initials: "MP",
+    name: "Joaquín Miranda",
+    photo: "/images/equipo/joaquin-v2.png",
+    objectPosition: "top",
+    linkedin: "https://www.linkedin.com/in/joaquin-miranda-025b232b6/",
+  },
+  {
+    name: "Mateo Inti Ottonello",
+    photo: "/images/equipo/mateo-v2.png",
+    objectPosition: "top",
+    linkedin: "https://www.linkedin.com/in/mateottonello/",
+  },
+  {
     name: "Marina Polunosik",
-    className: "bg-shop-amber-light text-shop-amber-dark",
+    photo: "/images/equipo/marina-v2.png",
+    objectPosition: "center",
+    linkedin: "https://www.linkedin.com/in/marina-polunosik/",
   },
-  {
-    initials: "MO",
-    name: "Mateo Ottonello",
-    className: "bg-avatar-blue-light text-gems-blue-dark",
-  },
-  { initials: "AA", name: "Agostina Avalle", className: "bg-avatar-green-light text-success-dark" },
-] as const;
+];
 
 export function Equipo() {
   return (
@@ -41,43 +57,61 @@ export function Equipo() {
           </div>
           <div data-reveal="up" className="flex flex-col gap-4">
             <p className="text-text-muted text-lg leading-relaxed">
-              Somos el equipo detrás de Signa: estudiantes de Ingeniería en Sistemas de Información
-              de la Universidad Tecnológica Nacional, Facultad Regional Córdoba. Signa es nuestro
-              Proyecto Final, la tesis con la que cerramos la carrera.
+              Somos el equipo detrás de Signa, estudiantes de{" "}
+              <strong>Ingeniería en Sistemas de Información</strong> de la Universidad Tecnológica
+              Nacional, Facultad Regional Córdoba. Signa es nuestro Proyecto Final, la tesis con la
+              que cerramos la carrera.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {["UTN · FRC", "Ingeniería en Sistemas de Información", "Proyecto Final"].map(
-                (tag) => (
-                  <span
-                    key={tag}
-                    className="border-border bg-surface rounded-full border px-3.5 py-2 text-sm font-bold"
-                  >
-                    {tag}
-                  </span>
-                ),
-              )}
-            </div>
           </div>
         </div>
 
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {TEAM.map((member, i) => (
-            <li
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
+          {MEMBERS.map((member, i) => (
+            <div
               key={member.name}
-              data-reveal={i % 2 === 0 ? "tilt-a" : "tilt-b"}
-              style={{ "--delay": `${(i % 3) * 80}ms` } as CSSProperties}
+              data-reveal="up"
+              style={{ "--delay": `${i * 60}ms` } as CSSProperties}
+              className="flex flex-col items-center gap-3"
             >
-              <div className="landing-card-click group bg-surface flex h-full flex-col items-center gap-3.5 rounded-3xl p-6 text-center">
-                <div
-                  className={`font-display flex h-[88px] w-[88px] items-center justify-center rounded-full text-3xl font-extrabold transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 ${member.className}`}
-                >
-                  {member.initials}
-                </div>
-                <p className="font-display text-lg leading-tight font-bold">{member.name}</p>
+              <div
+                className={`bg-primary/8 aspect-square w-full overflow-hidden rounded-[24px] ${
+                  i % 2 === 0 ? "landing-team-card" : "landing-team-card landing-team-card-alt"
+                }`}
+              >
+                {member.linkedin ? (
+                  <Link
+                    href={member.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`LinkedIn de ${member.name}`}
+                    className="block h-full w-full"
+                  >
+                    <Image
+                      src={member.photo}
+                      alt={member.name}
+                      width={600}
+                      height={600}
+                      draggable={false}
+                      className="pointer-events-none h-full w-full object-cover transition-transform duration-500 select-none group-hover:scale-105"
+                      style={{ objectPosition: member.objectPosition }}
+                    />
+                  </Link>
+                ) : (
+                  <Image
+                    src={member.photo}
+                    alt={member.name}
+                    width={600}
+                    height={600}
+                    draggable={false}
+                    className="pointer-events-none h-full w-full object-cover transition-transform duration-500 select-none group-hover:scale-105"
+                    style={{ objectPosition: member.objectPosition }}
+                  />
+                )}
               </div>
-            </li>
+              <p className="text-center text-sm leading-tight font-bold">{member.name}</p>
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     </section>
   );

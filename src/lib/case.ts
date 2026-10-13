@@ -17,8 +17,6 @@ function mapKeys(value: Json, fn: (key: string) => string): Json {
   return value;
 }
 
-/** Request bodies: camelCase → snake_case (the API's JSON convention). */
 export const keysToSnake = <T>(value: unknown): T => mapKeys(value, toSnake) as T;
 
-/** Responses: snake_case → camelCase. */
 export const keysToCamel = <T>(value: unknown): T => mapKeys(value, toCamel) as T;

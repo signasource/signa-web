@@ -1,7 +1,6 @@
 import { keysToCamel, keysToSnake } from "@/lib/case";
 import { env } from "@/lib/env";
 import { tokenStore } from "@/lib/api/token-store";
-import type { AuthResponse } from "@/lib/api/types";
 
 export class ApiError extends Error {
   constructor(
@@ -17,14 +16,12 @@ type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined>;
-  /** Skip the Bearer header and the 401 refresh (login, refresh, forgot/reset password). */
   anonymous?: boolean;
 };
 
 let onSessionExpired: (() => void) | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
 
-/** AuthProvider registers this to drop the session when refresh fails. */
 export function setOnSessionExpired(cb: (() => void) | null) {
   onSessionExpired = cb;
 }
@@ -50,22 +47,11 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
   });
 }
 
-/** Single-flight: concurrent 401s share one refresh call. */
 function refreshSession(): Promise<boolean> {
   refreshInFlight ??= (async () => {
-    const refreshToken = tokenStore.getRefresh();
-    if (!refreshToken) return false;
     try {
-      const res = await send("/auth/refresh", {
-        method: "POST",
-        body: { refreshToken },
-        anonymous: true,
-      });
-      if (!res.ok) return false;
-      tokenStore.set(keysToCamel<AuthResponse>(await res.json()));
-      return true;
-    } catch {
-      return false;
+      const { sessionApi } = await import("@/lib/api/session");
+      return await sessionApi.refresh();
     } finally {
       refreshInFlight = null;
     }
@@ -78,9 +64,7 @@ async function toError(res: Response): Promise<ApiError> {
   try {
     const data = (await res.json()) as { message?: string };
     if (data.message) message = data.message;
-  } catch {
-    // Non-JSON error body: keep the default message.
-  }
+  } catch {}
   return new ApiError(res.status, message);
 }
 

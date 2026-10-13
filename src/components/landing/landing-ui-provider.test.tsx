@@ -1,31 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { LandingUIProvider } from "@/components/landing/landing-ui-provider";
 import { OrgTrigger } from "@/components/landing/org-trigger";
 import { FeatureCard } from "@/components/landing/feature-card";
 
 describe("LandingUIProvider", () => {
-  it("opens and closes the organizations modal", () => {
+  it("renders OrgTrigger as a link to the organizations page", () => {
     render(
       <LandingUIProvider>
         <OrgTrigger>Soy una organización</OrgTrigger>
       </LandingUIProvider>,
     );
 
-    expect(
-      screen.queryByRole("dialog", { name: "Signa para organizaciones" }),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Soy una organización"));
-    expect(screen.getByRole("dialog", { name: "Signa para organizaciones" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Cerrar" }));
-    expect(
-      screen.queryByRole("dialog", { name: "Signa para organizaciones" }),
-    ).not.toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Soy una organización" });
+    expect(link).toHaveAttribute("href", "/organizaciones");
   });
 
-  it("opens a feature preview for the clicked card, independently of the org modal", () => {
+  it("opens a feature preview for the clicked card", async () => {
     render(
       <LandingUIProvider>
         <FeatureCard
@@ -39,11 +30,9 @@ describe("LandingUIProvider", () => {
 
     fireEvent.click(screen.getByText("Tu cámara te corrige"));
     expect(screen.getByText("TU CÁMARA TE CORRIGE")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("dialog", { name: "Signa para organizaciones" }),
-    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Cerrar" }));
-    expect(screen.queryByText("TU CÁMARA TE CORRIGE")).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toHaveClass("landing-modal-out");
+    await waitFor(() => expect(screen.queryByText("TU CÁMARA TE CORRIGE")).not.toBeInTheDocument());
   });
 });

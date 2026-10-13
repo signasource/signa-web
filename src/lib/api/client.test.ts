@@ -10,7 +10,7 @@ describe("api client", () => {
 
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
-    tokenStore.set({ accessToken: "old", refreshToken: "refresh-token-value" });
+    tokenStore.set("old");
   });
 
   afterEach(() => {
@@ -36,11 +36,12 @@ describe("api client", () => {
   it("refreshes once on 401 and retries the original request", async () => {
     fetchMock
       .mockResolvedValueOnce(json({ message: "expired" }, 401))
-      .mockResolvedValueOnce(json({ access_token: "new", refresh_token: "r2-token-value" }))
+      .mockResolvedValueOnce(json({ access_token: "new" }))
       .mockResolvedValueOnce(json({ ok: true }));
 
     await expect(api<{ ok: boolean }>("/x")).resolves.toEqual({ ok: true });
     expect(tokenStore.getAccess()).toBe("new");
+    expect(fetchMock.mock.calls[1]![0]).toBe("/api/session/refresh");
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 

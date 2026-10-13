@@ -5,39 +5,54 @@
 > Sources: src/app/(marketing)/, src/components/landing/, src/app/layout.tsx (`metadata`)
 
 **Status: built.** `/` (`src/app/(marketing)/page.tsx`) renders the full one-page landing: nav,
-hero (with a playable lesson), feature marquee, "Conocé a Lisa", "Qué es Signa", "Para quién es",
-"Cursos", an organizations overlay, the team, and a final CTA.
+hero (with a playable lesson), "Qué es Signa", feature marquee, "Conocé a Lisa", "Cursos", the
+team, and a final CTA. Section order: Hero → QueEs → Marquesina → LisaIntro → Cursos → Equipo →
+CtaFinal → Footer. "Para quién es" was removed.
+
+`/proximamente` (`src/app/(marketing)/proximamente/page.tsx`) is the coming-soon page reached by
+all "Empezá gratis" CTAs. It explains the app is ready and being submitted to Google Play, shows
+a waitlist email form (calls `POST /waitlist` on `signa-api`), and links to `/organizaciones`.
+
+`/organizaciones` (`src/app/(marketing)/organizaciones/page.tsx`) is the organizations marketing
+page: hero, four-step flow, an example org dashboard preview, and CTAs to login or register. It
+replaces the former `organizations-modal.tsx` overlay that was embedded inside the landing.
+
+`/organizaciones/ingresar` is the org auth page: login tab (uses existing `useAuth().login()`,
+redirects to `/organizaciones/panel`) and register tab (CUIT + org name + email + password, with
+CUIT validation via `src/lib/cuit.ts`; registration API not yet available — submission shows a
+"te avisamos" confirmation).
+
+`/organizaciones/panel` is the post-login holding page shown when the org module is not yet
+complete; it redirects unauthenticated users to `/organizaciones/ingresar`.
 
 Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client-side data fetching,
 `metadata` per page, Spanish copy.
 
 ## Sections (`src/components/landing/`)
 
-| Component                 | Renders                                                                                                                                                                    |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nav.tsx`                 | Sticky header, opaque + blurred background (content never shows through), shadow once scrolled. Below `md` the links collapse into `mobile-menu.tsx`                       |
-| `hero.tsx`                | Headline + CTAs, and a phone mockup running `LessonDemo` next to Lisa waving. Normal document flow (not pinned). `#probar` anchors the demo                                |
-| `lesson-demo.tsx`         | Playable "¿Qué significa esta seña?": Lisa signs in 3D (`LisaGlbViewer`), the visitor picks an answer, gets right/wrong feedback and hearts, and moves to the next sign    |
-| `marquesina.tsx`          | Two word rows looping forever in opposite directions (pure CSS keyframes, pause on hover, decorative)                                                                      |
-| `lisa-intro.tsx`          | "Conocé a Lisa" (`#lisa`): chat bubbles that pop in one by one, next to the app's home screen and Lisa with arms crossed                                                   |
-| `que-es.tsx`              | Value prop (text fills in with color as it scrolls) + 3 clickable feature cards, each opening a `FeaturePreview` overlay                                                   |
-| `para-quien.tsx`          | 4 audience cards in `card-rail.tsx`: native horizontal scroller (scroll-snap, prev/next buttons, progress bar, mouse drag). Each card has a CTA (demo, cursos, or org)     |
-| `cursos.tsx`              | Free basic course (CTA → the hero demo) + thematic (paid) courses; each thematic course opens the organizations overlay                                                    |
-| `equipo.tsx`              | The 6-person team, UTN FRC Proyecto Final                                                                                                                                  |
-| `cta-final.tsx`           | Closing CTA + Lisa                                                                                                                                                         |
-| `landing-footer.tsx`      | Footer links (`/privacidad`, `/terminos`, `/eliminar-cuenta`, organizations, legal)                                                                                        |
-| `organizations-modal.tsx` | "Signa para organizaciones" overlay: how it works, an example org dashboard, contact form. Triggered from the nav, hero, audience cards, thematic courses, footer, and CTA |
-| `feature-preview.tsx`     | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature (the 3D one is a live `LessonDemo`)                                         |
+| Component             | Renders                                                                                                                                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nav.tsx`             | Sticky header, opaque + blurred background (content never shows through), shadow once scrolled. Below `md` the links collapse into `mobile-menu.tsx`                                                                |
+| `hero.tsx`            | Headline + CTAs, and a phone mockup running `LessonDemo` next to Lisa waving. Normal document flow (not pinned). `#probar` anchors the demo                                                                         |
+| `lesson-demo.tsx`     | Playable "¿Qué significa esta seña?": Lisa signs in 3D (`LisaGlbViewer`), the visitor picks an answer, gets right/wrong feedback and hearts, and moves to the next sign                                             |
+| `marquesina.tsx`      | Two word rows looping forever in opposite directions (pure CSS keyframes, pause on hover, decorative)                                                                                                               |
+| `lisa-intro.tsx`      | "Conocé a Lisa" (`#lisa`): chat bubbles that pop in one by one, next to the app's home screen and Lisa with arms crossed                                                                                            |
+| `que-es.tsx`          | Value prop (text fills in with color as it scrolls) + 3 clickable feature cards, each opening a `FeaturePreview` overlay                                                                                            |
+| `cursos.tsx`          | Free basic course ("Probá una lección" → `/proximamente`) + thematic (paid) courses (Salud, Atención al cliente); org call-out at the bottom opens the organizations overlay                                        |
+| `equipo.tsx`          | Single team photo (`/images/equipo.jpg`) — one image instead of 6 individual cards                                                                                                                                  |
+| `cta-final.tsx`       | Closing CTA + Lisa                                                                                                                                                                                                  |
+| `landing-footer.tsx`  | Footer links (`/privacidad`, `/terminos`, `/eliminar-cuenta`, organizations, legal)                                                                                                                                 |
+| `org-trigger.tsx`     | Link to `/organizaciones`. Replaces the former modal-open button.                                                                                                                                                   |
+| `feature-preview.tsx` | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature. Two are live, in a wider modal with a larger phone: the 3D one (`LessonDemo`) and the camera one (`CameraNameDemo`) |
 
 ## Interactivity (client boundary)
 
 Server Components by default; client components only where there is state or a browser API:
 
 - `landing-ui-provider.tsx` / `landing-ui-context.tsx` — one `"use client"` boundary at the top of
-  the page tree, holding `orgOpen` and the open feature id, and rendering the two overlays. While
-  one is open the page behind doesn't scroll and Escape closes it (the feature preview also closes
-  on a backdrop click).
-- `org-trigger.tsx`, `feature-card.tsx`, `mobile-menu.tsx` — small client leaves.
+  the page tree, holding the open feature id, and rendering the `FeaturePreview` overlay. While
+  a feature is open the page behind doesn't scroll and Escape closes it.
+- `feature-card.tsx`, `mobile-menu.tsx` — small client leaves.
 - `lesson-demo.tsx`, `lisa-glb-viewer.tsx` — the playable lesson and its 3D iframe.
 - `card-rail.tsx` — the horizontal scroller.
 - `landing-scroll-effects.tsx` — see below.
@@ -67,6 +82,11 @@ listener + an `IntersectionObserver`, and `src/app/(marketing)/landing.css` reac
 Above-the-fold content uses `landing-enter` (a plain on-load keyframe), not reveals.
 `prefers-reduced-motion: reduce` turns off every animation and shows reveals in their final state.
 
+**Live phones in the feature modal** (3D lesson and camera demo) use the same idea: a fixed
+380×780 canvas (`.landing-live-phone` / `.landing-live-phone-canvas`) scaled as a whole by
+`--s` — by width on phones, by viewport height on desktop so the modal always fits — so they
+shrink or grow but never stop looking like a phone.
+
 **Phone mockups** are laid out on a fixed design canvas (`--stage-w` × `--stage-h`) inside
 `.landing-stage-wrap` and scaled with `--s` per breakpoint, so the composition shrinks instead
 of breaking; the wrapper reserves the scaled height.
@@ -93,21 +113,272 @@ CDN module script, blob: workers, and R2 fetches; `srcDoc` lacks that context.
   camera jump is never visible. A failed load shows "No pudimos cargar la seña."
 - The visitor can drag to rotate (`camera-controls`, zoom/pan off, `touch-action: pan-y` so the
   page still scrolls on touch).
-- Changing the sign posts `{ type: VIEWER_MESSAGE, sign }` to the iframe, which swaps `src` in
-  place — no reload of model-viewer or the decoder. Both ends validate with `isSafeSign()`.
+- Changing the sign posts `{ type: VIEWER_MESSAGE, sign }` to the iframe — no reload of
+  model-viewer or the decoder. Both ends validate with `isSafeSign()`.
+- **One model-viewer per sign, kept loaded.** Loading a model (parse, GPU upload, shaders)
+  blocks the page's main thread for a moment — the iframe is same-origin, so it shares it with
+  the landing; measured 172 ms per sign change. That froze the camera demo's skeleton on every
+  correct letter. Pages send `{ type: VIEWER_PRELOAD, signs }` (validated with
+  `safeSignList()`) to load signs ahead of time; switching to a loaded sign only swaps which one
+  is visible (measured 0 ms of blocking). Hidden viewers are paused and don't render;
+  model-viewer shares one WebGL renderer per page. Preloads are loaded one at a time, so the sign on screen
+  is never queued behind the rest, and **only at a loop boundary**: preparing a model blocks the
+  page for 300–450 ms, and doing it while Lisa signs made her first sign stutter. The viewer lets
+  the visible sign play its first repetition untouched; when a repetition ends it holds Lisa in
+  her starting pose, loads the next preload, and resumes once it is ready (`arm()`/`boundary()`/
+  `resume()` in the route). Measured: 0 dropped frames during the first sign; a sign picked
+  before its preload is loaded on demand (~1 s). **The very first sign plays its first repetition hidden, at 4× speed**
+  (spinner on, `WARM_SPEED`), and Lisa appears from the start at normal speed: the first
+  playback stuttered on real laptops, and only the first one. Costs ~1 s of extra spinner (a
+  normal-speed warm-up cost 4 s), once per viewer. **Downloads run in parallel**: the viewer HTML preloads the first sign's
+  GLB and the Draco decoder (`<link rel="preload">`), so they no longer wait for model-viewer's
+  script and for each other. Measured on a 20 Mbps connection: Lisa visible at 3.4 s instead of
+  4.3 s. What remains is mostly the GLB itself (~2.2 MB per sign). `LessonDemo` preloads its four questions; the camera demo
+  preloads every letter of the name but starts recognizing right away — it never waits for the
+  models (waiting for all of them used to delay the start by more than 10 s).
 
 Camera framing logic (torso-up crop, FOV 15°, radius derived from bounding box) mirrors
 `GlbAnimationView.tsx` in signa-mobile so the two surfaces look identical.
 
+## Camera demo ("Tu cámara te corrige")
+
+`camera-name-demo.tsx` is the real recognizer, not a mockup: the visitor types a name and spells
+it in front of the webcam with the LSA manual alphabet. Same flow and look as the app's "Deletreá
+tu nombre" and signa-ml's demo (`demo/static/nombre.html`): name input (empty), then per letter a
+viewport with the mirrored camera (browser picture-in-picture disabled), the hand skeleton (toggle
+with the app's `body` icon), a "¡Correcto!" card, the letter slots, a «Cambiar nombre» button (stops the camera and goes back to the name screen), and a "¡NOMBRE completado!" screen whose title wraps by whole words. No
+progress bar and no debug panel. The modal adds a disclaimer that recognition can be wrong and is
+still being reviewed.
+
+- **Lisa's picture-in-picture** behaves exactly like `nombre.html`: 104×138 in a corner (top-left
+  by default), dragged and snapped to the nearest corner, "tocá para agrandar", tapped to fill the
+  viewport with the same spring transition, an X in the corner to shrink it back. After the last letter it stays during the celebration and fades out (`landing-pip-out`) before the completed screen, instead of vanishing. While small, a
+  transparent layer over the `LisaGlbViewer` iframe takes the drag/tap (an iframe swallows pointer
+  events); when big it is removed and dragging rotates the model.
+- **Detection runs in a Web Worker** (`src/lib/alphabet-worker.ts`, driven by
+  `src/lib/alphabet-client.ts`), exactly as signa-ml's demo page runs it on its server: the page
+  sends one 480 px frame at a time and only draws, easing the skeleton 35% per animation frame
+  toward the latest detection and hiding it without a hand (the same as `LandmarkRenderer` in
+  `demo/static/signa.js`). Run on the page's thread, each detection froze the drawing for a few
+  milliseconds and the skeleton moved in jerks. The worker is a same-origin script, covered by
+  `worker-src 'self'`.
+
+Everything runs on the visitor's device; no frame leaves the browser.
+
+- **CPU or GPU, chosen per device** (`src/lib/delegate-choice.ts`, run inside the worker).
+  Recognition always starts on the CPU, so startup never waits. If no choice is stored yet, the
+  first frames are timed: a CPU averaging ≤ 30 ms per hand detection is kept and nothing else is
+  tried; a slower one triggers a one-time GPU trial (skipped when WebGL is software-rendered, cut
+  short if the GPU is clearly slower), and the faster one wins (GPU must be ≥ 15% faster). Only the
+  hand detector switches; the pose stays on the CPU. The result is stored in `localStorage`
+  (`signa:reconocimiento:delegado:v1`); later visits switch to a stored GPU after the first frame.
+  Cost: one ~0.5 s tracking pause on the visit that switches. Measured on a laptop with Intel Arc:
+  CPU 75 ms → GPU 22 ms per detection, 10 → 20 fps; without a usable GPU: no trial, no pause.
+- **Two hands:** MediaPipe always looks for up to 2 hands (with only 1 it picks either hand each
+  frame and tracking jumped between them, e.g. a visitor standing full-body at the fair). Every
+  letter takes the better of the two hands. Measured on a 30 s full-body video: MediaPipe swaps
+  the order of the two hands in 10% of consecutive frames, a hand appears or disappears 46
+  times, and its left/right label flips 14 times (22 frames call both hands "right"). So hands
+  are followed as **tracks** (`HandTracks`, `hand-tracks.ts`), never by index or by label:
+  - A sighting joins a track only if its wrist is within 3 hand sizes of where the track was
+    (the smaller of the two sizes: a "hand" detected on the face is huge and swallowed the real
+    hand); the margin grows while the track is unseen, and a track waits 700 ms before it is
+    dropped. Before, when the main hand was lost for one frame the only hand left became the
+    main one for good.
+  - Left/right is a vote over time weighted by MediaPipe's confidence, and two hands in view
+    can't be on the same side (the less sure one takes the other side). The label decides
+    whether a hand is mirrored before classifying it; a wrong one fed the classifier a
+    mirrored hand. With tracks the label never flips in the video (7 flips before).
+  - The main hand starts as the raised one and passes to the other hand once it is over 2 hand
+    sizes higher (it only matters for `?captura`, which records the main hand's letters).
+  - Skeletons are drawn per track, so they don't cross over.
+  - With two hands MediaPipe sometimes returns the same hand twice, overlapping and slightly
+    shifted: a second skeleton drawn off the hand that also stole its track. Two sightings
+    whose 21 points are on average under half a hand size apart are one hand (the more
+    confident one stays); two hands touching (Q, W) never match point by point.
+    Measured in Chromium with the video as the camera: same frame rate (~10 fps), clear signs
+    (top probability ≥ 0.6) went from ~20% to 38% of the frames with a hand. Q and W also need
+    both hands touching (a fingertip within 0.6 hand sizes of the other hand, `touchWeight`).
+- **Letters with a movement (Z):** the classifier is static (one frame in, probabilities out), so
+  the movement is checked outside it:
+  - **Shape:** the index or the pinky is out (`fingerUp`, 3D fingertip-to-wrist reach) in at
+    least 60% of the path and in the last frame.
+  - **Movement:** `TraceTracker` keeps the last 3 s of the **palm center** (wrist + the four
+    knuckles) of **each track**, in units of the largest hand size seen (turning the hand
+    shrinks it in the image), with no smoothing. Every frame, `tracesZ` tries each start point
+    and compares the path from there to now with a Z drawn as a template, the way gesture
+    recognizers for drawn shapes do (the "$1 recognizer"): resample it into 24 points equally
+    spaced along its length, scale its bounding box to a square and take the mean distance to
+    the Z and to its mirror. Size and position drop out, so a small Z counts like a big one,
+    anywhere, and pauses don't matter. It is a Z when the distance is ≤ 0.165, it is at least
+    0.25 hand sizes wide, 0.2–2× as tall as wide, starts in the top half at one side and ends
+    in the bottom half at the other side (so it waits for the bottom stroke).
+  - The first version followed horizontal turning points in sequence; with a far hand the
+    noise added turning points mid-diagonal and broke the sequence, and lowering the threshold
+    to accept small Z fired with a still hand. Comparing the whole shape doesn't depend on
+    each corner.
+  - Z score = shape × open gate (1.5 s after a traced Z). Confirming a letter clears every
+    path, so the next Z has to be drawn whole again. It used to stay disarmed until the finger
+    came down, checked on both hands: a relaxed hand hanging by the side has its fingers out, so
+    with both hands in view it re-armed in only 13% of the frames of the full-body video and a
+    well-made Z after another letter often didn't count.
+  - **Left hand:** recorded with the left hand (6 recordings, `z-trazos-izquierda.json`) the
+    trajectory is found in all of them, but live it never confirmed. Two differences with the
+    right hand: MediaPipe loses the left hand for an instant 5–10 times per recording (0–3 with
+    the right one), and every frame without a hand reset the verifier (5 frames in a row are
+    needed); and live the shape was measured only on MediaPipe's 3D metric estimate, while the
+    recordings only have image coordinates, where the left hand's finger is up 79–90% of the
+    time. Now a gap under 400 ms doesn't reset the verifier (`HAND_GONE_MS`), and the shape is
+    the larger of the two measures (`handShape`): with the right hand it can only go up, and
+    the trajectory still decides. The full-body video still fires no Z.
+  - Following a fingertip instead of the palm was measured and is worse: the palm's path is
+    closer to the Z template (mean 0.10 vs 0.13–0.22 for the index, the pinky or whichever
+    finger is up).
+  - Measured (`recorded-tracking.test.ts`, with the recordings in `__fixtures__`): the 6 Z
+    recorded on a phone are found as recorded, at 45% of their size, twice as fast, small and
+    fast, and slower (at 30% of their size, 3 of 6); the 30 s full-body video never traces a
+    Z (its closest path is 0.27 away from the template); synthetic raises, drops, waves, a
+    still far hand, an N, a vertical zigzag and a circle never fire.
+  - With `?captura`, «Grabar Z 8 s» and «Grabar «no Z» 8 s» record both hands frame by frame;
+    new recordings go to `__fixtures__` and into that test.
+- **The camera fades in** once two frames have been decoded at the final size, plus 120 ms
+  (`videoReady`, `requestVideoFrameCallback`): iOS Safari showed it letterboxed for a moment
+  before applying `object-fit: cover`.
+- **Detection:** MediaPipe Tasks (`HandLandmarker` + `PoseLandmarker`, image mode, one hand,
+  (see above)). The library is the npm package `@mediapipe/tasks-vision` (pinned to
+  `0.10.22-rc.20250304`), bundled, and its WebAssembly is self-hosted under `/mediapipe/wasm`
+  (copied from `node_modules` by `scripts/copy-mediapipe-wasm.mjs` before `dev`/`build`;
+  `public/mediapipe/` is git-ignored). The `.task` models come from
+  `storage.googleapis.com/mediapipe-models` (hand float16/1, pose lite float16/1) — the same bytes
+  `signa-mobile` ships and the dataset was extracted with — and are checked against a pinned
+  SHA-256 before use (`src/lib/integrity.ts`); a changed file is rejected. Loaded only when "Empezar" is
+  pressed (`src/lib/alphabet-engine.ts`), so the landing's first load doesn't pay for it.
+- **Classifier:** plain TypeScript (`src/lib/hand-features.ts` + `src/lib/alphabet-classifier.ts`),
+  no TFLite/TensorFlow.js — the TFLite web runtime's loader needs `eval`, which the CSP forbids.
+  Weights in `public/reconocedor/alfabeto.{json,bin}` (6 MB), exported by signa-ml
+  `scripts/export_alphabet_for_web.py`, which folds normalization and BatchNorm into the dense
+  layers. `alphabet-classifier.test.ts` checks the port against signa-ml on real hands
+  (`alphabet-classifier.vectors.json`, generated by the same script): same features (< 1e-4) and
+  probabilities (< 1e-5).
+- **Decision** (`src/lib/alphabet-recognizer.ts`): verification of the requested letter against
+  its calibrated threshold, averaged over 7 frames and held for 5; the T/I height rule; location
+  zones (`LOCATION_ZONES`): H only counts with the index fingertip by the face, S and J on the chin and F at
+  the shoulder of the signing side,
+  in eyes-to-mouth units, with a soft edge — with no face detected they are not applied; the hand's
+  position relative to the face (from the pose). Only what the viewport shows is analyzed: what
+  `object-fit: cover` crops out is blanked before detection.
+- **Updating the model:** retrain/calibrate in signa-ml, then `python scripts/export_alphabet_for_web.py`
+  (writes the weights here and regenerates the test vectors) and run `npm run test`.
+
 ## Assets
 
+- `public/reconocedor/alfabeto.json`, `public/reconocedor/alfabeto.bin` — the camera demo's
+  classifier (labels, per-letter thresholds, folded weights), exported from signa-ml.
 - `public/images/lisa-waving.png`, `public/images/lisa-arms-crossed.png` — copied from
   `signa-mobile/assets/images/`; keep both repos' copies in sync if Lisa's artwork changes.
 - `public/icons/*.svg` — a handful of the project's illustration set (not the gamification icon
   set used in-app); used as-is, no inline coloring.
+- Team photos (`public/images/equipo/`) can't be dragged or long-pressed/right-clicked as an
+  image (no "open in new tab"/"save image"): `pointer-events: none`, `draggable={false}`,
+  `-webkit-touch-callout: none`. This only deters casual copying — the files are public URLs.
+
+## Page zoom
+
+On screens 1024 px and wider the whole landing is rendered at 90% (`zoom: 0.9` on
+`html:has(.landing-root)` in `landing.css`), which is how the design reads best on a desktop
+monitor. It behaves like the browser's own zoom: viewport units are compensated (the hero still
+fills the screen) and pointer coordinates stay consistent with `getBoundingClientRect()`. Phones
+and tablets render at 100%.
+
+## No pinch zoom on phones
+
+The landing (`/` only) can't be zoomed with the fingers: `viewport` in
+`src/app/(marketing)/page.tsx` sets `maximumScale: 1, userScalable: false` (also stops iOS from
+zooming into the name field), `touch-action: pan-x pan-y` on `html`/`body` (`landing.css`) and
+`LandingUIProvider` cancels Safari's `gesturestart`/`gesturechange`. Trade-off: visitors with low
+vision lose pinch zoom on this page; the browser's text-size setting and "force enable zoom"
+accessibility options still work.
+
+## Feature preview modals
+
+All four "Ver cómo funciona" modals share one size: almost the whole screen (up to 1280×960,
+with a margin around it), text on the left and the phone on the right (stacked on phones, with
+scroll inside the card). Each phone is drawn at its fixed design size (live demos 380×780, static
+screens 300×640) and `FitPhone` in `feature-preview.tsx` scales it with a `ResizeObserver` to
+fill the space left, so every phone has the same height and keeps its proportions. On phones (and on
+desktops zoomed past the `md` breakpoint) text and phone are stacked and the phone's size is
+computed once from the screen height when the modal opens: tracking the height made the phone
+shrink when the keyboard opened, which moved the name field and made the page bounce. Also, on touch screens focusing the name
+field centers the phone instantly (before the keyboard rises) and smooth scrolling is off while a modal
+is open: a half-visible field made the browser scroll the modal smoothly while the keyboard was
+resizing the screen, and the two fought (flicker).
+
+Closing (X, backdrop or Escape) plays the opening animation in reverse (280 ms) before
+unmounting; with `prefers-reduced-motion` it closes at once.
+
+**Inside a modal, the 3D viewer starts 400 ms after it is mounted** (`LisaGlbViewer`'s `delay`, passed by the Señas en 3D modal; the hero's viewer starts at once and is part of the server HTML). Booting model-viewer
+(script, WebGL, shaders) blocks the page's main thread for ~300 ms — the iframe is same-origin —
+and doing it while the modal opens froze the whole opening animation. Measured: 0 dropped frames
+during the opening now; the boot happens once the card is in place.
+
+## Full pages (Próximamente, Organizaciones, Ingresar, Panel, legal)
+
+Each one enters with `page-enter` (`globals.css`: 0.5 s fade + 8 px rise; off with
+`prefers-reduced-motion`) on its content — the nav stays put, so moving from the landing feels
+continuous. Going back is a single round arrow button (`src/components/back-button.tsx`) at the
+top-left corner of the content, under the top bar: to `/` from Próximamente, Organizaciones and
+the legal pages, to `/organizaciones` from Ingresar and Panel. There are no "Volver a…" text
+links.
+
+## 3D memory, Lisa's thumbnail and the progress bar
+
+- **At most 3 models loaded per viewer** (`MAX_LOADED` in `src/lib/glb.ts`): each sign's GLB
+  carries 18 textures of 1024×1024, ~100 MB of GPU memory. Preloading every letter of a name plus
+  the hero's four questions reached ~1.1 GB, and phones killed the tab (the page reloaded at the
+  top, typically when enlarging Lisa). Lessons and the camera demo preload only the next
+  `PRELOAD_AHEAD` (2) signs, the viewer evicts the oldest loaded model, and the hero releases its
+  viewer while a modal is open (`releaseViewerWithModal`). Measured peak: 11 → 3 models.
+- **Lisa's thumbnail in the camera demo never resizes the 3D canvas.** The viewer is always laid
+  out at the enlarged size; the thumbnail is that same render scaled down and cropped (`inner`
+  transform in `SignPip`), and enlarging animates the box and the scale. Resizing the canvas on
+  every frame made the animation stutter, and resizing it once flashed a tiny Lisa for a frame.
+  Measured with CPU ÷4: 0 dropped frames enlarging or shrinking.
+- **Top progress bar:** driven by the scroll itself (`animation-timeline: scroll(root)`) where
+  supported; elsewhere (Firefox) the JS fallback writes `--landing-scroll` on the bar only, not
+  on `<html>` — that forced a style recalc of the whole page on every scroll frame.
+- **Keyboard on phones:** the viewport declares `interactive-widget=resizes-visual` (the keyboard
+  overlays the page instead of resizing it), and focusing the name field centers the whole phone.
+
+## Images are not selectable
+
+`img`, `svg`, `canvas` and `video` are `user-select: none` and not draggable site-wide
+(`globals.css`), so dragging a text selection across a section never highlights Lisa or a photo.
+Text stays selectable.
+
+## Marquee outline row
+
+The second row is outlined, not filled. Bricolage Grotesque is a variable font whose glyphs are
+built from overlapping contours, so a plain `-webkit-text-stroke` also draws the joints inside
+each letter. The row is filled with the page background and stroked at twice the width with
+`paint-order: stroke fill`, so the fill hides the inner half of the stroke and the joints. It
+relies on the row sitting on `bg-background`; over another color, change the fill to match. Both
+rows are `select-none`. Each word and its `·` separator are sibling spans, so hovering grows only
+the word; the dot ignores the pointer.
+
+## Opening the dev server from a phone
+
+`next dev` only serves its dev scripts to `localhost` unless the origin is listed in
+`allowedDevOrigins` (`next.config.ts`: `192.168.*.*`, `10.*.*.*`, `*.local`); otherwise the page
+never hydrates on a phone and buttons/modals do nothing. The camera demo also needs a secure context, which plain `http://<LAN IP>` is not (the browser
+hides `getUserMedia`; the demo then says the camera needs https). For the phone run
+`npm run dev:celu`: `scripts/dev-cert.mjs` creates a self-signed certificate for `localhost` and
+the machine's LAN IPs in `certificates/` (git-ignored, regenerated when the IPs change) and starts
+`next dev` over https (it prints the phone URL as "Network"). Open `https://<LAN IP>:3000` on
+the phone — not `0.0.0.0`, which browsers block — and accept
+the certificate warning once.
 
 ## Known placeholders
 
-Pricing (`[PRECIO]`), the organizations contact email, and the contact form's submit handler
+Pricing (the thematic courses card shows no price until it is decided), the organizations contact email, and the contact form's submit handler
 (currently a no-op button) are unresolved — see [../status.md](../status.md). No `sitemap.ts` /
 `robots.ts` / OG image yet.

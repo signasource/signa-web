@@ -3,7 +3,9 @@ import nextTs from "eslint-config-next/typescript";
 import prettier from "eslint-config-prettier/flat";
 
 const config = [
-  { ignores: [".next/**", "node_modules/**", "next-env.d.ts", "coverage/**"] },
+  {
+    ignores: [".next/**", "node_modules/**", "next-env.d.ts", "coverage/**", "public/mediapipe/**"],
+  },
   ...nextVitals,
   ...nextTs,
   prettier,

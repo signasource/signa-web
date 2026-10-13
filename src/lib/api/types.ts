@@ -1,6 +1,3 @@
-// DTO shapes mirror signa-api (camelCase after the client's key conversion).
-// Canonical reference: docs/api/types.md
-
 export type AuthResponse = { accessToken: string; refreshToken: string };
 
 export type MemberRole = "ADMIN" | "MEMBER";
@@ -32,7 +29,6 @@ export type RedeemInviteCodeResponse = {
 };
 
 export type WeeklyPerformance = {
-  /** ISO date (yyyy-mm-dd) of the week's first day. */
   weekStart: string;
   exerciseAttempts: number;
   correctPercentage: number;
@@ -128,7 +124,6 @@ export type InviteCode = {
   id: string;
   code: string;
   organizationId: string;
-  /** Set for invite-by-email codes; null for shareable codes. */
   email: string | null;
   memberRole: MemberRole;
   expiresAt: string | null;

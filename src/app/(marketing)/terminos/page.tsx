@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LegalPage, Section, Todo } from "@/components/legal/legal-page";
+import { LegalPage, Section } from "@/components/legal/legal-page";
 import { legal } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Términos y condiciones",
-  // Draft pending legal review: keep out of search results until published.
-  robots: { index: false, follow: false },
 };
 
 export default function TermsPage() {
@@ -24,8 +22,7 @@ export default function TermsPage() {
         <p>
           Signa es una plataforma para aprender Lengua de Señas Argentina (LSA) con cursos,
           ejercicios y reconocimiento de señas por cámara. Es un {legal.project} de la{" "}
-          {legal.institution}, desarrollado por estudiantes:{" "}
-          <Todo>COMPLETAR: nombres del equipo</Todo>.
+          {legal.institution}, desarrollado por el equipo Signa.
         </p>
         <p>
           <strong>Es un proyecto académico en desarrollo.</strong> El servicio puede tener errores,
@@ -40,8 +37,8 @@ export default function TermsPage() {
           <li>Sos responsable de tu contraseña y de lo que ocurra desde tu cuenta.</li>
           <li>Avisanos si sospechás un uso no autorizado.</li>
           <li>
-            Debés cumplir la edad mínima indicada en la Política de privacidad, o contar con
-            autorización de tu madre, padre o tutor.
+            Las personas menores de 13 años deben contar con autorización de su madre, padre o tutor
+            legal.
           </li>
         </ul>
       </Section>
@@ -77,13 +74,6 @@ export default function TermsPage() {
           compras se realizan a través de Google Play y se rigen también por sus condiciones. La
           acreditación de gemas depende de que Google confirme el pago.
         </p>
-        <p>
-          <Todo>
-            REVISAR: política de reembolsos y derecho de arrepentimiento (Ley N.º 24.240), y si
-            corresponde ofrecer compras con dinero real siendo un proyecto académico (situación
-            fiscal y comercial del equipo)
-          </Todo>
-        </p>
       </Section>
 
       <Section title="7. Organizaciones">
@@ -98,21 +88,15 @@ export default function TermsPage() {
             tratar sus datos.
           </li>
           <li>Los administradores solo deben usar esa información para fines de capacitación.</li>
-          <li>
-            <Todo>COMPLETAR: condiciones comerciales de la contratación (precio, plazo, baja)</Todo>
-          </li>
         </ul>
       </Section>
 
       <Section title="8. Propiedad intelectual">
         <p>
-          El software, los cursos, las ilustraciones y animaciones de Signa pertenecen a sus
+          El software, los cursos, las ilustraciones y animaciones de Signa son propiedad de sus
           autores. Te otorgamos una licencia personal, limitada, no exclusiva e intransferible para
-          usar el servicio.{" "}
-          <Todo>
-            COMPLETAR: licencia del código y de los contenidos (por ejemplo, si el proyecto será de
-            código abierto) y créditos de terceros
-          </Todo>
+          usar el servicio. Queda prohibida la reproducción, distribución o modificación del
+          contenido sin autorización expresa.
         </p>
       </Section>
 
@@ -120,7 +104,8 @@ export default function TermsPage() {
         <p>
           En la medida que la ley lo permita, el equipo no responde por interrupciones del servicio,
           pérdida de progreso o daños indirectos derivados del uso de Signa. Esto no limita los
-          derechos que la ley de defensa del consumidor te reconoce y que no pueden renunciarse.
+          derechos que la Ley N.º 24.240 de Defensa del Consumidor te reconoce y que no pueden
+          renunciarse.
         </p>
       </Section>
 
@@ -141,11 +126,9 @@ export default function TermsPage() {
 
       <Section title="12. Ley aplicable y jurisdicción">
         <p>
-          Estos términos se rigen por las leyes de la República Argentina.{" "}
-          <Todo>
-            REVISAR: jurisdicción competente (por ejemplo, tribunales ordinarios de la ciudad de
-            Córdoba), respetando el derecho del consumidor a demandar en su domicilio
-          </Todo>
+          Estos términos se rigen por las leyes de la República Argentina. Para cualquier
+          controversia, serán competentes los tribunales ordinarios de la ciudad de Córdoba,
+          Argentina, sin perjuicio del derecho del consumidor de demandar en su domicilio.
         </p>
       </Section>
 

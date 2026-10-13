@@ -1,8 +1,9 @@
 "use client";
 
+import * as XLSX from "xlsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Icon } from "@/components/dashboard/icons";
 import {
@@ -22,10 +23,21 @@ import { formatDate, parseEmails } from "@/lib/dashboard-format";
 import { inviteEmailsSchema, type InviteEmailsForm } from "@/lib/invitations";
 
 type SentInvite = { email: string; ok: boolean };
+type ExcelPhase = "idle" | "preview";
 
 function usesLabel(code: InviteCode) {
   const uses = code.useCount === 1 ? "1 uso" : `${code.useCount} usos`;
   return code.maxUses ? `${uses} de ${code.maxUses}` : uses;
+}
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function extractEmails(headers: string[], dataRows: string[][], col: string): string[] {
+  const idx = headers.indexOf(col);
+  if (idx === -1) return [];
+  return dataRows.map((row) => String(row[idx] ?? "").trim()).filter((v) => v !== "");
 }
 
 export default function InvitationsPage() {
@@ -40,10 +52,31 @@ export default function InvitationsPage() {
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
+  // Excel state
+  const [excelPhase, setExcelPhase] = useState<ExcelPhase>("idle");
+  const [excelFileName, setExcelFileName] = useState("");
+  const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
+  const [excelDataRows, setExcelDataRows] = useState<string[][]>([]);
+  const [emailColumn, setEmailColumn] = useState("");
+  const [excelError, setExcelError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isExcelInvite = useRef(false);
+  const datalistId = useId();
+
   const flash = (message: string) => {
     setToast(message);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 2600);
+  };
+
+  const resetExcel = () => {
+    setExcelPhase("idle");
+    setExcelFileName("");
+    setExcelHeaders([]);
+    setExcelDataRows([]);
+    setEmailColumn("");
+    setExcelError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const form = useForm<InviteEmailsForm>({
@@ -56,7 +89,6 @@ export default function InvitationsPage() {
     queryFn: () => organizationsApi.inviteCodes(orgId!),
     enabled: Boolean(orgId),
   });
-  // Email invitations also show up in this list; the shareable codes are the ones without an email.
   const shareable = (codes.data ?? []).filter((c) => c.active && c.email === null);
 
   const invite = useMutation({
@@ -80,6 +112,10 @@ export default function InvitationsPage() {
       }
       if (okCount < results.length) {
         form.setError("emails", { message: "No pudimos enviar algunas invitaciones." });
+      }
+      if (isExcelInvite.current) {
+        resetExcel();
+        isExcelInvite.current = false;
       }
     },
   });
@@ -110,6 +146,46 @@ export default function InvitationsPage() {
     setTimeout(() => setCopied((c) => (c === code ? null : c)), 1800);
   };
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setExcelError(null);
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      if (!sheetName) throw new Error("El archivo no tiene hojas.");
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
+      if (rows.length < 2) throw new Error("El archivo no tiene datos.");
+      const headers = (rows[0] as unknown[]).map(String);
+      if (headers.length === 0) throw new Error("No se encontraron columnas.");
+      const dataRows = (rows.slice(1) as unknown[][]).map((r) =>
+        headers.map((_, i) => String((r as unknown[])[i] ?? "")),
+      );
+      const autoCol =
+        headers.find((h) => h.toLowerCase().includes("mail")) ?? headers[0] ?? "";
+      setExcelHeaders(headers);
+      setExcelDataRows(dataRows);
+      setEmailColumn(autoCol);
+      setExcelFileName(file.name);
+      setExcelPhase("preview");
+    } catch (err) {
+      setExcelError(
+        err instanceof Error ? err.message : "No pudimos leer el archivo. Verificá el formato.",
+      );
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  // Derived data for the preview
+  const allEmails = extractEmails(excelHeaders, excelDataRows, emailColumn);
+  const emailRows = allEmails.map((e) => ({ email: e, valid: isValidEmail(e) }));
+  const validEmails = emailRows.filter((r) => r.valid).map((r) => r.email);
+  const invalidCount = emailRows.length - validEmails.length;
+  const previewRows = emailRows.slice(0, 20);
+  const overflowCount = emailRows.length - previewRows.length;
+
   return (
     <section className="flex flex-col gap-5">
       <PageHeading
@@ -118,6 +194,7 @@ export default function InvitationsPage() {
       />
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-4">
+        {/* ── Invitar por email ── */}
         <Card className="flex flex-col gap-3.5">
           <div className="flex items-center gap-2.5">
             <SectionIcon name="mail" className="bg-primary-light text-primary-dark" />
@@ -147,7 +224,7 @@ export default function InvitationsPage() {
               </span>
             ) : null}
             <button type="submit" disabled={invite.isPending} className={primaryButton}>
-              {invite.isPending ? "Enviando…" : "Enviar invitaciones"}
+              {invite.isPending && !isExcelInvite.current ? "Enviando…" : "Enviar invitaciones"}
             </button>
           </form>
           {sent.length > 0 ? (
@@ -178,6 +255,7 @@ export default function InvitationsPage() {
           ) : null}
         </Card>
 
+        {/* ── Códigos de invitación ── */}
         <Card className="flex flex-col gap-3.5">
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5">
@@ -241,6 +319,148 @@ export default function InvitationsPage() {
               No hay códigos activos.
             </p>
           ) : null}
+        </Card>
+
+        {/* ── Importar desde Excel ── */}
+        <Card className="flex flex-col gap-3.5">
+          <div className="flex items-center gap-2.5">
+            <SectionIcon name="upload" className="bg-shop-amber-light text-shop-amber-dark" />
+            <CardTitle>Importar desde Excel</CardTitle>
+          </div>
+
+          {excelPhase === "idle" && (
+            <>
+              <p className="text-text-muted text-sm text-pretty">
+                Subí un archivo con una columna de emails para invitar a varias personas a la vez.
+              </p>
+              <div className="border-border rounded-2xl border border-dashed p-6 text-center">
+                <Icon name="upload" className="text-text-muted mx-auto mb-3 size-8" />
+                <p className="text-sm font-semibold">Subir lista de emails</p>
+                <p className="text-text-muted mt-1 text-[13px]">Formatos: .xlsx, .xls, .csv</p>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`${pillButton} mx-auto mt-4`}
+                >
+                  Elegir archivo
+                </button>
+              </div>
+              {excelError ? (
+                <ErrorState>{excelError}</ErrorState>
+              ) : null}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </>
+          )}
+
+          {excelPhase === "preview" && (
+            <>
+              <p className="text-text-muted truncate text-[13px]">
+                Archivo: <span className="text-text font-semibold">{excelFileName}</span>
+              </p>
+
+              {/* Column selector */}
+              <label className="flex flex-col gap-1 text-sm font-medium">
+                Columna con emails
+                <input
+                  list={datalistId}
+                  value={emailColumn}
+                  onChange={(e) => setEmailColumn(e.target.value)}
+                  placeholder="ej: Email, Correo, mail..."
+                  className="border-border bg-surface rounded-lg border px-3 py-2 text-[15px]"
+                />
+                <datalist id={datalistId}>
+                  {excelHeaders.map((h) => (
+                    <option key={h} value={h} />
+                  ))}
+                </datalist>
+                <span className="text-text-muted text-[13px] font-normal">
+                  Elegí del listado o escribí el nombre exacto de la columna.
+                </span>
+              </label>
+
+              {/* Preview table */}
+              {emailRows.length > 0 ? (
+                <div className="border-border overflow-hidden rounded-xl border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-fill text-text-muted text-xs font-extrabold tracking-wider">
+                        <th className="px-3 py-2 text-left">Email</th>
+                        <th className="px-3 py-2 text-right">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewRows.map((row, i) => (
+                        <tr key={i} className="border-fill border-t">
+                          <td className="max-w-[240px] truncate px-3 py-2 font-medium">
+                            {row.email || <span className="text-text-muted italic">vacío</span>}
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <span
+                              className={
+                                row.valid
+                                  ? "bg-success-light text-success-dark rounded-full px-2 py-0.5 text-xs font-extrabold"
+                                  : "bg-danger-light text-danger rounded-full px-2 py-0.5 text-xs font-extrabold"
+                              }
+                            >
+                              {row.valid ? "Válido" : "Inválido"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {overflowCount > 0 ? (
+                    <p className="text-text-muted border-fill border-t px-3 py-2 text-[13px]">
+                      …y {overflowCount} más
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="text-text-muted text-sm">
+                  No se encontraron valores en la columna seleccionada.
+                </p>
+              )}
+
+              {/* Summary */}
+              <p className="text-sm font-semibold">
+                <span className="text-success-dark">{validEmails.length} emails válidos</span>
+                {invalidCount > 0 ? (
+                  <span className="text-text-muted"> · {invalidCount} inválidos</span>
+                ) : null}
+              </p>
+
+              {/* Actions */}
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={resetExcel}
+                  disabled={invite.isPending && isExcelInvite.current}
+                  className={pillButton}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={validEmails.length === 0 || invite.isPending}
+                  onClick={() => {
+                    isExcelInvite.current = true;
+                    invite.mutate(validEmails);
+                  }}
+                  className={primaryButton}
+                >
+                  {invite.isPending && isExcelInvite.current
+                    ? "Enviando…"
+                    : `Enviar ${validEmails.length} invitación${validEmails.length !== 1 ? "es" : ""}`}
+                </button>
+              </div>
+            </>
+          )}
         </Card>
       </div>
 
