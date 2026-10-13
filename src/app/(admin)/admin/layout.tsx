@@ -3,13 +3,31 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAdminAuth } from "@/features/admin/admin-auth-context";
+import { adminApi } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 
-const NAV = [
+function NavBadge({ count }: { count: number }) {
+  if (count === 0) return null;
+  return (
+    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[10px] font-bold text-white">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badgeKey?: "pendingOrganizations" | "openSignReports";
+};
+
+const NAV: NavItem[] = [
   { href: "/admin", label: "Resumen", icon: GridIcon },
-  { href: "/admin/organizations", label: "Organizaciones", icon: BuildingIcon },
-  { href: "/admin/sign-reports", label: "Reportes de señas", icon: FlagIcon },
+  { href: "/admin/organizations", label: "Organizaciones", icon: BuildingIcon, badgeKey: "pendingOrganizations" },
+  { href: "/admin/sign-reports", label: "Reportes de señas", icon: FlagIcon, badgeKey: "openSignReports" },
   { href: "/admin/content", label: "Cursos y señas", icon: BookIcon },
   { href: "/admin/users", label: "Usuarios", icon: UsersIcon },
   { href: "/admin/admins", label: "Administradores", icon: ShieldIcon },
@@ -23,6 +41,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const { status, admin, logout } = useAdminAuth();
+
+  const { data: stats } = useQuery({
+    queryKey: ["admin", "stats"],
+    queryFn: adminApi.stats,
+    enabled: status === "authenticated",
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/admin/login");
@@ -50,8 +75,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span className="text-xs font-medium text-white/30">Admin</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1 px-3">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {NAV.map(({ href, label, icon: Icon, badgeKey }) => {
             const active = isActive(pathname, href);
+            const badgeCount = badgeKey && stats ? (stats[badgeKey] ?? 0) : 0;
             return (
               <Link
                 key={href}
@@ -65,6 +91,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 <Icon className="size-4 shrink-0" />
                 {label}
+                <NavBadge count={badgeCount} />
               </Link>
             );
           })}

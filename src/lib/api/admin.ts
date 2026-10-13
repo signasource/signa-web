@@ -31,6 +31,7 @@ export type AdminStats = {
   totalUsers: number;
   activeUsersLast7Days: number;
   waitlistCount: number;
+  totalSigns: number;
 };
 
 export type ReportStatus = "PENDING" | "REVIEWED" | "RESOLVED" | "REJECTED";
@@ -74,6 +75,9 @@ export type AdminUser = {
   enabled: boolean;
   verified: boolean;
   organizationName: string | null;
+  authProvider: "GOOGLE" | "EMAIL";
+  currentStreak: number;
+  lastStreakDate: string | null;
 };
 
 export type AdminWaitlistEntry = {
@@ -136,7 +140,12 @@ export const adminApi = {
       body: { status, adminNote },
     }),
 
-  users: (params?: { query?: string; role?: UserRole; page?: number; size?: number }) =>
+  users: (params?: {
+    query?: string;
+    role?: UserRole;
+    page?: number;
+    size?: number;
+  }) =>
     api<Page<AdminUser>>("/admin/users", {
       query: params as Record<string, string | number | boolean | undefined>,
     }),
