@@ -34,13 +34,7 @@ function StatusBadge({ status }: { status: OrganizationStatus }) {
   );
 }
 
-function OrgDetailPanel({
-  org,
-  onClose,
-}: {
-  org: AdminOrganization;
-  onClose: () => void;
-}) {
+function OrgDetailPanel({ org, onClose }: { org: AdminOrganization; onClose: () => void }) {
   const qc = useQueryClient();
 
   const { data: courses } = useQuery({
@@ -115,7 +109,7 @@ function OrgDetailPanel({
 
         {org.status === "PENDING" && courses && courses.length > 0 && (
           <div>
-            <p className="text-text mb-2 text-xs font-semibold uppercase tracking-wide">
+            <p className="text-text mb-2 text-xs font-semibold tracking-wide uppercase">
               Cursos a habilitar
             </p>
             <div className="space-y-2">
@@ -301,9 +295,7 @@ export default function OrganizationsPage() {
         )}
       </div>
 
-      {selected && (
-        <OrgDetailPanel org={selected} onClose={() => setSelected(null)} />
-      )}
+      {selected && <OrgDetailPanel org={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }

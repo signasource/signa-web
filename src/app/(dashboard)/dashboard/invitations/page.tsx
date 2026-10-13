@@ -163,8 +163,7 @@ export default function InvitationsPage() {
       const dataRows = (rows.slice(1) as unknown[][]).map((r) =>
         headers.map((_, i) => String((r as unknown[])[i] ?? "")),
       );
-      const autoCol =
-        headers.find((h) => h.toLowerCase().includes("mail")) ?? headers[0] ?? "";
+      const autoCol = headers.find((h) => h.toLowerCase().includes("mail")) ?? headers[0] ?? "";
       setExcelHeaders(headers);
       setExcelDataRows(dataRows);
       setEmailColumn(autoCol);
@@ -345,9 +344,7 @@ export default function InvitationsPage() {
                   Elegir archivo
                 </button>
               </div>
-              {excelError ? (
-                <ErrorState>{excelError}</ErrorState>
-              ) : null}
+              {excelError ? <ErrorState>{excelError}</ErrorState> : null}
               <input
                 ref={fileInputRef}
                 type="file"

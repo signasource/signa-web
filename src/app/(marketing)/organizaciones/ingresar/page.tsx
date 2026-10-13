@@ -112,9 +112,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
   const { login } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [pricing, setPricing] = useState<{ pricePerPerson: number; currency: string } | null>(
-    null,
-  );
+  const [pricing, setPricing] = useState<{ pricePerPerson: number; currency: string } | null>(null);
 
   useEffect(() => {
     organizationsApi

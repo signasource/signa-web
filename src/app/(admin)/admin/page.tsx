@@ -45,9 +45,13 @@ function StatCard({
   };
   return (
     <div className="border-border bg-surface rounded-2xl border p-5">
-      <p className="text-text-muted text-xs font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-text-muted text-xs font-medium tracking-wide uppercase">{label}</p>
       <p className={`font-display mt-2 text-3xl font-bold ${colorMap[color]}`}>
-        {value !== undefined ? (typeof value === "number" ? value.toLocaleString("es-AR") : value) : "—"}
+        {value !== undefined
+          ? typeof value === "number"
+            ? value.toLocaleString("es-AR")
+            : value
+          : "—"}
       </p>
       {sub && <p className="text-text-muted mt-1 text-xs">{sub}</p>}
     </div>
@@ -97,9 +101,7 @@ export default function AdminResumenPage() {
     "OTHER",
   ];
 
-  const maxReasonCount = reportsByReason
-    ? Math.max(1, ...Object.values(reportsByReason))
-    : 1;
+  const maxReasonCount = reportsByReason ? Math.max(1, ...Object.values(reportsByReason)) : 1;
 
   const subtitle = (() => {
     const pending = stats?.pendingOrganizations ?? 0;
@@ -148,7 +150,10 @@ export default function AdminResumenPage() {
         <div className="border-border bg-surface rounded-2xl border">
           <div className="flex items-center justify-between border-b border-inherit px-5 py-4">
             <h2 className="text-text text-sm font-semibold">Requiere tu atención</h2>
-            <a href="/admin/organizations" className="text-primary text-xs font-semibold hover:underline">
+            <a
+              href="/admin/organizations"
+              className="text-primary text-xs font-semibold hover:underline"
+            >
               Ver todas
             </a>
           </div>
