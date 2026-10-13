@@ -100,7 +100,9 @@ function DetailPanel({ group, onClose }: { group: AdminSignReportGroup; onClose:
               </span>
             </div>
             <p className="text-text-muted text-xs font-medium">{REASON_LABELS[r.reason]}</p>
-            {r.description && <p className="text-text-muted mt-1 text-xs">"{r.description}"</p>}
+            {r.description && (
+              <p className="text-text-muted mt-1 text-xs">&ldquo;{r.description}&rdquo;</p>
+            )}
           </div>
         ))}
       </div>
