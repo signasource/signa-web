@@ -9,6 +9,7 @@
 | `/`                           | `(marketing)/page.tsx`                            | public | Landing. See [features/landing.md](./features/landing.md)                                                            |
 | `/privacidad`                 | `(marketing)/privacidad/page.tsx`                 | public | Privacy policy (draft, `noindex`). See [legal.md](./legal.md)                                                        |
 | `/terminos`                   | `(marketing)/terminos/page.tsx`                   | public | Terms and conditions (draft, `noindex`). See [legal.md](./legal.md)                                                  |
+| `/eliminar-cuenta`            | `(marketing)/eliminar-cuenta/page.tsx`            | public | Account-deletion instructions for Play Console. See [legal.md](./legal.md)                                           |
 | `/proximamente`               | `(marketing)/proximamente/page.tsx`               | public | Coming-soon page: Google Play status, waitlist email form, org CTA                                                   |
 | `/organizaciones`             | `(marketing)/organizaciones/page.tsx`             | public | Organizations marketing page: steps, panel preview, CTA                                                              |
 | `/organizaciones/ingresar`    | `(marketing)/organizaciones/ingresar/page.tsx`    | public | Org login + register (CUIT validation). Redirects to `/organizaciones/panel` on login                                |

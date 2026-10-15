@@ -1,7 +1,9 @@
 import { api } from "@/lib/api/client";
 import type {
   InviteCode,
+  MemberActivityStatus,
   MemberProgress,
+  MemberSort,
   MemberStatus,
   ModuleStats,
   MyOrganization,
@@ -14,18 +16,51 @@ import type {
 export const organizationsApi = {
   me: () => api<MyOrganization>("/organizations/me"),
 
+  register: (data: {
+    orgName: string;
+    cuit: string;
+    contactEmail: string;
+    contactPhone?: string;
+    memberLimit: number;
+    adminName: string;
+    adminPassword: string;
+  }) =>
+    api<{ organizationId: string; organizationName: string; status: string }>(
+      "/organizations/register",
+      { method: "POST", body: data, anonymous: true },
+    ),
+
+  getPricing: () =>
+    api<{ pricePerPerson: number; currency: string }>("/organizations/pricing", {
+      anonymous: true,
+    }),
+
   redeemInviteCode: (code: string) =>
     api<RedeemInviteCodeResponse>("/organizations/invite-codes/redeem", {
       method: "POST",
       body: { code },
     }),
 
-  overview: (orgId: string) => api<OrganizationOverview>(`/organizations/${orgId}/overview`),
+  overview: (orgId: string, courseId?: string) =>
+    api<OrganizationOverview>(`/organizations/${orgId}/overview`, { query: { courseId } }),
 
   members: (
     orgId: string,
-    params: { query?: string; status?: MemberStatus; page?: number; size?: number },
-  ) => api<Page<OrganizationMemberSummary>>(`/organizations/${orgId}/members`, { query: params }),
+    params: {
+      query?: string;
+      status?: MemberStatus;
+      activity?: MemberActivityStatus;
+      courseId?: string;
+      sort?: { by: MemberSort; direction: "asc" | "desc" };
+      page?: number;
+      size?: number;
+    },
+  ) => {
+    const { sort, ...rest } = params;
+    return api<Page<OrganizationMemberSummary>>(`/organizations/${orgId}/members`, {
+      query: { ...rest, sort: sort ? `${sort.by},${sort.direction}` : undefined },
+    });
+  },
 
   member: (orgId: string, userId: string) =>
     api<MemberProgress>(`/organizations/${orgId}/members/${userId}`),
@@ -33,7 +68,8 @@ export const organizationsApi = {
   removeMember: (orgId: string, userId: string) =>
     api(`/organizations/${orgId}/members/${userId}`, { method: "DELETE" }),
 
-  modules: (orgId: string) => api<ModuleStats[]>(`/organizations/${orgId}/modules`),
+  modules: (orgId: string, courseId?: string) =>
+    api<ModuleStats[]>(`/organizations/${orgId}/modules`, { query: { courseId } }),
 
   inviteCodes: (orgId: string) => api<InviteCode[]>(`/organizations/${orgId}/invite-codes`),
 

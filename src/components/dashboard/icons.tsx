@@ -34,6 +34,16 @@ const PATHS = {
     </>
   ),
   chevronBack: <path d="M15 5l-7 7 7 7" />,
+  chevronDown: <path d="M5 9l7 7 7-7" />,
+  arrowUp: <path d="M12 19V5M6 11l6-6 6 6" />,
+  arrowDown: <path d="M12 5v14M6 13l6 6 6-6" />,
+  sortable: <path d="M8 9l4-4 4 4M8 15l4 4 4-4" />,
+  book: (
+    <>
+      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" />
+      <path d="M4 20.5A2.5 2.5 0 0 0 6.5 21H20" />
+    </>
+  ),
   chevronForward: <path d="M9 5l7 7-7 7" />,
   mail: (
     <>
@@ -52,6 +62,12 @@ const PATHS = {
     <>
       <rect x="8" y="8" width="12" height="12" rx="2.5" />
       <path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" />
+    </>
+  ),
+  upload: (
+    <>
+      <path d="M12 15V3M8 7l4-4 4 4" />
+      <path d="M4 17v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1" />
     </>
   ),
   check: <path d="M5 12.5l4.5 4.5L19 7.5" />,

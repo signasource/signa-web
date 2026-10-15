@@ -41,7 +41,7 @@ Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client-side dat
 | `cursos.tsx`          | Free basic course ("Probá una lección" → `/proximamente`) + thematic (paid) courses (Salud, Atención al cliente); org call-out at the bottom opens the organizations overlay                                        |
 | `equipo.tsx`          | Single team photo (`/images/equipo.jpg`) — one image instead of 6 individual cards                                                                                                                                  |
 | `cta-final.tsx`       | Closing CTA + Lisa                                                                                                                                                                                                  |
-| `landing-footer.tsx`  | Footer links (`/privacidad`, `/terminos`, organizations, legal)                                                                                                                                                     |
+| `landing-footer.tsx`  | Footer links (`/privacidad`, `/terminos`, `/eliminar-cuenta`, organizations, legal)                                                                                                                                 |
 | `org-trigger.tsx`     | Link to `/organizaciones`. Replaces the former modal-open button.                                                                                                                                                   |
 | `feature-preview.tsx` | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature. Two are live, in a wider modal with a larger phone: the 3D one (`LessonDemo`) and the camera one (`CameraNameDemo`) |
 
