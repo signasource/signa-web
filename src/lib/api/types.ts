@@ -147,3 +147,22 @@ export type Page<T> = {
   number: number;
   size: number;
 };
+
+export type ActivityFigures = {
+  /** Distinct people with an attempt; for a whole period it is not the sum of the days. */
+  activeParticipants: number;
+  exerciseAttempts: number;
+  correctAnswers: number;
+  correctPercentage: number;
+  lessonsCompleted: number;
+  learningMinutes: number;
+};
+
+export type DailyActivity = { date: string; figures: ActivityFigures };
+
+export type OrganizationActivity = {
+  from: string;
+  to: string;
+  totals: ActivityFigures;
+  days: DailyActivity[];
+};

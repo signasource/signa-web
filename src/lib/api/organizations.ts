@@ -7,6 +7,7 @@ import type {
   MemberStatus,
   ModuleStats,
   MyOrganization,
+  OrganizationActivity,
   OrganizationMemberSummary,
   OrganizationOverview,
   Page,
@@ -43,6 +44,9 @@ export const organizationsApi = {
 
   overview: (orgId: string, courseId?: string) =>
     api<OrganizationOverview>(`/organizations/${orgId}/overview`, { query: { courseId } }),
+
+  activity: (orgId: string, params: { from: string; to: string; courseId?: string }) =>
+    api<OrganizationActivity>(`/organizations/${orgId}/activity`, { query: params }),
 
   members: (
     orgId: string,
