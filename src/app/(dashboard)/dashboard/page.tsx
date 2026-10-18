@@ -20,9 +20,11 @@ import {
   headerChip,
   primaryButton,
 } from "@/components/dashboard/ui";
-import { WeeklyEvolution } from "@/components/dashboard/weekly-evolution";
+import { PeriodActivity } from "@/components/dashboard/period-activity";
+import { PeriodSelect } from "@/components/dashboard/period-select";
 import { useAuth } from "@/features/auth/auth-context";
 import { useCourseFilter, useWithCourse } from "@/features/dashboard/use-course-filter";
+import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
 import { cn } from "@/lib/utils";
 import {
@@ -49,6 +51,7 @@ export default function DashboardOverviewPage() {
   const { courseId, courses } = useCourseFilter();
   const showCourses = !courseId && courses.length > 1;
   const withCourse = useWithCourse();
+  const { range, setRange } = usePeriodFilter();
 
   const overview = useQuery({
     queryKey: ["organization", orgId, "overview", { courseId }],
@@ -59,6 +62,12 @@ export default function DashboardOverviewPage() {
   const modules = useQuery({
     queryKey: ["organization", orgId, "modules", { courseId }],
     queryFn: () => organizationsApi.modules(orgId!, courseId),
+    enabled: Boolean(orgId),
+    placeholderData: keepPreviousData,
+  });
+  const activity = useQuery({
+    queryKey: ["organization", orgId, "activity", { courseId, ...range }],
+    queryFn: () => organizationsApi.activity(orgId!, { ...range, courseId }),
     enabled: Boolean(orgId),
     placeholderData: keepPreviousData,
   });
@@ -147,16 +156,15 @@ export default function DashboardOverviewPage() {
 
           <div className="flex flex-wrap gap-4">
             <div className="min-w-0 flex-[2_1_460px]">
-              {performance.weeklyEvolution.length > 0 ? (
-                <WeeklyEvolution weeks={performance.weeklyEvolution} delay={240} />
-              ) : (
-                <Card delay={240}>
-                  <CardTitle>Evolución semanal</CardTitle>
-                  <p className="text-text-muted mt-2 text-sm">
-                    Todavía no hay actividad registrada por semana.
-                  </p>
-                </Card>
-              )}
+              <PeriodActivity
+                delay={240}
+                range={range}
+                picker={<PeriodSelect value={range} onChange={setRange} />}
+                data={activity.data}
+                isPending={activity.isPending}
+                isError={activity.isError}
+                isFetching={activity.isFetching && !activity.isPending}
+              />
             </div>
             <Card delay={300} className="flex min-w-0 flex-[1_1_260px] flex-col gap-4">
               <div>
