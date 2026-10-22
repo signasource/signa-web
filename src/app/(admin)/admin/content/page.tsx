@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { adminApi } from "@/lib/api/admin";
+import { adminApi, type ContentImportRun } from "@/lib/api/admin";
+import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 const VERSION_STATUS_LABELS: Record<string, string> = {
@@ -176,8 +177,162 @@ function SignsTab() {
   );
 }
 
+const IMPORT_STATUS_STYLES: Record<string, string> = {
+  SUCCESS: "bg-success/10 text-success-dark",
+  FAILED: "bg-danger/10 text-danger",
+};
+
+const IMPORT_STATUS_LABELS: Record<string, string> = {
+  SUCCESS: "Exitosa",
+  FAILED: "Fallida",
+};
+
+const IMPORT_TRIGGER_LABELS: Record<string, string> = {
+  STARTUP: "Arranque",
+  MANUAL: "Manual",
+};
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function ImportTab() {
+  const queryClient = useQueryClient();
+  const [lastRun, setLastRun] = useState<ContentImportRun | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin", "content-import-runs"],
+    queryFn: () => adminApi.contentImportRuns({ page: 0, size: 20 }),
+  });
+
+  const mutation = useMutation({
+    mutationFn: adminApi.importContent,
+    onSuccess: (run) => {
+      setLastRun(run);
+      queryClient.invalidateQueries({ queryKey: ["admin", "content-import-runs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "courses"] });
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="border-border bg-surface rounded-2xl border p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 className="text-text font-semibold">Importar contenido</h3>
+            <p className="text-text-muted mt-0.5 text-sm">
+              Corre el pipeline de contenido (cursos y señas) desde el YAML del repositorio. Es
+              idempotente: solo aplica lo que cambió, sin borrar datos.
+            </p>
+          </div>
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+            className="bg-primary hover:bg-primary-dark rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
+          >
+            {mutation.isPending ? "Importando…" : "Importar ahora"}
+          </button>
+        </div>
+
+        {mutation.isError && (
+          <p className="bg-danger/10 text-danger mt-4 rounded-xl px-4 py-2.5 text-sm">
+            {mutation.error instanceof ApiError
+              ? mutation.error.message
+              : "No se pudo iniciar la importación."}
+          </p>
+        )}
+
+        {lastRun && !mutation.isPending && (
+          <div
+            className={cn(
+              "mt-4 rounded-xl px-4 py-3 text-sm",
+              lastRun.status === "SUCCESS"
+                ? "bg-success/10 text-success-dark"
+                : "bg-danger/10 text-danger",
+            )}
+          >
+            {lastRun.status === "SUCCESS" ? (
+              <span>
+                Importación exitosa: {lastRun.coursesProcessed} curso(s) — {lastRun.created} nuevos,{" "}
+                {lastRun.updated} actualizados, {lastRun.unchanged} sin cambios.
+              </span>
+            ) : (
+              <span>Importación fallida: {lastRun.details ?? "error desconocido"}.</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3 className="text-text mb-3 font-semibold">Historial</h3>
+        {isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="bg-fill h-14 animate-pulse rounded-xl" />
+            ))}
+          </div>
+        ) : data && data.content.length > 0 ? (
+          <div className="border-border bg-surface overflow-hidden rounded-2xl border">
+            <table className="w-full text-sm">
+              <thead className="border-border text-text-muted border-b text-left text-xs uppercase">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Fecha</th>
+                  <th className="px-4 py-3 font-semibold">Disparo</th>
+                  <th className="px-4 py-3 font-semibold">Estado</th>
+                  <th className="px-4 py-3 font-semibold">Resultado</th>
+                  <th className="px-4 py-3 font-semibold">Por</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.content.map((run) => (
+                  <tr key={run.id} className="border-border/60 border-b last:border-0">
+                    <td className="text-text px-4 py-3 whitespace-nowrap">
+                      {formatDateTime(run.startedAt)}
+                    </td>
+                    <td className="text-text-muted px-4 py-3">
+                      {IMPORT_TRIGGER_LABELS[run.trigger] ?? run.trigger}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={cn(
+                          "rounded-full px-2 py-0.5 text-xs font-semibold",
+                          IMPORT_STATUS_STYLES[run.status] ?? "bg-fill text-text-muted",
+                        )}
+                      >
+                        {IMPORT_STATUS_LABELS[run.status] ?? run.status}
+                      </span>
+                    </td>
+                    <td className="text-text-muted px-4 py-3">
+                      {run.status === "SUCCESS"
+                        ? `${run.created} nuevos · ${run.updated} act. · ${run.unchanged} s/c`
+                        : (run.details ?? "—")}
+                    </td>
+                    <td className="text-text-muted px-4 py-3">{run.triggeredBy ?? "Sistema"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-text-muted py-10 text-center text-sm">
+            Todavía no hay importaciones registradas.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type ContentTab = "courses" | "signs" | "import";
+
 export default function ContentPage() {
-  const [tab, setTab] = useState<"courses" | "signs">("courses");
+  const [tab, setTab] = useState<ContentTab>("courses");
 
   return (
     <div>
@@ -205,9 +360,18 @@ export default function ContentPage() {
         >
           Señas
         </button>
+        <button
+          onClick={() => setTab("import")}
+          className={cn(
+            "rounded-lg px-5 py-2 text-sm font-semibold transition-colors",
+            tab === "import" ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text",
+          )}
+        >
+          Importación
+        </button>
       </div>
 
-      {tab === "courses" ? <CoursesTab /> : <SignsTab />}
+      {tab === "courses" ? <CoursesTab /> : tab === "signs" ? <SignsTab /> : <ImportTab />}
     </div>
   );
 }

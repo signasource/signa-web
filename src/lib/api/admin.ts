@@ -111,6 +111,23 @@ export type AdminSign = {
   lessonCount: number;
 };
 
+export type ContentImportTrigger = "STARTUP" | "MANUAL";
+export type ContentImportStatus = "SUCCESS" | "FAILED";
+
+export type ContentImportRun = {
+  id: string;
+  startedAt: string;
+  finishedAt: string;
+  trigger: ContentImportTrigger;
+  status: ContentImportStatus;
+  triggeredBy: string | null;
+  coursesProcessed: number;
+  created: number;
+  updated: number;
+  unchanged: number;
+  details: string | null;
+};
+
 export const adminApi = {
   me: () => api<AdminMe>("/admin/me"),
 
@@ -164,6 +181,13 @@ export const adminApi = {
 
   waitlist: (params?: { page?: number; size?: number }) =>
     api<Page<AdminWaitlistEntry>>("/admin/waitlist", {
+      query: params as Record<string, string | number | boolean | undefined>,
+    }),
+
+  importContent: () => api<ContentImportRun>("/admin/content/import", { method: "POST" }),
+
+  contentImportRuns: (params?: { page?: number; size?: number }) =>
+    api<Page<ContentImportRun>>("/admin/content/import-runs", {
       query: params as Record<string, string | number | boolean | undefined>,
     }),
 };
