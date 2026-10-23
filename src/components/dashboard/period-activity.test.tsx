@@ -27,14 +27,7 @@ const ACTIVITY: OrganizationActivity = {
 
 function renderCard(data: OrganizationActivity | undefined, state = {}) {
   return render(
-    <PeriodActivity
-      range={RANGE}
-      picker={<span>picker</span>}
-      data={data}
-      isPending={false}
-      isError={false}
-      {...state}
-    />,
+    <PeriodActivity period={RANGE} data={data} isPending={false} isError={false} {...state} />,
   );
 }
 
@@ -56,6 +49,11 @@ describe("PeriodActivity", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "DÍA" })).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  it("names the whole history with the dates it covers", () => {
+    render(<PeriodActivity period={null} data={ACTIVITY} isPending={false} isError={false} />);
+    expect(screen.getByText("Todo el historial · 1 – 2 oct 2026")).toBeInTheDocument();
   });
 
   it("explains an empty period instead of drawing an empty chart", () => {

@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CourseSelect } from "@/components/dashboard/course-select";
+import { PeriodFilter } from "@/components/dashboard/period-select";
 import { Icon } from "@/components/dashboard/icons";
 import {
   Avatar,
@@ -16,7 +17,8 @@ import {
   headerButton,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
-import { useCourseFilter, useWithCourse } from "@/features/dashboard/use-course-filter";
+import { useCourseFilter, useWithFilters } from "@/features/dashboard/use-course-filter";
+import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
 import type { MemberActivityStatus, MemberSort, MemberStatus } from "@/lib/api/types";
 import {
@@ -100,18 +102,20 @@ export default function MembersPage() {
   const { organization } = useAuth();
   const orgId = organization?.id;
   const { courseId, courses } = useCourseFilter();
-  const withCourse = useWithCourse();
+  const { period } = usePeriodFilter();
+  const withFilters = useWithFilters();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>(FILTERS[0]!);
   const [sort, setSort] = useState<{ by: MemberSort; direction: Direction }>({
     by: "name",
     direction: "asc",
   });
-  // The page belongs to the course it was picked in: switching course starts from page one.
-  const [paging, setPaging] = useState({ courseId, page: 0 });
-  const page = paging.courseId === courseId ? paging.page : 0;
+  // The page belongs to the course and period it was picked in: changing either starts over.
+  const scope = `${courseId ?? ""}|${period?.from ?? ""}|${period?.to ?? ""}`;
+  const [paging, setPaging] = useState({ scope, page: 0 });
+  const page = paging.scope === scope ? paging.page : 0;
   const setPage = (next: number | ((p: number) => number)) =>
-    setPaging({ courseId, page: typeof next === "function" ? next(page) : next });
+    setPaging({ scope, page: typeof next === "function" ? next(page) : next });
   const query = useDebounced(search.trim(), 300);
   const showCourse = !courseId && courses.length > 1;
 
@@ -120,6 +124,7 @@ export default function MembersPage() {
     status: filter.status,
     activity: filter.activity,
     courseId,
+    period,
     sort,
     page,
     size: PAGE_SIZE,
@@ -152,7 +157,8 @@ export default function MembersPage() {
       >
         <div className="flex flex-wrap items-center gap-2">
           <CourseSelect />
-          <Link href={withCourse("/dashboard/invitations")} className={headerButton}>
+          <PeriodFilter />
+          <Link href={withFilters("/dashboard/invitations")} className={headerButton}>
             <Icon name="personAdd" className="size-4" />
             Invitar personas
           </Link>
@@ -227,7 +233,7 @@ export default function MembersPage() {
                 return (
                   <Link
                     key={m.userId}
-                    href={withCourse(`/dashboard/members/${m.userId}`)}
+                    href={withFilters(`/dashboard/members/${m.userId}`)}
                     className={cn(
                       GRID,
                       "border-fill hover:bg-background items-center border-b py-3",

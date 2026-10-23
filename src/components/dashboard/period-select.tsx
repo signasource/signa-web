@@ -3,40 +3,56 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Icon } from "@/components/dashboard/icons";
 import { headerChip } from "@/components/dashboard/ui";
+import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import {
-  formatRange,
+  ALL_TIME_LABEL,
   matchPreset,
   MAX_RANGE_DAYS,
+  periodLabel,
   RANGE_PRESETS,
   toISODate,
   validateRange,
   type DateRange,
+  type Period,
 } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
 
 const dateInput =
   "border-border bg-surface text-text focus:border-primary w-full rounded-xl border px-3 py-2 text-sm font-bold outline-none";
 
+const DEFAULT_DRAFT = RANGE_PRESETS[1]!;
+
 /**
- * Period picker: presets as rows (the common case is one click) and a custom "Desde / Hasta"
- * range below a hairline. The chip names the preset, or the dates for a custom range.
+ * Period picker: the whole history and presets as rows (the common case is one click), and a
+ * custom "Desde / Hasta" range below a hairline. The chip names the choice, or the dates for a
+ * custom range.
  */
 export function PeriodSelect({
   value,
   onChange,
 }: {
-  value: DateRange;
-  onChange: (range: DateRange) => void;
+  value: Period;
+  onChange: (period: Period) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(value);
+  const [draft, setDraft] = useState<DateRange>(() => value ?? DEFAULT_DRAFT.range(new Date()));
   const [error, setError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const panelId = useId();
   const fromId = useId();
   const toId = useId();
   const today = toISODate(new Date());
-  const preset = matchPreset(value);
+  const preset = value ? matchPreset(value) : null;
+  const label = periodLabel(value);
+  const options = [
+    { key: "all", label: ALL_TIME_LABEL, selected: value === null, period: () => null },
+    ...RANGE_PRESETS.map((p) => ({
+      key: p.key,
+      label: p.label,
+      selected: preset?.key === p.key,
+      period: () => p.range(new Date()),
+    })),
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -56,14 +72,14 @@ export function PeriodSelect({
 
   const toggle = () => {
     if (!open) {
-      setDraft(value);
+      setDraft(value ?? DEFAULT_DRAFT.range(new Date()));
       setError(null);
     }
     setOpen((o) => !o);
   };
 
-  const pick = (range: DateRange) => {
-    onChange(range);
+  const pick = (period: Period) => {
+    onChange(period);
     setOpen(false);
   };
 
@@ -81,7 +97,7 @@ export function PeriodSelect({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={`Período: ${preset?.label ?? formatRange(value)}`}
+        aria-label={`Período: ${label}`}
         onClick={toggle}
         className={cn(
           headerChip,
@@ -89,7 +105,7 @@ export function PeriodSelect({
         )}
       >
         <Icon name="calendar" className="size-4" />
-        <span>{preset?.label ?? formatRange(value)}</span>
+        <span>{label}</span>
         <Icon
           name="chevronDown"
           className={cn("size-3.5 transition-transform", open && "rotate-180")}
@@ -103,14 +119,14 @@ export function PeriodSelect({
           className="border-border bg-surface dash-card-enter absolute right-0 z-30 mt-2 flex w-[min(18rem,calc(100vw-2rem))] flex-col rounded-2xl border p-1.5 shadow-lg"
         >
           <ul className="flex flex-col gap-0.5">
-            {RANGE_PRESETS.map((p) => {
-              const selected = preset?.key === p.key;
+            {options.map((p) => {
+              const selected = p.selected;
               return (
                 <li key={p.key}>
                   <button
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => pick(p.range(new Date()))}
+                    onClick={() => pick(p.period())}
                     className={cn(
                       "flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors",
                       selected ? "bg-primary-light text-primary-dark" : "hover:bg-fill text-text",
@@ -180,4 +196,10 @@ export function PeriodSelect({
       ) : null}
     </div>
   );
+}
+
+/** {@link PeriodSelect} bound to the dashboard's URL period. */
+export function PeriodFilter() {
+  const { period, setPeriod } = usePeriodFilter();
+  return <PeriodSelect value={period} onChange={setPeriod} />;
 }

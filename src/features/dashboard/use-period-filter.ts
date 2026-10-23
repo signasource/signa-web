@@ -2,31 +2,31 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
-import { DEFAULT_PRESET, rangeFromParams, type DateRange } from "@/lib/date-range";
+import { periodFromParams, type Period } from "@/lib/date-range";
 
 export const FROM_PARAM = "desde";
 export const TO_PARAM = "hasta";
 
 /**
- * The period the activity section shows, kept in the URL (`?desde=YYYY-MM-DD&hasta=…`) like the
- * course filter. Missing or invalid values mean the default preset, which keeps the URL clean.
+ * The period every dashboard figure is measured over, kept in the URL
+ * (`?desde=YYYY-MM-DD&hasta=…`) like the course filter so it survives switching sections. No (or
+ * invalid) params mean the whole history, which keeps the URL clean.
  */
-export function usePeriodFilter(): { range: DateRange; setRange: (range: DateRange) => void } {
+export function usePeriodFilter(): { period: Period; setPeriod: (period: Period) => void } {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const range = rangeFromParams(params.get(FROM_PARAM), params.get(TO_PARAM));
+  const period = periodFromParams(params.get(FROM_PARAM), params.get(TO_PARAM));
 
-  const setRange = useCallback(
-    (next: DateRange) => {
+  const setPeriod = useCallback(
+    (next: Period) => {
       const query = new URLSearchParams(params.toString());
-      const fallback = DEFAULT_PRESET.range(new Date());
-      if (next.from === fallback.from && next.to === fallback.to) {
-        query.delete(FROM_PARAM);
-        query.delete(TO_PARAM);
-      } else {
+      if (next) {
         query.set(FROM_PARAM, next.from);
         query.set(TO_PARAM, next.to);
+      } else {
+        query.delete(FROM_PARAM);
+        query.delete(TO_PARAM);
       }
       const search = query.toString();
       router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
@@ -34,5 +34,5 @@ export function usePeriodFilter(): { range: DateRange; setRange: (range: DateRan
     [params, pathname, router],
   );
 
-  return { range, setRange };
+  return { period, setPeriod };
 }
