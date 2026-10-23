@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/features/auth/auth-context";
-import { useWithCourse } from "@/features/dashboard/use-course-filter";
+import { useWithFilters } from "@/features/dashboard/use-course-filter";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { status, organization, logout } = useAuth();
-  const withCourse = useWithCourse();
+  const withFilters = useWithFilters();
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
@@ -37,7 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen flex-col">
       <header className="border-border bg-surface flex flex-wrap items-center justify-between gap-6 border-b px-6 py-4">
         <div className="flex flex-wrap items-center gap-7">
-          <Link href={withCourse("/dashboard")} className="flex items-center gap-2.5">
+          <Link href={withFilters("/dashboard")} className="flex items-center gap-2.5">
             <Image
               src="/images/signa-logo.png"
               alt="SIGNA"
@@ -55,7 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               return (
                 <Link
                   key={item.href}
-                  href={withCourse(item.href)}
+                  href={withFilters(item.href)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "rounded-full px-3.5 py-2 text-sm font-bold transition-all duration-200",

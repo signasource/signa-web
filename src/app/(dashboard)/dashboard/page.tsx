@@ -21,9 +21,9 @@ import {
   primaryButton,
 } from "@/components/dashboard/ui";
 import { PeriodActivity } from "@/components/dashboard/period-activity";
-import { PeriodSelect } from "@/components/dashboard/period-select";
+import { PeriodFilter } from "@/components/dashboard/period-select";
 import { useAuth } from "@/features/auth/auth-context";
-import { useCourseFilter, useWithCourse } from "@/features/dashboard/use-course-filter";
+import { useCourseFilter, useWithFilters } from "@/features/dashboard/use-course-filter";
 import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
 import { cn } from "@/lib/utils";
@@ -50,30 +50,31 @@ export default function DashboardOverviewPage() {
   const orgId = organization?.id;
   const { courseId, courses } = useCourseFilter();
   const showCourses = !courseId && courses.length > 1;
-  const withCourse = useWithCourse();
-  const { range, setRange } = usePeriodFilter();
+  const withFilters = useWithFilters();
+  const { period } = usePeriodFilter();
+  const filters = { courseId, period };
 
   const overview = useQuery({
-    queryKey: ["organization", orgId, "overview", { courseId }],
-    queryFn: () => organizationsApi.overview(orgId!, courseId),
+    queryKey: ["organization", orgId, "overview", filters],
+    queryFn: () => organizationsApi.overview(orgId!, filters),
     enabled: Boolean(orgId),
     placeholderData: keepPreviousData,
   });
   const modules = useQuery({
-    queryKey: ["organization", orgId, "modules", { courseId }],
-    queryFn: () => organizationsApi.modules(orgId!, courseId),
+    queryKey: ["organization", orgId, "modules", filters],
+    queryFn: () => organizationsApi.modules(orgId!, filters),
     enabled: Boolean(orgId),
     placeholderData: keepPreviousData,
   });
   const activity = useQuery({
-    queryKey: ["organization", orgId, "activity", { courseId, ...range }],
-    queryFn: () => organizationsApi.activity(orgId!, { ...range, courseId }),
+    queryKey: ["organization", orgId, "activity", filters],
+    queryFn: () => organizationsApi.activity(orgId!, filters),
     enabled: Boolean(orgId),
     placeholderData: keepPreviousData,
   });
   const members = useQuery({
-    queryKey: ["organization", orgId, "members", { ...NUDGE_QUERY, courseId }],
-    queryFn: () => organizationsApi.members(orgId!, { ...NUDGE_QUERY, courseId }),
+    queryKey: ["organization", orgId, "members", { ...NUDGE_QUERY, ...filters }],
+    queryFn: () => organizationsApi.members(orgId!, { ...NUDGE_QUERY, ...filters }),
     enabled: Boolean(orgId),
     placeholderData: keepPreviousData,
   });
@@ -100,6 +101,7 @@ export default function DashboardOverviewPage() {
       <PageHeading title="Resumen">
         <div className="flex flex-wrap items-center gap-2">
           <CourseSelect />
+          <PeriodFilter />
           {modules.data ? (
             <span className={cn(headerChip, "bg-fill font-bold")}>
               {moduleList.length} {moduleList.length === 1 ? "módulo" : "módulos"}
@@ -114,7 +116,7 @@ export default function DashboardOverviewPage() {
           title="Todavía no hay participantes"
           body="Invitá a tu equipo para que empiece la capacitación. Las métricas aparecen acá apenas alguien complete su primera lección."
           action={
-            <Link href={withCourse("/dashboard/invitations")} className={primaryButton}>
+            <Link href={withFilters("/dashboard/invitations")} className={primaryButton}>
               Invitar personas
             </Link>
           }
@@ -130,7 +132,11 @@ export default function DashboardOverviewPage() {
             />
             <StatCard
               delay={60}
-              label={`Activos (últimos ${participation.activeWindowDays} días)`}
+              label={
+                period
+                  ? "Activos en el período"
+                  : `Activos (últimos ${participation.activeWindowDays} días)`
+              }
               value={participation.activeParticipants}
               hint={`${participation.inactiveParticipants} inactivos`}
             />
@@ -148,7 +154,7 @@ export default function DashboardOverviewPage() {
             </StatCard>
             <StatCard
               delay={180}
-              label="Lecciones completadas"
+              label={period ? "Lecciones completadas en el período" : "Lecciones completadas"}
               value={NUMBER.format(progress.completedLessons)}
               hint={`${progress.participantsCompletedAll} completaron todo el curso`}
             />
@@ -158,8 +164,7 @@ export default function DashboardOverviewPage() {
             <div className="min-w-0 flex-[2_1_460px]">
               <PeriodActivity
                 delay={240}
-                range={range}
-                picker={<PeriodSelect value={range} onChange={setRange} />}
+                period={period}
                 data={activity.data}
                 isPending={activity.isPending}
                 isError={activity.isError}
@@ -170,7 +175,9 @@ export default function DashboardOverviewPage() {
               <div>
                 <CardTitle>Avance del equipo</CardTitle>
                 <p className="text-text-muted mt-0.5 text-[13px]">
-                  Personas en cada etapa del curso
+                  {period
+                    ? "Personas en cada etapa al cierre del período"
+                    : "Personas en cada etapa del curso"}
                 </p>
               </div>
               <ul className="flex flex-col gap-3.5">
@@ -201,12 +208,12 @@ export default function DashboardOverviewPage() {
               <StatRows
                 rows={[
                   {
-                    label: "Días activos promedio (últimos 30)",
+                    label: period ? "Días activos promedio" : "Días activos promedio (últimos 30)",
                     value: formatDecimal(participation.averageActiveDaysLast30),
                   },
-                  { label: "Con racha activa", value: participation.participantsWithStreak },
+                  { label: "Con racha activa hoy", value: participation.participantsWithStreak },
                   {
-                    label: "Racha más larga",
+                    label: "Racha actual más larga",
                     value: (
                       <>
                         <Icon name="flame" className="text-streak-orange size-4" />
@@ -271,7 +278,7 @@ export default function DashboardOverviewPage() {
               <div className="flex items-center justify-between gap-3">
                 <CardTitle>Desempeño por módulo</CardTitle>
                 <Link
-                  href={withCourse("/dashboard/modules")}
+                  href={withFilters("/dashboard/modules")}
                   className="text-primary-dark text-sm font-bold hover:underline"
                 >
                   Ver contenidos
@@ -331,11 +338,13 @@ export default function DashboardOverviewPage() {
                 <div>
                   <CardTitle>Necesitan un empujón</CardTitle>
                   <p className="text-text-muted mt-0.5 text-[13px]">
-                    Sin actividad hace más de {ACTIVE_WINDOW_DAYS} días
+                    {period
+                      ? "Sin actividad en el período"
+                      : `Sin actividad hace más de ${ACTIVE_WINDOW_DAYS} días`}
                   </p>
                 </div>
                 <Link
-                  href={withCourse("/dashboard/members")}
+                  href={withFilters("/dashboard/members")}
                   className="text-primary-dark text-sm font-bold hover:underline"
                 >
                   Ver todos
@@ -347,14 +356,16 @@ export default function DashboardOverviewPage() {
               ) : null}
               {members.data && nudges.length === 0 ? (
                 <p className="text-text-muted text-sm">
-                  Nadie está inactivo por ahora. ¡Buen ritmo!
+                  {period
+                    ? "Todos tuvieron actividad en el período. ¡Buen ritmo!"
+                    : "Nadie está inactivo por ahora. ¡Buen ritmo!"}
                 </p>
               ) : null}
               <ul className="flex flex-col">
                 {nudges.map(({ member, days }) => (
                   <li key={member.userId} className="border-fill border-b last:border-b-0">
                     <Link
-                      href={withCourse(`/dashboard/members/${member.userId}`)}
+                      href={withFilters(`/dashboard/members/${member.userId}`)}
                       className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_92px] items-center gap-3 py-2.5"
                     >
                       <span className="flex min-w-0 items-center gap-2.5 text-[15px] font-bold">

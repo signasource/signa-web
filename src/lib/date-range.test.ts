@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { DailyActivity } from "@/lib/api/types";
 import {
+  activityGranularity,
   bucketActivity,
   formatRange,
   matchPreset,
-  rangeFromParams,
+  periodFromParams,
+  periodLabel,
   rangeLength,
   RANGE_PRESETS,
   validateRange,
@@ -34,22 +36,27 @@ describe("date range", () => {
     expect(ranges.month).toEqual({ from: "2026-10-01", to: "2026-10-18" });
     expect(ranges.lastMonth).toEqual({ from: "2026-09-01", to: "2026-09-30" });
     expect(rangeLength(ranges["90d"]!)).toBe(90);
+    expect(ranges["12m"]).toEqual({ from: "2025-10-19", to: "2026-10-18" });
   });
 
-  it("recognizes a preset and falls back to the default for bad params", () => {
+  it("recognizes a preset and falls back to the whole history for bad params", () => {
     expect(matchPreset({ from: "2026-10-12", to: "2026-10-18" }, TODAY)?.label).toBe(
       "Últimos 7 días",
     );
     expect(matchPreset({ from: "2026-10-11", to: "2026-10-18" }, TODAY)).toBeNull();
-    expect(rangeFromParams("2026-10-01", "2026-10-05", TODAY)).toEqual({
+    expect(periodFromParams("2026-10-01", "2026-10-05", TODAY)).toEqual({
       from: "2026-10-01",
       to: "2026-10-05",
     });
-    expect(rangeFromParams("2026-10-05", "2026-10-01", TODAY)).toEqual({
-      from: "2026-09-19",
-      to: "2026-10-18",
-    });
-    expect(rangeFromParams("ayer", null, TODAY).to).toBe("2026-10-18");
+    expect(periodFromParams("2026-10-05", "2026-10-01", TODAY)).toBeNull();
+    expect(periodFromParams("ayer", null, TODAY)).toBeNull();
+    expect(periodFromParams(null, null, TODAY)).toBeNull();
+  });
+
+  it("labels the period for the chip", () => {
+    expect(periodLabel(null, TODAY)).toBe("Todo el historial");
+    expect(periodLabel({ from: "2026-09-19", to: "2026-10-18" }, TODAY)).toBe("Últimos 30 días");
+    expect(periodLabel({ from: "2026-10-03", to: "2026-10-09" }, TODAY)).toBe("3 – 9 oct 2026");
   });
 
   it("validates order, future dates and length", () => {
@@ -57,8 +64,8 @@ describe("date range", () => {
     expect(validateRange({ from: "", to: "2026-10-18" }, TODAY)).toMatch(/Elegí/);
     expect(validateRange({ from: "2026-10-10", to: "2026-10-01" }, TODAY)).toMatch(/anterior/);
     expect(validateRange({ from: "2026-10-10", to: "2026-10-19" }, TODAY)).toMatch(/hoy/);
-    expect(validateRange({ from: "2026-07-17", to: "2026-10-18" }, TODAY)).toMatch(/93 días/);
-    expect(validateRange({ from: "2026-07-18", to: "2026-10-18" }, TODAY)).toBeNull();
+    expect(validateRange({ from: "2025-10-17", to: "2026-10-18" }, TODAY)).toMatch(/366 días/);
+    expect(validateRange({ from: "2025-10-18", to: "2026-10-18" }, TODAY)).toBeNull();
   });
 
   it("formats ranges compactly", () => {
@@ -95,5 +102,28 @@ describe("date range", () => {
     });
     expect(buckets[1]).toMatchObject({ start: "2026-09-07", exerciseAttempts: 14 });
     expect(buckets.reduce((n, b) => n + b.exerciseAttempts, 0)).toBe(80);
+  });
+
+  it("groups periods past half a year by calendar month", () => {
+    expect(activityGranularity(31)).toBe("day");
+    expect(activityGranularity(182)).toBe("week");
+    expect(activityGranularity(183)).toBe("month");
+    // 220 days from 15 jun 2026 into jan 2027: the first month is clipped to 15–30 jun, and
+    // crossing a year adds it to the axis labels.
+    const days = Array.from({ length: 220 }, (_, i) => {
+      const d = new Date(2026, 5, 15 + i);
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      return day(iso, 1, 1);
+    });
+    const buckets = bucketActivity(days);
+    expect(buckets[0]).toMatchObject({
+      start: "2026-06-15",
+      label: "jun 26",
+      longLabel: "jun 2026",
+      exerciseAttempts: 16,
+      correctPercentage: 100,
+    });
+    expect(buckets[1]).toMatchObject({ start: "2026-07-01", exerciseAttempts: 31 });
+    expect(buckets.at(-1)).toMatchObject({ label: "ene 27", longLabel: "ene 2027" });
   });
 });

@@ -1,4 +1,5 @@
 import { api } from "@/lib/api/client";
+import type { Period } from "@/lib/date-range";
 import type {
   InviteCode,
   MemberActivityStatus,
@@ -13,6 +14,11 @@ import type {
   Page,
   RedeemInviteCodeResponse,
 } from "@/lib/api/types";
+
+/** Query params for a period; none for the whole history. */
+function periodQuery(period: Period | undefined): { from?: string; to?: string } {
+  return period ? { from: period.from, to: period.to } : {};
+}
 
 export const organizationsApi = {
   me: () => api<MyOrganization>("/organizations/me"),
@@ -42,11 +48,15 @@ export const organizationsApi = {
       body: { code },
     }),
 
-  overview: (orgId: string, courseId?: string) =>
-    api<OrganizationOverview>(`/organizations/${orgId}/overview`, { query: { courseId } }),
+  overview: (orgId: string, params: { courseId?: string; period?: Period }) =>
+    api<OrganizationOverview>(`/organizations/${orgId}/overview`, {
+      query: { courseId: params.courseId, ...periodQuery(params.period) },
+    }),
 
-  activity: (orgId: string, params: { from: string; to: string; courseId?: string }) =>
-    api<OrganizationActivity>(`/organizations/${orgId}/activity`, { query: params }),
+  activity: (orgId: string, params: { courseId?: string; period?: Period }) =>
+    api<OrganizationActivity>(`/organizations/${orgId}/activity`, {
+      query: { courseId: params.courseId, ...periodQuery(params.period) },
+    }),
 
   members: (
     orgId: string,
@@ -55,25 +65,34 @@ export const organizationsApi = {
       status?: MemberStatus;
       activity?: MemberActivityStatus;
       courseId?: string;
+      period?: Period;
       sort?: { by: MemberSort; direction: "asc" | "desc" };
       page?: number;
       size?: number;
     },
   ) => {
-    const { sort, ...rest } = params;
+    const { sort, period, ...rest } = params;
     return api<Page<OrganizationMemberSummary>>(`/organizations/${orgId}/members`, {
-      query: { ...rest, sort: sort ? `${sort.by},${sort.direction}` : undefined },
+      query: {
+        ...rest,
+        ...periodQuery(period),
+        sort: sort ? `${sort.by},${sort.direction}` : undefined,
+      },
     });
   },
 
-  member: (orgId: string, userId: string) =>
-    api<MemberProgress>(`/organizations/${orgId}/members/${userId}`),
+  member: (orgId: string, userId: string, period?: Period) =>
+    api<MemberProgress>(`/organizations/${orgId}/members/${userId}`, {
+      query: periodQuery(period),
+    }),
 
   removeMember: (orgId: string, userId: string) =>
     api(`/organizations/${orgId}/members/${userId}`, { method: "DELETE" }),
 
-  modules: (orgId: string, courseId?: string) =>
-    api<ModuleStats[]>(`/organizations/${orgId}/modules`, { query: { courseId } }),
+  modules: (orgId: string, params: { courseId?: string; period?: Period }) =>
+    api<ModuleStats[]>(`/organizations/${orgId}/modules`, {
+      query: { courseId: params.courseId, ...periodQuery(params.period) },
+    }),
 
   inviteCodes: (orgId: string) => api<InviteCode[]>(`/organizations/${orgId}/invite-codes`),
 

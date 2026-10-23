@@ -8,7 +8,7 @@
 
 - Scaffold: Next.js 16, TypeScript strict, Tailwind v4 tokens, ESLint/Prettier/Vitest, CI.
 - API client (Bearer, casing, single-flight refresh), token store, `AuthProvider`.
-- `/login` and the guarded dashboard: overview, members list + detail (remove), contents, invitations — see [features/dashboard.md](./features/dashboard.md).
+- `/login` and the guarded dashboard: overview, members list + detail (remove), contents, invitations, all filtered by course and by a global period (Desde / Hasta) — see [features/dashboard.md](./features/dashboard.md).
 - Landing page (`/`) — full one-page site with a playable 3D lesson demo; scroll effects work in
   every browser (no CSS scroll timelines). See [features/landing.md](./features/landing.md).
 - Landing camera demo ("Tu cámara te corrige") — real in-browser recognition: spell your name with the LSA alphabet, signa-ml v8 (v5 plus S, O and C recorded on an iPhone and the Z, which also needs its trace; the native app still ships v5). See [features/landing.md](./features/landing.md).

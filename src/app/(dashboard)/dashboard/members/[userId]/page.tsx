@@ -1,10 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/dashboard/icons";
+import { PeriodFilter } from "@/components/dashboard/period-select";
 import {
   Avatar,
   Card,
@@ -16,7 +17,8 @@ import {
   pillButton,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
-import { useWithCourse } from "@/features/dashboard/use-course-filter";
+import { useWithFilters } from "@/features/dashboard/use-course-filter";
+import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
 import {
   currentModuleLabel,
@@ -44,30 +46,35 @@ export default function MemberDetailPage() {
   const { organization } = useAuth();
   const orgId = organization?.id;
   const [confirming, setConfirming] = useState(false);
-  const withCourse = useWithCourse();
+  const withFilters = useWithFilters();
+  const { period } = usePeriodFilter();
 
   const { data, isPending, error } = useQuery({
-    queryKey: ["organization", orgId, "members", "detail", userId],
-    queryFn: () => organizationsApi.member(orgId!, userId),
+    queryKey: ["organization", orgId, "members", "detail", userId, { period }],
+    queryFn: () => organizationsApi.member(orgId!, userId, period),
     enabled: Boolean(orgId),
+    placeholderData: keepPreviousData,
   });
 
   const remove = useMutation({
     mutationFn: () => organizationsApi.removeMember(orgId!, userId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["organization", orgId] });
-      router.replace(withCourse("/dashboard/members"));
+      router.replace(withFilters("/dashboard/members"));
     },
   });
 
   const back = (
-    <Link
-      href={withCourse("/dashboard/members")}
-      className="text-text-muted flex items-center gap-1 self-start text-sm font-bold"
-    >
-      <Icon name="chevronBack" className="size-4" />
-      Participantes
-    </Link>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <Link
+        href={withFilters("/dashboard/members")}
+        className="text-text-muted flex items-center gap-1 text-sm font-bold"
+      >
+        <Icon name="chevronBack" className="size-4" />
+        Participantes
+      </Link>
+      <PeriodFilter />
+    </div>
   );
 
   if (isPending)
@@ -130,7 +137,7 @@ export default function MemberDetailPage() {
           <Icon name="flame" className="text-streak-orange size-6" />
           {m.currentStreak} {m.currentStreak === 1 ? "día" : "días"}
         </Metric>
-        <Metric label="Tiempo de aprendizaje">
+        <Metric label={period ? "Tiempo en el período" : "Tiempo de aprendizaje"}>
           {started ? formatMinutes(m.learningMinutes) : "—"}
         </Metric>
       </div>
@@ -173,7 +180,10 @@ export default function MemberDetailPage() {
                 currentModuleLabel({ ...m, currentCourse: null }, m.courses.length > 1).text,
               ],
               ["Módulos completados", m.modulesCompleted],
-              ["Días activos (últimos 30)", m.activeDaysLast30],
+              [
+                period ? "Días activos en el período" : "Días activos (últimos 30)",
+                m.activeDaysLast30,
+              ],
               ["Ejercicios realizados", m.exerciseAttempts],
               ["Respuestas correctas", `${m.correctAnswers} de ${m.exerciseAttempts}`],
             ].map(([label, value]) => (

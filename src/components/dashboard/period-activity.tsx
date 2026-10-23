@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -14,12 +14,14 @@ import {
 import { Card, CardTitle, ErrorState, LoadingState, pillButton } from "@/components/dashboard/ui";
 import type { OrganizationActivity } from "@/lib/api/types";
 import {
+  activityGranularity,
+  ALL_TIME_LABEL,
   bucketActivity,
   formatRange,
   hasActivity,
-  MAX_DAILY_BARS,
   type ActivityBucket,
-  type DateRange,
+  type ActivityGranularity,
+  type Period,
 } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
 
@@ -59,13 +61,16 @@ const METRICS: {
   },
 ];
 
-const CAPTIONS: Record<Metric, [daily: string, weekly: string]> = {
-  attempts: ["Ejercicios realizados por día", "Ejercicios realizados por semana"],
-  correct: [
-    "Porcentaje de respuestas correctas por día",
-    "Porcentaje de respuestas correctas por semana",
-  ],
-  lessons: ["Lecciones completadas por día", "Lecciones completadas por semana"],
+const CAPTIONS: Record<Metric, string> = {
+  attempts: "Ejercicios realizados",
+  correct: "Porcentaje de respuestas correctas",
+  lessons: "Lecciones completadas",
+};
+
+const PER: Record<ActivityGranularity, { caption: string; column: string }> = {
+  day: { caption: "por día", column: "DÍA" },
+  week: { caption: "por semana", column: "SEMANA" },
+  month: { caption: "por mes", column: "MES" },
 };
 
 type Point = { label: string; longLabel: string; value: number; text: string };
@@ -82,21 +87,19 @@ function ChartTooltip({ active, payload }: TooltipContentProps<TooltipValueType,
 }
 
 /**
- * Team activity in a chosen period: totals for the whole period, then a day-by-day bar chart
- * (week-by-week past {@link MAX_DAILY_BARS} days) with a table alternative. The picker comes in
- * through `picker` so the page owns the URL state.
+ * Team activity in the dashboard's period: totals for the whole period, then a bar chart by day,
+ * week or month (see {@link activityGranularity}) with a table alternative. The dates shown come
+ * from the response, so the whole history reads as the days it actually covers.
  */
 export function PeriodActivity({
-  range,
-  picker,
+  period,
   data,
   isPending,
   isError,
   isFetching = false,
   delay,
 }: {
-  range: DateRange;
-  picker: ReactNode;
+  period: Period;
   data: OrganizationActivity | undefined;
   isPending: boolean;
   isError: boolean;
@@ -108,7 +111,8 @@ export function PeriodActivity({
   const current = METRICS.find((m) => m.key === metric)!;
 
   const buckets = data ? bucketActivity(data.days) : [];
-  const weekly = (data?.days.length ?? 0) > MAX_DAILY_BARS;
+  const per = PER[activityGranularity(data?.days.length ?? 0)];
+  const dates = data ? formatRange(data) : period ? formatRange(period) : "";
   const points: Point[] = buckets.map((b) => ({
     label: b.label,
     longLabel: b.longLabel,
@@ -119,12 +123,11 @@ export function PeriodActivity({
 
   return (
     <Card delay={delay} className="flex min-w-0 flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <CardTitle>Actividad del período</CardTitle>
-          <p className="text-text-muted mt-0.5 text-[13px]">{formatRange(range)}</p>
-        </div>
-        {picker}
+      <div>
+        <CardTitle>Actividad del período</CardTitle>
+        <p className="text-text-muted mt-0.5 text-[13px]">
+          {period ? dates : `${ALL_TIME_LABEL}${dates ? ` · ${dates}` : ""}`}
+        </p>
       </div>
 
       {isPending ? <LoadingState>Cargando actividad…</LoadingState> : null}
@@ -162,7 +165,7 @@ export function PeriodActivity({
           ) : (
             <>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-text-muted text-[13px]">{CAPTIONS[metric][weekly ? 1 : 0]}</p>
+                <p className="text-text-muted text-[13px]">{`${CAPTIONS[metric]} ${per.caption}`}</p>
                 <div className="flex flex-wrap items-center gap-2">
                   <div
                     role="group"
@@ -202,7 +205,7 @@ export function PeriodActivity({
                     <thead className="bg-surface sticky top-0">
                       <tr className="text-text-muted text-xs font-extrabold tracking-wider">
                         <th scope="col" className="border-border border-b py-2 text-left">
-                          {weekly ? "SEMANA" : "DÍA"}
+                          {per.column}
                         </th>
                         {METRICS.map((m) => (
                           <th
