@@ -12,7 +12,9 @@ import type {
   OrganizationOverview,
   Page,
   Purchase,
+  PaymentSync,
   PurchaseCatalog,
+  PurchaseCheckout,
   PurchaseDetail,
   PurchaseQuote,
   RedeemInviteCodeResponse,
@@ -109,6 +111,17 @@ export const organizationsApi = {
   cancelPurchase: (orgId: string, purchaseId: string) =>
     api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/cancel`, {
       method: "POST",
+    }),
+
+  checkout: (orgId: string, purchaseId: string) =>
+    api<PurchaseCheckout>(`/organizations/${orgId}/purchases/${purchaseId}/checkout`, {
+      method: "POST",
+    }),
+
+  syncPayment: (orgId: string, purchaseId: string, paymentId: string) =>
+    api<PaymentSync>(`/organizations/${orgId}/purchases/${purchaseId}/payments/sync`, {
+      method: "POST",
+      body: { paymentId },
     }),
 
   updateSeatEmail: (orgId: string, purchaseId: string, seatId: string, email: string) =>

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { PurchaseStatus, SeatStatus } from "@/lib/api/types";
+import type { PurchaseStatus, SeatStatus, VolumeDiscount } from "@/lib/api/types";
 import { isEmail, parseEmails } from "@/lib/dashboard-format";
 
 export const PURCHASE_STATUS_LABEL: Record<PurchaseStatus, string> = {
@@ -24,6 +24,69 @@ export function formatMoney(amount: number, currency: string): string {
     currency,
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+/** Best discount the seat count reaches (0 when none). */
+export function volumeDiscountFor(seats: number, tiers: VolumeDiscount[]): number {
+  return tiers.reduce(
+    (best, tier) => (seats >= tier.minSeats ? Math.max(best, tier.percent) : best),
+    0,
+  );
+}
+
+/** The closest tier that would lower the price, and how many more seats it needs. */
+export function nextVolumeDiscount(
+  seats: number,
+  tiers: VolumeDiscount[],
+): { missing: number; percent: number } | null {
+  const current = volumeDiscountFor(seats, tiers);
+  const next = tiers
+    .filter((tier) => tier.minSeats > seats && tier.percent > current)
+    .sort((a, b) => a.minSeats - b.minSeats)[0];
+  return next ? { missing: next.minSeats - seats, percent: next.percent } : null;
+}
+
+export type CheckoutResult = "aprobado" | "rechazado" | "pendiente";
+
+/**
+ * Mercado Pago sends the admin back to `?pago=<result>` (our back URL) plus its own params;
+ * `payment_id` is the string "null" when they left without paying.
+ */
+export function paymentReturn(
+  params: URLSearchParams,
+): { result: CheckoutResult; paymentId: string | null } | null {
+  const result = params.get("pago");
+  if (result !== "aprobado" && result !== "rechazado" && result !== "pendiente") return null;
+  const raw = params.get("payment_id") ?? params.get("collection_id");
+  const paymentId = raw && /^\d+$/.test(raw) ? raw : null;
+  return { result, paymentId };
+}
+
+/** What to tell the admin about a payment, by Mercado Pago's status (or our back URL result). */
+export function paymentMessage(status: string): {
+  tone: "success" | "warning" | "danger";
+  text: string;
+} {
+  switch (status) {
+    case "approved":
+    case "aprobado":
+      return {
+        tone: "success",
+        text: "¡Listo! Recibimos el pago y mandamos las invitaciones por email.",
+      };
+    case "rejected":
+    case "cancelled":
+    case "rechazado":
+      return {
+        tone: "danger",
+        text: "Mercado Pago no aprobó el pago. Podés intentarlo de nuevo con otro medio de pago.",
+      };
+    default:
+      return {
+        tone: "warning",
+        text: "Mercado Pago todavía está procesando el pago. Apenas se acredite, mandamos las invitaciones.",
+      };
+  }
 }
 
 export function uniqueEmails(raw: string): string[] {

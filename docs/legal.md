@@ -26,7 +26,8 @@ The policy makes factual claims. When the code changes, re-verify the claim (**c
 | Camera analysis is fully on-device; nothing uploaded                                                               | `signa-mobile/docs/features/ml.md`                                                                         |
 | What org admins see per participant                                                                                | `signa-api` `MemberProgressResponse`, `OrganizationMemberSummaryResponse`, `OrganizationOverviewResponse`  |
 | What account deletion erases and keeps (privacy §6 and `/eliminar-cuenta`)                                         | `signa-api` `UserService.deleteAccount`, `AccountErasureRepository`                                        |
-| Third parties (Google login/Play, Firebase FCM, Cloudflare R2, mail, hosting)                                      | `signa-api/.env.example`, `signa-api/CLAUDE.md` §4                                                         |
+| Third parties (Google login/Play, Firebase FCM, Cloudflare R2, Mercado Pago, mail, hosting)                        | `signa-api/.env.example`, `signa-api/CLAUDE.md` §4                                                         |
+| Mercado Pago gets only the purchase (course, seats, amount, purchase id); payment data is entered on Mercado Pago  | signa-api `RestMercadoPagoClient.createPreference` (no payer fields)                                       |
 
 Adding a new third-party SDK, analytics, a new personal-data field, or a new thing admins can see **requires updating both pages and `lastUpdated` in the same PR**.
 
@@ -37,7 +38,7 @@ Adding a new third-party SDK, analytics, a new personal-data field, or a new thi
 3. **Roles with organizations** (controller vs processor) and whether a data-processing agreement is signed with each organization.
 4. **AAIP database registration** — ask the faculty/advisor whether it applies.
 5. **Minimum age** and parental authorization.
-6. **Real-money purchases** (Google Play gem packs) in an academic project: fiscal/commercial status of the team, refund policy, consumer-law right of withdrawal (Ley 24.240).
+6. **Real-money purchases** (Google Play gem packs, and organization seats paid with Mercado Pago) in an academic project: fiscal/commercial status of the team, refund policy, consumer-law right of withdrawal (Ley 24.240).
 7. **Jurisdiction** clause (consumers may sue at their domicile).
 8. **Licenses** for code and content, third-party credits.
 9. **Mail and hosting providers**, and server region (international transfer).

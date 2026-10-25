@@ -4,10 +4,11 @@ import * as XLSX from "xlsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { CourseSigns } from "@/components/dashboard/course-signs";
 import { Icon } from "@/components/dashboard/icons";
+import { PurchaseInvoice } from "@/components/dashboard/purchase-invoice";
 import {
   Card,
   CardTitle,
@@ -26,6 +27,7 @@ import { isEmail } from "@/lib/dashboard-format";
 import {
   emailsFromSheet,
   formatMoney,
+  nextVolumeDiscount,
   purchaseFormSchema,
   uniqueEmails,
   type PurchaseForm,
@@ -35,12 +37,14 @@ import { cn } from "@/lib/utils";
 const DURATION_PRESETS = [15, 30, 45, 60];
 
 function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { organization } = useAuth();
   const orgId = organization?.id;
   const fileInput = useRef<HTMLInputElement>(null);
   const [sheetMessage, setSheetMessage] = useState<string | null>(null);
+  const [review, setReview] = useState<PurchaseForm | null>(null);
+  // Set once the purchase exists, so retrying the payment does not create a second one.
+  const [createdId, setCreatedId] = useState<string | null>(null);
 
   const schema = useMemo(() => purchaseFormSchema(catalog), [catalog]);
   const form = useForm<PurchaseForm>({
@@ -53,10 +57,12 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
   });
   const emails = uniqueEmails(rawEmails ?? "").filter(isEmail);
   const seats = emails.length;
+  const course = catalog.courses.find((c) => c.id === courseId);
   const validDuration =
     Number.isInteger(durationDays) &&
     durationDays >= catalog.minDays &&
     durationDays <= catalog.maxDays;
+  const nextDiscount = seats > 0 ? nextVolumeDiscount(seats, catalog.volumeDiscounts) : null;
 
   const quote = useQuery({
     queryKey: ["purchase-quote", courseId, Math.max(seats, 1), durationDays],
@@ -65,17 +71,34 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
     placeholderData: keepPreviousData,
   });
 
-  const create = useMutation({
-    mutationFn: (values: PurchaseForm) =>
-      organizationsApi.createPurchase(orgId!, {
-        courseId: values.courseId,
-        durationDays: values.durationDays,
-        emails: uniqueEmails(values.emails),
+  const reviewEmails = review ? uniqueEmails(review.emails) : [];
+  const reviewQuote = useQuery({
+    queryKey: ["purchase-quote", review?.courseId, reviewEmails.length, review?.durationDays],
+    queryFn: () =>
+      organizationsApi.quote({
+        courseId: review!.courseId,
+        seats: reviewEmails.length,
+        durationDays: review!.durationDays,
       }),
-    onSuccess: async (detail) => {
-      await queryClient.invalidateQueries({ queryKey: ["organization", orgId, "purchases"] });
-      router.push(`/dashboard/purchases/${detail.purchase.id}`);
+    enabled: review !== null,
+  });
+
+  const pay = useMutation({
+    mutationFn: async (values: PurchaseForm) => {
+      let purchaseId = createdId;
+      if (!purchaseId) {
+        const detail = await organizationsApi.createPurchase(orgId!, {
+          courseId: values.courseId,
+          durationDays: values.durationDays,
+          emails: uniqueEmails(values.emails),
+        });
+        purchaseId = detail.purchase.id;
+        setCreatedId(purchaseId);
+        await queryClient.invalidateQueries({ queryKey: ["organization", orgId, "purchases"] });
+      }
+      return organizationsApi.checkout(orgId!, purchaseId);
     },
+    onSuccess: ({ checkoutUrl }) => window.location.assign(checkoutUrl),
   });
 
   async function importSheet(e: React.ChangeEvent<HTMLInputElement>) {
@@ -103,17 +126,54 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
     }
   }
 
-  const createError =
-    create.error instanceof ApiError && create.error.status === 409
-      ? "Alguno de esos emails ya tiene un cupo pendiente o vigente para este curso."
-      : create.error
-        ? "No pudimos crear la compra. Probá de nuevo."
-        : null;
+  if (review) {
+    const reviewCourse = catalog.courses.find((c) => c.id === review.courseId);
+    const payError = createdId
+      ? "Guardamos la compra, pero no pudimos abrir Mercado Pago. Probá de nuevo o pagala desde el detalle de la compra."
+      : pay.error instanceof ApiError && pay.error.status === 409
+        ? "Alguno de esos emails ya tiene un cupo pendiente o vigente para este curso."
+        : pay.error
+          ? "No pudimos crear la compra. Probá de nuevo."
+          : null;
+    if (reviewQuote.isPending) return <LoadingState />;
+    if (reviewQuote.error || !reviewCourse) {
+      return <ErrorState>No pudimos cargar los datos.</ErrorState>;
+    }
+    return (
+      <div className="flex flex-col gap-3">
+        <PurchaseInvoice
+          course={reviewCourse}
+          quote={reviewQuote.data}
+          emails={reviewEmails}
+          invitationDays={catalog.invitationDays}
+          confirming={pay.isPending}
+          error={pay.error ? payError : null}
+          onConfirm={() => pay.mutate(review)}
+          onBack={
+            createdId
+              ? undefined
+              : () => {
+                  pay.reset();
+                  setReview(null);
+                }
+          }
+        />
+        {createdId && pay.error ? (
+          <Link
+            href={`/dashboard/purchases/${createdId}`}
+            className="text-primary-dark self-end text-sm font-bold hover:underline"
+          >
+            Ir al detalle de la compra
+          </Link>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <form
       noValidate
-      onSubmit={form.handleSubmit((values) => create.mutate(values))}
+      onSubmit={form.handleSubmit((values) => setReview(values))}
       className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-4"
     >
       <div className="flex flex-col gap-4">
@@ -123,24 +183,27 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
             <CardTitle>Curso</CardTitle>
           </div>
           <div className="flex flex-col gap-2" role="radiogroup" aria-label="Curso">
-            {catalog.courses.map((course) => (
+            {catalog.courses.map((option) => (
               <label
-                key={course.id}
+                key={option.id}
                 className={cn(
                   "border-border flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4",
-                  courseId === course.id && "border-primary bg-primary-light/40",
+                  courseId === option.id && "border-primary bg-primary-light/40",
                 )}
               >
                 <span className="flex items-center gap-3">
                   <input
                     type="radio"
-                    value={course.id}
+                    value={option.id}
                     className="accent-primary size-4"
                     {...form.register("courseId")}
                   />
                   <span className="flex flex-col">
-                    <span className="font-bold">{course.name}</span>
-                    <span className="text-text-muted text-[13px]">{course.signCount} señas</span>
+                    <span className="font-bold">{option.name}</span>
+                    <span className="text-text-muted text-[13px]">
+                      {option.signCount} señas · {option.modules.length}{" "}
+                      {option.modules.length === 1 ? "módulo" : "módulos"}
+                    </span>
                   </span>
                 </span>
               </label>
@@ -152,6 +215,19 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
             </span>
           ) : null}
         </Card>
+
+        {course ? (
+          <Card className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-1">
+              <CardTitle>Señas que incluye {course.name}</CardTitle>
+              <p className="text-text-muted text-sm text-pretty">
+                {course.description ??
+                  "Revisá que estas señas les sirvan a tus equipos antes de comprar."}
+              </p>
+            </div>
+            <CourseSigns course={course} />
+          </Card>
+        ) : null}
 
         <Card className="flex flex-col gap-3.5">
           <div className="flex items-center gap-2.5">
@@ -238,12 +314,17 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
         </Card>
 
         <Card className="flex flex-col gap-3">
-          <CardTitle>Resumen</CardTitle>
+          <CardTitle>Precio</CardTitle>
           {quote.data ? (
             <dl className="flex flex-col text-sm">
               <div className="border-fill flex justify-between border-b py-2">
                 <dt className="text-text-muted">Precio por cupo</dt>
                 <dd className="font-extrabold">
+                  {quote.data.discountPercent > 0 ? (
+                    <span className="text-text-muted mr-2 font-semibold line-through">
+                      {formatMoney(quote.data.listPricePerSeat, quote.data.currency)}
+                    </span>
+                  ) : null}
                   {formatMoney(quote.data.pricePerSeat, quote.data.currency)}
                 </dd>
               </div>
@@ -251,6 +332,12 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
                 <dt className="text-text-muted">Cupos</dt>
                 <dd className="font-extrabold">{seats}</dd>
               </div>
+              {quote.data.discountPercent > 0 ? (
+                <div className="border-fill text-success-dark flex justify-between border-b py-2">
+                  <dt>Descuento por volumen</dt>
+                  <dd className="font-extrabold">{quote.data.discountPercent}%</dd>
+                </div>
+              ) : null}
               <div className="flex items-baseline justify-between py-2">
                 <dt className="text-text-muted">Total</dt>
                 <dd className="font-display text-2xl font-extrabold">
@@ -265,19 +352,18 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
               Elegí el curso y la duración para ver el precio.
             </p>
           )}
+          {nextDiscount ? (
+            <p className="bg-success-light text-success-dark rounded-xl px-3 py-2 text-[13px] font-semibold">
+              Sumá {nextDiscount.missing} {nextDiscount.missing === 1 ? "cupo" : "cupos"} más y
+              tenés {nextDiscount.percent}% de descuento en cada cupo.
+            </p>
+          ) : null}
           <p className="text-text-muted text-[13px] text-pretty">
-            La compra queda pendiente de pago. Cuando se confirme, les mandamos la invitación y
-            tienen {catalog.invitationDays} días para aceptarla.
+            El precio depende de las señas del curso, los días de acceso y la cantidad de cupos.
+            Antes de pagar vas a ver el resumen de la compra.
           </p>
-          {createError ? <ErrorState>{createError}</ErrorState> : null}
-          <button
-            type="submit"
-            disabled={create.isPending || seats === 0}
-            className={primaryButton}
-          >
-            {create.isPending
-              ? "Creando la compra…"
-              : `Comprar ${seats} ${seats === 1 ? "cupo" : "cupos"}`}
+          <button type="submit" disabled={seats === 0} className={primaryButton}>
+            Revisar la compra
           </button>
         </Card>
       </div>

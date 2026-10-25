@@ -29,12 +29,14 @@ Refresh (`POST /auth/refresh`) is called internally by the client, not exposed a
 | `removeMember(orgId, userId)`    | `DELETE /organizations/{id}/members/{userId}` | `void`                            | 204                                                                                                                                                                                                                                                                                                   |
 | `modules(orgId, params)`         | `GET /organizations/{id}/modules`             | `ModuleStats[]`                   | Per-module completion and accuracy; `courseId` narrows to one course, `period` → `from`/`to`                                                                                                                                                                                                          |
 
-| `catalog()` | `GET /organizations/catalog` | `PurchaseCatalog` | Anonymous. Paid courses with a published version and their sign count, plus the pricing and range settings |
-| `quote(params)` | `GET /organizations/catalog/quote` | `PurchaseQuote` | Anonymous. `courseId`, `seats`, `durationDays` → price per seat and total (seats × days × signs, see signa-api `PurchasePolicy`) |
+| `catalog()` | `GET /organizations/catalog` | `PurchaseCatalog` | Anonymous. Paid courses with a published version, their sign count and `modules[{title, signs}]` (the words, shown before buying), plus `volumeDiscounts` and the range settings |
+| `quote(params)` | `GET /organizations/catalog/quote` | `PurchaseQuote` | Anonymous. `courseId`, `seats`, `durationDays` → list price per seat, volume discount, price per seat, subtotal and total (signa-api `PurchasePricing`: `(6000 + 400 × signs) × (days/30)^0.85`, rounded to $10, minus 10/15/20/25 % from 10/25/50/100 seats) |
 | `purchases(orgId)` | `GET /organizations/{id}/purchases` | `Purchase[]` | Newest first, with `seatCounts` per state |
 | `purchase(orgId, id)` | `GET /organizations/{id}/purchases/{id}` | `PurchaseDetail` | Purchase + seats |
 | `createPurchase(orgId, data)` | `POST /organizations/{id}/purchases` | `PurchaseDetail` | `{courseId, durationDays, emails}`; 400 if the org is not validated, 409 if an email already holds a live seat of that course. Starts `PENDING_PAYMENT` |
 | `cancelPurchase(orgId, id)` | `POST /organizations/{id}/purchases/{id}/cancel` | `PurchaseDetail` | Only before payment |
+| `checkout(orgId, id)` | `POST /organizations/{id}/purchases/{id}/checkout` | `PurchaseCheckout` | Creates a Mercado Pago Checkout Pro preference; the panel navigates to `checkoutUrl`. 400 if already paid/cancelled, 503 if Mercado Pago is not configured or fails |
+| `syncPayment(orgId, id, paymentId)` | `POST /organizations/{id}/purchases/{id}/payments/sync` | `PaymentSync` | `{paymentId}` from the return URL; the API re-reads the payment from Mercado Pago and confirms the purchase if it is approved and matches the total (same rule as the webhook). Returns Mercado Pago's `paymentStatus` |
 | `updateSeatEmail(orgId, p, s, e)` | `PATCH …/purchases/{id}/seats/{seatId}` | `PurchaseDetail` | Only while pending; re-sends with a new link, the deadline does not move |
 | `remindSeat(orgId, p, s)` | `POST …/purchases/{id}/seats/{seatId}/reminders` | `PurchaseDetail` | Pending invitations only, one per 24 h (400 otherwise) |
 
@@ -47,7 +49,7 @@ Refresh (`POST /auth/refresh`) is called internally by the client, not exposed a
 
 ## `adminApi` purchases (`src/lib/api/admin.ts`)
 
-`purchases(status?)` → `GET /admin/purchases`; `confirmPayment(id, reference?)` → `POST /admin/purchases/{id}/confirm-payment`. The confirmation is what Mercado Pago will trigger; until then SIGNA confirms by hand.
+`purchases(status?)` → `GET /admin/purchases`; `confirmPayment(id, reference?)` → `POST /admin/purchases/{id}/confirm-payment`. The same confirmation Mercado Pago triggers (webhook `POST /payments/mercado-pago/webhook` in signa-api, or the panel's `syncPayment`); the back-office stays as a manual fallback.
 
 **Period (`from`/`to`).** `overview`, `activity`, `modules`, `members` and `member` take an optional `period` (`src/lib/date-range.ts`), sent as `from`/`to` ISO dates (inclusive, Argentina's calendar, both or neither, at most 366 days; `null` sends neither = the whole history). `signa-api` (`MetricsPeriod`) counts what _happened_ inside the period (attempts, correct %, lessons and modules completed, minutes, active days, who was active) and measures _states_ as of its end (progress %, who finished, current module, in-progress/completed per module, who had joined). Streaks are always current. With no period, "active" keeps the rolling windows (7 days for people, 30 for active days) and `participation.activeWindowDays` says which; with one, it is the period's length.
 

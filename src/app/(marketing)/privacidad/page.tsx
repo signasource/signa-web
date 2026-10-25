@@ -110,6 +110,11 @@ export default function PrivacyPage() {
             <strong>Firebase (Google):</strong> envío de notificaciones push.
           </li>
           <li>
+            <strong>Mercado Pago:</strong> cobro de los cupos que compran las organizaciones. Le
+            enviamos el curso, la cantidad de cupos y el importe; los datos del medio de pago se
+            cargan directamente en Mercado Pago y Signa no los recibe ni los guarda.
+          </li>
+          <li>
             <strong>Cloudflare:</strong> almacenamiento y entrega de contenido educativo
             (animaciones de señas). No contiene datos personales.
           </li>
