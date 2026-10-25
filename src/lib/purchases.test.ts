@@ -100,6 +100,14 @@ describe("daysLeft", () => {
     expect(daysLeft("2026-10-27T11:00:00Z", now)).toBe(2);
   });
 
+  it("never counts from before the payment", () => {
+    // The page read the clock 2 s before the payment was confirmed: still a 10-day window.
+    const paidAt = "2026-10-25T12:00:02Z";
+    expect(daysLeft("2026-11-04T12:00:02Z", now, paidAt)).toBe(10);
+    expect(daysLeft("2026-11-04T12:00:02Z", now)).toBe(11);
+    expect(daysLeft("2026-11-04T12:00:02Z", new Date("2026-10-30T12:00:00Z"), paidAt)).toBe(6);
+  });
+
   it("is zero once the deadline passed and null without one", () => {
     expect(daysLeft("2026-10-20T00:00:00Z", now)).toBe(0);
     expect(daysLeft(null, now)).toBeNull();

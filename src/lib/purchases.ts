@@ -114,9 +114,19 @@ export function emailsFromSheet(rows: unknown[][]): string[] {
   return source.map((row) => String(row[column] ?? "").trim()).filter((value) => isEmail(value));
 }
 
-export function daysLeft(deadline: string | null, now: Date = new Date()): number | null {
+/**
+ * Whole days until the deadline, rounded up. `since` (the payment date) is a floor for `now`:
+ * a page that read the clock just before the payment was confirmed would otherwise show one
+ * day more than the window.
+ */
+export function daysLeft(
+  deadline: string | null,
+  now: Date = new Date(),
+  since: string | null = null,
+): number | null {
   if (!deadline) return null;
-  const ms = new Date(deadline).getTime() - now.getTime();
+  const from = since ? Math.max(now.getTime(), new Date(since).getTime()) : now.getTime();
+  const ms = new Date(deadline).getTime() - from;
   return ms <= 0 ? 0 : Math.ceil(ms / 86_400_000);
 }
 

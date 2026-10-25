@@ -217,7 +217,7 @@ export default function PurchaseDetailPage() {
             ? paymentMessage(sync.data.paymentStatus)
             : paymentMessage(returned.result === "rechazado" ? "rejected" : "pending");
   const counts = purchase.seatCounts;
-  const left = daysLeft(purchase.invitationDeadline, new Date(now));
+  const left = daysLeft(purchase.invitationDeadline, new Date(now), purchase.paidAt);
   const visible = filter === "ALL" ? seats : seats.filter((seat) => seat.status === filter);
   const updateError =
     updateEmail.error instanceof ApiError && updateEmail.error.status === 409
