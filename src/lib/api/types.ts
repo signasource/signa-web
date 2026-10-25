@@ -145,13 +145,19 @@ export type CatalogCourse = {
   description: string | null;
   coverUrl: string | null;
   signCount: number;
+  /** Modules in learning order with the words of the signs each one introduces. */
+  modules: CatalogModule[];
 };
+
+export type CatalogModule = { title: string; signs: string[] };
+
+/** From `minSeats` seats on, the price per seat gets `percent` off. */
+export type VolumeDiscount = { minSeats: number; percent: number };
 
 export type PurchaseCatalog = {
   courses: CatalogCourse[];
   currency: string;
-  pricePerSignPerDay: number;
-  minPricePerSeat: number;
+  volumeDiscounts: VolumeDiscount[];
   minDays: number;
   maxDays: number;
   invitationDays: number;
@@ -164,7 +170,12 @@ export type PurchaseQuote = {
   signCount: number;
   seats: number;
   durationDays: number;
+  listPricePerSeat: number;
+  discountPercent: number;
   pricePerSeat: number;
+  /** `listPricePerSeat × seats`. */
+  subtotal: number;
+  discountAmount: number;
   totalAmount: number;
   currency: string;
 };
@@ -185,6 +196,8 @@ export type Purchase = {
   seats: number;
   durationDays: number;
   signCount: number;
+  listPricePerSeat: number;
+  discountPercent: number;
   pricePerSeat: number;
   totalAmount: number;
   currency: string;
@@ -212,7 +225,25 @@ export type Seat = {
   nextReminderAvailableAt: string | null;
 };
 
-export type PurchaseDetail = { purchase: Purchase; seats: Seat[] };
+export type RefundReason = "PURCHASE_CANCELLED" | "ALREADY_PAID" | "AMOUNT_MISMATCH";
+
+/** A Mercado Pago payment that could not pay the purchase and was given back in full. */
+export type PurchaseRefund = {
+  amount: number;
+  currency: string;
+  reason: RefundReason;
+  status: "PENDING" | "REFUNDED";
+  createdAt: string;
+  refundedAt: string | null;
+};
+
+export type PurchaseDetail = { purchase: Purchase; seats: Seat[]; refunds: PurchaseRefund[] };
+
+/** Mercado Pago Checkout Pro URL to send the admin to. */
+export type PurchaseCheckout = { checkoutUrl: string };
+
+/** Mercado Pago's `status` of the payment (`approved`, `rejected`, `in_process`…) and the purchase. */
+export type PaymentSync = { paymentStatus: string; purchase: PurchaseDetail };
 
 export type InvitationPreview = {
   organizationName: string;

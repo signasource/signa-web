@@ -3,9 +3,13 @@ import {
   daysLeft,
   emailsFromSheet,
   formatMoney,
+  nextVolumeDiscount,
+  paymentMessage,
+  paymentReturn,
   purchaseFormSchema,
   seatEmailSchema,
   uniqueEmails,
+  volumeDiscountFor,
 } from "@/lib/purchases";
 
 const schema = purchaseFormSchema({ minDays: 15, maxDays: 60, maxSeats: 3 });
@@ -96,6 +100,14 @@ describe("daysLeft", () => {
     expect(daysLeft("2026-10-27T11:00:00Z", now)).toBe(2);
   });
 
+  it("never counts from before the payment", () => {
+    // The page read the clock 2 s before the payment was confirmed: still a 10-day window.
+    const paidAt = "2026-10-25T12:00:02Z";
+    expect(daysLeft("2026-11-04T12:00:02Z", now, paidAt)).toBe(10);
+    expect(daysLeft("2026-11-04T12:00:02Z", now)).toBe(11);
+    expect(daysLeft("2026-11-04T12:00:02Z", new Date("2026-10-30T12:00:00Z"), paidAt)).toBe(6);
+  });
+
   it("is zero once the deadline passed and null without one", () => {
     expect(daysLeft("2026-10-20T00:00:00Z", now)).toBe(0);
     expect(daysLeft(null, now)).toBeNull();
@@ -105,5 +117,65 @@ describe("daysLeft", () => {
 describe("formatMoney", () => {
   it("formats pesos without decimals", () => {
     expect(formatMoney(45000, "ARS").replace(/\s/g, " ")).toBe("$ 45.000");
+  });
+});
+
+const tiers = [
+  { minSeats: 25, percent: 15 },
+  { minSeats: 10, percent: 10 },
+];
+
+describe("volumeDiscountFor", () => {
+  it("returns the best tier reached", () => {
+    expect(volumeDiscountFor(9, tiers)).toBe(0);
+    expect(volumeDiscountFor(10, tiers)).toBe(10);
+    expect(volumeDiscountFor(30, tiers)).toBe(15);
+    expect(volumeDiscountFor(30, [])).toBe(0);
+  });
+});
+
+describe("nextVolumeDiscount", () => {
+  it("says how many more seats reach the next tier", () => {
+    expect(nextVolumeDiscount(7, tiers)).toEqual({ missing: 3, percent: 10 });
+    expect(nextVolumeDiscount(10, tiers)).toEqual({ missing: 15, percent: 15 });
+  });
+
+  it("returns null past the last tier", () => {
+    expect(nextVolumeDiscount(25, tiers)).toBeNull();
+    expect(nextVolumeDiscount(3, [])).toBeNull();
+  });
+});
+
+describe("paymentReturn", () => {
+  it("reads our result and Mercado Pago's payment id", () => {
+    expect(
+      paymentReturn(new URLSearchParams("pago=aprobado&payment_id=123&status=approved")),
+    ).toEqual({ result: "aprobado", paymentId: "123" });
+    expect(paymentReturn(new URLSearchParams("pago=pendiente&collection_id=55"))).toEqual({
+      result: "pendiente",
+      paymentId: "55",
+    });
+  });
+
+  it("ignores a missing or non-numeric payment id", () => {
+    expect(paymentReturn(new URLSearchParams("pago=rechazado&payment_id=null"))).toEqual({
+      result: "rechazado",
+      paymentId: null,
+    });
+  });
+
+  it("returns null when the page was not opened from Mercado Pago", () => {
+    expect(paymentReturn(new URLSearchParams(""))).toBeNull();
+    expect(paymentReturn(new URLSearchParams("pago=otro&payment_id=1"))).toBeNull();
+  });
+});
+
+describe("paymentMessage", () => {
+  it("maps Mercado Pago statuses to a tone", () => {
+    expect(paymentMessage("approved").tone).toBe("success");
+    expect(paymentMessage("rejected").tone).toBe("danger");
+    expect(paymentMessage("cancelled").tone).toBe("danger");
+    expect(paymentMessage("in_process").tone).toBe("warning");
+    expect(paymentMessage("pending").tone).toBe("warning");
   });
 });

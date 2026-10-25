@@ -6,7 +6,12 @@ import { ApiError } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
 import type { PurchaseDetail, Seat } from "@/lib/api/types";
 
-vi.mock("next/navigation", () => ({ useParams: () => ({ purchaseId: "p1" }) }));
+const navigation = vi.hoisted(() => ({ search: "", replace: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useParams: () => ({ purchaseId: "p1" }),
+  useRouter: () => ({ replace: navigation.replace }),
+  useSearchParams: () => new URLSearchParams(navigation.search),
+}));
 vi.mock("@/features/auth/auth-context", () => ({
   useAuth: () => ({ organization: { id: "org1", name: "Hospital", status: "ACTIVE" } }),
 }));
@@ -16,6 +21,8 @@ vi.mock("@/lib/api/organizations", () => ({
     updateSeatEmail: vi.fn(),
     remindSeat: vi.fn(),
     cancelPurchase: vi.fn(),
+    checkout: vi.fn(),
+    syncPayment: vi.fn(),
   },
 }));
 
@@ -47,6 +54,8 @@ function detail(overrides: Partial<PurchaseDetail["purchase"]> = {}, seats: Seat
       seats: seats.length,
       durationDays: 30,
       signCount: 100,
+      listPricePerSeat: 15000,
+      discountPercent: 0,
       pricePerSeat: 15000,
       totalAmount: 15000 * seats.length,
       currency: "ARS",
@@ -66,6 +75,7 @@ function detail(overrides: Partial<PurchaseDetail["purchase"]> = {}, seats: Seat
       ...overrides,
     },
     seats,
+    refunds: [] as PurchaseDetail["refunds"],
   };
 }
 
@@ -81,6 +91,9 @@ function renderPage() {
 describe("PurchaseDetailPage", () => {
   beforeEach(() => {
     vi.mocked(organizationsApi.purchase).mockReset();
+    vi.mocked(organizationsApi.syncPayment).mockReset();
+    navigation.search = "";
+    navigation.replace.mockReset();
   });
   afterEach(cleanup);
 
@@ -122,6 +135,91 @@ describe("PurchaseDetailPage", () => {
 
     expect(await screen.findByText("Cancelar compra")).toBeInTheDocument();
     expect(screen.queryByText("Recordar")).not.toBeInTheDocument();
+  });
+
+  it("sends the admin to Mercado Pago to pay", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(
+      detail({ status: "PENDING_PAYMENT", paidAt: null, invitationDeadline: null }, [
+        seat({ status: "PENDING_PAYMENT", invitedAt: null, nextReminderAvailableAt: null }),
+      ]),
+    );
+    vi.mocked(organizationsApi.checkout).mockResolvedValue({ checkoutUrl: "https://mp/checkout" });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: /con Mercado Pago/ }));
+
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://mp/checkout"));
+    expect(organizationsApi.checkout).toHaveBeenCalledWith("org1", "p1");
+    vi.unstubAllGlobals();
+  });
+
+  it("syncs the payment when coming back from Mercado Pago", async () => {
+    navigation.search = "pago=aprobado&payment_id=987&status=approved";
+    const paid = detail({}, [seat({ id: "s1" })]);
+    vi.mocked(organizationsApi.purchase).mockResolvedValueOnce(
+      detail({ status: "PENDING_PAYMENT", paidAt: null, invitationDeadline: null }, [
+        seat({ status: "PENDING_PAYMENT", invitedAt: null, nextReminderAvailableAt: null }),
+      ]),
+    );
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(paid);
+    vi.mocked(organizationsApi.syncPayment).mockResolvedValue({
+      paymentStatus: "approved",
+      purchase: paid,
+    });
+    renderPage();
+
+    expect(
+      await screen.findByText("¡Listo! Recibimos el pago y mandamos las invitaciones por email."),
+    ).toBeInTheDocument();
+    expect(organizationsApi.syncPayment).toHaveBeenCalledWith("org1", "p1", "987");
+    expect(navigation.replace).toHaveBeenCalledWith("/dashboard/purchases/p1", { scroll: false });
+    expect(screen.queryByText("Cancelar compra")).not.toBeInTheDocument();
+  });
+
+  it("tells the admin when Mercado Pago did not approve the payment", async () => {
+    navigation.search = "pago=rechazado&payment_id=null";
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(
+      detail({ status: "PENDING_PAYMENT", paidAt: null, invitationDeadline: null }, [
+        seat({ status: "PENDING_PAYMENT", invitedAt: null, nextReminderAvailableAt: null }),
+      ]),
+    );
+    renderPage();
+
+    expect(await screen.findByText(/Mercado Pago no aprobó el pago/)).toBeInTheDocument();
+    expect(organizationsApi.syncPayment).not.toHaveBeenCalled();
+    expect(screen.getByText("Cancelar compra")).toBeInTheDocument();
+  });
+
+  it("shows the payments given back for a cancelled purchase", async () => {
+    navigation.search = "pago=aprobado&payment_id=987";
+    const cancelled = {
+      ...detail({ status: "CANCELLED", paidAt: null, invitationDeadline: null }, []),
+      refunds: [
+        {
+          amount: 243000,
+          currency: "ARS",
+          reason: "PURCHASE_CANCELLED" as const,
+          status: "REFUNDED" as const,
+          createdAt: "2026-10-25T12:00:00Z",
+          refundedAt: "2026-10-25T12:00:05Z",
+        },
+      ],
+    };
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(cancelled);
+    vi.mocked(organizationsApi.syncPayment).mockResolvedValue({
+      paymentStatus: "approved",
+      purchase: cancelled,
+    });
+    renderPage();
+
+    expect(await screen.findByText("Pagos devueltos")).toBeInTheDocument();
+    expect(screen.getByText("Se pagó después de cancelar la compra")).toBeInTheDocument();
+    expect(await screen.findByText(/te devolvimos el pago completo/)).toBeInTheDocument();
+    expect(
+      screen.queryByText("¡Listo! Recibimos el pago y mandamos las invitaciones por email."),
+    ).not.toBeInTheDocument();
   });
 
   it("changes a pending email", async () => {

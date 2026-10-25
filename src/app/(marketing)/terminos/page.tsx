@@ -79,9 +79,15 @@ export default function TermsPage() {
       <Section title="7. Organizaciones">
         <ul>
           <li>
-            Una organización puede contratar cursos y sumar participantes con códigos o invitaciones
-            por email. Sus administradores ven el progreso de los participantes, como se detalla en
-            la Política de privacidad.
+            Una organización puede comprar cupos de un curso por un período de 15 a 60 días e
+            invitar por email a una persona por cupo. Sus administradores ven el progreso de los
+            participantes, como se detalla en la Política de privacidad.
+          </li>
+          <li>
+            Los cupos se pagan a través de Mercado Pago, que se rige también por sus condiciones.
+            Las invitaciones se envían cuando Mercado Pago confirma el pago. Si un pago no se puede
+            usar para la compra (por ejemplo, porque la compra se canceló o ya estaba pagada), se
+            devuelve completo al mismo medio de pago.
           </li>
           <li>
             La organización es responsable de informar a sus participantes y de tener derecho a
