@@ -17,11 +17,16 @@ import { useAuth } from "@/features/auth/auth-context";
 import { organizationsApi } from "@/lib/api/organizations";
 import type { Purchase } from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
-import { daysLeft, formatMoney } from "@/lib/purchases";
+import { acceptedSeats, daysLeft, formatMoney } from "@/lib/purchases";
 
 function windowLabel(purchase: Purchase): string {
   if (purchase.status === "PENDING_PAYMENT") return "Las invitaciones salen al confirmarse el pago";
   if (purchase.status === "CANCELLED") return "Compra cancelada";
+  if (purchase.status === "REFUNDED") {
+    return purchase.refundedAt
+      ? `Anulada y reembolsada el ${formatDate(purchase.refundedAt)}`
+      : "Anulada y reembolsada";
+  }
   const left = daysLeft(purchase.invitationDeadline);
   if (left === null) return "";
   return left === 0
@@ -32,7 +37,7 @@ function windowLabel(purchase: Purchase): string {
 function PurchaseRow({ purchase }: { purchase: Purchase }) {
   const counts = purchase.seatCounts;
   const facts = [
-    { label: "Aceptaron", value: counts.active + counts.accessExpired },
+    { label: "Aceptaron", value: acceptedSeats(counts) },
     { label: "Sin aceptar", value: counts.invited },
     { label: "Vencidas", value: counts.invitationExpired },
   ];

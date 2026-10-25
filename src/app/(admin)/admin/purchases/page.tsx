@@ -12,6 +12,7 @@ const TABS: { label: string; value: PurchaseStatus | "ALL" }[] = [
   { label: "Pendientes de pago", value: "PENDING_PAYMENT" },
   { label: "Pagadas", value: "PAID" },
   { label: "Canceladas", value: "CANCELLED" },
+  { label: "Reembolsadas", value: "REFUNDED" },
   { label: "Todas", value: "ALL" },
 ];
 

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import type { Purchase } from "@/lib/api/types";
 import {
+  acceptedSeats,
+  canWithdraw,
   daysLeft,
   emailsFromSheet,
   formatMoney,
@@ -8,7 +11,9 @@ import {
   paymentReturn,
   purchaseFormSchema,
   seatEmailSchema,
+  seatStatusLabel,
   uniqueEmails,
+  withdrawalSchema,
   volumeDiscountFor,
 } from "@/lib/purchases";
 
@@ -177,5 +182,52 @@ describe("paymentMessage", () => {
     expect(paymentMessage("cancelled").tone).toBe("danger");
     expect(paymentMessage("in_process").tone).toBe("warning");
     expect(paymentMessage("pending").tone).toBe("warning");
+  });
+});
+
+describe("seatStatusLabel", () => {
+  it("reads seats ended by a refund differently", () => {
+    expect(seatStatusLabel("REVOKED", "REFUNDED")).toBe("Acceso anulado");
+    expect(seatStatusLabel("CANCELLED", "REFUNDED")).toBe("Invitación anulada");
+    expect(seatStatusLabel("REVOKED", "PAID")).toBe("Quitado");
+    expect(seatStatusLabel("ACCESS_EXPIRED", "REFUNDED")).toBe("Acceso vencido");
+  });
+});
+
+describe("canWithdraw", () => {
+  const now = new Date("2026-10-25T12:00:00Z");
+  const purchase = (status: Purchase["status"], refundableUntil: string | null) =>
+    ({ status, refundableUntil }) as Purchase;
+
+  it("is open only for a paid purchase before the deadline", () => {
+    expect(canWithdraw(purchase("PAID", "2026-10-26T00:00:00Z"), now)).toBe(true);
+    expect(canWithdraw(purchase("PAID", "2026-10-25T12:00:00Z"), now)).toBe(false);
+    expect(canWithdraw(purchase("PAID", null), now)).toBe(false);
+    expect(canWithdraw(purchase("REFUNDED", "2026-10-26T00:00:00Z"), now)).toBe(false);
+  });
+});
+
+describe("withdrawalSchema", () => {
+  it("accepts an empty reason and caps it at 500 characters", () => {
+    expect(withdrawalSchema.safeParse({ reason: "" }).success).toBe(true);
+    expect(withdrawalSchema.safeParse({ reason: "x".repeat(500) }).success).toBe(true);
+    expect(withdrawalSchema.safeParse({ reason: "x".repeat(501) }).error?.issues[0]?.message).toBe(
+      "Usá hasta 500 caracteres.",
+    );
+  });
+});
+
+describe("acceptedSeats", () => {
+  it("counts everyone who accepted, including revoked accesses", () => {
+    expect(
+      acceptedSeats({
+        pendingPayment: 0,
+        invited: 2,
+        invitationExpired: 1,
+        active: 3,
+        accessExpired: 1,
+        revoked: 2,
+      }),
+    ).toBe(6);
   });
 });
