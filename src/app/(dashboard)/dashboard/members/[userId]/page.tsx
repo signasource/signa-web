@@ -215,8 +215,8 @@ export default function MemberDetailPage() {
               ¿Quitar a {m.name} {m.lastName}?
             </p>
             <p className="text-text-muted text-[15px] text-pretty">
-              Deja de tener acceso a los contenidos contratados por {organization?.name}. Podés
-              volver a invitar a esta persona más adelante.
+              Deja de tener acceso a los cursos de {organization?.name} y su cupo se pierde: no se
+              puede pasar a otra persona. Su progreso queda guardado.
             </p>
             {remove.error ? <ErrorState>No pudimos quitar a la persona.</ErrorState> : null}
             <div className="mt-2 flex justify-end gap-2">

@@ -1,7 +1,6 @@
 import { api } from "@/lib/api/client";
 import type { Period } from "@/lib/date-range";
 import type {
-  InviteCode,
   MemberActivityStatus,
   MemberProgress,
   MemberSort,
@@ -12,6 +11,10 @@ import type {
   OrganizationMemberSummary,
   OrganizationOverview,
   Page,
+  Purchase,
+  PurchaseCatalog,
+  PurchaseDetail,
+  PurchaseQuote,
   RedeemInviteCodeResponse,
 } from "@/lib/api/types";
 
@@ -28,7 +31,6 @@ export const organizationsApi = {
     cuit: string;
     contactEmail: string;
     contactPhone?: string;
-    memberLimit: number;
     adminName: string;
     adminPassword: string;
   }) =>
@@ -36,11 +38,6 @@ export const organizationsApi = {
       "/organizations/register",
       { method: "POST", body: data, anonymous: true },
     ),
-
-  getPricing: () =>
-    api<{ pricePerPerson: number; currency: string }>("/organizations/pricing", {
-      anonymous: true,
-    }),
 
   redeemInviteCode: (code: string) =>
     api<RedeemInviteCodeResponse>("/organizations/invite-codes/redeem", {
@@ -94,14 +91,35 @@ export const organizationsApi = {
       query: { courseId: params.courseId, ...periodQuery(params.period) },
     }),
 
-  inviteCodes: (orgId: string) => api<InviteCode[]>(`/organizations/${orgId}/invite-codes`),
+  catalog: () => api<PurchaseCatalog>("/organizations/catalog", { anonymous: true }),
 
-  createInviteCode: (orgId: string) =>
-    api<InviteCode>(`/organizations/${orgId}/invite-codes`, { method: "POST", body: {} }),
+  quote: (params: { courseId: string; seats: number; durationDays: number }) =>
+    api<PurchaseQuote>("/organizations/catalog/quote", { query: params, anonymous: true }),
 
-  deactivateInviteCode: (orgId: string, inviteCodeId: string) =>
-    api(`/organizations/${orgId}/invite-codes/${inviteCodeId}`, { method: "DELETE" }),
+  purchases: (orgId: string) => api<Purchase[]>(`/organizations/${orgId}/purchases`),
 
-  inviteByEmail: (orgId: string, email: string) =>
-    api<InviteCode>(`/organizations/${orgId}/invitations`, { method: "POST", body: { email } }),
+  purchase: (orgId: string, purchaseId: string) =>
+    api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}`),
+
+  createPurchase: (
+    orgId: string,
+    data: { courseId: string; durationDays: number; emails: string[] },
+  ) => api<PurchaseDetail>(`/organizations/${orgId}/purchases`, { method: "POST", body: data }),
+
+  cancelPurchase: (orgId: string, purchaseId: string) =>
+    api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/cancel`, {
+      method: "POST",
+    }),
+
+  updateSeatEmail: (orgId: string, purchaseId: string, seatId: string, email: string) =>
+    api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/seats/${seatId}`, {
+      method: "PATCH",
+      body: { email },
+    }),
+
+  remindSeat: (orgId: string, purchaseId: string, seatId: string) =>
+    api<PurchaseDetail>(
+      `/organizations/${orgId}/purchases/${purchaseId}/seats/${seatId}/reminders`,
+      { method: "POST" },
+    ),
 };

@@ -1,5 +1,5 @@
 import { api } from "@/lib/api/client";
-import type { Page } from "@/lib/api/types";
+import type { Page, Purchase, PurchaseDetail, PurchaseStatus } from "@/lib/api/types";
 
 export type AdminMe = {
   id: string;
@@ -17,11 +17,17 @@ export type AdminOrganization = {
   cuit: string | null;
   contactEmail: string;
   contactPhone: string | null;
-  memberLimit: number;
   createdAt: string;
   activeMembers: number;
   adminName: string | null;
   adminEmail: string | null;
+};
+
+export type AdminPurchase = {
+  organizationId: string;
+  organizationName: string;
+  paymentReference: string | null;
+  purchase: Purchase;
 };
 
 export type AdminStats = {
@@ -140,10 +146,19 @@ export const adminApi = {
 
   organization: (id: string) => api<AdminOrganization>(`/admin/organizations/${id}`),
 
-  updateOrganizationStatus: (id: string, status: OrganizationStatus, courseIds?: string[]) =>
+  updateOrganizationStatus: (id: string, status: OrganizationStatus) =>
     api<AdminOrganization>(`/admin/organizations/${id}/status`, {
       method: "PATCH",
-      body: { status, courseIds },
+      body: { status },
+    }),
+
+  purchases: (status?: PurchaseStatus) =>
+    api<AdminPurchase[]>("/admin/purchases", { query: { status } }),
+
+  confirmPayment: (purchaseId: string, paymentReference?: string) =>
+    api<PurchaseDetail>(`/admin/purchases/${purchaseId}/confirm-payment`, {
+      method: "POST",
+      body: { paymentReference: paymentReference || undefined },
     }),
 
   signReports: (status?: ReportStatus) =>

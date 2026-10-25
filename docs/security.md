@@ -90,3 +90,5 @@ HSTS (2 years, `includeSubDomains`, `preload`), `X-Content-Type-Options: nosniff
 ## Verified
 
 Production build served with `next start`: CSP present on all routes; no source maps published; model-viewer passes SRI; no CSP violations or Permissions-Policy errors in the console with the camera demo and the 3D viewer running; `/login` hydrates and validates under the strict policy; external `img` and `fetch` are blocked; an inline event-handler payload is blocked (`script-src-attr`). Dev mode (`next dev`, `'unsafe-eval'`) and hosting-level behavior (Vercel) not yet verified — see [status.md](./status.md).
+
+**Session route handlers.** `/api/session/register` joins login/refresh/logout: same same-origin check and cookie handling ([api/session.md](./api/session.md)). `/invitacion` is a dynamic page under `(auth)` and gets the strict nonce CSP; the invitation token travels in the query string and is only sent to signa-api.

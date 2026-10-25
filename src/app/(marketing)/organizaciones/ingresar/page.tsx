@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { BackButton } from "@/components/back-button";
 import { useAuth } from "@/features/auth/auth-context";
@@ -30,10 +30,6 @@ const registroSchema = z
     adminName: z.string().min(2, "Ingresá tu nombre completo."),
     email: z.string().email("Ingresá un email válido."),
     telefono: z.string().optional(),
-    memberLimit: z
-      .number({ error: "Ingresá la cantidad de personas." })
-      .min(1, "Mínimo 1 persona.")
-      .max(10000),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
     confirmPassword: z.string().min(1, "Confirmá tu contraseña."),
   })
@@ -112,24 +108,13 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
   const { login } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [pricing, setPricing] = useState<{ pricePerPerson: number; currency: string } | null>(null);
-
-  useEffect(() => {
-    organizationsApi
-      .getPricing()
-      .then((data) => setPricing(data))
-      .catch(() => {});
-  }, []);
 
   const {
     register,
     handleSubmit,
     setValue,
-    control,
     formState: { errors, isSubmitting },
   } = useForm<RegistroValues>({ resolver: zodResolver(registroSchema) });
-
-  const watchedMemberLimit = useWatch({ control, name: "memberLimit" });
 
   function handleCuitChange(e: React.ChangeEvent<HTMLInputElement>) {
     const formatted = formatCuit(e.target.value);
@@ -145,7 +130,6 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
         cuit: values.cuit,
         contactEmail: values.email,
         contactPhone: values.telefono || undefined,
-        memberLimit: values.memberLimit,
         adminName: values.adminName,
         adminPassword: values.password,
       });
@@ -222,29 +206,10 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
         />
       </label>
 
-      <label className={LABEL}>
-        Cantidad de personas
-        <input
-          {...register("memberLimit", { valueAsNumber: true })}
-          type="number"
-          min={1}
-          placeholder="50"
-          className={INPUT}
-        />
-        {errors.memberLimit && <span className={ERROR}>{errors.memberLimit.message}</span>}
-      </label>
-
-      {pricing && !isNaN(watchedMemberLimit) && watchedMemberLimit >= 1 && (
-        <div className="bg-primary/5 border-primary/20 rounded-2xl border p-4">
-          <p className="text-text-muted text-[13px]">
-            Para <span className="text-text font-bold">{watchedMemberLimit} personas</span>
-          </p>
-          <p className="font-display text-text text-2xl font-extrabold tracking-tight">
-            ${(watchedMemberLimit * pricing.pricePerPerson).toLocaleString("es-AR")}{" "}
-            <span className="text-text-muted text-base font-normal">{pricing.currency}/mes</span>
-          </p>
-        </div>
-      )}
+      <p className="text-text-muted text-[13px] text-pretty">
+        Registrarte no tiene costo. Antes de comprar cupos, SIGNA valida que representes a la
+        organización; te avisamos por email cuando esté lista.
+      </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className={LABEL}>

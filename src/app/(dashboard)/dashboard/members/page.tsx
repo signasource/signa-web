@@ -158,9 +158,9 @@ export default function MembersPage() {
         <div className="flex flex-wrap items-center gap-2">
           <CourseSelect />
           <PeriodFilter />
-          <Link href={withFilters("/dashboard/invitations")} className={headerButton}>
+          <Link href="/dashboard/purchases" className={headerButton}>
             <Icon name="personAdd" className="size-4" />
-            Invitar personas
+            Sumar personas
           </Link>
         </div>
       </PageHeading>

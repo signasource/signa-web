@@ -128,16 +128,108 @@ export type ModuleStats = {
   correctPercentage: number;
 };
 
-export type InviteCode = {
+export type PurchaseStatus = "PENDING_PAYMENT" | "PAID" | "CANCELLED";
+export type SeatStatus =
+  | "PENDING_PAYMENT"
+  | "INVITED"
+  | "INVITATION_EXPIRED"
+  | "ACTIVE"
+  | "ACCESS_EXPIRED"
+  | "REVOKED"
+  | "CANCELLED";
+
+export type CatalogCourse = {
   id: string;
   code: string;
-  organizationId: string;
-  email: string | null;
-  memberRole: MemberRole;
-  expiresAt: string | null;
-  maxUses: number | null;
-  useCount: number;
-  active: boolean;
+  name: string;
+  description: string | null;
+  coverUrl: string | null;
+  signCount: number;
+};
+
+export type PurchaseCatalog = {
+  courses: CatalogCourse[];
+  currency: string;
+  pricePerSignPerDay: number;
+  minPricePerSeat: number;
+  minDays: number;
+  maxDays: number;
+  invitationDays: number;
+  maxSeats: number;
+};
+
+export type PurchaseQuote = {
+  courseId: string;
+  courseName: string;
+  signCount: number;
+  seats: number;
+  durationDays: number;
+  pricePerSeat: number;
+  totalAmount: number;
+  currency: string;
+};
+
+export type SeatCounts = {
+  pendingPayment: number;
+  invited: number;
+  invitationExpired: number;
+  active: number;
+  accessExpired: number;
+  revoked: number;
+};
+
+export type Purchase = {
+  id: string;
+  courseId: string;
+  courseName: string;
+  seats: number;
+  durationDays: number;
+  signCount: number;
+  pricePerSeat: number;
+  totalAmount: number;
+  currency: string;
+  status: PurchaseStatus;
+  createdAt: string;
+  paidAt: string | null;
+  invitationDeadline: string | null;
+  cancelledAt: string | null;
+  seatCounts: SeatCounts;
+};
+
+export type Seat = {
+  id: string;
+  email: string;
+  status: SeatStatus;
+  invitedAt: string | null;
+  lastReminderAt: string | null;
+  autoReminderSentAt: string | null;
+  activatedAt: string | null;
+  accessExpiresAt: string | null;
+  revokedAt: string | null;
+  userId: string | null;
+  userName: string | null;
+  canEditEmail: boolean;
+  nextReminderAvailableAt: string | null;
+};
+
+export type PurchaseDetail = { purchase: Purchase; seats: Seat[] };
+
+export type InvitationPreview = {
+  organizationName: string;
+  courseName: string;
+  email: string;
+  status: SeatStatus;
+  invitationDeadline: string | null;
+  durationDays: number;
+  accountExists: boolean;
+};
+
+export type AcceptedInvitation = {
+  organizationName: string;
+  courseId: string;
+  courseName: string;
+  activatedAt: string;
+  accessExpiresAt: string;
 };
 
 export type Page<T> = {

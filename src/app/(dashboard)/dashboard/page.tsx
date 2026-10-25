@@ -114,10 +114,10 @@ export default function DashboardOverviewPage() {
         <EmptyState
           mascot
           title="Todavía no hay participantes"
-          body="Invitá a tu equipo para que empiece la capacitación. Las métricas aparecen acá apenas alguien complete su primera lección."
+          body="Comprá cupos para tu equipo: cada persona recibe una invitación por email. Las métricas aparecen acá apenas alguien complete su primera lección."
           action={
-            <Link href={withFilters("/dashboard/invitations")} className={primaryButton}>
-              Invitar personas
+            <Link href="/dashboard/purchases" className={primaryButton}>
+              Comprar cupos
             </Link>
           }
         />

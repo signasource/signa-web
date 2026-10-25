@@ -32,6 +32,7 @@ const NAV: NavItem[] = [
     icon: BuildingIcon,
     badgeKey: "pendingOrganizations",
   },
+  { href: "/admin/purchases", label: "Compras", icon: ReceiptIcon },
   {
     href: "/admin/sign-reports",
     label: "Reportes de señas",
@@ -176,6 +177,21 @@ function FlagIcon({ className }: { className?: string }) {
     >
       <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
       <line x1="4" y1="22" x2="4" y2="15" />
+    </svg>
+  );
+}
+
+function ReceiptIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+    >
+      <path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z" />
+      <path d="M9 7h6M9 11h6M9 15h4" />
     </svg>
   );
 }

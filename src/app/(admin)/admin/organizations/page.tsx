@@ -37,30 +37,13 @@ function StatusBadge({ status }: { status: OrganizationStatus }) {
 function OrgDetailPanel({ org, onClose }: { org: AdminOrganization; onClose: () => void }) {
   const qc = useQueryClient();
 
-  const { data: courses } = useQuery({
-    queryKey: ["admin", "courses"],
-    queryFn: adminApi.courses,
-  });
-
-  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
-
   const mutate = useMutation({
-    mutationFn: (status: OrganizationStatus) =>
-      adminApi.updateOrganizationStatus(
-        org.id,
-        status,
-        status === "ACTIVE" ? selectedCourseIds : undefined,
-      ),
+    mutationFn: (status: OrganizationStatus) => adminApi.updateOrganizationStatus(org.id, status),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "organizations"] });
       onClose();
     },
   });
-
-  const toggleCourse = (id: string) =>
-    setSelectedCourseIds((prev) =>
-      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
-    );
 
   return (
     <div className="border-border bg-surface flex w-96 shrink-0 flex-col overflow-y-auto rounded-2xl border">
@@ -81,10 +64,8 @@ function OrgDetailPanel({ org, onClose }: { org: AdminOrganization; onClose: () 
             <dd className="text-text mt-0.5 font-medium">{org.cuit ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-text-muted text-xs">Cupo</dt>
-            <dd className="text-text mt-0.5 font-medium">
-              {org.activeMembers} / {org.memberLimit}
-            </dd>
+            <dt className="text-text-muted text-xs">Participantes</dt>
+            <dd className="text-text mt-0.5 font-medium">{org.activeMembers}</dd>
           </div>
           <div>
             <dt className="text-text-muted text-xs">Email de contacto</dt>
@@ -107,25 +88,11 @@ function OrgDetailPanel({ org, onClose }: { org: AdminOrganization; onClose: () 
           )}
         </dl>
 
-        {org.status === "PENDING" && courses && courses.length > 0 && (
-          <div>
-            <p className="text-text mb-2 text-xs font-semibold tracking-wide uppercase">
-              Cursos a habilitar
-            </p>
-            <div className="space-y-2">
-              {courses.map((course) => (
-                <label key={course.id} className="flex cursor-pointer items-center gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selectedCourseIds.includes(course.id)}
-                    onChange={() => toggleCourse(course.id)}
-                    className="accent-primary size-4"
-                  />
-                  <span className="text-text">{course.name}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+        {org.status === "PENDING" && (
+          <p className="text-text-muted text-sm">
+            Validá que quien registró la organización la represente y esté autorizado a gestionarla.
+            Una vez validada puede comprar cupos.
+          </p>
         )}
 
         {mutate.error && (
@@ -143,7 +110,7 @@ function OrgDetailPanel({ org, onClose }: { org: AdminOrganization; onClose: () 
               disabled={mutate.isPending}
               className="bg-primary flex-1 rounded-xl px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
             >
-              Aprobar y activar
+              Validar organización
             </button>
             <button
               onClick={() => mutate.mutate("REJECTED")}
@@ -190,7 +157,7 @@ export default function OrganizationsPage() {
           <div>
             <h1 className="font-display text-text text-2xl font-bold">Organizaciones</h1>
             <p className="text-text-muted mt-0.5 text-sm">
-              Aprobá las solicitudes que lleguen de la web, asigná cursos y seguí a cada empresa.
+              Validá las organizaciones que se registran desde la web y seguí a cada empresa.
             </p>
           </div>
         </div>
@@ -230,7 +197,7 @@ export default function OrganizationsPage() {
                   <tr className="border-border bg-fill text-text-muted border-b">
                     <th className="px-5 py-3 text-left font-semibold">Organización</th>
                     <th className="px-5 py-3 text-left font-semibold">Estado</th>
-                    <th className="px-5 py-3 text-left font-semibold">Cupo</th>
+                    <th className="px-5 py-3 text-left font-semibold">Participantes</th>
                     <th className="px-5 py-3 text-left font-semibold">Alta</th>
                   </tr>
                 </thead>
@@ -258,9 +225,7 @@ export default function OrganizationsPage() {
                       <td className="px-5 py-4">
                         <StatusBadge status={org.status} />
                       </td>
-                      <td className="text-text-muted px-5 py-4">
-                        {org.activeMembers} / {org.memberLimit}
-                      </td>
+                      <td className="text-text-muted px-5 py-4">{org.activeMembers}</td>
                       <td className="text-text-muted px-5 py-4 text-xs">
                         {new Date(org.createdAt).toLocaleDateString("es-AR")}
                       </td>
