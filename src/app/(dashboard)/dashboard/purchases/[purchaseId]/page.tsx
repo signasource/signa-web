@@ -24,6 +24,8 @@ import { organizationsApi } from "@/lib/api/organizations";
 import type { PurchaseDetail, Seat, SeatStatus } from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
 import {
+  REFUNDED_MESSAGE,
+  REFUND_REASON_LABEL,
   SEAT_STATUS_LABEL,
   daysLeft,
   formatMoney,
@@ -209,9 +211,11 @@ export default function PurchaseDetailPage() {
       ? { tone: "warning" as const, text: "Estamos confirmando el pago con Mercado Pago…" }
       : purchase.status === "PAID"
         ? paymentMessage("approved")
-        : sync.data
-          ? paymentMessage(sync.data.paymentStatus)
-          : paymentMessage(returned.result === "rechazado" ? "rejected" : "pending");
+        : purchase.status === "CANCELLED" && data.refunds.length > 0
+          ? REFUNDED_MESSAGE
+          : sync.data
+            ? paymentMessage(sync.data.paymentStatus)
+            : paymentMessage(returned.result === "rechazado" ? "rejected" : "pending");
   const counts = purchase.seatCounts;
   const left = daysLeft(purchase.invitationDeadline, new Date(now));
   const visible = filter === "ALL" ? seats : seats.filter((seat) => seat.status === filter);
@@ -306,6 +310,38 @@ export default function PurchaseDetailPage() {
           hint="Invitaciones vencidas sin aceptar"
         />
       </div>
+
+      {data.refunds.length > 0 ? (
+        <Card className="flex flex-col gap-1">
+          <CardTitle>Pagos devueltos</CardTitle>
+          <p className="text-text-muted text-sm text-pretty">
+            Estos pagos no se pudieron usar para la compra, así que los devolvimos completos al
+            medio de pago en Mercado Pago. El dinero puede tardar unos días en verse según el medio.
+          </p>
+          <ul className="flex flex-col text-sm">
+            {data.refunds.map((refund) => (
+              <li
+                key={refund.createdAt}
+                className="border-fill flex flex-wrap items-center justify-between gap-2 border-b py-2.5 last:border-b-0"
+              >
+                <span className="flex flex-col">
+                  <span className="font-extrabold">
+                    {formatMoney(refund.amount, refund.currency)}
+                  </span>
+                  <span className="text-text-muted text-[13px]">
+                    {REFUND_REASON_LABEL[refund.reason]}
+                  </span>
+                </span>
+                <span className="text-text-muted text-[13px] font-semibold">
+                  {refund.status === "REFUNDED" && refund.refundedAt
+                    ? `Devuelto el ${formatDate(refund.refundedAt)}`
+                    : "Devolución en proceso"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       <Card className="flex flex-col gap-1">
         <CardTitle>Datos de la compra</CardTitle>

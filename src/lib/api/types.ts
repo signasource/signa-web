@@ -225,7 +225,19 @@ export type Seat = {
   nextReminderAvailableAt: string | null;
 };
 
-export type PurchaseDetail = { purchase: Purchase; seats: Seat[] };
+export type RefundReason = "PURCHASE_CANCELLED" | "ALREADY_PAID" | "AMOUNT_MISMATCH";
+
+/** A Mercado Pago payment that could not pay the purchase and was given back in full. */
+export type PurchaseRefund = {
+  amount: number;
+  currency: string;
+  reason: RefundReason;
+  status: "PENDING" | "REFUNDED";
+  createdAt: string;
+  refundedAt: string | null;
+};
+
+export type PurchaseDetail = { purchase: Purchase; seats: Seat[]; refunds: PurchaseRefund[] };
 
 /** Mercado Pago Checkout Pro URL to send the admin to. */
 export type PurchaseCheckout = { checkoutUrl: string };

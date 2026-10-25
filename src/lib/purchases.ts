@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { PurchaseStatus, SeatStatus, VolumeDiscount } from "@/lib/api/types";
+import type { PurchaseStatus, RefundReason, SeatStatus, VolumeDiscount } from "@/lib/api/types";
 import { isEmail, parseEmails } from "@/lib/dashboard-format";
 
 export const PURCHASE_STATUS_LABEL: Record<PurchaseStatus, string> = {
@@ -16,6 +16,17 @@ export const SEAT_STATUS_LABEL: Record<SeatStatus, string> = {
   ACCESS_EXPIRED: "Acceso vencido",
   REVOKED: "Quitado",
   CANCELLED: "Cancelado",
+};
+
+export const REFUND_REASON_LABEL: Record<RefundReason, string> = {
+  PURCHASE_CANCELLED: "Se pagó después de cancelar la compra",
+  ALREADY_PAID: "La compra ya estaba pagada (pago duplicado)",
+  AMOUNT_MISMATCH: "El importe no coincidía con el de la compra",
+};
+
+export const REFUNDED_MESSAGE = {
+  tone: "warning" as const,
+  text: "La compra estaba cancelada, así que no la activamos y te devolvimos el pago completo en Mercado Pago.",
 };
 
 export function formatMoney(amount: number, currency: string): string {

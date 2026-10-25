@@ -34,9 +34,9 @@ Refresh (`POST /auth/refresh`) is called internally by the client, not exposed a
 | `purchases(orgId)` | `GET /organizations/{id}/purchases` | `Purchase[]` | Newest first, with `seatCounts` per state |
 | `purchase(orgId, id)` | `GET /organizations/{id}/purchases/{id}` | `PurchaseDetail` | Purchase + seats |
 | `createPurchase(orgId, data)` | `POST /organizations/{id}/purchases` | `PurchaseDetail` | `{courseId, durationDays, emails}`; 400 if the org is not validated, 409 if an email already holds a live seat of that course. Starts `PENDING_PAYMENT` |
-| `cancelPurchase(orgId, id)` | `POST /organizations/{id}/purchases/{id}/cancel` | `PurchaseDetail` | Only before payment |
+| `cancelPurchase(orgId, id)` | `POST /organizations/{id}/purchases/{id}/cancel` | `PurchaseDetail` | Only before payment; also expires the Mercado Pago checkout (best effort) |
 | `checkout(orgId, id)` | `POST /organizations/{id}/purchases/{id}/checkout` | `PurchaseCheckout` | Creates a Mercado Pago Checkout Pro preference; the panel navigates to `checkoutUrl`. 400 if already paid/cancelled, 503 if Mercado Pago is not configured or fails |
-| `syncPayment(orgId, id, paymentId)` | `POST /organizations/{id}/purchases/{id}/payments/sync` | `PaymentSync` | `{paymentId}` from the return URL; the API re-reads the payment from Mercado Pago and confirms the purchase if it is approved and matches the total (same rule as the webhook). Returns Mercado Pago's `paymentStatus` |
+| `syncPayment(orgId, id, paymentId)` | `POST /organizations/{id}/purchases/{id}/payments/sync` | `PaymentSync` | `{paymentId}` from the return URL; the API re-reads the payment from Mercado Pago and confirms the purchase if it is approved and matches the total (same rule as the webhook); an approved payment that cannot pay it (cancelled, already paid, other amount) is refunded in full and listed in `refunds`. Returns Mercado Pago's `paymentStatus` |
 | `updateSeatEmail(orgId, p, s, e)` | `PATCH …/purchases/{id}/seats/{seatId}` | `PurchaseDetail` | Only while pending; re-sends with a new link, the deadline does not move |
 | `remindSeat(orgId, p, s)` | `POST …/purchases/{id}/seats/{seatId}/reminders` | `PurchaseDetail` | Pending invitations only, one per 24 h (400 otherwise) |
 

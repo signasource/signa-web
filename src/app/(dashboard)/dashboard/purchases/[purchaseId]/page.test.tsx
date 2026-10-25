@@ -75,6 +75,7 @@ function detail(overrides: Partial<PurchaseDetail["purchase"]> = {}, seats: Seat
       ...overrides,
     },
     seats,
+    refunds: [] as PurchaseDetail["refunds"],
   };
 }
 
@@ -189,6 +190,36 @@ describe("PurchaseDetailPage", () => {
     expect(await screen.findByText(/Mercado Pago no aprobó el pago/)).toBeInTheDocument();
     expect(organizationsApi.syncPayment).not.toHaveBeenCalled();
     expect(screen.getByText("Cancelar compra")).toBeInTheDocument();
+  });
+
+  it("shows the payments given back for a cancelled purchase", async () => {
+    navigation.search = "pago=aprobado&payment_id=987";
+    const cancelled = {
+      ...detail({ status: "CANCELLED", paidAt: null, invitationDeadline: null }, []),
+      refunds: [
+        {
+          amount: 243000,
+          currency: "ARS",
+          reason: "PURCHASE_CANCELLED" as const,
+          status: "REFUNDED" as const,
+          createdAt: "2026-10-25T12:00:00Z",
+          refundedAt: "2026-10-25T12:00:05Z",
+        },
+      ],
+    };
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(cancelled);
+    vi.mocked(organizationsApi.syncPayment).mockResolvedValue({
+      paymentStatus: "approved",
+      purchase: cancelled,
+    });
+    renderPage();
+
+    expect(await screen.findByText("Pagos devueltos")).toBeInTheDocument();
+    expect(screen.getByText("Se pagó después de cancelar la compra")).toBeInTheDocument();
+    expect(await screen.findByText(/te devolvimos el pago completo/)).toBeInTheDocument();
+    expect(
+      screen.queryByText("¡Listo! Recibimos el pago y mandamos las invitaciones por email."),
+    ).not.toBeInTheDocument();
   });
 
   it("changes a pending email", async () => {

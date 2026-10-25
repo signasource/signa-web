@@ -85,7 +85,9 @@ export default function TermsPage() {
           </li>
           <li>
             Los cupos se pagan a través de Mercado Pago, que se rige también por sus condiciones.
-            Las invitaciones se envían cuando Mercado Pago confirma el pago.
+            Las invitaciones se envían cuando Mercado Pago confirma el pago. Si un pago no se puede
+            usar para la compra (por ejemplo, porque la compra se canceló o ya estaba pagada), se
+            devuelve completo al mismo medio de pago.
           </li>
           <li>
             La organización es responsable de informar a sus participantes y de tener derecho a
