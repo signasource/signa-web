@@ -1,11 +1,19 @@
 import { z } from "zod";
-import type { PurchaseStatus, RefundReason, SeatStatus, VolumeDiscount } from "@/lib/api/types";
+import type {
+  Purchase,
+  PurchaseStatus,
+  RefundReason,
+  SeatCounts,
+  SeatStatus,
+  VolumeDiscount,
+} from "@/lib/api/types";
 import { isEmail, parseEmails } from "@/lib/dashboard-format";
 
 export const PURCHASE_STATUS_LABEL: Record<PurchaseStatus, string> = {
   PENDING_PAYMENT: "Pendiente de pago",
   PAID: "Pagada",
   CANCELLED: "Cancelada",
+  REFUNDED: "Reembolsada",
 };
 
 export const SEAT_STATUS_LABEL: Record<SeatStatus, string> = {
@@ -19,15 +27,47 @@ export const SEAT_STATUS_LABEL: Record<SeatStatus, string> = {
 };
 
 export const REFUND_REASON_LABEL: Record<RefundReason, string> = {
-  PURCHASE_CANCELLED: "Se pagó después de cancelar la compra",
+  PURCHASE_CANCELLED: "Se pagó después de cancelar o anular la compra",
   ALREADY_PAID: "La compra ya estaba pagada (pago duplicado)",
   AMOUNT_MISMATCH: "El importe no coincidía con el de la compra",
+  BUYER_REQUESTED: "Anularon la compra dentro del plazo de arrepentimiento",
+  EXTERNAL_REFUND: "El pago se devolvió desde Mercado Pago",
+  CHARGEBACK: "Contracargo: el pago fue desconocido ante el banco o la tarjeta",
 };
+
+/** Seats of a refunded purchase were ended by the refund, so they read differently. */
+export function seatStatusLabel(status: SeatStatus, purchaseStatus: PurchaseStatus): string {
+  if (purchaseStatus === "REFUNDED") {
+    if (status === "REVOKED") return "Acceso anulado";
+    if (status === "CANCELLED") return "Invitación anulada";
+  }
+  return SEAT_STATUS_LABEL[status];
+}
+
+/** Whether the organization can still cancel this purchase for a full refund. */
+export function canWithdraw(purchase: Purchase, now: Date = new Date()): boolean {
+  return (
+    purchase.status === "PAID" &&
+    purchase.refundableUntil !== null &&
+    new Date(purchase.refundableUntil).getTime() > now.getTime()
+  );
+}
+
+export const withdrawalSchema = z.object({
+  reason: z.string().trim().max(500, "Usá hasta 500 caracteres."),
+});
+
+export type WithdrawalForm = z.infer<typeof withdrawalSchema>;
 
 export const REFUNDED_MESSAGE = {
   tone: "warning" as const,
   text: "La compra estaba cancelada, así que no la activamos y te devolvimos el pago completo en Mercado Pago.",
 };
+
+/** Everyone who accepted: still active, expired, or whose access was later revoked. */
+export function acceptedSeats(counts: SeatCounts): number {
+  return counts.active + counts.accessExpired + counts.revoked;
+}
 
 export function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat("es-AR", {

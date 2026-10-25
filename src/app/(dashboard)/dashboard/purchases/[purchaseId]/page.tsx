@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Icon } from "@/components/dashboard/icons";
 import { PurchaseStatusPill, SeatStatusPill } from "@/components/dashboard/purchase-status";
+import { WithdrawPurchase } from "@/components/dashboard/withdraw-purchase";
 import {
   Card,
   CardTitle,
@@ -21,12 +22,14 @@ import {
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
-import type { PurchaseDetail, Seat, SeatStatus } from "@/lib/api/types";
+import type { PurchaseDetail, PurchaseStatus, Seat, SeatStatus } from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
 import {
   REFUNDED_MESSAGE,
   REFUND_REASON_LABEL,
   SEAT_STATUS_LABEL,
+  acceptedSeats,
+  canWithdraw,
   daysLeft,
   formatMoney,
   paymentMessage,
@@ -49,12 +52,15 @@ const FILTERS: { value: SeatStatus | "ALL"; label: string }[] = [
   { value: "ACCESS_EXPIRED", label: "Acceso vencido" },
 ];
 
-function seatDates(seat: Seat): string {
+function seatDates(seat: Seat, purchaseStatus: PurchaseStatus): string {
   if (seat.activatedAt && seat.accessExpiresAt) {
     const verb = seat.status === "ACTIVE" ? "vence" : "venció";
     return `Activó el ${formatDate(seat.activatedAt)} · ${verb} el ${formatDate(seat.accessExpiresAt)}`;
   }
-  if (seat.revokedAt) return `Quitado el ${formatDate(seat.revokedAt)}`;
+  if (seat.revokedAt) {
+    const label = purchaseStatus === "REFUNDED" ? "Acceso anulado" : "Quitado";
+    return `${label} el ${formatDate(seat.revokedAt)}`;
+  }
   const reminded = seat.lastReminderAt ?? seat.autoReminderSentAt;
   if (seat.invitedAt) {
     return reminded
@@ -191,6 +197,11 @@ export default function PurchaseDetailPage() {
     onSuccess: store,
   });
 
+  const withdraw = useMutation({
+    mutationFn: (reason: string) => organizationsApi.withdrawPurchase(orgId!, purchaseId, reason),
+    onSuccess: store,
+  });
+
   const back = (
     <Link
       href="/dashboard/purchases"
@@ -211,7 +222,8 @@ export default function PurchaseDetailPage() {
       ? { tone: "warning" as const, text: "Estamos confirmando el pago con Mercado Pago…" }
       : purchase.status === "PAID"
         ? paymentMessage("approved")
-        : purchase.status === "CANCELLED" && data.refunds.length > 0
+        : (purchase.status === "CANCELLED" || purchase.status === "REFUNDED") &&
+            data.refunds.length > 0
           ? REFUNDED_MESSAGE
           : sync.data
             ? paymentMessage(sync.data.paymentStatus)
@@ -219,6 +231,14 @@ export default function PurchaseDetailPage() {
   const counts = purchase.seatCounts;
   const left = daysLeft(purchase.invitationDeadline, new Date(now), purchase.paidAt);
   const visible = filter === "ALL" ? seats : seats.filter((seat) => seat.status === filter);
+  const withdrawError =
+    withdraw.error instanceof ApiError && withdraw.error.status === 400
+      ? "Ya no se puede anular esta compra: el plazo terminó o cambió su estado. Recargá la página."
+      : withdraw.error instanceof ApiError && withdraw.error.status === 503
+        ? "Mercado Pago no respondió y no pudimos devolver el dinero. Probá de nuevo en unos minutos: no se va a devolver dos veces."
+        : withdraw.error
+          ? "No pudimos anular la compra. Probá de nuevo."
+          : null;
   const updateError =
     updateEmail.error instanceof ApiError && updateEmail.error.status === 409
       ? "Ese email ya tiene un cupo de este curso."
@@ -273,6 +293,25 @@ export default function PurchaseDetailPage() {
           </div>
         </div>
       ) : null}
+      {purchase.status === "REFUNDED" ? (
+        <p
+          role="status"
+          className="bg-danger-light text-danger rounded-2xl px-5 py-4 text-sm font-semibold"
+        >
+          {purchase.refundedAt
+            ? `Compra anulada y reembolsada el ${formatDate(purchase.refundedAt)}.`
+            : "Compra anulada y reembolsada."}{" "}
+          Se anularon las invitaciones pendientes y las personas que habían activado el curso
+          perdieron el acceso; su progreso se conserva.
+        </p>
+      ) : null}
+      {withdraw.isSuccess && purchase.status === "REFUNDED" ? (
+        <p role="status" className="text-success-dark text-sm font-semibold">
+          Listo: anulamos la compra y Mercado Pago está devolviendo el dinero. Les avisamos por
+          email a las personas afectadas.
+        </p>
+      ) : null}
+
       {checkout.error ? (
         <ErrorState>No pudimos abrir Mercado Pago. Probá de nuevo en unos minutos.</ErrorState>
       ) : null}
@@ -290,18 +329,24 @@ export default function PurchaseDetailPage() {
         />
         <StatCard
           label="Aceptaron"
-          value={`${counts.active + counts.accessExpired}/${purchase.seats}`}
-          hint={`${counts.active} con acceso activo`}
+          value={`${acceptedSeats(counts)}/${purchase.seats}`}
+          hint={
+            purchase.status === "REFUNDED"
+              ? `${counts.revoked} con el acceso anulado`
+              : `${counts.active} con acceso activo`
+          }
         />
         <StatCard
           label="Sin aceptar"
           value={counts.invited}
           hint={
-            purchase.status === "PAID" && left !== null
-              ? left === 0
-                ? "El plazo ya cerró"
-                : `Quedan ${left} ${left === 1 ? "día" : "días"}`
-              : "Todavía no se enviaron"
+            purchase.status === "REFUNDED"
+              ? "Invitaciones anuladas"
+              : purchase.status === "PAID" && left !== null
+                ? left === 0
+                  ? "El plazo ya cerró"
+                  : `Quedan ${left} ${left === 1 ? "día" : "días"}`
+                : "Todavía no se enviaron"
           }
         />
         <StatCard
@@ -311,12 +356,21 @@ export default function PurchaseDetailPage() {
         />
       </div>
 
+      {canWithdraw(purchase, new Date(now)) ? (
+        <WithdrawPurchase
+          purchase={purchase}
+          pending={withdraw.isPending}
+          error={withdrawError}
+          onConfirm={(reason) => withdraw.mutate(reason)}
+        />
+      ) : null}
+
       {data.refunds.length > 0 ? (
         <Card className="flex flex-col gap-1">
           <CardTitle>Pagos devueltos</CardTitle>
           <p className="text-text-muted text-sm text-pretty">
-            Estos pagos no se pudieron usar para la compra, así que los devolvimos completos al
-            medio de pago en Mercado Pago. El dinero puede tardar unos días en verse según el medio.
+            Devoluciones de pagos de esta compra a través de Mercado Pago. El dinero puede tardar
+            unos días en verse según el medio de pago.
           </p>
           <ul className="flex flex-col text-sm">
             {data.refunds.map((refund) => (
@@ -331,6 +385,9 @@ export default function PurchaseDetailPage() {
                   <span className="text-text-muted text-[13px]">
                     {REFUND_REASON_LABEL[refund.reason]}
                   </span>
+                  {refund.note ? (
+                    <span className="text-text-muted text-[13px]">Motivo: «{refund.note}»</span>
+                  ) : null}
                 </span>
                 <span className="text-text-muted text-[13px] font-semibold">
                   {refund.status === "REFUNDED" && refund.refundedAt
@@ -356,6 +413,25 @@ export default function PurchaseDetailPage() {
             ],
             ["Duración del acceso", `${purchase.durationDays} días desde que cada persona acepta`],
             ["Señas del curso", String(purchase.signCount)],
+            ...(purchase.status === "REFUNDED"
+              ? [
+                  [
+                    "Anulación",
+                    purchase.refundedAt
+                      ? `Reembolsada el ${formatDate(purchase.refundedAt)}`
+                      : "Reembolsada",
+                  ],
+                ]
+              : purchase.status === "PAID"
+                ? [
+                    [
+                      "Anulación con reembolso",
+                      purchase.refundableUntil && canWithdraw(purchase, new Date(now))
+                        ? `Hasta el ${formatDate(purchase.refundableUntil)}`
+                        : "Ya no disponible",
+                    ],
+                  ]
+                : []),
           ].map(([label, value]) => (
             <div key={label} className="border-fill flex justify-between gap-3 border-b py-2.5">
               <dt className="text-text-muted">{label}</dt>
@@ -432,13 +508,15 @@ export default function PurchaseDetailPage() {
                           {seat.userName ? `${seat.userName} · ` : null}
                           {seat.email}
                         </span>
-                        <span className="text-text-muted text-[13px]">{seatDates(seat)}</span>
+                        <span className="text-text-muted text-[13px]">
+                          {seatDates(seat, purchase.status)}
+                        </span>
                       </>
                     )}
                   </div>
                   {editing === seat.id ? null : (
                     <div className="flex flex-wrap items-center gap-2">
-                      <SeatStatusPill status={seat.status} />
+                      <SeatStatusPill status={seat.status} purchaseStatus={purchase.status} />
                       {seat.canEditEmail ? (
                         <button
                           type="button"

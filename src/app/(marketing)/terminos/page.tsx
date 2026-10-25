@@ -90,6 +90,16 @@ export default function TermsPage() {
             devuelve completo al mismo medio de pago.
           </li>
           <li>
+            La organización puede anular una compra desde su panel dentro de los 10 días corridos
+            desde el pago. Se devuelve el total a través de Mercado Pago, se anulan las invitaciones
+            pendientes y las personas que ya habían activado el curso pierden el acceso, conservando
+            su progreso. Pasado ese plazo la compra no se puede anular desde el panel.
+          </li>
+          <li>
+            Si el pago se devuelve desde Mercado Pago o es desconocido ante el banco o la tarjeta
+            (contracargo), la compra se anula de la misma forma, en cualquier momento.
+          </li>
+          <li>
             La organización es responsable de informar a sus participantes y de tener derecho a
             tratar sus datos.
           </li>

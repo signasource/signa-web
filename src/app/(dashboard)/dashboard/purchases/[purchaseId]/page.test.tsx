@@ -23,6 +23,7 @@ vi.mock("@/lib/api/organizations", () => ({
     cancelPurchase: vi.fn(),
     checkout: vi.fn(),
     syncPayment: vi.fn(),
+    withdrawPurchase: vi.fn(),
   },
 }));
 
@@ -63,7 +64,9 @@ function detail(overrides: Partial<PurchaseDetail["purchase"]> = {}, seats: Seat
       createdAt: "2026-10-20T10:00:00Z",
       paidAt: "2026-10-20T12:00:00Z",
       invitationDeadline: "2026-10-30T12:00:00Z",
+      refundableUntil: null as string | null,
       cancelledAt: null,
+      refundedAt: null as string | null,
       seatCounts: {
         pendingPayment: 0,
         invited: 1,
@@ -91,6 +94,7 @@ function renderPage() {
 describe("PurchaseDetailPage", () => {
   beforeEach(() => {
     vi.mocked(organizationsApi.purchase).mockReset();
+    vi.mocked(organizationsApi.withdrawPurchase).mockReset();
     vi.mocked(organizationsApi.syncPayment).mockReset();
     navigation.search = "";
     navigation.replace.mockReset();
@@ -204,6 +208,7 @@ describe("PurchaseDetailPage", () => {
           status: "REFUNDED" as const,
           createdAt: "2026-10-25T12:00:00Z",
           refundedAt: "2026-10-25T12:00:05Z",
+          note: null,
         },
       ],
     };
@@ -215,11 +220,145 @@ describe("PurchaseDetailPage", () => {
     renderPage();
 
     expect(await screen.findByText("Pagos devueltos")).toBeInTheDocument();
-    expect(screen.getByText("Se pagó después de cancelar la compra")).toBeInTheDocument();
+    expect(screen.getByText("Se pagó después de cancelar o anular la compra")).toBeInTheDocument();
     expect(await screen.findByText(/te devolvimos el pago completo/)).toBeInTheDocument();
     expect(
       screen.queryByText("¡Listo! Recibimos el pago y mandamos las invitaciones por email."),
     ).not.toBeInTheDocument();
+  });
+
+  it("lets the admin cancel within the withdrawal period, spelling out what happens", async () => {
+    const future = new Date(Date.now() + 3 * 86_400_000).toISOString();
+    const paid = detail({ refundableUntil: future }, [
+      seat({ id: "s1", email: "ana@x.com" }),
+      seat({
+        id: "s2",
+        email: "bruno@x.com",
+        status: "ACTIVE",
+        userId: "u2",
+        canEditEmail: false,
+        activatedAt: "2026-10-21T12:00:00Z",
+        accessExpiresAt: "2026-11-20T12:00:00Z",
+        nextReminderAvailableAt: null,
+      }),
+    ]);
+    const refunded = {
+      ...detail(
+        {
+          status: "REFUNDED",
+          refundableUntil: null,
+          refundedAt: "2026-10-25T15:00:00Z",
+          seatCounts: {
+            pendingPayment: 0,
+            invited: 0,
+            invitationExpired: 0,
+            active: 0,
+            accessExpired: 0,
+            revoked: 1,
+          },
+        },
+        [
+          seat({ id: "s1", email: "ana@x.com", status: "CANCELLED", canEditEmail: false }),
+          seat({
+            id: "s2",
+            email: "bruno@x.com",
+            status: "REVOKED",
+            canEditEmail: false,
+            revokedAt: "2026-10-25T15:00:00Z",
+            nextReminderAvailableAt: null,
+          }),
+        ],
+      ),
+      refunds: [
+        {
+          amount: 30000,
+          currency: "ARS",
+          reason: "BUYER_REQUESTED" as const,
+          status: "REFUNDED" as const,
+          createdAt: "2026-10-25T15:00:00Z",
+          refundedAt: "2026-10-25T15:00:01Z",
+          note: "Compramos el curso equivocado",
+        },
+      ],
+    };
+    vi.mocked(organizationsApi.purchase).mockResolvedValueOnce(paid).mockResolvedValue(refunded);
+    vi.mocked(organizationsApi.withdrawPurchase).mockResolvedValue(refunded);
+    renderPage();
+
+    expect(await screen.findByText("Anular la compra")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Anular compra" }));
+    expect(
+      screen.getByText("1 persona pierde el acceso al curso. Su progreso se conserva."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Se anula 1 invitación pendiente: el link deja de funcionar."),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Motivo (opcional)"), {
+      target: { value: "Compramos el curso equivocado" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Sí, anular y reembolsar/ }));
+
+    await waitFor(() =>
+      expect(organizationsApi.withdrawPurchase).toHaveBeenCalledWith(
+        "org1",
+        "p1",
+        "Compramos el curso equivocado",
+      ),
+    );
+    expect(await screen.findByText(/Compra anulada y reembolsada el/)).toBeInTheDocument();
+    expect(screen.getByText(/Listo: anulamos la compra/)).toBeInTheDocument();
+    expect(screen.getByText("Acceso anulado")).toBeInTheDocument();
+    expect(screen.getByText("1 con el acceso anulado")).toBeInTheDocument();
+    expect(screen.getByText("Invitación anulada")).toBeInTheDocument();
+    expect(screen.getByText("Motivo: «Compramos el curso equivocado»")).toBeInTheDocument();
+    expect(screen.queryByText("Anular la compra")).not.toBeInTheDocument();
+  });
+
+  it("explains when Mercado Pago could not give the money back", async () => {
+    const future = new Date(Date.now() + 3 * 86_400_000).toISOString();
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(
+      detail({ refundableUntil: future }, [seat({ id: "s1" })]),
+    );
+    vi.mocked(organizationsApi.withdrawPurchase).mockRejectedValue(new ApiError(503, "down"));
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Anular compra" }));
+    fireEvent.click(screen.getByRole("button", { name: /Sí, anular y reembolsar/ }));
+
+    expect(await screen.findByText(/Mercado Pago no respondió/)).toBeInTheDocument();
+  });
+
+  it("does not offer cancelling once the withdrawal period ended", async () => {
+    const past = new Date(Date.now() - 86_400_000).toISOString();
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(
+      detail({ refundableUntil: past }, [seat({ id: "s1" })]),
+    );
+    renderPage();
+
+    expect(await screen.findByText("Ya no disponible")).toBeInTheDocument();
+    expect(screen.queryByText("Anular la compra")).not.toBeInTheDocument();
+  });
+
+  it("explains a purchase refunded by a chargeback", async () => {
+    vi.mocked(organizationsApi.purchase).mockResolvedValue({
+      ...detail({ status: "REFUNDED", refundedAt: "2026-11-02T10:00:00Z" }, []),
+      refunds: [
+        {
+          amount: 30000,
+          currency: "ARS",
+          reason: "CHARGEBACK" as const,
+          status: "REFUNDED" as const,
+          createdAt: "2026-11-02T10:00:00Z",
+          refundedAt: "2026-11-02T10:00:00Z",
+          note: null,
+        },
+      ],
+    });
+    renderPage();
+
+    expect(await screen.findByText(/Compra anulada y reembolsada el/)).toBeInTheDocument();
+    expect(screen.getByText(/Contracargo/)).toBeInTheDocument();
+    expect(screen.getByText("Invitaciones anuladas")).toBeInTheDocument();
   });
 
   it("changes a pending email", async () => {

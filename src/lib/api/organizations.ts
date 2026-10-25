@@ -118,6 +118,12 @@ export const organizationsApi = {
       method: "POST",
     }),
 
+  withdrawPurchase: (orgId: string, purchaseId: string, reason?: string) =>
+    api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/refund`, {
+      method: "POST",
+      body: { reason: reason?.trim() || null },
+    }),
+
   syncPayment: (orgId: string, purchaseId: string, paymentId: string) =>
     api<PaymentSync>(`/organizations/${orgId}/purchases/${purchaseId}/payments/sync`, {
       method: "POST",

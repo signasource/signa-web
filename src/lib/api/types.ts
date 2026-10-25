@@ -128,7 +128,8 @@ export type ModuleStats = {
   correctPercentage: number;
 };
 
-export type PurchaseStatus = "PENDING_PAYMENT" | "PAID" | "CANCELLED";
+/** `REFUNDED`: paid and then given back (withdrawal, refund in Mercado Pago or chargeback). */
+export type PurchaseStatus = "PENDING_PAYMENT" | "PAID" | "CANCELLED" | "REFUNDED";
 export type SeatStatus =
   | "PENDING_PAYMENT"
   | "INVITED"
@@ -205,7 +206,10 @@ export type Purchase = {
   createdAt: string;
   paidAt: string | null;
   invitationDeadline: string | null;
+  /** Last moment the organization can cancel for a full refund; null once it can't. */
+  refundableUntil: string | null;
   cancelledAt: string | null;
+  refundedAt: string | null;
   seatCounts: SeatCounts;
 };
 
@@ -225,7 +229,13 @@ export type Seat = {
   nextReminderAvailableAt: string | null;
 };
 
-export type RefundReason = "PURCHASE_CANCELLED" | "ALREADY_PAID" | "AMOUNT_MISMATCH";
+export type RefundReason =
+  | "PURCHASE_CANCELLED"
+  | "ALREADY_PAID"
+  | "AMOUNT_MISMATCH"
+  | "BUYER_REQUESTED"
+  | "EXTERNAL_REFUND"
+  | "CHARGEBACK";
 
 /** A Mercado Pago payment that could not pay the purchase and was given back in full. */
 export type PurchaseRefund = {
@@ -235,6 +245,8 @@ export type PurchaseRefund = {
   status: "PENDING" | "REFUNDED";
   createdAt: string;
   refundedAt: string | null;
+  /** The reason the organization gave when it cancelled (withdrawals only). */
+  note: string | null;
 };
 
 export type PurchaseDetail = { purchase: Purchase; seats: Seat[]; refunds: PurchaseRefund[] };

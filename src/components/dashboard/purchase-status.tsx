@@ -1,5 +1,5 @@
 import type { PurchaseStatus, SeatStatus } from "@/lib/api/types";
-import { PURCHASE_STATUS_LABEL, SEAT_STATUS_LABEL } from "@/lib/purchases";
+import { PURCHASE_STATUS_LABEL, seatStatusLabel } from "@/lib/purchases";
 import { cn } from "@/lib/utils";
 
 const PILL = "inline-block rounded-full px-2.5 py-1 text-xs font-extrabold whitespace-nowrap";
@@ -8,6 +8,7 @@ const PURCHASE_TONE: Record<PurchaseStatus, string> = {
   PENDING_PAYMENT: "bg-shop-amber-light text-shop-amber-dark",
   PAID: "bg-success-light text-success-dark",
   CANCELLED: "bg-fill text-text-muted",
+  REFUNDED: "bg-danger-light text-danger",
 };
 
 const SEAT_TONE: Record<SeatStatus, string> = {
@@ -24,6 +25,14 @@ export function PurchaseStatusPill({ status }: { status: PurchaseStatus }) {
   return <span className={cn(PILL, PURCHASE_TONE[status])}>{PURCHASE_STATUS_LABEL[status]}</span>;
 }
 
-export function SeatStatusPill({ status }: { status: SeatStatus }) {
-  return <span className={cn(PILL, SEAT_TONE[status])}>{SEAT_STATUS_LABEL[status]}</span>;
+export function SeatStatusPill({
+  status,
+  purchaseStatus = "PAID",
+}: {
+  status: SeatStatus;
+  purchaseStatus?: PurchaseStatus;
+}) {
+  return (
+    <span className={cn(PILL, SEAT_TONE[status])}>{seatStatusLabel(status, purchaseStatus)}</span>
+  );
 }
