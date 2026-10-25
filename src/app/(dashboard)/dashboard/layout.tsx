@@ -12,7 +12,7 @@ const NAV = [
   { href: "/dashboard", label: "Resumen" },
   { href: "/dashboard/members", label: "Participantes" },
   { href: "/dashboard/modules", label: "Contenidos" },
-  { href: "/dashboard/invitations", label: "Invitaciones" },
+  { href: "/dashboard/purchases", label: "Compras" },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -22,12 +22,24 @@ function isActive(pathname: string, href: string) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { status, organization, logout } = useAuth();
+  const { status, organization, logout, refreshOrganization } = useAuth();
   const withFilters = useWithFilters();
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
   }, [status, router]);
+
+  const pending = status === "authenticated" && organization?.status !== "ACTIVE";
+  useEffect(() => {
+    if (!pending) return;
+    const refresh = () => void refreshOrganization().catch(() => {});
+    const timer = setInterval(refresh, 30_000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [pending, refreshOrganization]);
 
   if (status !== "authenticated" || !organization) {
     return <p className="text-text-muted p-8">Cargando…</p>;
@@ -81,7 +93,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="bg-shop-amber-light text-shop-amber-dark rounded-2xl px-5 py-4 text-sm font-semibold"
           >
             {organization.status === "PENDING"
-              ? "Tu organización está pendiente de aprobación. Apenas SIGNA la active vas a poder invitar a tu equipo y ver su avance."
+              ? "Tu organización está pendiente de validación. Apenas SIGNA confirme que la representás vas a poder comprar cupos e invitar a tu equipo."
               : "Tu organización no está activa. Escribinos para reactivarla."}
           </div>
         ) : null}

@@ -33,7 +33,7 @@ Adding a new third-party SDK, analytics, a new personal-data field, or a new thi
 ## Open decisions (search the pages for `COMPLETAR` / `REVISAR`)
 
 1. **Team names** (both pages). The contact email is set in `src/lib/legal.ts`.
-2. **Backups and retention of purchase records.** Account deletion now erases personal and activity data and anonymizes the `users` row (`signa-api` PR #92); purchase, gem-purchase and gift records are kept without identity. Decide whether to state a retention period for backups and for those records. Email invites sent to people who never registered keep their email in `invite_codes` until a retention rule exists.
+2. **Backups and retention of purchase records.** Account deletion now erases personal and activity data and anonymizes the `users` row (`signa-api` PR #92); purchase, gem-purchase and gift records are kept without identity. Decide whether to state a retention period for backups and for those records. Organizations now load their employees' emails when they buy seats (`purchase_seats`), before those people have an account or accepted anything; those emails stay with the purchase for traceability. The policy must say so and set a retention rule, and what happens to the progress the organization sees when the employment ends (business rules §12, still undefined).
 3. **Roles with organizations** (controller vs processor) and whether a data-processing agreement is signed with each organization.
 4. **AAIP database registration** — ask the faculty/advisor whether it applies.
 5. **Minimum age** and parental authorization.

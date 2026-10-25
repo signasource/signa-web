@@ -9,18 +9,29 @@ async function post(path: string, body?: unknown): Promise<Response> {
   });
 }
 
+async function startSession(path: string, body: unknown): Promise<void> {
+  const res = await post(path, body);
+  const data = (await res.json().catch(() => ({}))) as {
+    access_token?: string;
+    message?: string;
+  };
+  if (!res.ok || !data.access_token) {
+    throw new ApiError(res.status, data.message ?? `Request failed (${res.status})`);
+  }
+  tokenStore.set(data.access_token);
+}
+
 export const sessionApi = {
-  async login(identifier: string, password: string): Promise<void> {
-    const res = await post("/api/session/login", { identifier, password });
-    const data = (await res.json().catch(() => ({}))) as {
-      access_token?: string;
-      message?: string;
-    };
-    if (!res.ok || !data.access_token) {
-      throw new ApiError(res.status, data.message ?? `Request failed (${res.status})`);
-    }
-    tokenStore.set(data.access_token);
-  },
+  login: (identifier: string, password: string): Promise<void> =>
+    startSession("/api/session/login", { identifier, password }),
+
+  register: (account: {
+    email: string;
+    username: string;
+    password: string;
+    name: string;
+    lastName: string;
+  }): Promise<void> => startSession("/api/session/register", account),
 
   async refresh(): Promise<boolean> {
     try {
