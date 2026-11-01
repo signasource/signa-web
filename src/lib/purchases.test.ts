@@ -152,20 +152,12 @@ describe("nextVolumeDiscount", () => {
 });
 
 describe("paymentReturn", () => {
-  it("reads our result and Mercado Pago's payment id", () => {
+  it("reads our result and ignores Mercado Pago's own params", () => {
     expect(
-      paymentReturn(new URLSearchParams("pago=aprobado&payment_id=123&status=approved")),
-    ).toEqual({ result: "aprobado", paymentId: "123" });
-    expect(paymentReturn(new URLSearchParams("pago=pendiente&collection_id=55"))).toEqual({
-      result: "pendiente",
-      paymentId: "55",
-    });
-  });
-
-  it("ignores a missing or non-numeric payment id", () => {
+      paymentReturn(new URLSearchParams("pago=aprobado&order_id=ORD1&status=approved")),
+    ).toEqual({ result: "aprobado" });
     expect(paymentReturn(new URLSearchParams("pago=rechazado&payment_id=null"))).toEqual({
       result: "rechazado",
-      paymentId: null,
     });
   });
 
@@ -182,6 +174,14 @@ describe("paymentMessage", () => {
     expect(paymentMessage("cancelled").tone).toBe("danger");
     expect(paymentMessage("in_process").tone).toBe("warning");
     expect(paymentMessage("pending").tone).toBe("warning");
+  });
+
+  it("reads the order statuses Mercado Pago uses with Orders", () => {
+    expect(paymentMessage("failed").tone).toBe("danger");
+    expect(paymentMessage("canceled").tone).toBe("danger");
+    expect(paymentMessage("expired").tone).toBe("danger");
+    expect(paymentMessage("action_required").tone).toBe("warning");
+    expect(paymentMessage("processing").tone).toBe("warning");
   });
 });
 

@@ -100,20 +100,19 @@ export function nextVolumeDiscount(
 export type CheckoutResult = "aprobado" | "rechazado" | "pendiente";
 
 /**
- * Mercado Pago sends the admin back to `?pago=<result>` (our back URL) plus its own params;
- * `payment_id` is the string "null" when they left without paying.
+ * Mercado Pago sends the admin back to `?pago=<result>` (our back URL). Its own params are
+ * ignored: the API re-reads the order it stored for the purchase.
  */
-export function paymentReturn(
-  params: URLSearchParams,
-): { result: CheckoutResult; paymentId: string | null } | null {
+export function paymentReturn(params: URLSearchParams): { result: CheckoutResult } | null {
   const result = params.get("pago");
   if (result !== "aprobado" && result !== "rechazado" && result !== "pendiente") return null;
-  const raw = params.get("payment_id") ?? params.get("collection_id");
-  const paymentId = raw && /^\d+$/.test(raw) ? raw : null;
-  return { result, paymentId };
+  return { result };
 }
 
-/** What to tell the admin about a payment, by Mercado Pago's status (or our back URL result). */
+/**
+ * What to tell the admin about a payment, by Mercado Pago's order status (or our back URL result).
+ * Orders say `failed` / `canceled` / `expired` where Payments said `rejected` / `cancelled`.
+ */
 export function paymentMessage(status: string): {
   tone: "success" | "warning" | "danger";
   text: string;
@@ -127,6 +126,9 @@ export function paymentMessage(status: string): {
       };
     case "rejected":
     case "cancelled":
+    case "canceled":
+    case "failed":
+    case "expired":
     case "rechazado":
       return {
         tone: "danger",

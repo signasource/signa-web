@@ -124,10 +124,9 @@ export const organizationsApi = {
       body: { reason: reason?.trim() || null },
     }),
 
-  syncPayment: (orgId: string, purchaseId: string, paymentId: string) =>
+  syncPayment: (orgId: string, purchaseId: string) =>
     api<PaymentSync>(`/organizations/${orgId}/purchases/${purchaseId}/payments/sync`, {
       method: "POST",
-      body: { paymentId },
     }),
 
   updateSeatEmail: (orgId: string, purchaseId: string, seatId: string, email: string) =>

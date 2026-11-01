@@ -254,7 +254,7 @@ export type PurchaseDetail = { purchase: Purchase; seats: Seat[]; refunds: Purch
 /** Mercado Pago Checkout Pro URL to send the admin to. */
 export type PurchaseCheckout = { checkoutUrl: string };
 
-/** Mercado Pago's `status` of the payment (`approved`, `rejected`, `in_process`…) and the purchase. */
+/** Mercado Pago order status of the purchase's last checkout (`approved`, `failed`, `canceled`, `action_required`…) and the purchase. */
 export type PaymentSync = { paymentStatus: string; purchase: PurchaseDetail };
 
 export type InvitationPreview = {
