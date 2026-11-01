@@ -128,16 +128,151 @@ export type ModuleStats = {
   correctPercentage: number;
 };
 
-export type InviteCode = {
+/** `REFUNDED`: paid and then given back (withdrawal, refund in Mercado Pago or chargeback). */
+export type PurchaseStatus = "PENDING_PAYMENT" | "PAID" | "CANCELLED" | "REFUNDED";
+export type SeatStatus =
+  | "PENDING_PAYMENT"
+  | "INVITED"
+  | "INVITATION_EXPIRED"
+  | "ACTIVE"
+  | "ACCESS_EXPIRED"
+  | "REVOKED"
+  | "CANCELLED";
+
+export type CatalogCourse = {
   id: string;
   code: string;
-  organizationId: string;
-  email: string | null;
-  memberRole: MemberRole;
-  expiresAt: string | null;
-  maxUses: number | null;
-  useCount: number;
-  active: boolean;
+  name: string;
+  description: string | null;
+  coverUrl: string | null;
+  signCount: number;
+  /** Modules in learning order with the words of the signs each one introduces. */
+  modules: CatalogModule[];
+};
+
+export type CatalogModule = { title: string; signs: string[] };
+
+/** From `minSeats` seats on, the price per seat gets `percent` off. */
+export type VolumeDiscount = { minSeats: number; percent: number };
+
+export type PurchaseCatalog = {
+  courses: CatalogCourse[];
+  currency: string;
+  volumeDiscounts: VolumeDiscount[];
+  minDays: number;
+  maxDays: number;
+  invitationDays: number;
+  maxSeats: number;
+};
+
+export type PurchaseQuote = {
+  courseId: string;
+  courseName: string;
+  signCount: number;
+  seats: number;
+  durationDays: number;
+  listPricePerSeat: number;
+  discountPercent: number;
+  pricePerSeat: number;
+  /** `listPricePerSeat × seats`. */
+  subtotal: number;
+  discountAmount: number;
+  totalAmount: number;
+  currency: string;
+};
+
+export type SeatCounts = {
+  pendingPayment: number;
+  invited: number;
+  invitationExpired: number;
+  active: number;
+  accessExpired: number;
+  revoked: number;
+};
+
+export type Purchase = {
+  id: string;
+  courseId: string;
+  courseName: string;
+  seats: number;
+  durationDays: number;
+  signCount: number;
+  listPricePerSeat: number;
+  discountPercent: number;
+  pricePerSeat: number;
+  totalAmount: number;
+  currency: string;
+  status: PurchaseStatus;
+  createdAt: string;
+  paidAt: string | null;
+  invitationDeadline: string | null;
+  /** Last moment the organization can cancel for a full refund; null once it can't. */
+  refundableUntil: string | null;
+  cancelledAt: string | null;
+  refundedAt: string | null;
+  seatCounts: SeatCounts;
+};
+
+export type Seat = {
+  id: string;
+  email: string;
+  status: SeatStatus;
+  invitedAt: string | null;
+  lastReminderAt: string | null;
+  autoReminderSentAt: string | null;
+  activatedAt: string | null;
+  accessExpiresAt: string | null;
+  revokedAt: string | null;
+  userId: string | null;
+  userName: string | null;
+  canEditEmail: boolean;
+  nextReminderAvailableAt: string | null;
+};
+
+export type RefundReason =
+  | "PURCHASE_CANCELLED"
+  | "ALREADY_PAID"
+  | "AMOUNT_MISMATCH"
+  | "BUYER_REQUESTED"
+  | "EXTERNAL_REFUND"
+  | "CHARGEBACK";
+
+/** A Mercado Pago payment that could not pay the purchase and was given back in full. */
+export type PurchaseRefund = {
+  amount: number;
+  currency: string;
+  reason: RefundReason;
+  status: "PENDING" | "REFUNDED";
+  createdAt: string;
+  refundedAt: string | null;
+  /** The reason the organization gave when it cancelled (withdrawals only). */
+  note: string | null;
+};
+
+export type PurchaseDetail = { purchase: Purchase; seats: Seat[]; refunds: PurchaseRefund[] };
+
+/** Mercado Pago Checkout Pro URL to send the admin to. */
+export type PurchaseCheckout = { checkoutUrl: string };
+
+/** Mercado Pago order status of the purchase's last checkout (`approved`, `failed`, `canceled`, `action_required`…) and the purchase. */
+export type PaymentSync = { paymentStatus: string; purchase: PurchaseDetail };
+
+export type InvitationPreview = {
+  organizationName: string;
+  courseName: string;
+  email: string;
+  status: SeatStatus;
+  invitationDeadline: string | null;
+  durationDays: number;
+  accountExists: boolean;
+};
+
+export type AcceptedInvitation = {
+  organizationName: string;
+  courseId: string;
+  courseName: string;
+  activatedAt: string;
+  accessExpiresAt: string;
 };
 
 export type Page<T> = {
@@ -146,4 +281,23 @@ export type Page<T> = {
   totalPages: number;
   number: number;
   size: number;
+};
+
+export type ActivityFigures = {
+  /** Distinct people with an attempt; for a whole period it is not the sum of the days. */
+  activeParticipants: number;
+  exerciseAttempts: number;
+  correctAnswers: number;
+  correctPercentage: number;
+  lessonsCompleted: number;
+  learningMinutes: number;
+};
+
+export type DailyActivity = { date: string; figures: ActivityFigures };
+
+export type OrganizationActivity = {
+  from: string;
+  to: string;
+  totals: ActivityFigures;
+  days: DailyActivity[];
 };

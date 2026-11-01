@@ -5,14 +5,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/features/auth/auth-context";
-import { useWithCourse } from "@/features/dashboard/use-course-filter";
+import { useWithFilters } from "@/features/dashboard/use-course-filter";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/dashboard", label: "Resumen" },
   { href: "/dashboard/members", label: "Participantes" },
   { href: "/dashboard/modules", label: "Contenidos" },
-  { href: "/dashboard/invitations", label: "Invitaciones" },
+  { href: "/dashboard/purchases", label: "Compras" },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -22,12 +22,24 @@ function isActive(pathname: string, href: string) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { status, organization, logout } = useAuth();
-  const withCourse = useWithCourse();
+  const { status, organization, logout, refreshOrganization } = useAuth();
+  const withFilters = useWithFilters();
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
   }, [status, router]);
+
+  const pending = status === "authenticated" && organization?.status !== "ACTIVE";
+  useEffect(() => {
+    if (!pending) return;
+    const refresh = () => void refreshOrganization().catch(() => {});
+    const timer = setInterval(refresh, 30_000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [pending, refreshOrganization]);
 
   if (status !== "authenticated" || !organization) {
     return <p className="text-text-muted p-8">Cargando…</p>;
@@ -37,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen flex-col">
       <header className="border-border bg-surface flex flex-wrap items-center justify-between gap-6 border-b px-6 py-4">
         <div className="flex flex-wrap items-center gap-7">
-          <Link href={withCourse("/dashboard")} className="flex items-center gap-2.5">
+          <Link href={withFilters("/dashboard")} className="flex items-center gap-2.5">
             <Image
               src="/images/signa-logo.png"
               alt="SIGNA"
@@ -55,7 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               return (
                 <Link
                   key={item.href}
-                  href={withCourse(item.href)}
+                  href={withFilters(item.href)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "rounded-full px-3.5 py-2 text-sm font-bold transition-all duration-200",
@@ -81,7 +93,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className="bg-shop-amber-light text-shop-amber-dark rounded-2xl px-5 py-4 text-sm font-semibold"
           >
             {organization.status === "PENDING"
-              ? "Tu organización está pendiente de aprobación. Apenas SIGNA la active vas a poder invitar a tu equipo y ver su avance."
+              ? "Tu organización está pendiente de validación. Apenas SIGNA confirme que la representás vas a poder comprar cupos e invitar a tu equipo."
               : "Tu organización no está activa. Escribinos para reactivarla."}
           </div>
         ) : null}

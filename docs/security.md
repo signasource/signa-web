@@ -26,6 +26,7 @@ Why not nonces everywhere: nonces force dynamic rendering, losing static generat
 - **Third-party script/origin** (analytics, fonts, embeds) → add the origin to the directive in `buildCsp()`, pass the nonce via `headers().get("x-nonce")`, and document it here. Prefer self-hosting.
 - Never use `dangerouslySetInnerHTML` with untrusted content; never add `'unsafe-eval'` outside dev.
 - `NEXT_PUBLIC_API_URL` feeds `connect-src`; changing the API origin changes the CSP (rebuild).
+- **Mercado Pago Checkout Pro** needs no CSP change: the panel only navigates to the `checkoutUrl` the API returns (`window.location.assign`), loads no Mercado Pago script, and the payment is confirmed server-side by signa-api. Moving to Checkout Bricks (embedded) would need its origins in `script-src`/`frame-src`/`connect-src`.
 - **Cloudflare R2 (`pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev`)** is in `connect-src` so the landing page can fetch `.glb` models for the `<model-viewer>` 3D viewer. Applies to both CSP tiers.
 - **`blob:` in `connect-src`** — Three.js (used by model-viewer) calls `fetch()` on blob URLs it creates when processing GLB textures. Without this, textures fail to load silently.
 - **`worker-src 'self' blob:`** — model-viewer creates Web Workers from blob URLs for model decoding. Without this, workers fail silently with `TypeError: Failed to fetch`.
@@ -90,3 +91,5 @@ HSTS (2 years, `includeSubDomains`, `preload`), `X-Content-Type-Options: nosniff
 ## Verified
 
 Production build served with `next start`: CSP present on all routes; no source maps published; model-viewer passes SRI; no CSP violations or Permissions-Policy errors in the console with the camera demo and the 3D viewer running; `/login` hydrates and validates under the strict policy; external `img` and `fetch` are blocked; an inline event-handler payload is blocked (`script-src-attr`). Dev mode (`next dev`, `'unsafe-eval'`) and hosting-level behavior (Vercel) not yet verified — see [status.md](./status.md).
+
+**Session route handlers.** `/api/session/register` joins login/refresh/logout: same same-origin check and cookie handling ([api/session.md](./api/session.md)). `/invitacion` is a dynamic page under `(auth)` and gets the strict nonce CSP; the invitation token travels in the query string and is only sent to signa-api.

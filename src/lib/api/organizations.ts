@@ -1,17 +1,29 @@
 import { api } from "@/lib/api/client";
+import type { Period } from "@/lib/date-range";
 import type {
-  InviteCode,
   MemberActivityStatus,
   MemberProgress,
   MemberSort,
   MemberStatus,
   ModuleStats,
   MyOrganization,
+  OrganizationActivity,
   OrganizationMemberSummary,
   OrganizationOverview,
   Page,
+  Purchase,
+  PaymentSync,
+  PurchaseCatalog,
+  PurchaseCheckout,
+  PurchaseDetail,
+  PurchaseQuote,
   RedeemInviteCodeResponse,
 } from "@/lib/api/types";
+
+/** Query params for a period; none for the whole history. */
+function periodQuery(period: Period | undefined): { from?: string; to?: string } {
+  return period ? { from: period.from, to: period.to } : {};
+}
 
 export const organizationsApi = {
   me: () => api<MyOrganization>("/organizations/me"),
@@ -21,7 +33,6 @@ export const organizationsApi = {
     cuit: string;
     contactEmail: string;
     contactPhone?: string;
-    memberLimit: number;
     adminName: string;
     adminPassword: string;
   }) =>
@@ -30,19 +41,21 @@ export const organizationsApi = {
       { method: "POST", body: data, anonymous: true },
     ),
 
-  getPricing: () =>
-    api<{ pricePerPerson: number; currency: string }>("/organizations/pricing", {
-      anonymous: true,
-    }),
-
   redeemInviteCode: (code: string) =>
     api<RedeemInviteCodeResponse>("/organizations/invite-codes/redeem", {
       method: "POST",
       body: { code },
     }),
 
-  overview: (orgId: string, courseId?: string) =>
-    api<OrganizationOverview>(`/organizations/${orgId}/overview`, { query: { courseId } }),
+  overview: (orgId: string, params: { courseId?: string; period?: Period }) =>
+    api<OrganizationOverview>(`/organizations/${orgId}/overview`, {
+      query: { courseId: params.courseId, ...periodQuery(params.period) },
+    }),
+
+  activity: (orgId: string, params: { courseId?: string; period?: Period }) =>
+    api<OrganizationActivity>(`/organizations/${orgId}/activity`, {
+      query: { courseId: params.courseId, ...periodQuery(params.period) },
+    }),
 
   members: (
     orgId: string,
@@ -51,34 +64,80 @@ export const organizationsApi = {
       status?: MemberStatus;
       activity?: MemberActivityStatus;
       courseId?: string;
+      period?: Period;
       sort?: { by: MemberSort; direction: "asc" | "desc" };
       page?: number;
       size?: number;
     },
   ) => {
-    const { sort, ...rest } = params;
+    const { sort, period, ...rest } = params;
     return api<Page<OrganizationMemberSummary>>(`/organizations/${orgId}/members`, {
-      query: { ...rest, sort: sort ? `${sort.by},${sort.direction}` : undefined },
+      query: {
+        ...rest,
+        ...periodQuery(period),
+        sort: sort ? `${sort.by},${sort.direction}` : undefined,
+      },
     });
   },
 
-  member: (orgId: string, userId: string) =>
-    api<MemberProgress>(`/organizations/${orgId}/members/${userId}`),
+  member: (orgId: string, userId: string, period?: Period) =>
+    api<MemberProgress>(`/organizations/${orgId}/members/${userId}`, {
+      query: periodQuery(period),
+    }),
 
   removeMember: (orgId: string, userId: string) =>
     api(`/organizations/${orgId}/members/${userId}`, { method: "DELETE" }),
 
-  modules: (orgId: string, courseId?: string) =>
-    api<ModuleStats[]>(`/organizations/${orgId}/modules`, { query: { courseId } }),
+  modules: (orgId: string, params: { courseId?: string; period?: Period }) =>
+    api<ModuleStats[]>(`/organizations/${orgId}/modules`, {
+      query: { courseId: params.courseId, ...periodQuery(params.period) },
+    }),
 
-  inviteCodes: (orgId: string) => api<InviteCode[]>(`/organizations/${orgId}/invite-codes`),
+  catalog: () => api<PurchaseCatalog>("/organizations/catalog", { anonymous: true }),
 
-  createInviteCode: (orgId: string) =>
-    api<InviteCode>(`/organizations/${orgId}/invite-codes`, { method: "POST", body: {} }),
+  quote: (params: { courseId: string; seats: number; durationDays: number }) =>
+    api<PurchaseQuote>("/organizations/catalog/quote", { query: params, anonymous: true }),
 
-  deactivateInviteCode: (orgId: string, inviteCodeId: string) =>
-    api(`/organizations/${orgId}/invite-codes/${inviteCodeId}`, { method: "DELETE" }),
+  purchases: (orgId: string) => api<Purchase[]>(`/organizations/${orgId}/purchases`),
 
-  inviteByEmail: (orgId: string, email: string) =>
-    api<InviteCode>(`/organizations/${orgId}/invitations`, { method: "POST", body: { email } }),
+  purchase: (orgId: string, purchaseId: string) =>
+    api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}`),
+
+  createPurchase: (
+    orgId: string,
+    data: { courseId: string; durationDays: number; emails: string[] },
+  ) => api<PurchaseDetail>(`/organizations/${orgId}/purchases`, { method: "POST", body: data }),
+
+  cancelPurchase: (orgId: string, purchaseId: string) =>
+    api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/cancel`, {
+      method: "POST",
+    }),
+
+  checkout: (orgId: string, purchaseId: string) =>
+    api<PurchaseCheckout>(`/organizations/${orgId}/purchases/${purchaseId}/checkout`, {
+      method: "POST",
+    }),
+
+  withdrawPurchase: (orgId: string, purchaseId: string, reason?: string) =>
+    api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/refund`, {
+      method: "POST",
+      body: { reason: reason?.trim() || null },
+    }),
+
+  syncPayment: (orgId: string, purchaseId: string) =>
+    api<PaymentSync>(`/organizations/${orgId}/purchases/${purchaseId}/payments/sync`, {
+      method: "POST",
+    }),
+
+  updateSeatEmail: (orgId: string, purchaseId: string, seatId: string, email: string) =>
+    api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/seats/${seatId}`, {
+      method: "PATCH",
+      body: { email },
+    }),
+
+  remindSeat: (orgId: string, purchaseId: string, seatId: string) =>
+    api<PurchaseDetail>(
+      `/organizations/${orgId}/purchases/${purchaseId}/seats/${seatId}/reminders`,
+      { method: "POST" },
+    ),
 };

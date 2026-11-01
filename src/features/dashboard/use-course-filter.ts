@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { useAuth } from "@/features/auth/auth-context";
+import { FROM_PARAM, TO_PARAM } from "@/features/dashboard/use-period-filter";
 import type { CourseSummary } from "@/lib/api/types";
 
 export const COURSE_PARAM = "curso";
@@ -39,12 +40,16 @@ export function useCourseFilter(): {
   return { courses, course, courseId: course?.id, setCourseId };
 }
 
-/** Appends the current course filter to a dashboard link. */
-export function useWithCourse(): (href: string) => string {
+const FILTER_PARAMS = [COURSE_PARAM, FROM_PARAM, TO_PARAM];
+
+/** Appends the current course and period filters to a dashboard link. */
+export function useWithFilters(): (href: string) => string {
   const params = useSearchParams();
-  const course = params.get(COURSE_PARAM);
-  return useCallback(
-    (href: string) => (course ? `${href}?${COURSE_PARAM}=${encodeURIComponent(course)}` : href),
-    [course],
-  );
+  const kept = new URLSearchParams();
+  for (const key of FILTER_PARAMS) {
+    const value = params.get(key);
+    if (value) kept.set(key, value);
+  }
+  const search = kept.toString();
+  return useCallback((href: string) => (search ? `${href}?${search}` : href), [search]);
 }

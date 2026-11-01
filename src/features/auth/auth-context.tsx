@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { setOnSessionExpired } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
@@ -14,6 +15,7 @@ type AuthContextValue = {
   organization: MyOrganization | null;
   login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshOrganization: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -25,6 +27,7 @@ async function fetchAdminOrganization(): Promise<MyOrganization> {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const inBackOffice = usePathname()?.startsWith("/admin") ?? false;
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [organization, setOrganization] = useState<MyOrganization | null>(null);
 
@@ -40,13 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (inBackOffice) return;
     setOnSessionExpired(signOut);
     const restore = tokenStore.hasSession()
       ? fetchAdminOrganization().then(signIn)
       : Promise.reject(new Error("no session"));
     restore.catch(signOut);
     return () => setOnSessionExpired(null);
-  }, [signIn, signOut]);
+  }, [inBackOffice, signIn, signOut]);
 
   const login = useCallback(
     async (identifier: string, password: string) => {
@@ -61,9 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [signIn, signOut],
   );
 
+  const refreshOrganization = useCallback(async () => {
+    setOrganization(await fetchAdminOrganization());
+  }, []);
+
   const value = useMemo(
-    () => ({ status, organization, login, logout: signOut }),
-    [status, organization, login, signOut],
+    () => ({ status, organization, login, logout: signOut, refreshOrganization }),
+    [status, organization, login, signOut, refreshOrganization],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,5 +1,5 @@
 export const legal = {
-  lastUpdated: "13 de octubre de 2026",
+  lastUpdated: "25 de octubre de 2026",
   contactEmail: "signautn@gmail.com",
   institution: "Universidad Tecnológica Nacional, Facultad Regional Córdoba (UTN FRC)",
   project: "Proyecto Final de la carrera Ingeniería en Sistemas de Información",

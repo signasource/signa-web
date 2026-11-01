@@ -3,6 +3,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Fragment } from "react";
 import { CourseSelect } from "@/components/dashboard/course-select";
+import { PeriodFilter } from "@/components/dashboard/period-select";
 import {
   EmptyState,
   ErrorState,
@@ -12,6 +13,7 @@ import {
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
 import { useCourseFilter } from "@/features/dashboard/use-course-filter";
+import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
 
 const NUMBER = new Intl.NumberFormat("es-AR");
@@ -21,16 +23,18 @@ export default function ModulesPage() {
   const orgId = organization?.id;
   const { courseId, courses } = useCourseFilter();
   const groupByCourse = !courseId && courses.length > 1;
+  const { period } = usePeriodFilter();
+  const filters = { courseId, period };
 
   const overview = useQuery({
-    queryKey: ["organization", orgId, "overview", { courseId }],
-    queryFn: () => organizationsApi.overview(orgId!, courseId),
+    queryKey: ["organization", orgId, "overview", filters],
+    queryFn: () => organizationsApi.overview(orgId!, filters),
     enabled: Boolean(orgId),
     placeholderData: keepPreviousData,
   });
   const { data, isPending, error } = useQuery({
-    queryKey: ["organization", orgId, "modules", { courseId }],
-    queryFn: () => organizationsApi.modules(orgId!, courseId),
+    queryKey: ["organization", orgId, "modules", filters],
+    queryFn: () => organizationsApi.modules(orgId!, filters),
     enabled: Boolean(orgId),
     placeholderData: keepPreviousData,
   });
@@ -42,7 +46,10 @@ export default function ModulesPage() {
         title="Contenidos contratados"
         subtitle={`Todas las personas activas de ${organization?.name} acceden a estos módulos desde la app. Cada una avanza a su ritmo.`}
       >
-        <CourseSelect />
+        <div className="flex flex-wrap items-center gap-2">
+          <CourseSelect />
+          <PeriodFilter />
+        </div>
       </PageHeading>
 
       {isPending ? <LoadingState>Cargando contenidos…</LoadingState> : null}
