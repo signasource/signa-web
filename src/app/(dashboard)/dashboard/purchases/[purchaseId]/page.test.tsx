@@ -160,7 +160,7 @@ describe("PurchaseDetailPage", () => {
   });
 
   it("syncs the payment when coming back from Mercado Pago", async () => {
-    navigation.search = "pago=aprobado&payment_id=987&status=approved";
+    navigation.search = "pago=aprobado&order_id=ORD1&status=approved";
     const paid = detail({}, [seat({ id: "s1" })]);
     vi.mocked(organizationsApi.purchase).mockResolvedValueOnce(
       detail({ status: "PENDING_PAYMENT", paidAt: null, invitationDeadline: null }, [
@@ -177,27 +177,30 @@ describe("PurchaseDetailPage", () => {
     expect(
       await screen.findByText("¡Listo! Recibimos el pago y mandamos las invitaciones por email."),
     ).toBeInTheDocument();
-    expect(organizationsApi.syncPayment).toHaveBeenCalledWith("org1", "p1", "987");
+    expect(organizationsApi.syncPayment).toHaveBeenCalledWith("org1", "p1");
     expect(navigation.replace).toHaveBeenCalledWith("/dashboard/purchases/p1", { scroll: false });
     expect(screen.queryByText("Cancelar compra")).not.toBeInTheDocument();
   });
 
   it("tells the admin when Mercado Pago did not approve the payment", async () => {
     navigation.search = "pago=rechazado&payment_id=null";
-    vi.mocked(organizationsApi.purchase).mockResolvedValue(
-      detail({ status: "PENDING_PAYMENT", paidAt: null, invitationDeadline: null }, [
-        seat({ status: "PENDING_PAYMENT", invitedAt: null, nextReminderAvailableAt: null }),
-      ]),
-    );
+    const unpaid = detail({ status: "PENDING_PAYMENT", paidAt: null, invitationDeadline: null }, [
+      seat({ status: "PENDING_PAYMENT", invitedAt: null, nextReminderAvailableAt: null }),
+    ]);
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(unpaid);
+    vi.mocked(organizationsApi.syncPayment).mockResolvedValue({
+      paymentStatus: "failed",
+      purchase: unpaid,
+    });
     renderPage();
 
     expect(await screen.findByText(/Mercado Pago no aprobó el pago/)).toBeInTheDocument();
-    expect(organizationsApi.syncPayment).not.toHaveBeenCalled();
+    await waitFor(() => expect(organizationsApi.syncPayment).toHaveBeenCalledWith("org1", "p1"));
     expect(screen.getByText("Cancelar compra")).toBeInTheDocument();
   });
 
   it("shows the payments given back for a cancelled purchase", async () => {
-    navigation.search = "pago=aprobado&payment_id=987";
+    navigation.search = "pago=aprobado";
     const cancelled = {
       ...detail({ status: "CANCELLED", paidAt: null, invitationDeadline: null }, []),
       refunds: [

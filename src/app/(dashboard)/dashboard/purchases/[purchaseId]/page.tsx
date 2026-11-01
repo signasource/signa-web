@@ -174,7 +174,7 @@ export default function PurchaseDetailPage() {
   });
 
   const sync = useMutation({
-    mutationFn: (paymentId: string) => organizationsApi.syncPayment(orgId!, purchaseId, paymentId),
+    mutationFn: () => organizationsApi.syncPayment(orgId!, purchaseId),
     onSuccess: async (result) => {
       await store(result.purchase);
     },
@@ -189,7 +189,7 @@ export default function PurchaseDetailPage() {
     if (!orgId || !returned || handledReturn.current) return;
     handledReturn.current = true;
     router.replace(`/dashboard/purchases/${purchaseId}`, { scroll: false });
-    if (returned.paymentId) sync.mutate(returned.paymentId);
+    sync.mutate();
   }, [orgId, returned, router, purchaseId, sync]);
 
   const cancel = useMutation({
