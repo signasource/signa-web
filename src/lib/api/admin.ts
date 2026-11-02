@@ -50,23 +50,28 @@ export type ReportReason =
   | "TECHNICAL_PROBLEM"
   | "OTHER";
 
-export type AdminSignReportGroup = {
+export type AdminSignReport = {
+  id: string;
   signId: string;
   signMeaning: string;
   signLanguage: string;
   handedness: string;
-  reportCount: number;
-  topReason: ReportReason;
+  username: string;
+  reason: ReportReason;
+  description: string | null;
   status: ReportStatus;
-  lastReportAt: string | null;
-  reports: {
-    id: string;
-    username: string;
-    reason: ReportReason;
-    description: string | null;
-    status: ReportStatus;
-    createdAt: string;
-  }[];
+  adminNote: string | null;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+};
+
+export type SignReportFilters = {
+  status?: ReportStatus;
+  reason?: ReportReason;
+  signQuery?: string;
+  from?: string;
+  to?: string;
 };
 
 export type UserRole = "USER" | "ADMIN" | "ORG_ADMIN";
@@ -161,13 +166,13 @@ export const adminApi = {
       body: { paymentReference: paymentReference || undefined },
     }),
 
-  signReports: (status?: ReportStatus) =>
-    api<AdminSignReportGroup[]>("/admin/sign-reports", {
-      query: status ? { status } : undefined,
+  signReports: (filters?: SignReportFilters) =>
+    api<AdminSignReport[]>("/admin/sign-reports", {
+      query: filters as Record<string, string | number | boolean | undefined>,
     }),
 
-  updateSignReportGroup: (signId: string, status: ReportStatus, adminNote?: string) =>
-    api<AdminSignReportGroup>(`/admin/sign-reports/signs/${signId}`, {
+  updateSignReport: (reportId: string, status: ReportStatus, adminNote?: string) =>
+    api<AdminSignReport>(`/admin/sign-reports/${reportId}`, {
       method: "PATCH",
       body: { status, adminNote },
     }),

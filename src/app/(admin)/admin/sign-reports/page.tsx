@@ -4,9 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   adminApi,
-  type AdminSignReportGroup,
+  type AdminSignReport,
   type ReportReason,
   type ReportStatus,
+  type SignReportFilters,
 } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 
@@ -34,44 +35,47 @@ const REASON_LABELS: Record<ReportReason, string> = {
   OTHER: "Otro",
 };
 
+const REASON_OPTIONS = Object.keys(REASON_LABELS) as ReportReason[];
+
 const TABS: { label: string; value: ReportStatus | "ALL" }[] = [
   { label: "Pendientes", value: "PENDING" },
   { label: "En revisión", value: "REVIEWED" },
   { label: "Resueltos", value: "RESOLVED" },
   { label: "Rechazados", value: "REJECTED" },
+  { label: "Todos", value: "ALL" },
 ];
 
-function relativeDate(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const days = Math.floor(diff / 86_400_000);
-  if (days === 0) return "Hoy";
-  if (days === 1) return "Ayer";
-  return `Hace ${days} días`;
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
-function DetailPanel({ group, onClose }: { group: AdminSignReportGroup; onClose: () => void }) {
+function DetailPanel({ report, onClose }: { report: AdminSignReport; onClose: () => void }) {
   const qc = useQueryClient();
-  const [adminNote, setAdminNote] = useState("");
+  const [adminNote, setAdminNote] = useState(report.adminNote ?? "");
 
   const mutate = useMutation({
     mutationFn: (status: ReportStatus) =>
-      adminApi.updateSignReportGroup(group.signId, status, adminNote || undefined),
+      adminApi.updateSignReport(report.id, status, adminNote.trim() || undefined),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "sign-reports"] });
-      onClose();
     },
   });
+
+  const resolved = report.status === "RESOLVED" || report.status === "REJECTED";
 
   return (
     <div className="border-border bg-surface flex w-96 shrink-0 flex-col overflow-hidden rounded-2xl border">
       <div className="flex items-start justify-between border-b border-inherit px-5 py-4">
         <div>
           <h2 className="font-display text-text text-lg font-bold tracking-wide uppercase">
-            {group.signMeaning}
+            {report.signMeaning}
           </h2>
           <p className="text-text-muted mt-0.5 text-xs">
-            {group.reportCount} {group.reportCount === 1 ? "reporte" : "reportes"} ·{" "}
-            {REASON_LABELS[group.topReason]}
+            {report.signLanguage} · {REASON_LABELS[report.reason]}
           </p>
         </div>
         <button onClick={onClose} className="text-text-muted hover:text-text p-1 text-lg">
@@ -79,32 +83,48 @@ function DetailPanel({ group, onClose }: { group: AdminSignReportGroup; onClose:
         </button>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
-        {group.reports.map((r) => (
-          <div key={r.id} className="border-border rounded-xl border p-4 text-sm">
-            <div className="mb-2 flex items-center gap-2">
-              <div className="bg-fill text-text-muted flex size-7 items-center justify-center rounded-full text-xs font-bold uppercase">
-                {r.username[0]}
-              </div>
-              <div className="min-w-0">
-                <p className="text-text text-xs font-semibold">@{r.username}</p>
-                <p className="text-text-muted text-xs">{relativeDate(r.createdAt)}</p>
-              </div>
-              <span
-                className={cn(
-                  "ml-auto shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold",
-                  STATUS_COLORS[r.status],
-                )}
-              >
-                {STATUS_LABELS[r.status]}
-              </span>
-            </div>
-            <p className="text-text-muted text-xs font-medium">{REASON_LABELS[r.reason]}</p>
-            {r.description && (
-              <p className="text-text-muted mt-1 text-xs">&ldquo;{r.description}&rdquo;</p>
-            )}
+      <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4 text-sm">
+        <div className="flex items-center gap-2">
+          <div className="bg-fill text-text-muted flex size-7 items-center justify-center rounded-full text-xs font-bold uppercase">
+            {report.username[0]}
           </div>
-        ))}
+          <div className="min-w-0">
+            <p className="text-text text-xs font-semibold">@{report.username}</p>
+            <p className="text-text-muted text-xs">{formatDate(report.createdAt)}</p>
+          </div>
+          <span
+            className={cn(
+              "ml-auto shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold",
+              STATUS_COLORS[report.status],
+            )}
+          >
+            {STATUS_LABELS[report.status]}
+          </span>
+        </div>
+
+        <div>
+          <p className="text-text-muted text-xs font-semibold">Comentario del usuario</p>
+          {report.description ? (
+            <p className="text-text mt-1 text-xs">&ldquo;{report.description}&rdquo;</p>
+          ) : (
+            <p className="text-text-muted mt-1 text-xs italic">Sin comentario.</p>
+          )}
+        </div>
+
+        {report.adminNote && (
+          <div className="border-border bg-fill rounded-xl border p-3">
+            <p className="text-text-muted text-xs font-semibold">Nota interna</p>
+            <p className="text-text mt-1 text-xs">{report.adminNote}</p>
+          </div>
+        )}
+
+        {resolved && report.resolvedBy && (
+          <p className="text-text-muted text-xs">
+            {report.status === "RESOLVED" ? "Resuelto" : "Rechazado"} por{" "}
+            <span className="text-text font-semibold">{report.resolvedBy}</span>
+            {report.resolvedAt && ` · ${formatDate(report.resolvedAt)}`}
+          </p>
+        )}
       </div>
 
       <div className="border-border space-y-3 border-t px-5 py-4">
@@ -114,7 +134,7 @@ function DetailPanel({ group, onClose }: { group: AdminSignReportGroup; onClose:
             value={adminNote}
             onChange={(e) => setAdminNote(e.target.value)}
             rows={2}
-            placeholder="Que se revisó y qué se decidió (solo lo ve el equipo)."
+            placeholder="Qué se revisó y qué se decidió (solo lo ve el equipo)."
             className="border-border bg-fill focus:border-primary resize-none rounded-xl border px-3 py-2 text-sm font-normal outline-none"
           />
         </label>
@@ -126,7 +146,7 @@ function DetailPanel({ group, onClose }: { group: AdminSignReportGroup; onClose:
         )}
 
         <div className="flex gap-2">
-          {group.status === "PENDING" && (
+          {report.status === "PENDING" && (
             <button
               onClick={() => mutate.mutate("REVIEWED")}
               disabled={mutate.isPending}
@@ -135,25 +155,32 @@ function DetailPanel({ group, onClose }: { group: AdminSignReportGroup; onClose:
               Tomar y marcar en revisión
             </button>
           )}
-          {(group.status === "PENDING" || group.status === "REVIEWED") && (
-            <>
-              {group.status === "REVIEWED" && (
-                <button
-                  onClick={() => mutate.mutate("RESOLVED")}
-                  disabled={mutate.isPending}
-                  className="bg-success flex-1 rounded-xl px-3 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  Resolver
-                </button>
-              )}
-              <button
-                onClick={() => mutate.mutate("REJECTED")}
-                disabled={mutate.isPending}
-                className="border-danger text-danger hover:bg-danger/5 rounded-xl border px-3 py-2 text-xs font-semibold disabled:opacity-50"
-              >
-                Rechazar
-              </button>
-            </>
+          {report.status === "REVIEWED" && (
+            <button
+              onClick={() => mutate.mutate("RESOLVED")}
+              disabled={mutate.isPending}
+              className="bg-success flex-1 rounded-xl px-3 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              Resolver
+            </button>
+          )}
+          {(report.status === "PENDING" || report.status === "REVIEWED") && (
+            <button
+              onClick={() => mutate.mutate("REJECTED")}
+              disabled={mutate.isPending}
+              className="border-danger text-danger hover:bg-danger/5 rounded-xl border px-3 py-2 text-xs font-semibold disabled:opacity-50"
+            >
+              Rechazar
+            </button>
+          )}
+          {resolved && (
+            <button
+              onClick={() => mutate.mutate("PENDING")}
+              disabled={mutate.isPending}
+              className="border-border text-text-muted hover:text-text rounded-xl border px-3 py-2 text-xs font-semibold disabled:opacity-50"
+            >
+              Reabrir
+            </button>
           )}
         </div>
       </div>
@@ -163,14 +190,27 @@ function DetailPanel({ group, onClose }: { group: AdminSignReportGroup; onClose:
 
 export default function SignReportsPage() {
   const [tab, setTab] = useState<ReportStatus | "ALL">("PENDING");
-  const [selected, setSelected] = useState<AdminSignReportGroup | null>(null);
+  const [reason, setReason] = useState<ReportReason | "">("");
+  const [signQuery, setSignQuery] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin", "sign-reports", tab],
-    queryFn: () => adminApi.signReports(tab === "ALL" ? undefined : tab),
+  const filters: SignReportFilters = {
+    status: tab === "ALL" ? undefined : tab,
+    reason: reason || undefined,
+    signQuery: signQuery.trim() || undefined,
+    from: from || undefined,
+    to: to || undefined,
+  };
+
+  const { data, isPending, error } = useQuery({
+    queryKey: ["admin", "sign-reports", filters],
+    queryFn: () => adminApi.signReports(filters),
   });
 
-  const totalReports = data?.reduce((s, g) => s + g.reportCount, 0) ?? 0;
+  const selected = data?.find((r) => r.id === selectedId) ?? null;
+  const hasActiveFilters = Boolean(reason || signQuery.trim() || from || to);
 
   return (
     <div>
@@ -181,14 +221,14 @@ export default function SignReportsPage() {
         </p>
       </div>
 
-      <div className="border-border mb-6 flex items-center justify-between border-b">
+      <div className="border-border mb-4 flex items-center justify-between border-b">
         <div className="flex gap-1">
           {TABS.map(({ label, value }) => (
             <button
               key={value}
               onClick={() => {
                 setTab(value);
-                setSelected(null);
+                setSelectedId(null);
               }}
               className={cn(
                 "px-4 py-2 text-sm font-semibold transition-colors",
@@ -201,31 +241,94 @@ export default function SignReportsPage() {
             </button>
           ))}
         </div>
-        {totalReports > 0 && (
+        {data && (
           <span className="text-text-muted text-xs">
-            {totalReports} reporte{totalReports > 1 ? "s" : ""}
+            {data.length} reporte{data.length === 1 ? "" : "s"}
           </span>
+        )}
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-end gap-3">
+        <label className="text-text-muted flex flex-col gap-1 text-xs font-semibold">
+          Tipo
+          <select
+            value={reason}
+            onChange={(e) => setReason(e.target.value as ReportReason | "")}
+            className="border-border bg-surface text-text focus:border-primary rounded-xl border px-3 py-2 text-sm font-normal outline-none"
+          >
+            <option value="">Todos</option>
+            {REASON_OPTIONS.map((r) => (
+              <option key={r} value={r}>
+                {REASON_LABELS[r]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-text-muted flex flex-col gap-1 text-xs font-semibold">
+          Seña
+          <input
+            type="text"
+            value={signQuery}
+            onChange={(e) => setSignQuery(e.target.value)}
+            placeholder="Buscar por significado…"
+            className="border-border bg-surface text-text focus:border-primary rounded-xl border px-3 py-2 text-sm font-normal outline-none"
+          />
+        </label>
+        <label className="text-text-muted flex flex-col gap-1 text-xs font-semibold">
+          Desde
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="border-border bg-surface text-text focus:border-primary rounded-xl border px-3 py-2 text-sm font-normal outline-none"
+          />
+        </label>
+        <label className="text-text-muted flex flex-col gap-1 text-xs font-semibold">
+          Hasta
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="border-border bg-surface text-text focus:border-primary rounded-xl border px-3 py-2 text-sm font-normal outline-none"
+          />
+        </label>
+        {hasActiveFilters && (
+          <button
+            onClick={() => {
+              setReason("");
+              setSignQuery("");
+              setFrom("");
+              setTo("");
+            }}
+            className="text-text-muted hover:text-text rounded-xl px-3 py-2 text-xs font-semibold"
+          >
+            Limpiar filtros
+          </button>
         )}
       </div>
 
       <div className="flex gap-6">
         <div className="min-w-0 flex-1 space-y-2">
-          {isLoading ? (
+          {isPending ? (
             Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="bg-fill h-20 animate-pulse rounded-2xl" />
             ))
-          ) : data?.length === 0 ? (
+          ) : error ? (
+            <p className="text-danger border-border bg-surface rounded-2xl border px-6 py-10 text-center text-sm">
+              No pudimos cargar los reportes.
+            </p>
+          ) : data.length === 0 ? (
             <p className="border-border bg-surface text-text-muted rounded-2xl border px-6 py-10 text-center text-sm">
-              No hay reportes en esta categoría.
+              No hay reportes con estos filtros.
             </p>
           ) : (
-            data?.map((group) => (
+            data.map((report) => (
               <button
-                key={group.signId}
-                onClick={() => setSelected(selected?.signId === group.signId ? null : group)}
+                key={report.id}
+                onClick={() => setSelectedId(selectedId === report.id ? null : report.id)}
                 className={cn(
                   "border-border bg-surface w-full rounded-2xl border p-5 text-left transition-all",
-                  selected?.signId === group.signId
+                  selectedId === report.id
                     ? "border-primary/40 bg-primary/5"
                     : "hover:border-border hover:shadow-sm",
                 )}
@@ -234,34 +337,37 @@ export default function SignReportsPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-text font-semibold tracking-wide uppercase">
-                        {group.signMeaning}
+                        {report.signMeaning}
                       </span>
-                      <span className="text-text-muted text-xs">{group.signLanguage}</span>
+                      <span className="text-text-muted text-xs">{report.signLanguage}</span>
                     </div>
                     <p className="text-text-muted mt-0.5 text-xs">
-                      {REASON_LABELS[group.topReason]}
+                      {REASON_LABELS[report.reason]} · @{report.username} ·{" "}
+                      {formatDate(report.createdAt)}
                     </p>
+                    {report.description && (
+                      <p className="text-text-muted mt-1 line-clamp-1 text-xs italic">
+                        &ldquo;{report.description}&rdquo;
+                      </p>
+                    )}
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                        STATUS_COLORS[group.status],
-                      )}
-                    >
-                      {STATUS_LABELS[group.status]}
-                    </span>
-                    <span className="text-text-muted text-xs font-semibold">
-                      {group.reportCount} {group.reportCount === 1 ? "reporte" : "reportes"}
-                    </span>
-                  </div>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                      STATUS_COLORS[report.status],
+                    )}
+                  >
+                    {STATUS_LABELS[report.status]}
+                  </span>
                 </div>
               </button>
             ))
           )}
         </div>
 
-        {selected && <DetailPanel group={selected} onClose={() => setSelected(null)} />}
+        {selected && (
+          <DetailPanel key={selected.id} report={selected} onClose={() => setSelectedId(null)} />
+        )}
       </div>
     </div>
   );
