@@ -216,19 +216,17 @@ export default function PurchaseDetailPage() {
   if (error) return <ErrorState>No pudimos cargar los datos.</ErrorState>;
 
   const { purchase, seats } = data;
-  const payment = !returned
-    ? null
-    : sync.isPending
-      ? { tone: "warning" as const, text: "Estamos confirmando el pago con Mercado Pago…" }
+  const payment =
+    !returned || purchase.status === "PENDING_PAYMENT"
+      ? null
       : purchase.status === "PAID"
         ? paymentMessage("approved")
         : (purchase.status === "CANCELLED" || purchase.status === "REFUNDED") &&
             data.refunds.length > 0
           ? REFUNDED_MESSAGE
-          : sync.data
-            ? paymentMessage(sync.data.paymentStatus)
-            : paymentMessage(returned.result === "rechazado" ? "rejected" : "pending");
+          : null;
   const counts = purchase.seatCounts;
+  const unpaid = purchase.paidAt === null;
   const left = daysLeft(purchase.invitationDeadline, new Date(now), purchase.paidAt);
   const visible = filter === "ALL" ? seats : seats.filter((seat) => seat.status === filter);
   const withdrawError =
@@ -318,42 +316,73 @@ export default function PurchaseDetailPage() {
       {cancel.error ? <ErrorState>No pudimos cancelar la compra.</ErrorState> : null}
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
-        <StatCard
-          label="Total"
-          value={formatMoney(purchase.totalAmount, purchase.currency)}
-          hint={
-            purchase.discountPercent > 0
-              ? `${formatMoney(purchase.pricePerSeat, purchase.currency)} por cupo · ${purchase.discountPercent}% de descuento`
-              : `${formatMoney(purchase.pricePerSeat, purchase.currency)} por cupo`
-          }
-        />
-        <StatCard
-          label="Aceptaron"
-          value={`${acceptedSeats(counts)}/${purchase.seats}`}
-          hint={
-            purchase.status === "REFUNDED"
-              ? `${counts.revoked} con el acceso anulado`
-              : `${counts.active} con acceso activo`
-          }
-        />
-        <StatCard
-          label="Sin aceptar"
-          value={counts.invited}
-          hint={
-            purchase.status === "REFUNDED"
-              ? "Invitaciones anuladas"
-              : purchase.status === "PAID" && left !== null
-                ? left === 0
-                  ? "El plazo ya cerró"
-                  : `Quedan ${left} ${left === 1 ? "día" : "días"}`
-                : "Todavía no se enviaron"
-          }
-        />
-        <StatCard
-          label="Cupos perdidos"
-          value={counts.invitationExpired}
-          hint="Invitaciones vencidas sin aceptar"
-        />
+        {unpaid ? (
+          <>
+            <StatCard
+              label="Total"
+              value={formatMoney(purchase.totalAmount, purchase.currency)}
+              hint={
+                purchase.discountPercent > 0
+                  ? `${formatMoney(purchase.pricePerSeat, purchase.currency)} por cupo · ${purchase.discountPercent}% de descuento`
+                  : `${formatMoney(purchase.pricePerSeat, purchase.currency)} por cupo`
+              }
+            />
+            <StatCard
+              label="Cupos"
+              value={purchase.seats}
+              hint={`${purchase.seats === 1 ? "Una persona" : `${purchase.seats} personas`}, un email cada una`}
+            />
+            <StatCard
+              label="Duración del acceso"
+              value={`${purchase.durationDays} días`}
+              hint="Desde que cada persona acepta"
+            />
+            <StatCard
+              label="Señas del curso"
+              value={purchase.signCount}
+              hint={purchase.courseName}
+            />
+          </>
+        ) : (
+          <>
+            <StatCard
+              label="Total"
+              value={formatMoney(purchase.totalAmount, purchase.currency)}
+              hint={
+                purchase.discountPercent > 0
+                  ? `${formatMoney(purchase.pricePerSeat, purchase.currency)} por cupo · ${purchase.discountPercent}% de descuento`
+                  : `${formatMoney(purchase.pricePerSeat, purchase.currency)} por cupo`
+              }
+            />
+            <StatCard
+              label="Aceptaron"
+              value={`${acceptedSeats(counts)}/${purchase.seats}`}
+              hint={
+                purchase.status === "REFUNDED"
+                  ? `${counts.revoked} con el acceso anulado`
+                  : `${counts.active} con acceso activo`
+              }
+            />
+            <StatCard
+              label="Sin aceptar"
+              value={counts.invited}
+              hint={
+                purchase.status === "REFUNDED"
+                  ? "Invitaciones anuladas"
+                  : purchase.status === "PAID" && left !== null
+                    ? left === 0
+                      ? "El plazo ya cerró"
+                      : `Quedan ${left} ${left === 1 ? "día" : "días"}`
+                    : "Todavía no se enviaron"
+              }
+            />
+            <StatCard
+              label="Cupos perdidos"
+              value={counts.invitationExpired}
+              hint="Invitaciones vencidas sin aceptar"
+            />
+          </>
+        )}
       </div>
 
       {canWithdraw(purchase, new Date(now)) ? (
@@ -400,46 +429,51 @@ export default function PurchaseDetailPage() {
         </Card>
       ) : null}
 
-      <Card className="flex flex-col gap-1">
-        <CardTitle>Datos de la compra</CardTitle>
-        <dl className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-6 text-sm">
-          {[
-            ["Fecha de pago", purchase.paidAt ? formatDate(purchase.paidAt) : "Pendiente"],
-            [
-              "Plazo para aceptar",
-              purchase.invitationDeadline
-                ? `Hasta el ${formatDate(purchase.invitationDeadline)}`
-                : "Empieza con el pago",
-            ],
-            ["Duración del acceso", `${purchase.durationDays} días desde que cada persona acepta`],
-            ["Señas del curso", String(purchase.signCount)],
-            ...(purchase.status === "REFUNDED"
-              ? [
-                  [
-                    "Anulación",
-                    purchase.refundedAt
-                      ? `Reembolsada el ${formatDate(purchase.refundedAt)}`
-                      : "Reembolsada",
-                  ],
-                ]
-              : purchase.status === "PAID"
+      {unpaid ? null : (
+        <Card className="flex flex-col gap-1">
+          <CardTitle>Datos de la compra</CardTitle>
+          <dl className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-6 text-sm">
+            {[
+              ["Fecha de pago", purchase.paidAt ? formatDate(purchase.paidAt) : "Pendiente"],
+              [
+                "Plazo para aceptar",
+                purchase.invitationDeadline
+                  ? `Hasta el ${formatDate(purchase.invitationDeadline)}`
+                  : "Empieza con el pago",
+              ],
+              [
+                "Duración del acceso",
+                `${purchase.durationDays} días desde que cada persona acepta`,
+              ],
+              ["Señas del curso", String(purchase.signCount)],
+              ...(purchase.status === "REFUNDED"
                 ? [
                     [
-                      "Anulación con reembolso",
-                      purchase.refundableUntil && canWithdraw(purchase, new Date(now))
-                        ? `Hasta el ${formatDate(purchase.refundableUntil)}`
-                        : "Ya no disponible",
+                      "Anulación",
+                      purchase.refundedAt
+                        ? `Reembolsada el ${formatDate(purchase.refundedAt)}`
+                        : "Reembolsada",
                     ],
                   ]
-                : []),
-          ].map(([label, value]) => (
-            <div key={label} className="border-fill flex justify-between gap-3 border-b py-2.5">
-              <dt className="text-text-muted">{label}</dt>
-              <dd className="text-right font-extrabold">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      </Card>
+                : purchase.status === "PAID"
+                  ? [
+                      [
+                        "Anulación con reembolso",
+                        purchase.refundableUntil && canWithdraw(purchase, new Date(now))
+                          ? `Hasta el ${formatDate(purchase.refundableUntil)}`
+                          : "Ya no disponible",
+                      ],
+                    ]
+                  : []),
+            ].map(([label, value]) => (
+              <div key={label} className="border-fill flex justify-between gap-3 border-b py-2.5">
+                <dt className="text-text-muted">{label}</dt>
+                <dd className="text-right font-extrabold">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
+      )}
 
       <Card className="flex flex-col gap-3.5">
         <div className="flex flex-wrap items-center justify-between gap-3">

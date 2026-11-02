@@ -11,7 +11,6 @@ import {
   LoadingState,
   PageHeading,
   headerButton,
-  primaryButton,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
 import { organizationsApi } from "@/lib/api/organizations";
@@ -117,13 +116,6 @@ export default function PurchasesPage() {
             canBuy
               ? "Elegí un curso, la duración del acceso y cargá el email de cada persona. Cuando se confirme el pago les llega la invitación."
               : "Vas a poder comprar cupos apenas SIGNA valide tu organización."
-          }
-          action={
-            canBuy ? (
-              <Link href="/dashboard/purchases/new" className={primaryButton}>
-                Comprar cupos
-              </Link>
-            ) : undefined
           }
         />
       ) : (
