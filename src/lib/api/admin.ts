@@ -187,6 +187,8 @@ export const adminApi = {
   updateUser: (id: string, data: { role?: UserRole; enabled?: boolean }) =>
     api<AdminUser>(`/admin/users/${id}`, { method: "PATCH", body: data }),
 
+  deleteUser: (id: string) => api(`/admin/users/${id}`, { method: "DELETE" }),
+
   admins: () => api<AdminUser[]>("/admin/admins"),
 
   createAdmin: (data: { email: string; name: string; lastName: string; password: string }) =>
