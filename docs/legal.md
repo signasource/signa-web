@@ -14,7 +14,7 @@
 | `/terminos`        | `(marketing)/terminos/page.tsx`        | Terms and conditions                                                         |
 | `/eliminar-cuenta` | `(marketing)/eliminar-cuenta/page.tsx` | Account-deletion instructions (Play Console "URL de eliminación de cuentas") |
 
-All three are static, listed in `MARKETING_PATHS` ([security.md](./security.md)), and linked from the landing footer. `/eliminar-cuenta` must stay publicly reachable and match `UserService.deleteAccount`: Google Play checks it. Shared pieces: `LegalPage`/`Section`/`Todo` (`src/components/legal/legal-page.tsx`) and `src/lib/legal.ts` (contact email, institution, **`lastUpdated`** — bump it on every text change).
+All three are static, listed in `MARKETING_PATHS` ([security.md](./security.md)), and linked from the landing footer. `/eliminar-cuenta` must stay publicly reachable and match `UserService.deleteAccount`: Google Play checks it. A SIGNA admin can also delete an account from the back-office (`DELETE /admin/users/{id}`), with the same erasure. Shared pieces: `LegalPage`/`Section`/`Todo` (`src/components/legal/legal-page.tsx`) and `src/lib/legal.ts` (contact email, institution, **`lastUpdated`** — bump it on every text change).
 
 ## The text must match the system
 
