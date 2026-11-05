@@ -34,6 +34,8 @@ full fix for that is serving the panel from its own subdomain ([../security.md](
 
 `{ status: "loading" | "authenticated" | "unauthenticated", organization, login(identifier, password), logout(), refreshOrganization() }`
 
+**Back-office guard:** `(admin)/admin/layout.tsx` redirects to `/admin/login` when unauthenticated, except when already there: replacing to the same URL remounts the login page and loses its error message.
+
 The provider is mounted for the whole app but does nothing on `/admin/*`: the SIGNA back-office has its own session (`AdminAuthProvider`), and restoring an org session there used to fail (`/organizations/me` 404 for a SIGNA admin) and log the back-office out on every reload.
 
 **Invitations:** `/invitacion` does not use `useAuth`. It logs in (or registers) the invited email with `sessionApi`, calls `POST /invitations/{token}/accept` and logs out right after — employees use the mobile app, not the panel.
