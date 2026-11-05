@@ -22,7 +22,7 @@ Why not nonces everywhere: nonces force dynamic rendering, losing static generat
 ## Rules
 
 - **New public static page** → add its exact path to `MARKETING_PATHS`. Forgetting fails safe: it gets the strict CSP, its static HTML has no nonce, and scripts are blocked (loud, not insecure).
-- **New auth/panel route** → nothing to do for CSP, but its layout tree must render dynamically (`await connection()` already covers the `(auth)` and `(dashboard)` groups; a new route group needs its own).
+- **New auth/panel route** → nothing to do for CSP, but its layout tree must render dynamically (`await connection()` already covers the `(auth)`, `(dashboard)` and `(admin)` groups; a new route group needs its own, or production blocks its scripts and the page never hydrates).
 - **Third-party script/origin** (analytics, fonts, embeds) → add the origin to the directive in `buildCsp()`, pass the nonce via `headers().get("x-nonce")`, and document it here. Prefer self-hosting.
 - Never use `dangerouslySetInnerHTML` with untrusted content; never add `'unsafe-eval'` outside dev.
 - `NEXT_PUBLIC_API_URL` feeds `connect-src`; changing the API origin changes the CSP (rebuild).
