@@ -73,8 +73,8 @@ export default function AdminResumenPage() {
   });
 
   const { data: reports } = useQuery({
-    queryKey: ["admin", "sign-reports", "PENDING"],
-    queryFn: () => adminApi.signReports("PENDING"),
+    queryKey: ["admin", "sign-reports", { status: "PENDING" }],
+    queryFn: () => adminApi.signReports({ status: "PENDING" }),
   });
 
   const { data: courses } = useQuery({
@@ -83,10 +83,8 @@ export default function AdminResumenPage() {
   });
 
   const reportsByReason = reports?.reduce(
-    (acc, group) => {
-      for (const r of group.reports) {
-        acc[r.reason] = (acc[r.reason] ?? 0) + 1;
-      }
+    (acc, report) => {
+      acc[report.reason] = (acc[report.reason] ?? 0) + 1;
       return acc;
     },
     {} as Record<ReportReason, number>,

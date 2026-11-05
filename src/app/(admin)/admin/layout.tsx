@@ -41,6 +41,7 @@ const NAV: NavItem[] = [
   },
   { href: "/admin/content", label: "Cursos y señas", icon: BookIcon },
   { href: "/admin/users", label: "Usuarios", icon: UsersIcon },
+  { href: "/admin/usage-metrics", label: "Métricas de uso", icon: MetricsIcon },
   { href: "/admin/admins", label: "Administradores", icon: ShieldIcon },
 ];
 
@@ -223,6 +224,21 @@ function UsersIcon({ className }: { className?: string }) {
       <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+    </svg>
+  );
+}
+
+function MetricsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+    >
+      <path d="M3 3v18h18" />
+      <path d="M7 15l4-5 3 3 4-6" />
     </svg>
   );
 }
