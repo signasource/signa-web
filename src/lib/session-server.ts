@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 
-
 export const REFRESH_COOKIE = "signa_refresh";
 const REFRESH_MAX_AGE = 7 * 24 * 60 * 60;
 
