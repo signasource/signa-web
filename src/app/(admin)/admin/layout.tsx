@@ -62,8 +62,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   useEffect(() => {
-    if (status === "unauthenticated") router.replace("/admin/login");
-  }, [status, router]);
+    if (status === "unauthenticated" && pathname !== "/admin/login") {
+      router.replace("/admin/login");
+    }
+  }, [status, pathname, router]);
 
   if (pathname === "/admin/login") {
     return <>{children}</>;
