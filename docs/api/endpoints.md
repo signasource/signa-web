@@ -48,6 +48,15 @@ Refresh (`POST /auth/refresh`) is called internally by the client, not exposed a
 | `preview(token)` | `GET /invitations/{token}`         | `InvitationPreview`  | Anonymous. 404 for an unknown or replaced link                                              |
 | `accept(token)`  | `POST /invitations/{token}/accept` | `AcceptedInvitation` | Bearer of the invited account. 403 other email, 400 expired/revoked, 409 other organization |
 
+## `adminApi` users (`src/lib/api/admin.ts`)
+
+| Method                 | Path                       | Returns       | Notes                                                                                                                                    |
+| ---------------------- | -------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `users(params?)`       | `GET /admin/users`         | `AdminUser[]` | Paged. Includes disabled accounts (`enabled: false`), not deleted ones                                                                   |
+| `updateUser(id, data)` | `PATCH /admin/users/{id}`  | `AdminUser`   | `{enabled?, role?}`. Disabling ends the sessions at once. 400 when disabling or demoting yourself                                        |
+| `deleteUser(id)`       | `DELETE /admin/users/{id}` | —             | Same erasure as deleting your own account; irreversible, frees the email. 400 for yourself                                               |
+| `createAdmin(data)`    | `POST /admin/admins`       | `AdminUser`   | An existing email is promoted: keeps its data and password (the temporary one only applies if it has none) and is re-enabled if disabled |
+
 ## `adminApi` purchases (`src/lib/api/admin.ts`)
 
 `purchases(status?)` → `GET /admin/purchases`; `confirmPayment(id, reference?)` → `POST /admin/purchases/{id}/confirm-payment`. The same confirmation Mercado Pago triggers (webhook `POST /payments/mercado-pago/webhook` in signa-api, or the panel's `syncPayment`); the back-office stays as a manual fallback.

@@ -68,6 +68,10 @@ function CreateAdminForm({ onSuccess }: { onSuccess: () => void }) {
           required
           className="border-border bg-fill focus:border-primary rounded-xl border px-3 py-2 outline-none"
         />
+        <span className="text-text-muted text-xs font-normal">
+          Si este email ya tiene una cuenta, la convertimos en administrador: conserva sus datos y
+          su contraseña.
+        </span>
       </label>
       <label className="text-text flex flex-col gap-1 text-sm font-medium">
         Contraseña temporal
@@ -79,6 +83,9 @@ function CreateAdminForm({ onSuccess }: { onSuccess: () => void }) {
           minLength={8}
           className="border-border bg-fill focus:border-primary rounded-xl border px-3 py-2 outline-none"
         />
+        <span className="text-text-muted text-xs font-normal">
+          Solo se usa si la cuenta no tiene contraseña propia.
+        </span>
       </label>
       {error && <p className="text-danger text-sm">{error}</p>}
       <button
