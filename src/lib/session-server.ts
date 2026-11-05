@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 
+
 export const REFRESH_COOKIE = "signa_refresh";
 const REFRESH_MAX_AGE = 7 * 24 * 60 * 60;
 
@@ -14,9 +15,11 @@ const cookieOptions = {
 export function sameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  if (!origin || !host) return false;
+  if (!origin) return false;
   try {
-    return new URL(origin).host === host;
+    const originHost = new URL(origin).host;
+    if (host) return originHost === host;
+    return new URL(origin).origin === new URL(env.siteUrl).origin;
   } catch {
     return false;
   }
