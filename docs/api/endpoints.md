@@ -58,6 +58,16 @@ Refresh (`POST /auth/refresh`) is called internally by the client, not exposed a
 
 `signReports(filters?)` → `GET /admin/sign-reports` returns **individual** reports (`AdminSignReport[]`, newest first), each managed on its own. Optional filters sent as query params: `status`, `reason` (tipo), `signQuery` (substring match on the sign meaning), and `from`/`to` (ISO dates, inclusive). `updateSignReport(reportId, status, adminNote?)` → `PATCH /admin/sign-reports/{reportId}` sets the status and optional internal note; moving to `RESOLVED`/`REJECTED` records the acting admin on the backend (surfaced as `resolvedBy` + `resolvedAt`).
 
+## `metricsApi` (`src/lib/api/metrics.ts`) — usage dashboard
+
+| Method                 | Path                               | Returns           | Notes                                                                                                                                                                                                                                                |
+| ---------------------- | ---------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `business(params)`     | `GET /admin/metrics/business`      | `BusinessMetrics` | Global business snapshot (all users, with/without org). `params` = `{ from, to }` ISO-8601 **instants**. Courses/versions/enrollments/progress/accuracy/errors + a daily activity series                                                             |
+| `perf(widget, params)` | `GET /admin/metrics/perf/{widget}` | `PerfMetrics`     | Performance/infra time series proxied from Grafana Cloud. `widget` is a fixed catalog key (`latency_p95`, `cpu_host`, `error_rate`, `animation_latency`, …). `params` = `{ from, to, step? }`. `available=false` ⇒ Grafana read token not configured |
+
+Telemetry ingestion (`POST /telemetry/events`) is **not** called from `metricsApi` — it is the write
+side used by the client telemetry util (`src/lib/telemetry.ts`) and by `signa-mobile`.
+
 ## Available in the API, not wired yet
 
 `POST …/admin-invitations` (invite an admin), `GET …/courses`, `POST …/admins`. Shared invite codes and `POST/DELETE …/courses` no longer exist. See [../status.md](../status.md).
