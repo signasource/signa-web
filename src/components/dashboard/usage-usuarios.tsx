@@ -1,5 +1,6 @@
 "use client";
 
+import { CohortRetentionTable } from "@/components/dashboard/cohort-retention";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
@@ -23,9 +24,30 @@ function useGamificationMetrics(range: DateTimeRange, live: boolean) {
 }
 
 /**
- * Usuarios. Everything here respects the from/to filter: active users and tasa de actividad are
- * measured over the range (not rolling windows), new users come with the running total, and XP per
- * active user is the range's XP over its active users. Then the gamification & engagement section.
+ * Period-over-period delta vs. the previous equal-length window. `null` previous (the whole history)
+ * renders nothing; otherwise a signed percentage, coloured by direction.
+ */
+function Delta({ current, previous }: { current: number; previous: number | null }) {
+  if (previous == null) return null;
+  if (previous === 0) {
+    return current > 0 ? <span className="text-success-dark font-bold">nuevo</span> : null;
+  }
+  const change = Math.round(((current - previous) / previous) * 1000) / 10;
+  const sign = change > 0 ? "+" : "";
+  const tone = change > 0 ? "text-success-dark" : change < 0 ? "text-danger" : "text-text-muted";
+  return (
+    <span className={tone}>
+      {sign}
+      {change}% vs. período anterior
+    </span>
+  );
+}
+
+/**
+ * Usuarios — "¿La gente usa Signa?": adquisición, actividad y retención. DAU/WAU/MAU and stickiness
+ * are rolling windows ending at the period's close; activation, new users and active users are
+ * measured over the range and compared with the previous equal-length window; the cohort table reads
+ * retention at the D1/D7/D30 horizons. Then the gamification & engagement section.
  */
 export function UsersTab({
   range,
@@ -46,7 +68,9 @@ export function UsersTab({
     return <p className="text-danger">No pudimos cargar las métricas de usuarios.</p>;
 
   const g = growth.data!;
-  const active = business.data?.users.active ?? 0;
+  const u = g.users;
+  const e = g.engagement;
+  const active = e.activeInRange;
   const total = business.data?.users.total ?? 0;
   const engagement = total ? Math.round((active / total) * 1000) / 10 : null;
   const xpTotal = gamification.data?.xp.total ?? 0;
@@ -54,18 +78,49 @@ export function UsersTab({
 
   return (
     <div className="flex flex-col gap-7">
+      {/* Actividad: rolling active-user windows + how sticky the base is. */}
       <GoldenRow>
-        <GoldenTile metric="users_active" value={NUMBER.format(active)} tone="neutral" />
+        <GoldenTile metric="dau" value={NUMBER.format(e.dau)} tone="neutral" />
+        <GoldenTile metric="wau" value={NUMBER.format(e.wau)} tone="neutral" />
+        <GoldenTile metric="mau" value={NUMBER.format(e.mau)} tone="neutral" />
         <GoldenTile
-          metric="new_users"
-          value={NUMBER.format(g.users.newInRange)}
-          hint={`${NUMBER.format(g.users.total)} usuarios totales`}
-          tone="neutral"
+          metric="stickiness"
+          value={`${e.stickinessPercent}%`}
+          rawValue={e.stickinessPercent}
+          hint={`${NUMBER.format(e.dau)} / ${NUMBER.format(e.mau)} (DAU/MAU)`}
         />
         <GoldenTile
           metric="engagement_rate"
           value={engagement == null ? "—" : `${engagement}%`}
           rawValue={engagement}
+          hint={`${NUMBER.format(active)} / ${NUMBER.format(total)} usuarios`}
+        />
+      </GoldenRow>
+
+      {/* Adquisición: new users, whether they activate, and per-user engagement. */}
+      <GoldenRow>
+        <GoldenTile
+          metric="new_users"
+          value={NUMBER.format(u.newInRange)}
+          hint={<Delta current={u.newInRange} previous={u.previousNewInRange} />}
+          tone="neutral"
+        />
+        <GoldenTile
+          metric="activation_rate"
+          value={`${u.activationPercent}%`}
+          rawValue={u.activationPercent}
+          hint={`${NUMBER.format(u.activatedInRange)} / ${NUMBER.format(u.newInRange)} nuevos empezaron`}
+        />
+        <GoldenTile
+          metric="users_active"
+          value={NUMBER.format(active)}
+          hint={<Delta current={active} previous={e.previousActiveInRange} />}
+          tone="neutral"
+        />
+        <GoldenTile
+          metric="users_total"
+          value={NUMBER.format(u.total)}
+          tone="neutral"
         />
         <GoldenTile
           metric="xp_per_user"
@@ -78,18 +133,20 @@ export function UsersTab({
         <DailySeriesChart
           title="Nuevos usuarios por día"
           metric="new_users"
-          points={g.users.daily.map((d) => ({ day: d.day, value: d.count }))}
+          points={u.daily.map((d) => ({ day: d.day, value: d.count }))}
           format={fmtCount}
           onSelectRange={onSelectRange}
         />
         <DailySeriesChart
           title="Usuarios activos por día"
           metric="users_active"
-          points={g.engagement.dailyActive.map((d) => ({ day: d.day, value: d.count }))}
+          points={e.dailyActive.map((d) => ({ day: d.day, value: d.count }))}
           format={fmtCount}
           onSelectRange={onSelectRange}
         />
       </div>
+
+      <CohortRetentionTable cohorts={g.retention} />
 
       <div className="border-border flex items-center gap-3 border-t pt-5">
         <h2 className="font-display text-xl font-bold tracking-tight">Gamificación & engagement</h2>

@@ -36,16 +36,42 @@ export type BusinessMetrics = {
 export type DailyCount = { day: string; count: number };
 export type DailyAmount = { day: string; amount: number };
 
+/**
+ * One weekly retention cohort. Horizon counts/percentages are `null` when the cohort's whole week
+ * is not yet observable at that horizon (render "—" instead of a misleading 0%).
+ */
+export type CohortRetention = {
+  weekStart: string;
+  cohortSize: number;
+  d1: number | null;
+  d1Percent: number | null;
+  d7: number | null;
+  d7Percent: number | null;
+  d30: number | null;
+  d30Percent: number | null;
+};
+
 /** Global growth & business metrics — the "Negocio & crecimiento" apartado. */
 export type GrowthMetrics = {
-  users: { total: number; newInRange: number; daily: DailyCount[] };
+  users: {
+    total: number;
+    newInRange: number;
+    /** New users in the previous equal-length window, or `null` for the whole history. */
+    previousNewInRange: number | null;
+    activatedInRange: number;
+    activationPercent: number;
+    daily: DailyCount[];
+  };
   engagement: {
     dau: number;
     wau: number;
     mau: number;
     stickinessPercent: number;
+    activeInRange: number;
+    previousActiveInRange: number | null;
     dailyActive: DailyCount[];
   };
+  retention: CohortRetention[];
   waitlist: { total: number; newInRange: number; daily: DailyCount[] };
   revenue: {
     paidAmount: number;

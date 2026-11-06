@@ -95,6 +95,22 @@ export const METRICS = {
     howComputed: "Usuarios cuya fecha de alta (created_at) cae dentro del rango. Serie diaria.",
     goodWhen: "Acompaña o supera la tasa de baja.",
   },
+  activation_rate: {
+    label: "Tasa de activación",
+    description: "Qué parte de los usuarios nuevos del período realmente empieza a aprender.",
+    howComputed:
+      "Nuevos usuarios con al menos un intento de ejercicio (LessonBlockAttempt) / total de nuevos usuarios del período.",
+    goodWhen: "Alta: la mayoría de las altas pasan del registro a la primera lección.",
+    threshold: { dir: "up", warn: 40, danger: 20 },
+  },
+  cohort_retention: {
+    label: "Retención por cohorte",
+    description:
+      "Porcentaje de usuarios que vuelven a estar activos 1, 7 y 30 días después de registrarse, agrupados por la semana de alta.",
+    howComputed:
+      "Por cohorte semanal (lunes de la semana de alta): usuarios con actividad el día alta+N / total de la cohorte. '—' = la semana todavía no es observable a ese horizonte.",
+    goodWhen: "Las columnas no caen a pico; D7 y D30 se sostienen por encima de D1 esperado.",
+  },
   retention_w1: {
     label: "Retención semana 1",
     description: "Porcentaje de usuarios nuevos que vuelven a estar activos a la semana siguiente.",

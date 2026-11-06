@@ -3,7 +3,7 @@
 > Responsibility: the SIGNA back-office "Métricas de uso" dashboard — global app usage, organized by
 > apartado (persona), with golden metrics, self-documenting widgets and an interactive time filter.
 > Update when: a tab, widget, golden metric, the datetime picker, or the metrics API changes.
-> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,chart-kind,usage-business,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.tsx, src/lib/{datetime-range,api/metrics}.ts
+> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,chart-kind,cohort-retention,usage-business,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.tsx, src/lib/{datetime-range,api/metrics}.ts
 
 A single screen for the whole app's usage — every user, with or without an organization — behind the
 SIGNA `AdminAuthProvider` (not the org dashboard). One **datetime range picker** (hour/minute precision,
@@ -19,10 +19,15 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
 - **Negocio** (`usage-growth.tsx`) — the money, grouped **sin organización** (gem purchases, users on paid
   courses) vs **organizaciones** (B2B revenue/refunds, seats, org status donut, revenue series). Exposes
   `useGrowthMetrics` (shared with Usuarios).
-- **Usuarios** (`usage-usuarios.tsx`) — the audience, **all range-based** (active users in the range, tasa de
-  actividad = active/total, new users + running total, XP per active user, new/active-users daily series);
-  then the **gamification** section (`GamificationSection` in `usage-gamification.tsx`): XP, streaks (avg of
-  users active in the range), achievements, challenge claim rates, gifts, shop, and daily XP/achievements/gems-spent.
+- **Usuarios** (`usage-usuarios.tsx`) — "¿La gente usa Signa?": adquisición, actividad y retención.
+  Rolling DAU/WAU/MAU + stickiness (windows ending at the period's close); range-based tasa de actividad
+  (active/total, shown as numerator/denominator), new users and active users each with a **period-over-period
+  delta** (`Delta`, vs. the previous equal-length window; hidden for the whole history), tasa de activación
+  (new users who made an attempt / new users), XP per active user, and new/active-users daily series. The
+  **cohort retention table** (`cohort-retention.tsx`) reads D1/D7/D30 retention per weekly signup cohort, with
+  "—" for horizons not yet observable. Then the **gamification** section (`GamificationSection` in
+  `usage-gamification.tsx`): XP, streaks (avg of users active in the range), achievements, challenge claim
+  rates, gifts, shop, and daily XP/achievements/gems-spent.
 - **Aprendizaje** (`usage-learning.tsx`) — completion (per course, worst-first), enrollment-status donut,
   accuracy (global + per block type, worst-first), hardest lessons, vocabulary, sign-report resolution +
   most-reported signs, imports.
