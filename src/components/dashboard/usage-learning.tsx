@@ -3,7 +3,10 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { BreakdownPie } from "@/components/dashboard/breakdown-pie";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
+import { Funnel } from "@/components/dashboard/funnel";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
+import { InfoPopover } from "@/components/dashboard/info-popover";
+import type { MetricId } from "@/components/dashboard/metric-catalog";
 import { MetricStat } from "@/components/dashboard/metric-stat";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount } from "@/components/dashboard/perf-format";
@@ -18,10 +21,51 @@ import {
   countOf,
   useBusinessMetrics,
 } from "@/components/dashboard/usage-business";
-import { metricsApi } from "@/lib/api/metrics";
+import { metricsApi, type ExerciseDifficulty } from "@/lib/api/metrics";
 import type { DateTimeRange } from "@/lib/datetime-range";
 
 const IMPORT_STATUS: Record<string, string> = { SUCCESS: "Exitosos", FAILED: "Fallidos" };
+
+/** A ranked list of the hardest exercises, with a per-row bar driven by a caller-chosen metric. */
+function ExerciseRanking({
+  title,
+  metric,
+  exercises,
+  value,
+  percent,
+}: {
+  title: string;
+  metric: MetricId;
+  exercises: ExerciseDifficulty[];
+  value: (e: ExerciseDifficulty) => string;
+  percent: (e: ExerciseDifficulty) => number;
+}) {
+  return (
+    <Card className="flex min-w-0 flex-col gap-3">
+      <div className="flex items-center gap-1.5">
+        <CardTitle>{title}</CardTitle>
+        <InfoPopover metric={metric} className="ml-auto" />
+      </div>
+      {exercises.length === 0 ? (
+        <p className="text-text-muted text-sm">Sin ejercicios con muestra suficiente.</p>
+      ) : (
+        <ul className="flex flex-col gap-2.5">
+          {exercises.map((e) => (
+            <li key={e.blockId} className="flex flex-col gap-1">
+              <div className="flex justify-between gap-2 text-[13px] font-bold">
+                <span className="truncate">{e.label}</span>
+                <span className="shrink-0">
+                  {value(e)} · {NUMBER.format(e.evaluated)} ej.
+                </span>
+              </div>
+              <ProgressBar percent={percent(e)} tone="warning" />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
 
 /** Learning & content query (per-course, hardest lessons, vocabulary, reports, imports). */
 function useLearningMetrics(range: DateTimeRange, live: boolean) {
@@ -61,7 +105,25 @@ export function LearningTab({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* ¿La gente aprende LSA? Progreso de lecciones y ejercicios. */}
       <GoldenRow>
+        <GoldenTile
+          metric="exercise_success_rate"
+          value={l.exercises.attempted ? `${l.exercises.successPercent}%` : "—"}
+          rawValue={l.exercises.attempted ? l.exercises.successPercent : null}
+          hint={`${NUMBER.format(l.exercises.correct)} / ${NUMBER.format(l.exercises.attempted)} ejercicios`}
+        />
+        <GoldenTile
+          metric="lesson_completion_rate"
+          value={l.lessons.started ? `${l.lessons.completionPercent}%` : "—"}
+          rawValue={l.lessons.started ? l.lessons.completionPercent : null}
+          hint={`${NUMBER.format(l.lessons.completed)} / ${NUMBER.format(l.lessons.started)} lecciones`}
+        />
+        <GoldenTile
+          metric="avg_attempts"
+          value={l.exercises.attempted ? l.exercises.averageAttempts.toString() : "—"}
+          rawValue={l.exercises.attempted ? l.exercises.averageAttempts : null}
+        />
         <GoldenTile
           metric="accuracy_global"
           value={b && b.accuracy.evaluated ? `${b.accuracy.accuracyPercent}%` : "—"}
@@ -69,29 +131,25 @@ export function LearningTab({
           hint={b ? `${NUMBER.format(b.accuracy.evaluated)} ejercicios` : undefined}
         />
         <GoldenTile
-          metric="lessons_completed"
-          value={b ? NUMBER.format(b.progress.lessonsCompleted) : "—"}
-          hint={b ? `${NUMBER.format(b.progress.topicsCompleted)} temas` : undefined}
-          tone="neutral"
-        />
-        <GoldenTile
           metric="vocabulary_growth"
           value={NUMBER.format(l.learnedSigns)}
           tone="neutral"
         />
-        <GoldenTile
-          metric="sign_reports_pending"
-          value={b ? NUMBER.format(b.errors.pendingSignReports) : "—"}
-          rawValue={b ? b.errors.pendingSignReports : null}
-        />
-        <GoldenTile
-          metric="imports_failed"
-          value={b ? NUMBER.format(b.errors.failedImports) : "—"}
-          rawValue={b ? b.errors.failedImports : null}
-        />
       </GoldenRow>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <MetricStat metric="lessons_started" value={NUMBER.format(l.lessons.started)} />
+        <MetricStat
+          metric="lessons_completed"
+          value={NUMBER.format(l.lessons.completed)}
+          hint={b ? `${NUMBER.format(b.progress.topicsCompleted)} temas` : undefined}
+        />
+        <MetricStat metric="exercises_attempted" value={NUMBER.format(l.exercises.attempted)} />
+        <MetricStat
+          metric="sign_report_resolution"
+          value={`${l.reports.averageResolutionHours} h`}
+          hint={`${NUMBER.format(l.reports.resolvedCount)} resueltos`}
+        />
         {b ? <MetricStat metric="courses_total" value={NUMBER.format(b.courses.total)} /> : null}
         {b ? (
           <MetricStat
@@ -100,11 +158,30 @@ export function LearningTab({
           />
         ) : null}
         <MetricStat
-          metric="sign_report_resolution"
-          value={`${l.reports.averageResolutionHours} h`}
-          hint={`${NUMBER.format(l.reports.resolvedCount)} resueltos`}
+          metric="sign_reports_pending"
+          value={b ? NUMBER.format(b.errors.pendingSignReports) : "—"}
         />
-        <MetricStat metric="vocabulary_growth" value={NUMBER.format(l.learnedSigns)} />
+        <MetricStat
+          metric="imports_failed"
+          value={b ? NUMBER.format(b.errors.failedImports) : "—"}
+        />
+      </div>
+
+      {/* Embudo de aprendizaje + evolución de aciertos. */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Funnel
+          title="Embudo de aprendizaje"
+          metric="learning_funnel"
+          subtitle="Dónde se pierden los usuarios en el recorrido"
+          steps={l.onboardingFunnel.map((s) => ({ key: s.key, count: s.count }))}
+        />
+        <DailySeriesChart
+          title="Evolución de respuestas correctas"
+          metric="accuracy_evolution"
+          points={l.dailyAccuracy.map((d) => ({ day: d.day, value: d.accuracyPercent }))}
+          format={(v) => `${v}%`}
+          onSelectRange={onSelectRange}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -154,6 +231,53 @@ export function LearningTab({
             </ul>
           )}
         </Card>
+      </div>
+
+      {/* Dificultad y calidad del contenido. */}
+      <div className="border-border flex items-center gap-3 border-t pt-5">
+        <h2 className="font-display text-xl font-bold tracking-tight">Dificultad y calidad</h2>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="flex min-w-0 flex-col gap-3">
+          <div className="flex items-center gap-1.5">
+            <CardTitle>Lecciones con mayor abandono</CardTitle>
+            <InfoPopover metric="lesson_abandonment" className="ml-auto" />
+          </div>
+          {l.lessonRanking.length === 0 ? (
+            <p className="text-text-muted text-sm">Sin lecciones con muestra suficiente.</p>
+          ) : (
+            <ul className="flex flex-col gap-2.5">
+              {l.lessonRanking.map((lesson) => (
+                <li key={lesson.lessonId} className="flex flex-col gap-1">
+                  <div className="flex justify-between gap-2 text-[13px] font-bold">
+                    <span className="truncate">{lesson.lessonName}</span>
+                    <span>
+                      {lesson.abandonmentPercent}% · {NUMBER.format(lesson.completed)}/
+                      {NUMBER.format(lesson.started)}
+                    </span>
+                  </div>
+                  <ProgressBar percent={lesson.abandonmentPercent} tone="warning" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <ExerciseRanking
+          title="Mayor tasa de error"
+          metric="exercise_error_rate"
+          exercises={l.highestErrorExercises}
+          value={(e) => `${e.errorPercent}%`}
+          percent={(e) => e.errorPercent}
+        />
+        <ExerciseRanking
+          title="Más reintentos"
+          metric="exercise_retries"
+          exercises={l.mostRetriedExercises}
+          value={(e) => `${e.averageAttempts}×`}
+          percent={(e) => Math.min(100, e.averageAttempts * 25)}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

@@ -3,7 +3,7 @@
 > Responsibility: the SIGNA back-office "Métricas de uso" dashboard — global app usage, organized by
 > apartado (persona), with golden metrics, self-documenting widgets and an interactive time filter.
 > Update when: a tab, widget, golden metric, the datetime picker, or the metrics API changes.
-> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,chart-kind,cohort-retention,usage-business,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.tsx, src/lib/{datetime-range,api/metrics}.ts
+> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,chart-kind,cohort-retention,funnel,usage-business,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.tsx, src/lib/{datetime-range,api/metrics}.ts
 
 A single screen for the whole app's usage — every user, with or without an organization — behind the
 SIGNA `AdminAuthProvider` (not the org dashboard). One **datetime range picker** (hour/minute precision,
@@ -28,9 +28,14 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   "—" for horizons not yet observable. Then the **gamification** section (`GamificationSection` in
   `usage-gamification.tsx`): XP, streaks (avg of users active in the range), achievements, challenge claim
   rates, gifts, shop, and daily XP/achievements/gems-spent.
-- **Aprendizaje** (`usage-learning.tsx`) — completion (per course, worst-first), enrollment-status donut,
-  accuracy (global + per block type, worst-first), hardest lessons, vocabulary, sign-report resolution +
-  most-reported signs, imports.
+- **Aprendizaje** (`usage-learning.tsx`) — "¿La gente aprende LSA?": lesson flow (iniciadas/completadas +
+  tasa de finalización) and exercise flow (realizados, tasa de éxito, intentos promedio); the **embudo de
+  aprendizaje** (`funnel.tsx`: registrados → iniciaron lección → hicieron ejercicio → completaron lección →
+  2+) and the **evolución de aciertos** daily chart; completion (per course, worst-first), enrollment-status
+  donut, accuracy (global + per block type, worst-first), hardest lessons; a **dificultad y calidad** section
+  — lessons by abandonment and exercises by error rate / retries (`ExerciseRanking`); vocabulary, sign-report
+  resolution + most-reported signs, imports. Timing-per-lesson/exercise and weighted avg progress are not yet
+  calculable (no stored timing) and are intentionally omitted.
 - **Infraestructura** (`usage-infra.tsx`) — inner sub-tabs. **Backend** grouped into **API · HTTP**
   (latency p95/p99, throughput, 4xx/5xx, slowest ops), **Sistema y recursos** (CPU/mem host + containers,
   JVM heap/GC, DB connections) and **Servicios de Signa** (R2 presign, mail/push failures). **Web / Landing**

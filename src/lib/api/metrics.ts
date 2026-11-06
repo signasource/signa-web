@@ -113,6 +113,37 @@ export type LearningMetrics = {
     mostReported: { meaning: string; count: number }[];
   };
   imports: CountItem[];
+  lessons: { started: number; completed: number; completionPercent: number };
+  exercises: {
+    attempted: number;
+    correct: number;
+    successPercent: number;
+    averageAttempts: number;
+  };
+  /** Onboarding steps (registrados → … → completaron 2+ lecciones), as of the window's close. */
+  onboardingFunnel: CountItem[];
+  lessonRanking: {
+    lessonId: string;
+    lessonName: string;
+    started: number;
+    completed: number;
+    completionPercent: number;
+    abandonmentPercent: number;
+  }[];
+  highestErrorExercises: ExerciseDifficulty[];
+  mostRetriedExercises: ExerciseDifficulty[];
+  /** Daily accuracy (correct / evaluated) — the correct-answer evolution over the window. */
+  dailyAccuracy: { day: string; evaluated: number; correct: number; accuracyPercent: number }[];
+};
+
+/** One exercise (lesson block) in a difficulty ranking. */
+export type ExerciseDifficulty = {
+  blockId: string;
+  label: string;
+  evaluated: number;
+  correct: number;
+  errorPercent: number;
+  averageAttempts: number;
 };
 
 /** Global gamification & engagement metrics — the "Gamificación" apartado. */

@@ -117,11 +117,7 @@ export function UsersTab({
           hint={<Delta current={active} previous={e.previousActiveInRange} />}
           tone="neutral"
         />
-        <GoldenTile
-          metric="users_total"
-          value={NUMBER.format(u.total)}
-          tone="neutral"
-        />
+        <GoldenTile metric="users_total" value={NUMBER.format(u.total)} tone="neutral" />
         <GoldenTile
           metric="xp_per_user"
           value={xpPerUser == null ? "—" : NUMBER.format(xpPerUser)}

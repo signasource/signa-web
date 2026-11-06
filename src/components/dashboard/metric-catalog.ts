@@ -198,6 +198,74 @@ export const METRICS = {
     howComputed: "UserLessonProgress que pasó a COMPLETED con completedAt dentro del rango.",
     goodWhen: "Acompaña a la cantidad de usuarios activos.",
   },
+  lessons_started: {
+    label: "Lecciones iniciadas",
+    description: "Lecciones comenzadas por los usuarios en el período.",
+    howComputed: "UserLessonProgress con startedAt dentro del rango.",
+    goodWhen: "Alta y acompañada por una buena tasa de finalización.",
+  },
+  lesson_completion_rate: {
+    label: "Tasa de finalización",
+    description: "Qué parte de las lecciones iniciadas se completan.",
+    howComputed: "Lecciones completadas / lecciones iniciadas en el período.",
+    goodWhen: "Cuanto más alta, mejor; una tasa baja marca lecciones que se abandonan.",
+    threshold: { dir: "up", warn: 50, danger: 30 },
+  },
+  exercises_attempted: {
+    label: "Ejercicios realizados",
+    description: "Intentos en ejercicios evaluables dentro del período.",
+    howComputed: "Intentos de bloque con corrección (isCorrect no nulo) en el rango.",
+    goodWhen: "Refleja volumen de práctica real.",
+  },
+  exercise_success_rate: {
+    label: "Tasa de éxito",
+    description: "Qué parte de los ejercicios se responde correctamente.",
+    howComputed: "Intentos correctos / intentos evaluados en el período.",
+    goodWhen: "Alta pero no del 100% (si es muy alta, el contenido es demasiado fácil).",
+    threshold: { dir: "up", warn: 70, danger: 55 },
+  },
+  avg_attempts: {
+    label: "Intentos promedio",
+    description: "Intentos que necesita en promedio un usuario para resolver un ejercicio.",
+    howComputed: "Intentos evaluados / pares (usuario, ejercicio) distintos del período.",
+    goodWhen: "Cercano a 1–2; muy alto indica ejercicios demasiado difíciles.",
+    threshold: { dir: "down", warn: 2.5, danger: 4 },
+  },
+  learning_funnel: {
+    label: "Embudo de aprendizaje",
+    description:
+      "Dónde se pierden los usuarios en el recorrido: registro → primera lección → primer ejercicio → completar lecciones.",
+    howComputed:
+      "Usuarios distintos que alcanzaron cada paso (estado al cierre del período): registrados, iniciaron una lección, hicieron un ejercicio, completaron una lección, completaron 2+.",
+    goodWhen: "Las caídas entre pasos son chicas; pocos se pierden al principio.",
+  },
+  lesson_abandonment: {
+    label: "Lecciones con mayor abandono",
+    description: "Lecciones que se inician pero no se completan.",
+    howComputed:
+      "Por lección (con muestra suficiente): 1 − completadas/iniciadas, ordenado de mayor a menor abandono.",
+    goodWhen: "Ninguna lección con abandono muy por encima del resto.",
+  },
+  exercise_error_rate: {
+    label: "Ejercicios con mayor tasa de error",
+    description: "Ejercicios (bloques) que más se responden mal.",
+    howComputed:
+      "Por ejercicio (con muestra suficiente): 1 − correctos/evaluados, ordenado de mayor a menor.",
+    goodWhen: "Permite detectar ejercicios confusos o mal calibrados.",
+  },
+  exercise_retries: {
+    label: "Ejercicios con más reintentos",
+    description: "Ejercicios que requieren más intentos por usuario.",
+    howComputed:
+      "Por ejercicio: intentos evaluados / usuarios distintos, ordenado de mayor a menor.",
+    goodWhen: "Reintentos moderados; muchos reintentos marcan fricción.",
+  },
+  accuracy_evolution: {
+    label: "Evolución de respuestas correctas",
+    description: "Cómo evoluciona el porcentaje de aciertos día a día.",
+    howComputed: "Correctos / evaluados por día dentro del rango.",
+    goodWhen: "Estable o creciente; una caída marca contenido nuevo difícil o un problema.",
+  },
   topics_completed: {
     label: "Temas completados",
     description: "Temas (capítulos) terminados en el período.",

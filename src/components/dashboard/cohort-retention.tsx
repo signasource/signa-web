@@ -85,7 +85,9 @@ export function CohortRetentionTable({ cohorts }: { cohorts: CohortRetention[] }
           </tbody>
         </table>
       )}
-      <p className="text-text-muted mt-3 text-[13px]">Los guiones indican períodos todavía no observables.</p>
+      <p className="text-text-muted mt-3 text-[13px]">
+        Los guiones indican períodos todavía no observables.
+      </p>
     </Card>
   );
 }
