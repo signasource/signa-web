@@ -17,8 +17,10 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
 (`metrics-tabs.tsx`) is the accessible `role="tablist"`.
 
 - **Negocio** (`usage-growth.tsx`) — the money, grouped **sin organización** (gem purchases, users on paid
-  courses) vs **organizaciones** (B2B revenue/refunds, seats, org status donut, revenue series). Exposes
-  `useGrowthMetrics` (shared with Usuarios).
+  courses) vs **organizaciones** (B2B revenue/refunds, seats, org status donut, revenue series, pipeline:
+  orgs pendientes/nuevas, usuarios & ingreso promedio por org, compras, **conversión free→premium**, and the
+  **per-org license utilization table** `OrgUtilizationTable` — contracted vs. used seats, amber when a big
+  contract is under-used). Exposes `useGrowthMetrics` (shared with Usuarios).
 - **Usuarios** (`usage-usuarios.tsx`) — "¿La gente usa Signa?": adquisición, actividad y retención.
   Rolling DAU/WAU/MAU + stickiness (windows ending at the period's close); range-based tasa de actividad
   (active/total, shown as numerator/denominator), new users and active users each with a **period-over-period

@@ -84,7 +84,28 @@ export type GrowthMetrics = {
   gems: { purchases: number; gemsGranted: number; daily: DailyCount[] };
   seats: { sold: number; active: number; utilizationPercent: number };
   organizations: CountItem[];
+  orgs: {
+    newInRange: number;
+    pending: number;
+    avgUsersPerOrg: number;
+    avgRevenuePerOrg: number;
+    purchasesInRange: number;
+    dailyPurchases: DailyCount[];
+    utilization: OrgUtilization[];
+    conversion: { freeCourseUsers: number; paidCourseUsers: number; conversionPercent: number };
+  };
   paidCourseUsers: number;
+};
+
+/** One organization's B2B license utilization row (contracted vs. used seats). */
+export type OrgUtilization = {
+  orgId: string;
+  name: string;
+  members: number;
+  seatsSold: number;
+  seatsActive: number;
+  occupancyPercent: number;
+  revenue: number;
 };
 
 /** Global learning & content metrics — the "Aprendizaje & contenido" apartado. */

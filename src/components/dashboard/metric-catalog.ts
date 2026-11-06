@@ -178,6 +178,51 @@ export const METRICS = {
     howComputed: "Organizaciones con estado ACTIVE al cierre del período.",
     goodWhen: "Crece; pocas quedan en PENDING sin resolver.",
   },
+  orgs_pending: {
+    label: "Organizaciones pendientes",
+    description: "Organizaciones registradas que esperan aprobación de SIGNA.",
+    howComputed: "Organizaciones con estado PENDING al cierre del período.",
+    goodWhen: "Cerca de cero: se validan rápido para que puedan contratar.",
+    threshold: { dir: "down", warn: 3, danger: 8 },
+  },
+  orgs_new: {
+    label: "Organizaciones nuevas",
+    description: "Altas de organizaciones dentro del período.",
+    howComputed: "Organizaciones cuya fecha de alta (createdAt) cae dentro del rango.",
+    goodWhen: "Crece: refleja la llegada de nuevos clientes B2B.",
+  },
+  avg_users_per_org: {
+    label: "Usuarios promedio por org",
+    description: "Cuántos participantes activos tiene en promedio cada organización.",
+    howComputed: "Miembros ACTIVE / organizaciones con al menos un miembro.",
+    goodWhen: "Alto: las organizaciones aprovechan la plataforma con muchos participantes.",
+  },
+  avg_revenue_per_org: {
+    label: "Ingreso promedio por org",
+    description: "Ingresos acumulados promedio por cada organización que compró.",
+    howComputed: "Ingresos confirmados totales / organizaciones con al menos una compra.",
+    goodWhen: "Alto y creciente.",
+  },
+  purchases_count: {
+    label: "Compras",
+    description: "Compras de cupos confirmadas en el período.",
+    howComputed: "CoursePurchase con pago confirmado (paidAt) dentro del rango.",
+    goodWhen: "Acompaña el crecimiento comercial.",
+  },
+  free_to_premium: {
+    label: "Conversión free → premium",
+    description: "Qué proporción de usuarios de cursos gratuitos llega a un curso pago.",
+    howComputed: "Usuarios en cursos pagos / usuarios en cursos gratuitos (al cierre del período).",
+    goodWhen: "Cuanto más alta, mejor conversión del contenido gratis al pago.",
+  },
+  org_utilization: {
+    label: "Utilización de licencias por org",
+    description:
+      "Cupos contratados vs. utilizados por organización. Una org que contrata 100 y usa 5 es una señal comercial importante.",
+    howComputed:
+      "Por organización: cupos ACTIVE / cupos vendidos (compras pagadas), con miembros e ingresos. Ordenado por cupos contratados.",
+    goodWhen: "Ocupación alta: las licencias compradas se usan.",
+  },
 
   // ── Aprendizaje & contenido ──────────────────────────────────────────────────────────────────
   courses_total: {

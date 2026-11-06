@@ -5,12 +5,14 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { BreakdownPie } from "@/components/dashboard/breakdown-pie";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
+import { InfoPopover } from "@/components/dashboard/info-popover";
 import { MetricStat } from "@/components/dashboard/metric-stat";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount, fmtMoney } from "@/components/dashboard/perf-format";
 import { REFRESH_MS } from "@/components/dashboard/perf-panel";
+import { Card, CardTitle, ProgressBar } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
-import { metricsApi } from "@/lib/api/metrics";
+import { metricsApi, type OrgUtilization } from "@/lib/api/metrics";
 import type { DateTimeRange } from "@/lib/datetime-range";
 
 const ORG_STATUS: Record<string, string> = {
@@ -142,9 +144,23 @@ export function GrowthTab({
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <MetricStat
-            metric="revenue"
-            value={fmtMoney(g.revenue.paidAmount)}
+            metric="orgs_pending"
+            value={NUMBER.format(g.orgs.pending)}
+            hint={`${NUMBER.format(g.orgs.newInRange)} nuevas en el período`}
+          />
+          <MetricStat metric="avg_users_per_org" value={NUMBER.format(g.orgs.avgUsersPerOrg)} />
+          <MetricStat metric="avg_revenue_per_org" value={fmtMoney(g.orgs.avgRevenuePerOrg)} />
+          <MetricStat
+            metric="purchases_count"
+            value={NUMBER.format(g.orgs.purchasesInRange)}
             hint={`ticket prom. ${fmtMoney(g.revenue.averageTicket)}`}
+          />
+          <MetricStat
+            metric="free_to_premium"
+            value={
+              g.orgs.conversion.freeCourseUsers ? `${g.orgs.conversion.conversionPercent}%` : "—"
+            }
+            hint={`${NUMBER.format(g.orgs.conversion.paidCourseUsers)} / ${NUMBER.format(g.orgs.conversion.freeCourseUsers)} usuarios`}
           />
           <MetricStat
             metric="refund_rate"
@@ -152,7 +168,69 @@ export function GrowthTab({
             hint={fmtMoney(g.revenue.refundedAmount)}
           />
         </div>
+
+        <OrgUtilizationTable rows={g.orgs.utilization} />
       </Section>
     </div>
+  );
+}
+
+/**
+ * Per-organization license utilization: contracted vs. used seats, plus members and revenue. The
+ * occupancy bar turns amber when a sizeable contract is barely used — the key B2B health signal.
+ */
+function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
+  return (
+    <Card className="mt-4">
+      <div className="flex items-center gap-1.5">
+        <CardTitle>Utilización de licencias por organización</CardTitle>
+        <InfoPopover metric="org_utilization" className="ml-auto" />
+      </div>
+      <p className="text-text-muted mt-1 text-[13px]">
+        Cupos contratados vs. utilizados. Una ocupación baja en un contrato grande es una señal
+        comercial.
+      </p>
+      {rows.length === 0 ? (
+        <p className="text-text-muted mt-4 text-sm">Sin compras de cupos todavía.</p>
+      ) : (
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="text-text-muted text-left text-xs font-bold">
+                <th className="pb-2 font-bold">Organización</th>
+                <th className="pb-2 pl-3 text-right font-bold">Miembros</th>
+                <th className="pb-2 pl-3 text-right font-bold">Cupos</th>
+                <th className="w-40 pb-2 pl-3 font-bold">Ocupación</th>
+                <th className="pb-2 pl-3 text-right font-bold">Ingresos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((o) => (
+                <tr key={o.orgId} className="border-fill border-t">
+                  <td className="py-2 font-bold">{o.name}</td>
+                  <td className="py-2 pl-3 text-right">{NUMBER.format(o.members)}</td>
+                  <td className="py-2 pl-3 text-right">
+                    {NUMBER.format(o.seatsActive)}/{NUMBER.format(o.seatsSold)}
+                  </td>
+                  <td className="py-2 pl-3">
+                    <div className="flex items-center gap-2">
+                      <ProgressBar
+                        percent={o.occupancyPercent}
+                        tone={o.occupancyPercent < 50 ? "warning" : undefined}
+                        className="flex-1"
+                      />
+                      <span className="w-10 text-right text-xs font-extrabold">
+                        {o.occupancyPercent}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-2 pl-3 text-right font-extrabold">{fmtMoney(o.revenue)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
   );
 }
