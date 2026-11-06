@@ -25,7 +25,9 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   Rolling DAU/WAU/MAU + stickiness (windows ending at the period's close); range-based tasa de actividad
   (active/total, shown as numerator/denominator), new users and active users each with a **period-over-period
   delta** (`Delta`, vs. the previous equal-length window; hidden for the whole history), tasa de activación
-  (new users who made an attempt / new users), XP per active user, and new/active-users daily series. The
+  (new users who made an attempt / new users), XP per active user, and new/active-users daily series; a
+  **sessions** row — sesiones por usuario (frequency) and duración promedio de sesión (time spent) from app
+  telemetry (`signa-mobile` `useSessionTracker` → `POST /sessions`), with a daily sessions chart. The
   **cohort retention table** (`cohort-retention.tsx`) reads D1/D7/D30 retention per weekly signup cohort, with
   "—" for horizons not yet observable. Then the **gamification** section (`GamificationSection` in
   `usage-gamification.tsx`): "¿La gamificación ayuda?" — streaks (racha >7 con numerador/denominador, racha

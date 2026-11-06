@@ -71,6 +71,13 @@ export type GrowthMetrics = {
     previousActiveInRange: number | null;
     dailyActive: DailyCount[];
   };
+  sessions: {
+    total: number;
+    users: number;
+    perUser: number;
+    averageDurationSeconds: number;
+    daily: DailyCount[];
+  };
   retention: CohortRetention[];
   waitlist: { total: number; newInRange: number; daily: DailyCount[] };
   revenue: {

@@ -3,6 +3,7 @@
 import { CohortRetentionTable } from "@/components/dashboard/cohort-retention";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
+import { MetricStat } from "@/components/dashboard/metric-stat";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount } from "@/components/dashboard/perf-format";
 import { GamificationSection } from "@/components/dashboard/usage-gamification";
@@ -21,6 +22,14 @@ function useGamificationMetrics(range: DateTimeRange, live: boolean) {
     placeholderData: keepPreviousData,
     refetchInterval: live ? REFRESH_MS : false,
   });
+}
+
+/** Seconds → "3m 4s" / "45s" / "—" for a session-duration value. */
+function fmtDuration(seconds: number): string {
+  if (!seconds) return "—";
+  const s = Math.round(seconds);
+  if (s < 60) return `${s}s`;
+  return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
 /**
@@ -139,6 +148,29 @@ export function UsersTab({
           points={e.dailyActive.map((d) => ({ day: d.day, value: d.count }))}
           format={fmtCount}
           onSelectRange={onSelectRange}
+        />
+      </div>
+
+      {/* Sesiones: frecuencia de uso y tiempo dedicado (telemetría de la app). */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="flex flex-col gap-4">
+          <MetricStat
+            metric="sessions_per_user"
+            value={g.sessions.users ? NUMBER.format(g.sessions.perUser) : "—"}
+            hint={`${NUMBER.format(g.sessions.total)} sesiones · ${NUMBER.format(g.sessions.users)} usuarios`}
+          />
+          <MetricStat
+            metric="session_duration"
+            value={fmtDuration(g.sessions.averageDurationSeconds)}
+          />
+        </div>
+        <DailySeriesChart
+          title="Sesiones por día"
+          metric="sessions_per_user"
+          points={g.sessions.daily.map((d) => ({ day: d.day, value: d.count }))}
+          format={fmtCount}
+          onSelectRange={onSelectRange}
+          className="flex min-w-0 flex-col gap-3 lg:col-span-2"
         />
       </div>
 

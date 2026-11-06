@@ -95,6 +95,19 @@ export const METRICS = {
     howComputed: "Usuarios cuya fecha de alta (created_at) cae dentro del rango. Serie diaria.",
     goodWhen: "Acompaña o supera la tasa de baja.",
   },
+  sessions_per_user: {
+    label: "Sesiones por usuario",
+    description: "Con qué frecuencia abre la app cada usuario en el período (uso recurrente).",
+    howComputed: "Sesiones reportadas por la app / usuarios distintos con sesión, en el rango.",
+    goodWhen: "Más alto = la gente vuelve más seguido.",
+  },
+  session_duration: {
+    label: "Duración promedio de sesión",
+    description: "Cuánto dura en promedio una sesión de uso de la app (tiempo dedicado).",
+    howComputed:
+      "Promedio de la duración (en segundos) de las sesiones reportadas por la app en el rango. Una sesión = app en primer plano, de apertura a segundo plano.",
+    goodWhen: "Suficiente para progresar sin señales de fricción.",
+  },
   activation_rate: {
     label: "Tasa de activación",
     description: "Qué parte de los usuarios nuevos del período realmente empieza a aprender.",
