@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { BreakdownPie } from "@/components/dashboard/breakdown-pie";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
 import { MetricStat } from "@/components/dashboard/metric-stat";
@@ -9,7 +10,7 @@ import { fmtCount } from "@/components/dashboard/perf-format";
 import { REFRESH_MS } from "@/components/dashboard/perf-panel";
 import { Card, CardTitle, ErrorState, LoadingState, ProgressBar } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
-import { metricsApi } from "@/lib/api/metrics";
+import { metricsApi, type NameCount } from "@/lib/api/metrics";
 import type { DateTimeRange } from "@/lib/datetime-range";
 
 const CHALLENGE_TYPE: Record<string, string> = {
@@ -62,18 +63,24 @@ export function GamificationSection({
           metric="streak_over7"
           value={streakOverPct == null ? "—" : `${streakOverPct}%`}
           rawValue={streakOverPct}
-          hint={`${NUMBER.format(g.streaks.usersOverSevenDays)} usuarios`}
+          hint={`${NUMBER.format(g.streaks.usersOverSevenDays)} / ${NUMBER.format(g.streaks.activeStreakers)} con racha`}
         />
         <GoldenTile
-          metric="streak_avg"
-          value={g.streaks.averageStreakActive ? `${g.streaks.averageStreakActive} d` : "—"}
+          metric="max_streak"
+          value={`${NUMBER.format(g.streaks.maxStreak)} d`}
           tone="neutral"
         />
-        <GoldenTile metric="xp_daily" value={NUMBER.format(g.xp.total)} tone="neutral" />
         <GoldenTile
-          metric="achievements_unlocked"
-          value={NUMBER.format(g.achievements.unlocked)}
+          metric="xp_per_active_user"
+          value={g.xp.activeUsers ? NUMBER.format(g.xp.perActiveUser) : "—"}
+          hint={`${NUMBER.format(g.xp.total)} XP total`}
           tone="neutral"
+        />
+        <GoldenTile
+          metric="achievement_unlock_rate"
+          value={`${g.achievements.unlockRatePercent}%`}
+          rawValue={g.achievements.unlockRatePercent}
+          hint={`${NUMBER.format(g.achievements.unlocked)} en el período`}
         />
         <GoldenTile
           metric="challenge_claim_rate"
@@ -89,12 +96,16 @@ export function GamificationSection({
           hint={`${NUMBER.format(g.streaks.activeStreakers)} con racha activa`}
         />
         <MetricStat
+          metric="gem_redemption_rate"
+          value={g.shop.gemsCredited ? `${g.shop.redemptionRatePercent}%` : "—"}
+          hint={`${NUMBER.format(g.shop.totalGemsSpent)} / ${NUMBER.format(g.shop.gemsCredited)} 💎`}
+        />
+        <MetricStat
           metric="gifts"
           value={NUMBER.format(g.gifts.sent)}
           hint={`${NUMBER.format(g.gifts.claimed)} reclamados`}
         />
         <MetricStat metric="gems_spent" value={NUMBER.format(g.shop.totalGemsSpent)} />
-        <MetricStat metric="achievements_unlocked" value={NUMBER.format(g.achievements.unlocked)} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -144,24 +155,10 @@ export function GamificationSection({
           )}
         </Card>
 
-        <Card className="flex min-w-0 flex-col gap-3">
-          <CardTitle>Logros más desbloqueados</CardTitle>
-          {g.achievements.topUnlocked.length === 0 ? (
-            <p className="text-text-muted text-sm">Sin logros desbloqueados.</p>
-          ) : (
-            <dl className="flex flex-col">
-              {g.achievements.topUnlocked.map((a) => (
-                <div
-                  key={a.name}
-                  className="border-fill flex justify-between gap-3 border-b py-2 text-sm last:border-b-0"
-                >
-                  <dt className="text-text-muted truncate">{a.name}</dt>
-                  <dd className="font-extrabold">{NUMBER.format(a.count)}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </Card>
+        <BreakdownPie
+          title="Distribución de XP"
+          items={g.xpDistribution.map((t) => ({ label: t.name, value: t.count }))}
+        />
 
         <Card className="flex min-w-0 flex-col gap-3">
           <CardTitle>Ítems más comprados</CardTitle>
@@ -184,6 +181,39 @@ export function GamificationSection({
           )}
         </Card>
       </div>
+
+      {/* Ranking de logros: los más y los menos desbloqueados. */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AchievementRanking title="Logros más desbloqueados" items={g.achievements.topUnlocked} />
+        <AchievementRanking
+          title="Logros menos desbloqueados"
+          items={g.achievements.leastUnlocked}
+        />
+      </div>
     </div>
+  );
+}
+
+/** A ranked list of achievements by unlock count (used for both most- and least-unlocked). */
+function AchievementRanking({ title, items }: { title: string; items: NameCount[] }) {
+  return (
+    <Card className="flex min-w-0 flex-col gap-3">
+      <CardTitle>{title}</CardTitle>
+      {items.length === 0 ? (
+        <p className="text-text-muted text-sm">Sin logros.</p>
+      ) : (
+        <dl className="flex flex-col">
+          {items.map((a) => (
+            <div
+              key={a.name}
+              className="border-fill flex justify-between gap-3 border-b py-2 text-sm last:border-b-0"
+            >
+              <dt className="text-text-muted truncate">{a.name}</dt>
+              <dd className="font-extrabold">{NUMBER.format(a.count)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </Card>
   );
 }

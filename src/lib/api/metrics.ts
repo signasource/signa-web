@@ -146,27 +146,37 @@ export type ExerciseDifficulty = {
   averageAttempts: number;
 };
 
+/** A named count (an achievement, an XP tier). */
+export type NameCount = { name: string; count: number };
+
 /** Global gamification & engagement metrics — the "Gamificación" apartado. */
 export type GamificationMetrics = {
-  xp: { total: number; daily: DailyCount[] };
+  xp: { total: number; perActiveUser: number; activeUsers: number; daily: DailyCount[] };
   streaks: {
     averageCurrentStreak: number;
     averageStreakActive: number;
     usersOverSevenDays: number;
     activeStreakers: number;
+    maxStreak: number;
   };
   achievements: {
     unlocked: number;
+    unlockRatePercent: number;
     daily: DailyCount[];
-    topUnlocked: { name: string; count: number }[];
+    topUnlocked: NameCount[];
+    leastUnlocked: NameCount[];
   };
   challenges: { type: string; completed: number; claimed: number; claimRatePercent: number }[];
   gifts: { sent: number; claimed: number };
   shop: {
     totalGemsSpent: number;
+    gemsCredited: number;
+    redemptionRatePercent: number;
     topItems: { title: string; purchases: number; gemsSpent: number }[];
     dailySpent: DailyCount[];
   };
+  /** Users bucketed by total XP (experience tiers). */
+  xpDistribution: NameCount[];
 };
 
 /** One Prometheus series: its label set and its points. */

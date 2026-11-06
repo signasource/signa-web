@@ -357,6 +357,45 @@ export const METRICS = {
     howComputed: "Altas de UserAchievement (unlockedAt) dentro del rango.",
     goodWhen: "Acompaña el engagement general.",
   },
+  max_streak: {
+    label: "Racha máxima",
+    description: "La mayor cantidad de días consecutivos alcanzada por cualquier usuario.",
+    howComputed: "MAX(longestStreak) sobre UserStats (estado actual).",
+    goodWhen: "Alta: muestra que algunos usuarios sostienen un hábito fuerte.",
+  },
+  xp_per_active_user: {
+    label: "XP por usuario activo",
+    description: "Experiencia promedio ganada por usuario activo (no se infla con más usuarios).",
+    howComputed: "XP total del período / usuarios activos del período.",
+    goodWhen: "Estable o creciente: cada usuario activo avanza, más allá del total.",
+  },
+  achievement_unlock_rate: {
+    label: "Tasa de desbloqueo de logros",
+    description: "Qué parte de las oportunidades de logro se desbloquearon.",
+    howComputed:
+      "Pares (usuario, logro) desbloqueados / (logros activos × usuarios habilitados). Estado actual.",
+    goodWhen: "Ni muy baja (logros inalcanzables) ni del 100% (demasiado fáciles).",
+  },
+  gem_redemption_rate: {
+    label: "Tasa de canje de gemas",
+    description: "Qué proporción de las gemas acreditadas se gastan en la tienda.",
+    howComputed:
+      "Gemas gastadas / gemas acreditadas (desafíos reclamados + logros + compras reales) en el período.",
+    goodWhen:
+      "Equilibrada: cerca del 100% indica una economía sana; muy baja = gemas acumuladas sin usar.",
+  },
+  xp_distribution: {
+    label: "Distribución de XP",
+    description: "Cuántos usuarios hay en cada nivel de experiencia (por XP total acumulado).",
+    howComputed: "Usuarios de UserStats agrupados por rangos de totalXp.",
+    goodWhen: "Una base sana con usuarios avanzando hacia los tramos altos.",
+  },
+  achievements_least: {
+    label: "Logros menos desbloqueados",
+    description: "Los logros que casi nadie consigue (incluye los de cero desbloqueos).",
+    howComputed: "Logros activos ordenados por cantidad de desbloqueos ascendente.",
+    goodWhen: "Permite detectar logros inalcanzables o mal calibrados.",
+  },
   challenge_claim_rate: {
     label: "Reclamo de desafíos",
     description: "Qué parte de los desafíos completados efectivamente se reclaman.",

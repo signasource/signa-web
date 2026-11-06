@@ -26,8 +26,12 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   (new users who made an attempt / new users), XP per active user, and new/active-users daily series. The
   **cohort retention table** (`cohort-retention.tsx`) reads D1/D7/D30 retention per weekly signup cohort, with
   "—" for horizons not yet observable. Then the **gamification** section (`GamificationSection` in
-  `usage-gamification.tsx`): XP, streaks (avg of users active in the range), achievements, challenge claim
-  rates, gifts, shop, and daily XP/achievements/gems-spent.
+  `usage-gamification.tsx`): "¿La gamificación ayuda?" — streaks (racha >7 con numerador/denominador, racha
+  máxima, promedio), **XP por usuario activo** (con el total como contexto), tasa de desbloqueo de logros,
+  reclamo de desafíos, **tasa de canje de gemas** (gastadas/acreditadas); visualizaciones: **distribución de
+  XP** por tramos (BreakdownPie) y **ranking de logros** más y menos desbloqueados (`AchievementRanking`);
+  más daily XP/achievements/gems-spent. Deduplicado (una sola tarjeta por racha promedio y por logros). La
+  tasa de recuperación de racha no es calculable aún (sin registro histórico).
 - **Aprendizaje** (`usage-learning.tsx`) — "¿La gente aprende LSA?": lesson flow (iniciadas/completadas +
   tasa de finalización) and exercise flow (realizados, tasa de éxito, intentos promedio); the **embudo de
   aprendizaje** (`funnel.tsx`: registrados → iniciaron lección → hicieron ejercicio → completaron lección →
