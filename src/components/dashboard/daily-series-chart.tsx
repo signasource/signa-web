@@ -16,23 +16,58 @@ import { InfoPopover } from "@/components/dashboard/info-popover";
 import type { MetricId } from "@/components/dashboard/metric-catalog";
 import type { RangeSelect, ValueFormat } from "@/components/dashboard/perf-chart";
 import { Card, CardTitle } from "@/components/dashboard/ui";
-import { dayRangeSeconds } from "@/components/dashboard/usage-business";
 
-const DAY_FMT = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short" });
+// Buckets are UTC-aligned (epoch floor) and day strings parse as UTC midnight, so format in UTC to
+// keep labels on the bucket boundary (no off-by-one from the local offset).
+const TIME_FMT = new Intl.DateTimeFormat("es-AR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "UTC",
+});
+const DAY_FMT = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+const FULL_FMT = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "UTC",
+});
 
-type Point = { day: string; value: number };
-type Datum = { label: string; dayIso: string; value: number };
+const DAY_SECONDS = 86400;
 
-function makeTooltip(format: ValueFormat) {
+/** One series point. `t` is the bucket's start instant (ISO-8601) or a `YYYY-MM-DD` day. */
+type Point = { t: string; value: number };
+type Datum = { label: string; epoch: number; value: number };
+
+/**
+ * Smallest positive gap (seconds) between consecutive points = the series' bucket size, so the chart
+ * labels minute/hour buckets as a time and day buckets as a date without the caller passing a unit.
+ * Falls back to day resolution for a single point or an all-equal series.
+ */
+function inferBucketSeconds(epochsMs: number[]): number {
+  let min = Infinity;
+  for (let i = 1; i < epochsMs.length; i++) {
+    const gap = epochsMs[i]! - epochsMs[i - 1]!;
+    if (gap > 0 && gap < min) min = gap;
+  }
+  return Number.isFinite(min) ? Math.round(min / 1000) : DAY_SECONDS;
+}
+
+function makeTooltip(format: ValueFormat, fullTime: boolean) {
   return function SeriesTooltip({
     active,
     payload,
   }: TooltipContentProps<TooltipValueType, string | number>) {
     const point = payload?.[0]?.payload as Datum | undefined;
     if (!active || !point) return null;
+    const fmt = fullTime ? FULL_FMT : DAY_FMT;
     return (
       <div className="border-border bg-surface rounded-xl border px-3 py-2 text-[13px] shadow-lg">
-        <p className="text-text-muted font-bold">{point.label}</p>
+        <p className="text-text-muted font-bold">{fmt.format(new Date(point.epoch))}</p>
         <p className="font-extrabold">{format(point.value)}</p>
       </div>
     );
@@ -40,9 +75,10 @@ function makeTooltip(format: ValueFormat) {
 }
 
 /**
- * Generic day-resolution time-series for a `{ day, value }` series (new users, revenue, …). Renders
- * as bars or a line per the page-level chart kind. Clicking a day selects it through `onSelectRange`,
- * driving the global filter. Self-documents via the metric's InfoPopover.
+ * Generic time-series for a `{ t, value }` series (new users, revenue, …) at whatever resolution the
+ * API bucketed it to: minute/hour buckets are labelled as a time, day buckets as a date. Renders as
+ * bars or a line per the page-level chart kind. Clicking a bar selects that bucket's window through
+ * `onSelectRange`, driving the global filter. Self-documents via the metric's InfoPopover.
  */
 export function DailySeriesChart({
   title,
@@ -63,16 +99,23 @@ export function DailySeriesChart({
 }) {
   const kind = useChartKind();
   const data: Datum[] = points.map((p) => ({
-    label: DAY_FMT.format(new Date(`${p.day}T00:00:00`)),
-    dayIso: p.day,
+    label: p.t,
+    epoch: new Date(p.t).getTime(),
     value: p.value,
   }));
-  const summary = data.map((d) => `${d.label}: ${format(d.value)}`).join(". ");
+  const bucketSeconds = inferBucketSeconds(data.map((d) => d.epoch));
+  const subDay = bucketSeconds < DAY_SECONDS;
+  const tickFmt = subDay ? TIME_FMT : DAY_FMT;
+  for (const d of data) d.label = tickFmt.format(new Date(d.epoch));
 
-  const selectDay = (d: Datum) => {
+  const summary = data
+    .map((d) => `${(subDay ? FULL_FMT : DAY_FMT).format(new Date(d.epoch))}: ${format(d.value)}`)
+    .join(". ");
+
+  const selectBucket = (d: Datum) => {
     if (!onSelectRange) return;
-    const { from, to } = dayRangeSeconds(d.dayIso);
-    onSelectRange(from, to);
+    const from = Math.floor(d.epoch / 1000);
+    onSelectRange(from, from + bucketSeconds - 1);
   };
 
   return (
@@ -100,7 +143,7 @@ export function DailySeriesChart({
                 tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
               />
               <Tooltip
-                content={makeTooltip(format)}
+                content={makeTooltip(format, subDay)}
                 cursor={{ fill: "var(--color-fill)", radius: 8 }}
                 isAnimationActive={false}
               />
@@ -120,7 +163,7 @@ export function DailySeriesChart({
                   radius={[8, 8, 4, 4]}
                   maxBarSize={40}
                   className={onSelectRange ? "cursor-pointer" : undefined}
-                  onClick={(d) => selectDay(d as unknown as Datum)}
+                  onClick={(d) => selectBucket(d as unknown as Datum)}
                 />
               )}
             </ComposedChart>

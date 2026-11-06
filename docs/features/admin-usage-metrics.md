@@ -3,7 +3,7 @@
 > Responsibility: the SIGNA back-office "Métricas de uso" dashboard — global app usage, organized by
 > apartado (persona), with golden metrics, self-documenting widgets and an interactive time filter.
 > Update when: a tab, widget, golden metric, the datetime picker, or the metrics API changes.
-> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,chart-kind,cohort-retention,funnel,usage-business,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.tsx, src/lib/{datetime-range,api/metrics}.ts
+> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,chart-kind,funnel,usage-business,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.tsx, src/lib/{datetime-range,api/metrics}.ts
 
 A single screen for the whole app's usage — every user, with or without an organization — behind the
 SIGNA `AdminAuthProvider` (not the org dashboard). One **datetime range picker** (hour/minute precision,
@@ -18,24 +18,22 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
 
 - **Negocio** (`usage-growth.tsx`) — the money, grouped **sin organización** (gem purchases, users on paid
   courses) vs **organizaciones** (B2B revenue/refunds, seats, org status donut, revenue series, pipeline:
-  orgs pendientes/nuevas, usuarios & ingreso promedio por org, compras, **conversión free→premium**, and the
-  **per-org license utilization table** `OrgUtilizationTable` — contracted vs. used seats, amber when a big
-  contract is under-used). Exposes `useGrowthMetrics` (shared with Usuarios).
-- **Usuarios** (`usage-usuarios.tsx`) — "¿La gente usa Signa?": adquisición, actividad y retención.
-  Rolling DAU/WAU/MAU + stickiness (windows ending at the period's close); range-based tasa de actividad
-  (active/total, shown as numerator/denominator), new users and active users each with a **period-over-period
-  delta** (`Delta`, vs. the previous equal-length window; hidden for the whole history), tasa de activación
-  (new users who made an attempt / new users), XP per active user, and new/active-users daily series; a
-  **sessions** row — sesiones por usuario (frequency) and duración promedio de sesión (time spent) from app
-  telemetry (`signa-mobile` `useSessionTracker` → `POST /sessions`), with a daily sessions chart. The
-  **cohort retention table** (`cohort-retention.tsx`) reads D1/D7/D30 retention per weekly signup cohort, with
-  "—" for horizons not yet observable. Then the **gamification** section (`GamificationSection` in
-  `usage-gamification.tsx`): "¿La gamificación ayuda?" — streaks (racha >7 con numerador/denominador, racha
-  máxima, promedio), **XP por usuario activo** (con el total como contexto), tasa de desbloqueo de logros,
-  reclamo de desafíos, **tasa de canje de gemas** (gastadas/acreditadas); visualizaciones: **distribución de
-  XP** por tramos (BreakdownPie) y **ranking de logros** más y menos desbloqueados (`AchievementRanking`);
-  más daily XP/achievements/gems-spent. Deduplicado (una sola tarjeta por racha promedio y por logros). La
-  tasa de recuperación de racha no es calculable aún (sin registro histórico).
+  orgs nuevas, usuarios & ingreso promedio por org, compras, and the **per-org license utilization table**
+  `OrgUtilizationTable` — contracted vs. used seats, amber when a big contract is under-used; collapses to 6
+  rows behind a "Ver más (N)" toggle). Exposes `useGrowthMetrics` (shared with Usuarios).
+- **Usuarios** (`usage-usuarios.tsx`) — "¿La gente usa Signa?": adquisición y actividad medidas sobre la
+  ventana elegida. Range-based tasa de actividad (active/total, numerator/denominator), new users and active
+  users each with a **period-over-period delta** (`Delta`, vs. the previous equal-length window; hidden for
+  the whole history), tasa de activación (new users who made an attempt / new users), total base al cierre,
+  XP per active user, and new/active-users time series; a **sessions** row — sesiones por usuario (frequency)
+  and duración promedio de sesión (time spent) from app telemetry (`signa-mobile` `useSessionTracker` →
+  `POST /sessions`), with a sessions chart. Then the **gamification** section (`GamificationSection` in
+  `usage-gamification.tsx`): "¿La gamificación ayuda?" — **XP por usuario activo** (con el total como
+  contexto), tasa de desbloqueo de logros, reclamo de desafíos, **tasa de canje de gemas**
+  (gastadas/acreditadas); visualizaciones: **distribución de XP** por tramos (BreakdownPie) y **ranking de
+  logros** más y menos desbloqueados (`AchievementRanking`); más daily XP/achievements/gems-spent.
+  Rolling DAU/WAU/MAU + stickiness, current-streak tiles and the weekly-cohort retention table were removed
+  (no reaccionaban al rango desde/hasta).
 - **Aprendizaje** (`usage-learning.tsx`) — "¿La gente aprende LSA?": lesson flow (iniciadas/completadas +
   tasa de finalización) and exercise flow (realizados, tasa de éxito, intentos promedio); the **embudo de
   aprendizaje** (`funnel.tsx`: registrados → iniciaron lección → hicieron ejercicio → completaron lección →
@@ -87,8 +85,9 @@ control) switches every time-series widget between a line and bars at once.
   Aprendizaje tabs (one cached fetch per range).
 - **Growth** → `metricsApi.growth({ from, to })` → signa-api `GET /admin/metrics/growth`, aggregated from
   Postgres: audience (signups + total), engagement (DAU/WAU/MAU + stickiness), waitlist, B2B revenue and
-  refunds, the gem economy, seat utilization and organizations by status, with day-resolution series.
-  Powers the Negocio tab (`usage-growth.tsx`), alongside enrollment state from the business endpoint.
+  refunds, the gem economy, seat utilization and organizations by status, with **adaptive-resolution**
+  series (each point's `t` is the bucket's start instant — see Resolution below). Powers the Negocio tab
+  (`usage-growth.tsx`), alongside enrollment state from the business endpoint.
 - **Learning** → `metricsApi.learning({ from, to })` → signa-api `GET /admin/metrics/learning`, aggregated
   from Postgres: per-course completion, the enrollment funnel, the hardest lessons by accuracy, vocabulary
   growth (daily), sign-report resolution + most-reported signs, and content-import health. Powers the
@@ -106,9 +105,12 @@ all TanStack queries (`refetchInterval`) refresh. Query keys: `["admin","metrics
 
 ## Notes & limits
 
-- **Resolution:** business throughput/error time series are best read from the performance (Prometheus)
-  panels at hour/minute resolution; the business endpoint's own activity series is **day** resolution
-  (`UserDailyActivity` and attempt buckets are per Argentina day).
+- **Resolution:** the **Growth** series (`SeriesCount`/`SeriesAmount` with a `t` instant) are
+  **adaptive**: signa-api buckets them by `floor(epoch/bucket)` with `bucket = MetricsRange.bucketSeconds()`
+  (minute if the span ≤ 6 h, hour if ≤ 3 d, else day), so a 30-minute window reads minute-by-minute and a
+  30-day window day-by-day. `DailySeriesChart` infers the unit from the point spacing (time label for
+  sub-day, date for day) and formats in **UTC** (the bucket boundary). Learning/Gamification series stay
+  **day** resolution (`DailyCount` with a `day`; XP comes from `UserDailyXp.xpDate`, a calendar day).
 - **Grafana token:** performance panels need a Grafana Cloud `metrics:read` token on the server
   (`GRAFANA_CLOUD_PROM_*`). Without it the backend returns `available:false` and panels show "sin datos";
   the business tabs keep working.

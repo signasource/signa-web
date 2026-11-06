@@ -12,8 +12,8 @@ describe("DailySeriesChart", () => {
         title="Nuevos usuarios"
         metric="new_users"
         points={[
-          { day: "2026-11-01", value: 12 },
-          { day: "2026-11-02", value: 8 },
+          { t: "2026-11-01", value: 12 },
+          { t: "2026-11-02", value: 8 },
         ]}
         format={fmtCount}
       />,

@@ -25,12 +25,30 @@ export function InfoPopover({ metric, className }: { metric: MetricId; className
   const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
-  // Position the panel under the button, right-aligned, clamped to the viewport.
+  // Position the panel under the button, right-aligned, clamped to the viewport. When there isn't
+  // enough room below (a widget near the bottom of the page), flip it above the button so it's never
+  // cut off. The panel height is only known after it mounts, so re-measure on the next frame.
   useLayoutEffect(() => {
     if (!open || !btnRef.current) return;
-    const r = btnRef.current.getBoundingClientRect();
-    const left = Math.max(8, Math.min(r.right - PANEL_WIDTH, window.innerWidth - PANEL_WIDTH - 8));
-    setPos({ top: r.bottom + 6, left });
+    const place = () => {
+      const btn = btnRef.current;
+      if (!btn) return;
+      const r = btn.getBoundingClientRect();
+      const left = Math.max(
+        8,
+        Math.min(r.right - PANEL_WIDTH, window.innerWidth - PANEL_WIDTH - 8),
+      );
+      const margin = 8;
+      const panelHeight = panelRef.current?.offsetHeight ?? 0;
+      const spaceBelow = window.innerHeight - r.bottom - margin;
+      const spaceAbove = r.top - margin;
+      const flipAbove = panelHeight > spaceBelow && spaceAbove > spaceBelow;
+      const top = flipAbove ? Math.max(margin, r.top - panelHeight - 6) : r.bottom + 6;
+      setPos({ top, left });
+    };
+    place();
+    const raf = requestAnimationFrame(place);
+    return () => cancelAnimationFrame(raf);
   }, [open]);
 
   useEffect(() => {
@@ -78,8 +96,14 @@ export function InfoPopover({ metric, className }: { metric: MetricId; className
               id={panelId}
               role="dialog"
               aria-label={def.label}
-              style={{ position: "fixed", top: pos.top, left: pos.left, width: PANEL_WIDTH }}
-              className="border-border bg-surface dash-card-enter z-[100] flex max-w-[calc(100vw-1rem)] flex-col gap-2 rounded-2xl border p-4 text-left shadow-lg"
+              style={{
+                position: "fixed",
+                top: pos.top,
+                left: pos.left,
+                width: PANEL_WIDTH,
+                maxHeight: "calc(100vh - 1rem)",
+              }}
+              className="border-border bg-surface dash-card-enter z-[100] flex max-w-[calc(100vw-1rem)] flex-col gap-2 overflow-y-auto rounded-2xl border p-4 text-left shadow-lg"
             >
               <p className="font-display text-sm font-bold tracking-tight">{def.label}</p>
               <p className="text-text text-[13px] leading-relaxed">{def.description}</p>

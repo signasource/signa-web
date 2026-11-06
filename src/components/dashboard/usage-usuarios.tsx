@@ -1,6 +1,5 @@
 "use client";
 
-import { CohortRetentionTable } from "@/components/dashboard/cohort-retention";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
 import { MetricStat } from "@/components/dashboard/metric-stat";
@@ -53,10 +52,10 @@ function Delta({ current, previous }: { current: number; previous: number | null
 }
 
 /**
- * Usuarios — "¿La gente usa Signa?": adquisición, actividad y retención. DAU/WAU/MAU and stickiness
- * are rolling windows ending at the period's close; activation, new users and active users are
- * measured over the range and compared with the previous equal-length window; the cohort table reads
- * retention at the D1/D7/D30 horizons. Then the gamification & engagement section.
+ * Usuarios — "¿La gente usa Signa?": adquisición y actividad medidas sobre la ventana elegida.
+ * Activation, new users and active users are measured over the range and compared with the previous
+ * equal-length window; engagement and XP per user are over the period, total base as of its close.
+ * Then the gamification & engagement section.
  */
 export function UsersTab({
   range,
@@ -87,26 +86,8 @@ export function UsersTab({
 
   return (
     <div className="flex flex-col gap-7">
-      {/* Actividad: rolling active-user windows + how sticky the base is. */}
-      <GoldenRow>
-        <GoldenTile metric="dau" value={NUMBER.format(e.dau)} tone="neutral" />
-        <GoldenTile metric="wau" value={NUMBER.format(e.wau)} tone="neutral" />
-        <GoldenTile metric="mau" value={NUMBER.format(e.mau)} tone="neutral" />
-        <GoldenTile
-          metric="stickiness"
-          value={`${e.stickinessPercent}%`}
-          rawValue={e.stickinessPercent}
-          hint={`${NUMBER.format(e.dau)} / ${NUMBER.format(e.mau)} (DAU/MAU)`}
-        />
-        <GoldenTile
-          metric="engagement_rate"
-          value={engagement == null ? "—" : `${engagement}%`}
-          rawValue={engagement}
-          hint={`${NUMBER.format(active)} / ${NUMBER.format(total)} usuarios`}
-        />
-      </GoldenRow>
-
-      {/* Adquisición: new users, whether they activate, and per-user engagement. */}
+      {/* Adquisición y actividad medidas sobre la ventana elegida (altas, activación, activos,
+          base total al cierre y engagement/XP por usuario del período). */}
       <GoldenRow>
         <GoldenTile
           metric="new_users"
@@ -128,6 +109,12 @@ export function UsersTab({
         />
         <GoldenTile metric="users_total" value={NUMBER.format(u.total)} tone="neutral" />
         <GoldenTile
+          metric="engagement_rate"
+          value={engagement == null ? "—" : `${engagement}%`}
+          rawValue={engagement}
+          hint={`${NUMBER.format(active)} / ${NUMBER.format(total)} usuarios`}
+        />
+        <GoldenTile
           metric="xp_per_user"
           value={xpPerUser == null ? "—" : NUMBER.format(xpPerUser)}
           tone="neutral"
@@ -136,16 +123,16 @@ export function UsersTab({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <DailySeriesChart
-          title="Nuevos usuarios por día"
+          title="Nuevos usuarios"
           metric="new_users"
-          points={u.daily.map((d) => ({ day: d.day, value: d.count }))}
+          points={u.daily.map((d) => ({ t: d.t, value: d.count }))}
           format={fmtCount}
           onSelectRange={onSelectRange}
         />
         <DailySeriesChart
-          title="Usuarios activos por día"
+          title="Usuarios activos"
           metric="users_active"
-          points={e.dailyActive.map((d) => ({ day: d.day, value: d.count }))}
+          points={e.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
           format={fmtCount}
           onSelectRange={onSelectRange}
         />
@@ -165,16 +152,14 @@ export function UsersTab({
           />
         </div>
         <DailySeriesChart
-          title="Sesiones por día"
+          title="Sesiones"
           metric="sessions_per_user"
-          points={g.sessions.daily.map((d) => ({ day: d.day, value: d.count }))}
+          points={g.sessions.daily.map((d) => ({ t: d.t, value: d.count }))}
           format={fmtCount}
           onSelectRange={onSelectRange}
           className="flex min-w-0 flex-col gap-3 lg:col-span-2"
         />
       </div>
-
-      <CohortRetentionTable cohorts={g.retention} />
 
       <div className="border-border flex items-center gap-3 border-t pt-5">
         <h2 className="font-display text-xl font-bold tracking-tight">Gamificación & engagement</h2>

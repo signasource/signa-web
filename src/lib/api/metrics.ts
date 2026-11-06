@@ -33,8 +33,15 @@ export type BusinessMetrics = {
   }[];
 };
 
+/** Daily-resolution series point (`YYYY-MM-DD`) — used by the Learning/Gamification series. */
 export type DailyCount = { day: string; count: number };
-export type DailyAmount = { day: string; amount: number };
+
+/**
+ * Adaptive-resolution series point: `t` is the bucket's start instant (ISO-8601). The bucket size
+ * (minute/hour/day) follows the from/to span; the Growth series use these.
+ */
+export type SeriesCount = { t: string; count: number };
+export type SeriesAmount = { t: string; amount: number };
 
 /**
  * One weekly retention cohort. Horizon counts/percentages are `null` when the cohort's whole week
@@ -60,7 +67,7 @@ export type GrowthMetrics = {
     previousNewInRange: number | null;
     activatedInRange: number;
     activationPercent: number;
-    daily: DailyCount[];
+    daily: SeriesCount[];
   };
   engagement: {
     dau: number;
@@ -69,26 +76,26 @@ export type GrowthMetrics = {
     stickinessPercent: number;
     activeInRange: number;
     previousActiveInRange: number | null;
-    dailyActive: DailyCount[];
+    dailyActive: SeriesCount[];
   };
   sessions: {
     total: number;
     users: number;
     perUser: number;
     averageDurationSeconds: number;
-    daily: DailyCount[];
+    daily: SeriesCount[];
   };
   retention: CohortRetention[];
-  waitlist: { total: number; newInRange: number; daily: DailyCount[] };
+  waitlist: { total: number; newInRange: number; daily: SeriesCount[] };
   revenue: {
     paidAmount: number;
     paidCount: number;
     averageTicket: number;
     refundedAmount: number;
     refundRatePercent: number;
-    daily: DailyAmount[];
+    daily: SeriesAmount[];
   };
-  gems: { purchases: number; gemsGranted: number; daily: DailyCount[] };
+  gems: { purchases: number; gemsGranted: number; daily: SeriesCount[] };
   seats: { sold: number; active: number; utilizationPercent: number };
   organizations: CountItem[];
   orgs: {
@@ -97,7 +104,7 @@ export type GrowthMetrics = {
     avgUsersPerOrg: number;
     avgRevenuePerOrg: number;
     purchasesInRange: number;
-    dailyPurchases: DailyCount[];
+    dailyPurchases: SeriesCount[];
     utilization: OrgUtilization[];
     conversion: { freeCourseUsers: number; paidCourseUsers: number; conversionPercent: number };
   };

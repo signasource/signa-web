@@ -100,7 +100,7 @@ export default function UsageMetricsPage() {
         title="Métricas de uso"
         subtitle="Uso general de toda la app (con y sin organización), organizado por área. Arrastrá sobre un gráfico para filtrar por esa franja horaria."
       >
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <div className="border-border flex h-9 items-center rounded-full border p-0.5 text-[13px] font-extrabold">
             {(["line", "bar"] as const).map((k) => (
               <button

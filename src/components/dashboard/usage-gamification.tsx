@@ -49,9 +49,6 @@ export function GamificationSection({
     return <ErrorState>No pudimos cargar las métricas de gamificación.</ErrorState>;
 
   const g = query.data!;
-  const streakOverPct = g.streaks.activeStreakers
-    ? Math.round((g.streaks.usersOverSevenDays / g.streaks.activeStreakers) * 1000) / 10
-    : null;
   const totalCompleted = g.challenges.reduce((s, c) => s + c.completed, 0);
   const totalClaimed = g.challenges.reduce((s, c) => s + c.claimed, 0);
   const claimRate = totalCompleted ? Math.round((totalClaimed / totalCompleted) * 1000) / 10 : null;
@@ -59,17 +56,6 @@ export function GamificationSection({
   return (
     <div className="flex flex-col gap-6">
       <GoldenRow>
-        <GoldenTile
-          metric="streak_over7"
-          value={streakOverPct == null ? "—" : `${streakOverPct}%`}
-          rawValue={streakOverPct}
-          hint={`${NUMBER.format(g.streaks.usersOverSevenDays)} / ${NUMBER.format(g.streaks.activeStreakers)} con racha`}
-        />
-        <GoldenTile
-          metric="max_streak"
-          value={`${NUMBER.format(g.streaks.maxStreak)} d`}
-          tone="neutral"
-        />
         <GoldenTile
           metric="xp_per_active_user"
           value={g.xp.activeUsers ? NUMBER.format(g.xp.perActiveUser) : "—"}
@@ -91,11 +77,6 @@ export function GamificationSection({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <MetricStat
-          metric="streak_avg"
-          value={g.streaks.averageStreakActive ? `${g.streaks.averageStreakActive} d` : "—"}
-          hint={`${NUMBER.format(g.streaks.activeStreakers)} con racha activa`}
-        />
-        <MetricStat
           metric="gem_redemption_rate"
           value={g.shop.gemsCredited ? `${g.shop.redemptionRatePercent}%` : "—"}
           hint={`${NUMBER.format(g.shop.totalGemsSpent)} / ${NUMBER.format(g.shop.gemsCredited)} 💎`}
@@ -112,21 +93,21 @@ export function GamificationSection({
         <DailySeriesChart
           title="XP por día"
           metric="xp_daily"
-          points={g.xp.daily.map((d) => ({ day: d.day, value: d.count }))}
+          points={g.xp.daily.map((d) => ({ t: d.day, value: d.count }))}
           format={fmtCount}
           onSelectRange={onSelectRange}
         />
         <DailySeriesChart
           title="Logros desbloqueados por día"
           metric="achievements_unlocked"
-          points={g.achievements.daily.map((d) => ({ day: d.day, value: d.count }))}
+          points={g.achievements.daily.map((d) => ({ t: d.day, value: d.count }))}
           format={fmtCount}
           onSelectRange={onSelectRange}
         />
         <DailySeriesChart
           title="Gemas gastadas por día"
           metric="gems_spent"
-          points={g.shop.dailySpent.map((d) => ({ day: d.day, value: d.count }))}
+          points={g.shop.dailySpent.map((d) => ({ t: d.day, value: d.count }))}
           format={fmtCount}
           onSelectRange={onSelectRange}
         />

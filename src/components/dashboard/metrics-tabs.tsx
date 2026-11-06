@@ -37,7 +37,7 @@ export function MetricsTabs<K extends string>({
     <div
       role="tablist"
       aria-label="Apartados de métricas"
-      className="border-border flex gap-1 overflow-x-auto border-b"
+      className="border-border flex flex-wrap gap-1 border-b"
     >
       {tabs.map((tab, i) => {
         const selected = tab.key === active;

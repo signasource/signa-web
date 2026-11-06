@@ -178,7 +178,7 @@ export function LearningTab({
         <DailySeriesChart
           title="Evolución de respuestas correctas"
           metric="accuracy_evolution"
-          points={l.dailyAccuracy.map((d) => ({ day: d.day, value: d.accuracyPercent }))}
+          points={l.dailyAccuracy.map((d) => ({ t: d.day, value: d.accuracyPercent }))}
           format={(v) => `${v}%`}
           onSelectRange={onSelectRange}
         />
@@ -284,7 +284,7 @@ export function LearningTab({
         <DailySeriesChart
           title="Señas aprendidas"
           metric="vocabulary_growth"
-          points={l.learnedSignsDaily.map((d) => ({ day: d.day, value: d.count }))}
+          points={l.learnedSignsDaily.map((d) => ({ t: d.day, value: d.count }))}
           format={fmtCount}
           onSelectRange={onSelectRange}
           className="flex min-w-0 flex-col gap-3 lg:col-span-2"

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { BreakdownPie } from "@/components/dashboard/breakdown-pie";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
@@ -113,9 +113,9 @@ export function GrowthTab({
             />
           </div>
           <DailySeriesChart
-            title="Compras de gemas por día"
+            title="Compras de gemas"
             metric="gems_revenue"
-            points={g.gems.daily.map((d) => ({ day: d.day, value: d.count }))}
+            points={g.gems.daily.map((d) => ({ t: d.t, value: d.count }))}
             format={fmtCount}
             onSelectRange={onSelectRange}
             className="flex min-w-0 flex-col gap-3 lg:col-span-2"
@@ -126,9 +126,9 @@ export function GrowthTab({
       <Section title="Organizaciones">
         <div className="grid gap-4 lg:grid-cols-3">
           <DailySeriesChart
-            title="Ingresos (B2B) por día"
+            title="Ingresos (B2B)"
             metric="revenue"
-            points={g.revenue.daily.map((d) => ({ day: d.day, value: d.amount }))}
+            points={g.revenue.daily.map((d) => ({ t: d.t, value: d.amount }))}
             format={fmtMoney}
             onSelectRange={onSelectRange}
             className="flex min-w-0 flex-col gap-3 lg:col-span-2"
@@ -143,24 +143,12 @@ export function GrowthTab({
           />
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          <MetricStat
-            metric="orgs_pending"
-            value={NUMBER.format(g.orgs.pending)}
-            hint={`${NUMBER.format(g.orgs.newInRange)} nuevas en el período`}
-          />
           <MetricStat metric="avg_users_per_org" value={NUMBER.format(g.orgs.avgUsersPerOrg)} />
           <MetricStat metric="avg_revenue_per_org" value={fmtMoney(g.orgs.avgRevenuePerOrg)} />
           <MetricStat
             metric="purchases_count"
             value={NUMBER.format(g.orgs.purchasesInRange)}
             hint={`ticket prom. ${fmtMoney(g.revenue.averageTicket)}`}
-          />
-          <MetricStat
-            metric="free_to_premium"
-            value={
-              g.orgs.conversion.freeCourseUsers ? `${g.orgs.conversion.conversionPercent}%` : "—"
-            }
-            hint={`${NUMBER.format(g.orgs.conversion.paidCourseUsers)} / ${NUMBER.format(g.orgs.conversion.freeCourseUsers)} usuarios`}
           />
           <MetricStat
             metric="refund_rate"
@@ -175,11 +163,18 @@ export function GrowthTab({
   );
 }
 
+/** How many rows a long listing shows before the "Ver más" toggle. */
+const ORG_TABLE_PREVIEW = 6;
+
 /**
  * Per-organization license utilization: contracted vs. used seats, plus members and revenue. The
  * occupancy bar turns amber when a sizeable contract is barely used — the key B2B health signal.
+ * Long lists collapse to {@link ORG_TABLE_PREVIEW} rows behind a "Ver más" toggle.
  */
 function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const canExpand = rows.length > ORG_TABLE_PREVIEW;
+  const visible = expanded ? rows : rows.slice(0, ORG_TABLE_PREVIEW);
   return (
     <Card className="mt-4">
       <div className="flex items-center gap-1.5">
@@ -205,7 +200,7 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((o) => (
+              {visible.map((o) => (
                 <tr key={o.orgId} className="border-fill border-t">
                   <td className="py-2 font-bold">{o.name}</td>
                   <td className="py-2 pl-3 text-right">{NUMBER.format(o.members)}</td>
@@ -229,6 +224,17 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
               ))}
             </tbody>
           </table>
+          {canExpand ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="text-primary hover:text-primary-dark mt-3 cursor-pointer text-[13px] font-extrabold"
+            >
+              {expanded
+                ? "Ver menos"
+                : `Ver más (${NUMBER.format(rows.length - ORG_TABLE_PREVIEW)})`}
+            </button>
+          ) : null}
         </div>
       )}
     </Card>
