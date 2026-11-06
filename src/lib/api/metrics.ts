@@ -33,6 +33,85 @@ export type BusinessMetrics = {
   }[];
 };
 
+export type DailyCount = { day: string; count: number };
+export type DailyAmount = { day: string; amount: number };
+
+/** Global growth & business metrics — the "Negocio & crecimiento" apartado. */
+export type GrowthMetrics = {
+  users: { total: number; newInRange: number; daily: DailyCount[] };
+  engagement: {
+    dau: number;
+    wau: number;
+    mau: number;
+    stickinessPercent: number;
+    dailyActive: DailyCount[];
+  };
+  waitlist: { total: number; newInRange: number; daily: DailyCount[] };
+  revenue: {
+    paidAmount: number;
+    paidCount: number;
+    averageTicket: number;
+    refundedAmount: number;
+    refundRatePercent: number;
+    daily: DailyAmount[];
+  };
+  gems: { purchases: number; gemsGranted: number; daily: DailyCount[] };
+  seats: { sold: number; active: number; utilizationPercent: number };
+  organizations: CountItem[];
+  paidCourseUsers: number;
+};
+
+/** Global learning & content metrics — the "Aprendizaje & contenido" apartado. */
+export type LearningMetrics = {
+  courses: {
+    courseId: string;
+    courseName: string;
+    enrolled: number;
+    completed: number;
+    total: number;
+    completionPercent: number;
+  }[];
+  enrollmentFunnel: CountItem[];
+  hardestLessons: {
+    lessonId: string;
+    lessonName: string;
+    evaluated: number;
+    correct: number;
+    accuracyPercent: number;
+  }[];
+  learnedSigns: number;
+  learnedSignsDaily: DailyCount[];
+  reports: {
+    resolvedCount: number;
+    averageResolutionHours: number;
+    mostReported: { meaning: string; count: number }[];
+  };
+  imports: CountItem[];
+};
+
+/** Global gamification & engagement metrics — the "Gamificación" apartado. */
+export type GamificationMetrics = {
+  xp: { total: number; daily: DailyCount[] };
+  streaks: {
+    averageCurrentStreak: number;
+    averageStreakActive: number;
+    usersOverSevenDays: number;
+    activeStreakers: number;
+  };
+  achievements: {
+    unlocked: number;
+    daily: DailyCount[];
+    topUnlocked: { name: string; count: number }[];
+  };
+  challenges: { type: string; completed: number; claimed: number; claimRatePercent: number }[];
+  gifts: { sent: number; claimed: number };
+  shop: {
+    totalGemsSpent: number;
+    topItems: { title: string; purchases: number; gemsSpent: number }[];
+    dailySpent: DailyCount[];
+  };
+};
+
 /** One Prometheus series: its label set and its points. */
 export type PerfSeries = {
   labels: Record<string, string>;
@@ -51,6 +130,14 @@ export type RangeParams = { from: string; to: string };
 export const metricsApi = {
   business: (params: RangeParams) =>
     api<BusinessMetrics>("/admin/metrics/business", { query: params }),
+
+  growth: (params: RangeParams) => api<GrowthMetrics>("/admin/metrics/growth", { query: params }),
+
+  learning: (params: RangeParams) =>
+    api<LearningMetrics>("/admin/metrics/learning", { query: params }),
+
+  gamification: (params: RangeParams) =>
+    api<GamificationMetrics>("/admin/metrics/gamification", { query: params }),
 
   perf: (widget: string, params: RangeParams & { step?: number }) =>
     api<PerfMetrics>(`/admin/metrics/perf/${widget}`, { query: params }),

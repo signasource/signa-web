@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import {
+  Bar,
   CartesianGrid,
+  ComposedChart,
   Line,
-  LineChart,
+  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -11,9 +14,15 @@ import {
   type TooltipContentProps,
   type TooltipValueType,
 } from "recharts";
+import { useChartKind } from "@/components/dashboard/chart-kind";
+import { InfoPopover } from "@/components/dashboard/info-popover";
+import type { MetricId } from "@/components/dashboard/metric-catalog";
 import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
 import type { PerfMetrics, PerfSeries } from "@/lib/api/metrics";
 import { cn } from "@/lib/utils";
+
+/** A time range picked by dragging across a chart (instant seconds). */
+export type RangeSelect = (fromSeconds: number, toSeconds: number) => void;
 
 /** Palette for overlaid series; tokens only, never Recharts defaults. */
 const COLORS = [
@@ -65,27 +74,66 @@ function toRows(series: PerfSeries[]): { rows: Row[]; keys: string[] } {
 export function PerfChart({
   title,
   subtitle,
+  metric,
   data,
   isPending,
   isError,
   isFetching = false,
   format = (v) => v.toLocaleString("es-AR"),
   delay,
+  onSelectRange,
 }: {
   title: string;
   subtitle?: string;
+  /** Catalog id; when set, the header shows the "what is this" popover. */
+  metric?: MetricId;
   data: PerfMetrics | undefined;
   isPending: boolean;
   isError: boolean;
   isFetching?: boolean;
   format?: ValueFormat;
   delay?: number;
+  /** When set, dragging across the chart selects a time window (drives the global filter). */
+  onSelectRange?: RangeSelect;
 }) {
   const series = data?.series ?? [];
   const { rows, keys } = toRows(series);
   const names = series.map((s, i) => seriesName(s, `${title} ${i + 1}`));
   const multiDay = rows.length > 1 && rows[rows.length - 1]!.t - rows[0]!.t > 36 * 3600;
   const timeFmt = multiDay ? DATE_TIME_FMT : TIME_FMT;
+
+  const kind = useChartKind();
+
+  // Drag-to-select: track the two edges (unix seconds from the x axis) while the mouse is down.
+  const [selStart, setSelStart] = useState<number | null>(null);
+  const [selEnd, setSelEnd] = useState<number | null>(null);
+
+  type ChartMouse = { activeLabel?: string | number } | null;
+  const labelAt = (e: ChartMouse): number | null => {
+    const v = e?.activeLabel;
+    return v == null ? null : Number(v);
+  };
+  const beginSelect = (e: ChartMouse) => {
+    if (!onSelectRange) return;
+    const t = labelAt(e);
+    if (t == null) return;
+    setSelStart(t);
+    setSelEnd(t);
+  };
+  const extendSelect = (e: ChartMouse) => {
+    if (!onSelectRange || selStart == null) return;
+    const t = labelAt(e);
+    if (t != null) setSelEnd(t);
+  };
+  const commitSelect = () => {
+    if (onSelectRange && selStart != null && selEnd != null && selStart !== selEnd) {
+      const from = Math.min(selStart, selEnd);
+      const to = Math.max(selStart, selEnd);
+      onSelectRange(from, to);
+    }
+    setSelStart(null);
+    setSelEnd(null);
+  };
 
   const summary = series
     .map((s, i) => {
@@ -121,9 +169,12 @@ export function PerfChart({
 
   return (
     <Card delay={delay} className="flex min-w-0 flex-col gap-3">
-      <div>
-        <CardTitle>{title}</CardTitle>
-        {subtitle ? <p className="text-text-muted mt-0.5 text-[13px]">{subtitle}</p> : null}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <CardTitle>{title}</CardTitle>
+          {subtitle ? <p className="text-text-muted mt-0.5 text-[13px]">{subtitle}</p> : null}
+        </div>
+        {metric ? <InfoPopover metric={metric} className="mt-0.5" /> : null}
       </div>
 
       {isPending ? <LoadingState>Cargando métricas…</LoadingState> : null}
@@ -142,10 +193,21 @@ export function PerfChart({
           role="img"
           aria-label={summary}
           aria-busy={isFetching}
-          className={cn("h-[220px] transition-opacity", isFetching && "opacity-60")}
+          className={cn(
+            "h-[220px] transition-opacity",
+            isFetching && "opacity-60",
+            onSelectRange && "cursor-crosshair select-none",
+          )}
         >
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rows} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+            <ComposedChart
+              data={rows}
+              margin={{ top: 8, right: 8, left: 4, bottom: 0 }}
+              onMouseDown={onSelectRange ? beginSelect : undefined}
+              onMouseMove={onSelectRange ? extendSelect : undefined}
+              onMouseUp={onSelectRange ? commitSelect : undefined}
+              onMouseLeave={onSelectRange ? commitSelect : undefined}
+            >
               <CartesianGrid stroke="var(--color-fill)" vertical={false} />
               <XAxis
                 dataKey="t"
@@ -166,19 +228,37 @@ export function PerfChart({
                 tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
               />
               <Tooltip content={ChartTooltip} isAnimationActive={false} />
-              {keys.map((key, i) => (
-                <Line
-                  key={key}
-                  type="monotone"
-                  dataKey={key}
-                  stroke={COLORS[i % COLORS.length]}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
-                  isAnimationActive={false}
+              {keys.map((key, i) =>
+                kind === "bar" ? (
+                  <Bar
+                    key={key}
+                    dataKey={key}
+                    fill={COLORS[i % COLORS.length]}
+                    isAnimationActive={false}
+                  />
+                ) : (
+                  <Line
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    stroke={COLORS[i % COLORS.length]}
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                ),
+              )}
+              {selStart != null && selEnd != null && selStart !== selEnd ? (
+                <ReferenceArea
+                  x1={selStart}
+                  x2={selEnd}
+                  strokeOpacity={0}
+                  fill="var(--color-primary)"
+                  fillOpacity={0.12}
                 />
-              ))}
-            </LineChart>
+              ) : null}
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       ) : null}

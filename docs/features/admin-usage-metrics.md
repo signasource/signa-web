@@ -1,34 +1,87 @@
 # Admin usage metrics (`/admin/usage-metrics`)
 
-> Responsibility: the SIGNA back-office "Métricas de uso" dashboard — global app usage, Datadog-style.
-> Update when: a widget, the datetime picker, or the metrics API changes.
-> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{datetime-range-picker,perf-chart,usage-business}.tsx, src/lib/{datetime-range,api/metrics}.ts
+> Responsibility: the SIGNA back-office "Métricas de uso" dashboard — global app usage, organized by
+> apartado (persona), with golden metrics, self-documenting widgets and an interactive time filter.
+> Update when: a tab, widget, golden metric, the datetime picker, or the metrics API changes.
+> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,chart-kind,usage-business,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.tsx, src/lib/{datetime-range,api/metrics}.ts
 
 A single screen for the whole app's usage — every user, with or without an organization — behind the
 SIGNA `AdminAuthProvider` (not the org dashboard). One **datetime range picker** (hour/minute precision,
-`<input type="datetime-local">`, rolling presets + custom) plus a **live** toggle drive every widget.
+`<input type="datetime-local">`, rolling presets + custom) plus a **live** toggle drive every widget,
+across every tab.
+
+## Apartados (sub-tabs)
+
+`page.tsx` is a shell holding the shared filter state (`selection`/`range`/`step`/`live`) and the active
+tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their apartado. `MetricsTabs`
+(`metrics-tabs.tsx`) is the accessible `role="tablist"`.
+
+- **Negocio** (`usage-growth.tsx`) — the money, grouped **sin organización** (gem purchases, users on paid
+  courses) vs **organizaciones** (B2B revenue/refunds, seats, org status donut, revenue series). Exposes
+  `useGrowthMetrics` (shared with Usuarios).
+- **Usuarios** (`usage-usuarios.tsx`) — the audience, **all range-based** (active users in the range, tasa de
+  actividad = active/total, new users + running total, XP per active user, new/active-users daily series);
+  then the **gamification** section (`GamificationSection` in `usage-gamification.tsx`): XP, streaks (avg of
+  users active in the range), achievements, challenge claim rates, gifts, shop, and daily XP/achievements/gems-spent.
+- **Aprendizaje** (`usage-learning.tsx`) — completion (per course, worst-first), enrollment-status donut,
+  accuracy (global + per block type, worst-first), hardest lessons, vocabulary, sign-report resolution +
+  most-reported signs, imports.
+- **Infraestructura** (`usage-infra.tsx`) — inner sub-tabs. **Backend** grouped into **API · HTTP**
+  (latency p95/p99, throughput, 4xx/5xx, slowest ops), **Sistema y recursos** (CPU/mem host + containers,
+  JVM heap/GC, DB connections) and **Servicios de Signa** (R2 presign, mail/push failures). **Web / Landing**
+  (web vitals, animation + screen load, client errors). **ML** — recognition accuracy + per-camera-block-type
+  accuracy from real lesson attempts (`VISUAL_RECOGNITION`/`PERFORM_SIGN`/`SPELL_NAME`), plus inference
+  latency p95, model confidence and camera FPS from telemetry. Per-word accuracy is reserved (needs a
+  camera-attempt → sign mapping that isn't modelled).
+
+Each tab opens with a **GoldenRow** (`golden-row.tsx`): 3–5 headline tiles that signal the area's health
+at a glance, coloured success/warning/danger from the metric's `threshold`. Perf (Prometheus/Grafana)
+panels only populate in production; the Infra tab says so, and shows "sin datos" locally.
+
+## Self-documenting widgets
+
+`metric-catalog.ts` is the single source of per-metric copy: `label`, `description` (what it is),
+`howComputed` (where the number comes from), `goodWhen` (what healthy looks like) and an optional
+`threshold`. Every golden tile (`GoldenTile`), stat (`MetricStat`) and perf chart (`PerfChart`, via its
+`metric` prop) carries an `InfoPopover` ("i" button) that reads from this catalog, so the dashboard is
+understandable with no prior context. `toneFor(value, threshold)` maps a value to its tone. The popover
+renders in a **portal** with fixed positioning (not `absolute` inside the card): the cards keep their own
+stacking context from the `dash-card-enter` transform, so an in-card panel would be painted behind later
+cards. Status distributions use `BreakdownPie` (`breakdown-pie.tsx`), a donut with a count/share legend.
+
+## Interactive time filter (brush → global range)
+
+Dragging across any `PerfChart` line chart draws a `ReferenceArea` and, on release, calls `onSelectRange`
+with the selected `[from, to]` seconds; clicking a day bar in `DailyActivityChart` selects that whole day.
+The page turns that into a `{ kind: "custom", from, to }` `RangeSelection`, which re-runs **every** widget
+(their query keys include `from/to`). No extra plumbing: the shared filter already propagates. A tiny
+selection is widened to a minimum span (`MIN_SPAN_SECONDS`, 5 min) so focusing on a spike never reads as
+"sin datos" (Prometheus scrapes every 60 s). A page-level **line/bar toggle** (`ChartKindContext`, header
+control) switches every time-series widget between a line and bars at once.
 
 ## Data sources (two, one picker)
 
 - **Business** → `metricsApi.business({ from, to })` → signa-api `GET /admin/metrics/business`, aggregated
-  from Postgres (global analog of the org `OrganizationMetricsRepository`). State snapshots + a daily
-  activity series. Rendered by `BusinessSection` (`usage-business.tsx`).
+  from Postgres. Shared via `useBusinessMetrics` (`usage-business.tsx`); consumed by the Negocio and
+  Aprendizaje tabs (one cached fetch per range).
+- **Growth** → `metricsApi.growth({ from, to })` → signa-api `GET /admin/metrics/growth`, aggregated from
+  Postgres: audience (signups + total), engagement (DAU/WAU/MAU + stickiness), waitlist, B2B revenue and
+  refunds, the gem economy, seat utilization and organizations by status, with day-resolution series.
+  Powers the Negocio tab (`usage-growth.tsx`), alongside enrollment state from the business endpoint.
+- **Learning** → `metricsApi.learning({ from, to })` → signa-api `GET /admin/metrics/learning`, aggregated
+  from Postgres: per-course completion, the enrollment funnel, the hardest lessons by accuracy, vocabulary
+  growth (daily), sign-report resolution + most-reported signs, and content-import health. Powers the
+  Aprendizaje tab (`usage-learning.tsx`), alongside accuracy/report state from the business endpoint.
+- **Gamification** → `metricsApi.gamification({ from, to })` → signa-api `GET /admin/metrics/gamification`,
+  aggregated from Postgres: daily XP, streak distribution, achievements unlocked (+ top), challenge claim
+  rates by type, gifts and the shop economy. Powers the Gamificación tab (`usage-gamification.tsx`).
 - **Performance / infra** → `metricsApi.perf(widget, { from, to, step })` → signa-api
   `GET /admin/metrics/perf/{widget}`, which proxies PromQL `query_range` to Grafana Cloud. Rendered by
-  the generic `PerfChart` (`perf-chart.tsx`) via `PerfPanel`/`HealthTile` wrappers in the page.
+  `PerfChart` via `PerfPanel`/`PerfGoldenTile` (`perf-panel.tsx`); value formatters in `perf-format.ts`.
 
 The picker emits a `RangeSelection` (`datetime-range.ts`); the page resolves it to ISO instants and a
 suggested `step` (`deriveStepSeconds`). While **live**, rolling presets re-anchor to "now" every 30 s and
 all TanStack queries (`refetchInterval`) refresh. Query keys: `["admin","metrics",<kind>,…,from,to,step]`.
-
-## Widgets
-
-- **Salud**: backend up, R2 up, latency p95, error rate, CPU/mem host (latest value tiles).
-- **Negocio**: users (total/active), courses, published versions, enrollments in progress, lessons/topics
-  completed, global accuracy; a daily-activity bar chart; breakdowns (enrollments, versions, sign reports
-  by status; pending reports; failed imports); accuracy by block type.
-- **Performance**: HTTP latency p95/p99, throughput, error rate, slowest operations, host CPU/mem,
-  per-container CPU/mem, DB connections, R2 presign latency, animation latency.
 
 ## Notes & limits
 
@@ -37,6 +90,6 @@ all TanStack queries (`refetchInterval`) refresh. Query keys: `["admin","metrics
   (`UserDailyActivity` and attempt buckets are per Argentina day).
 - **Grafana token:** performance panels need a Grafana Cloud `metrics:read` token on the server
   (`GRAFANA_CLOUD_PROM_*`). Without it the backend returns `available:false` and panels show "sin datos";
-  the business dashboard keeps working.
+  the business tabs keep working.
 - Colors come from tokens only (`perf-chart.tsx` palette); every chart has a text-alternative summary and
   handles loading / empty / error / unavailable.
