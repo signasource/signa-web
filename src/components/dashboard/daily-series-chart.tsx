@@ -98,11 +98,11 @@ export function DailySeriesChart({
   className?: string;
 }) {
   const kind = useChartKind();
-  const data: Datum[] = points.map((p) => ({
-    label: p.t,
-    epoch: new Date(p.t).getTime(),
-    value: p.value,
-  }));
+  // Drop points with an unparseable `t`: a single bad timestamp would otherwise make `Intl.format`
+  // throw ("Invalid time value") and take down the whole dashboard page, not just this widget.
+  const data: Datum[] = points
+    .map((p) => ({ label: p.t, epoch: new Date(p.t).getTime(), value: p.value }))
+    .filter((d) => Number.isFinite(d.epoch));
   const bucketSeconds = inferBucketSeconds(data.map((d) => d.epoch));
   const subDay = bucketSeconds < DAY_SECONDS;
   const tickFmt = subDay ? TIME_FMT : DAY_FMT;

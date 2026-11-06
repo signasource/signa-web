@@ -27,4 +27,15 @@ describe("DailySeriesChart", () => {
     expect(screen.getByText("Sin datos en este período.")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
+
+  it("drops points with an unparseable timestamp instead of crashing the page", () => {
+    render(
+      <DailySeriesChart
+        title="Nuevos usuarios"
+        metric="new_users"
+        points={[{ t: undefined as unknown as string, value: 5 }]}
+      />,
+    );
+    expect(screen.getByText("Sin datos en este período.")).toBeInTheDocument();
+  });
 });
