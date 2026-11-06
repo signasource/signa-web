@@ -300,9 +300,31 @@ function MlInfra({ onSelectRange, ...perf }: InfraProps) {
           metric="ml_confidence"
           format={fmtPercent}
         />
+        <PerfGoldenTile
+          {...perf}
+          widget="ml_inference_rate"
+          metric="ml_inference_rate"
+          format={fmtReqs}
+        />
       </GoldenRow>
 
+      <p className="text-text-muted text-[13px]">
+        El reconocimiento corre <strong>en el dispositivo</strong>: su salud es independiente del
+        backend. Si el backend está operativo pero estas métricas caen a cero (sin inferencias, FPS
+        o confianza), el servicio de reconocimiento está degradado o caído aunque la API siga en
+        pie.
+      </p>
+
       <div className="grid gap-4 lg:grid-cols-2">
+        <PerfPanel
+          {...perf}
+          onSelectRange={onSelectRange}
+          widget="ml_inference_rate"
+          metric="ml_inference_rate"
+          title="Inferencias por segundo"
+          subtitle="Volumen de reconocimiento (consumo de IA), reportado por la app"
+          format={fmtReqs}
+        />
         <PerfPanel
           {...perf}
           onSelectRange={onSelectRange}

@@ -687,6 +687,13 @@ export const METRICS = {
     howComputed: "Promedio de signa_client_recognition_fps reportado por la app.",
     goodWhen: "Fluido (idealmente ≥ 15 FPS).",
   },
+  ml_inference_rate: {
+    label: "Inferencias por segundo",
+    description:
+      "Volumen de reconocimientos de señas procesados (consumo de IA). El reconocimiento corre en el dispositivo, así que no hay costo de servidor que estimar.",
+    howComputed: "rate del contador signa_client_inference_seconds_count reportado por la app.",
+    goodWhen: "Acompaña el uso de ejercicios con cámara; cae a cero si el reconocimiento se cae.",
+  },
 } satisfies Record<string, MetricDef>;
 
 export type MetricId = keyof typeof METRICS;

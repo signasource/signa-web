@@ -47,8 +47,11 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   JVM heap/GC, DB connections) and **Servicios de Signa** (R2 presign, mail/push failures). **Web / Landing**
   (web vitals, animation + screen load, client errors). **ML** — recognition accuracy + per-camera-block-type
   accuracy from real lesson attempts (`VISUAL_RECOGNITION`/`PERFORM_SIGN`/`SPELL_NAME`), plus inference
-  latency p95, model confidence and camera FPS from telemetry. Per-word accuracy is reserved (needs a
-  camera-attempt → sign mapping that isn't modelled).
+  latency p95, model confidence, camera FPS and **inference volume** (`ml_inference_rate` = consumo de IA)
+  from telemetry. Recognition runs **on-device**, so its health is independent of the backend — the sub-tab
+  calls this out: if the API is up but these metrics fall to zero, recognition is down. There is no AI error
+  rate or server cost (on-device). Per-word accuracy is reserved (needs a camera-attempt → sign mapping that
+  isn't modelled).
 
 Each tab opens with a **GoldenRow** (`golden-row.tsx`): 3–5 headline tiles that signal the area's health
 at a glance, coloured success/warning/danger from the metric's `threshold`. Perf (Prometheus/Grafana)
