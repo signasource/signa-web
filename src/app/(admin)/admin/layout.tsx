@@ -80,8 +80,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="bg-ink-900 flex w-64 flex-col text-white">
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      {/* Desktop sidebar */}
+      <aside className="bg-ink-900 hidden w-64 shrink-0 flex-col text-white lg:flex">
         <div className="flex items-center gap-2 px-6 py-6">
           <span className="font-display text-primary text-sm font-bold tracking-wide uppercase">
             Signa
@@ -130,9 +131,56 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
       </aside>
-      <main className="bg-background flex-1 overflow-auto">
-        <div className="mx-auto max-w-6xl p-8">{children}</div>
-      </main>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Mobile top bar: brand + logout, with a horizontally scrollable nav */}
+        <header className="bg-ink-900 sticky top-0 z-30 text-white lg:hidden">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="font-display text-primary text-sm font-bold tracking-wide uppercase">
+                Signa
+              </span>
+              <span className="text-xs font-medium text-white/30">Admin</span>
+            </div>
+            <button
+              onClick={logout}
+              className="text-xs font-medium text-white/50 transition-colors hover:text-white"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+          <nav className="flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-3 pb-3 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {NAV.map(({ href, label, icon: Icon, badgeKey }) => {
+              const active = isActive(pathname, href);
+              const badgeCount = badgeKey && stats ? (stats[badgeKey] ?? 0) : 0;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors",
+                    active
+                      ? "bg-primary/20 text-primary"
+                      : "text-white/50 hover:bg-white/5 hover:text-white",
+                  )}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  {label}
+                  {badgeCount > 0 ? (
+                    <span className="bg-danger flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
+                      {badgeCount > 99 ? "99+" : badgeCount}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+        </header>
+
+        <main className="bg-background flex-1 overflow-auto">
+          <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

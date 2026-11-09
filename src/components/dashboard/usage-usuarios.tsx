@@ -127,6 +127,7 @@ export function UsersTab({
           metric="new_users"
           points={u.daily.map((d) => ({ t: d.t, value: d.count }))}
           format={fmtCount}
+          range={range}
           onSelectRange={onSelectRange}
         />
         <DailySeriesChart
@@ -134,6 +135,7 @@ export function UsersTab({
           metric="users_active"
           points={e.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
           format={fmtCount}
+          range={range}
           onSelectRange={onSelectRange}
         />
       </div>
@@ -156,6 +158,7 @@ export function UsersTab({
           metric="sessions_per_user"
           points={g.sessions.daily.map((d) => ({ t: d.t, value: d.count }))}
           format={fmtCount}
+          range={range}
           onSelectRange={onSelectRange}
           className="flex min-w-0 flex-col gap-3 lg:col-span-2"
         />

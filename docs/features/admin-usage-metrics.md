@@ -16,11 +16,15 @@ across every tab.
 tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their apartado. `MetricsTabs`
 (`metrics-tabs.tsx`) is the accessible `role="tablist"`.
 
-- **Negocio** (`usage-growth.tsx`) — the money, grouped **sin organización** (gem purchases, users on paid
-  courses) vs **organizaciones** (B2B revenue/refunds, seats, org status donut, revenue series, pipeline:
-  orgs nuevas, usuarios & ingreso promedio por org, compras, and the **per-org license utilization table**
-  `OrgUtilizationTable` — contracted vs. used seats, amber when a big contract is under-used; collapses to 6
-  rows behind a "Ver más (N)" toggle). Exposes `useGrowthMetrics` (shared with Usuarios).
+- **Negocio** (`usage-growth.tsx`) — the money. Opens with **two headline tiles** (not the generic
+  `GoldenRow`): **Ingresos** and **Reembolsos**, each a `SplitMoneyTile` that breaks the total into
+  **organizaciones** (B2B) vs **usuarios finales** (end users). Then **sin organización** — two money-first
+  widgets, **Compras de gemas** (`$` + gemas/compras) and **Compras de cursos pagos** (`$` + cursos), each
+  with its revenue time-series — and **organizaciones** (orgs activas, uso de cupos, usuarios & ingreso
+  promedio por org, compras, refund rate; B2B revenue series, org status donut, and the **per-org license
+  utilization table** `OrgUtilizationTable` — contracted vs. used seats, amber when a big contract is
+  under-used; collapses to 6 rows behind a "Ver más (N)" toggle). End-user money/units come from the growth
+  endpoint's `gems`/`courseSales` sections. Exposes `useGrowthMetrics` (shared with Usuarios).
 - **Usuarios** (`usage-usuarios.tsx`) — "¿La gente usa Signa?": adquisición y actividad medidas sobre la
   ventana elegida. Range-based tasa de actividad (active/total, numerator/denominator), new users and active
   users each with a **period-over-period delta** (`Delta`, vs. the previous equal-length window; hidden for
@@ -60,8 +64,8 @@ panels only populate in production; the Infra tab says so, and shows "sin datos"
 ## Self-documenting widgets
 
 `metric-catalog.ts` is the single source of per-metric copy: `label`, `description` (what it is),
-`howComputed` (where the number comes from), `goodWhen` (what healthy looks like) and an optional
-`threshold`. Every golden tile (`GoldenTile`), stat (`MetricStat`) and perf chart (`PerfChart`, via its
+`howComputed` (how the number is worked out, in **plain language — no code, table or column names**, so
+anyone can read it), `goodWhen` (what healthy looks like) and an optional `threshold`. Every golden tile (`GoldenTile`), stat (`MetricStat`) and perf chart (`PerfChart`, via its
 `metric` prop) carries an `InfoPopover` ("i" button) that reads from this catalog, so the dashboard is
 understandable with no prior context. `toneFor(value, threshold)` maps a value to its tone. The popover
 renders in a **portal** with fixed positioning (not `absolute` inside the card): the cards keep their own
@@ -75,8 +79,12 @@ with the selected `[from, to]` seconds; clicking a day bar in `DailyActivityChar
 The page turns that into a `{ kind: "custom", from, to }` `RangeSelection`, which re-runs **every** widget
 (their query keys include `from/to`). No extra plumbing: the shared filter already propagates. A tiny
 selection is widened to a minimum span (`MIN_SPAN_SECONDS`, 5 min) so focusing on a spike never reads as
-"sin datos" (Prometheus scrapes every 60 s). A page-level **line/bar toggle** (`ChartKindContext`, header
-control) switches every time-series widget between a line and bars at once.
+"sin datos" (Prometheus scrapes every 60 s). Each time-series widget has its **own line/bar toggle**
+(`ChartKindToggle` in `chart-kind.tsx`, a local `useState` per chart, in the card header) — there is no
+page-level toggle. `DailySeriesChart` takes the active `range` and lays out **every** bucket of the period
+on the x axis (gaps filled with 0, or "sin datos"/null for rates via `emptyAsNull`), at a resolution that
+follows the window (minute/hour/day, or forced day via `dayResolution` for the day-only Learning/
+Gamification series); the y axis is labelled with values.
 
 ## Data sources (two, one picker)
 

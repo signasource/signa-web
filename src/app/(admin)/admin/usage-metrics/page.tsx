@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChartKindContext, type ChartKind } from "@/components/dashboard/chart-kind";
 import { DatetimeRangePicker } from "@/components/dashboard/datetime-range-picker";
 import { MetricsTabs, type TabItem } from "@/components/dashboard/metrics-tabs";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
@@ -46,8 +45,6 @@ export default function UsageMetricsPage() {
     const t = new URLSearchParams(window.location.search).get("tab");
     return isTabKey(t) ? t : "negocio";
   });
-  const [chartKind, setChartKind] = useState<ChartKind>("line");
-
   const changeTab = (next: TabKey) => {
     setTab(next);
     const url = new URL(window.location.href);
@@ -101,22 +98,6 @@ export default function UsageMetricsPage() {
         subtitle="Uso general de toda la app (con y sin organización), organizado por área. Arrastrá sobre un gráfico para filtrar por esa franja horaria."
       >
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-          <div className="border-border flex h-9 items-center rounded-full border p-0.5 text-[13px] font-extrabold">
-            {(["line", "bar"] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setChartKind(k)}
-                aria-pressed={chartKind === k}
-                className={cn(
-                  "h-8 cursor-pointer rounded-full px-3 transition-colors",
-                  chartKind === k ? "bg-primary-light text-primary-dark" : "text-text-muted",
-                )}
-              >
-                {k === "line" ? "Línea" : "Barras"}
-              </button>
-            ))}
-          </div>
           <button
             type="button"
             onClick={() => setLive((v) => !v)}
@@ -135,20 +116,18 @@ export default function UsageMetricsPage() {
 
       <MetricsTabs tabs={TABS} active={tab} onChange={changeTab} idBase="metrics" />
 
-      <ChartKindContext.Provider value={chartKind}>
-        <div role="tabpanel" id={`metrics-panel-${tab}`} aria-labelledby={`metrics-tab-${tab}`}>
-          {tab === "negocio" ? (
-            <GrowthTab range={range} live={live} onSelectRange={onSelectRange} />
-          ) : null}
-          {tab === "usuarios" ? (
-            <UsersTab range={range} live={live} onSelectRange={onSelectRange} />
-          ) : null}
-          {tab === "aprendizaje" ? (
-            <LearningTab range={range} live={live} onSelectRange={onSelectRange} />
-          ) : null}
-          {tab === "infraestructura" ? <InfraTab {...perf} onSelectRange={onSelectRange} /> : null}
-        </div>
-      </ChartKindContext.Provider>
+      <div role="tabpanel" id={`metrics-panel-${tab}`} aria-labelledby={`metrics-tab-${tab}`}>
+        {tab === "negocio" ? (
+          <GrowthTab range={range} live={live} onSelectRange={onSelectRange} />
+        ) : null}
+        {tab === "usuarios" ? (
+          <UsersTab range={range} live={live} onSelectRange={onSelectRange} />
+        ) : null}
+        {tab === "aprendizaje" ? (
+          <LearningTab range={range} live={live} onSelectRange={onSelectRange} />
+        ) : null}
+        {tab === "infraestructura" ? <InfraTab {...perf} onSelectRange={onSelectRange} /> : null}
+      </div>
     </section>
   );
 }

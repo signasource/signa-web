@@ -60,7 +60,7 @@ export function MobileMenu() {
           ))}
           <li>
             <Link
-              href="/organizaciones"
+              href="/organizations"
               onClick={() => setOpen(false)}
               className="flex min-h-12 items-center text-lg font-bold"
             >

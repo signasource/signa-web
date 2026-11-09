@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
+import { InfoPopover } from "@/components/dashboard/info-popover";
 import { MetricsTabs, type TabItem } from "@/components/dashboard/metrics-tabs";
 import { MetricStat } from "@/components/dashboard/metric-stat";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
@@ -344,7 +345,10 @@ function MlInfra({ onSelectRange, ...perf }: InfraProps) {
           format={fmtCount}
         />
         <Card className="flex min-w-0 flex-col gap-3">
-          <CardTitle>Precisión por tipo de ejercicio con cámara</CardTitle>
+          <div className="flex items-center gap-1.5">
+            <CardTitle>Precisión por tipo de ejercicio con cámara</CardTitle>
+            <InfoPopover metric="recognition_accuracy" className="ml-auto" />
+          </div>
           <p className="text-text-muted -mt-1.5 text-[13px]">Menor precisión primero</p>
           {cameraTypes.length === 0 ? (
             <p className="text-text-muted text-sm">Sin ejercicios de cámara en este período.</p>

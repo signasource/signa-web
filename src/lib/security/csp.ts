@@ -3,7 +3,7 @@ export const MARKETING_PATHS = [
   "/privacidad",
   "/terminos",
   "/proximamente",
-  "/organizaciones",
+  "/organizations",
   "/eliminar-cuenta",
 ] as const;
 

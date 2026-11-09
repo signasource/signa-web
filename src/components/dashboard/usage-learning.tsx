@@ -180,13 +180,19 @@ export function LearningTab({
           metric="accuracy_evolution"
           points={l.dailyAccuracy.map((d) => ({ t: d.day, value: d.accuracyPercent }))}
           format={(v) => `${v}%`}
+          range={range}
+          dayResolution
+          emptyAsNull
           onSelectRange={onSelectRange}
         />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="flex min-w-0 flex-col gap-3">
-          <CardTitle>Completitud por curso</CardTitle>
+          <div className="flex items-center gap-1.5">
+            <CardTitle>Completitud por curso</CardTitle>
+            <InfoPopover metric="course_completion" className="ml-auto" />
+          </div>
           <p className="text-text-muted -mt-1.5 text-[13px]">Menor completitud primero</p>
           {l.courses.length === 0 ? (
             <p className="text-text-muted text-sm">Sin inscripciones.</p>
@@ -211,7 +217,10 @@ export function LearningTab({
         </Card>
 
         <Card className="flex min-w-0 flex-col gap-3">
-          <CardTitle>Lecciones más difíciles</CardTitle>
+          <div className="flex items-center gap-1.5">
+            <CardTitle>Lecciones más difíciles</CardTitle>
+            <InfoPopover metric="hardest_lessons" className="ml-auto" />
+          </div>
           <p className="text-text-muted -mt-1.5 text-[13px]">Menor precisión en el período</p>
           {l.hardestLessons.length === 0 ? (
             <p className="text-text-muted text-sm">Sin ejercicios evaluados.</p>
@@ -286,11 +295,14 @@ export function LearningTab({
           metric="vocabulary_growth"
           points={l.learnedSignsDaily.map((d) => ({ t: d.day, value: d.count }))}
           format={fmtCount}
+          range={range}
+          dayResolution
           onSelectRange={onSelectRange}
           className="flex min-w-0 flex-col gap-3 lg:col-span-2"
         />
         <BreakdownPie
           title="Inscripciones por estado"
+          metric="enrollments_active"
           items={l.enrollmentFunnel.map((i) => ({
             label: ENROLLMENT_STATUS[i.key] ?? i.key,
             value: i.count,
@@ -301,7 +313,10 @@ export function LearningTab({
       <div className="grid gap-4 lg:grid-cols-3">
         {b ? (
           <Card className="flex min-w-0 flex-col gap-3">
-            <CardTitle>Precisión por tipo de ejercicio</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle>Precisión por tipo de ejercicio</CardTitle>
+              <InfoPopover metric="accuracy_by_type" className="ml-auto" />
+            </div>
             <p className="text-text-muted -mt-1.5 text-[13px]">Menor precisión primero</p>
             {b.accuracy.byBlockType.length === 0 ? (
               <p className="text-text-muted text-sm">Sin ejercicios evaluados.</p>
@@ -324,7 +339,10 @@ export function LearningTab({
         ) : null}
 
         <Card className="flex min-w-0 flex-col gap-3">
-          <CardTitle>Reportes de señas</CardTitle>
+          <div className="flex items-center gap-1.5">
+            <CardTitle>Reportes de señas</CardTitle>
+            <InfoPopover metric="sign_report_resolution" className="ml-auto" />
+          </div>
           <dl className="flex flex-col gap-2 text-sm">
             {b ? <Row label="Pendientes" value={b.errors.pendingSignReports} danger /> : null}
             <Row label="Resueltos (en resolución)" value={l.reports.resolvedCount} />
@@ -352,7 +370,10 @@ export function LearningTab({
         </Card>
 
         <Card className="flex min-w-0 flex-col gap-3">
-          <CardTitle>Imports de contenido</CardTitle>
+          <div className="flex items-center gap-1.5">
+            <CardTitle>Imports de contenido</CardTitle>
+            <InfoPopover metric="imports_failed" className="ml-auto" />
+          </div>
           <Breakdown items={l.imports} labels={IMPORT_STATUS} />
           {b ? (
             <div className="border-fill mt-1 border-t pt-3">

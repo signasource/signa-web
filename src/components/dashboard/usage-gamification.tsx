@@ -4,6 +4,8 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { BreakdownPie } from "@/components/dashboard/breakdown-pie";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
+import { InfoPopover } from "@/components/dashboard/info-popover";
+import type { MetricId } from "@/components/dashboard/metric-catalog";
 import { MetricStat } from "@/components/dashboard/metric-stat";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount } from "@/components/dashboard/perf-format";
@@ -95,6 +97,8 @@ export function GamificationSection({
           metric="xp_daily"
           points={g.xp.daily.map((d) => ({ t: d.day, value: d.count }))}
           format={fmtCount}
+          range={range}
+          dayResolution
           onSelectRange={onSelectRange}
         />
         <DailySeriesChart
@@ -102,6 +106,8 @@ export function GamificationSection({
           metric="achievements_unlocked"
           points={g.achievements.daily.map((d) => ({ t: d.day, value: d.count }))}
           format={fmtCount}
+          range={range}
+          dayResolution
           onSelectRange={onSelectRange}
         />
         <DailySeriesChart
@@ -109,13 +115,18 @@ export function GamificationSection({
           metric="gems_spent"
           points={g.shop.dailySpent.map((d) => ({ t: d.day, value: d.count }))}
           format={fmtCount}
+          range={range}
+          dayResolution
           onSelectRange={onSelectRange}
         />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="flex min-w-0 flex-col gap-3">
-          <CardTitle>Reclamo de desafíos</CardTitle>
+          <div className="flex items-center gap-1.5">
+            <CardTitle>Reclamo de desafíos</CardTitle>
+            <InfoPopover metric="challenge_claim_rate" className="ml-auto" />
+          </div>
           {g.challenges.length === 0 ? (
             <p className="text-text-muted text-sm">Sin desafíos completados.</p>
           ) : (
@@ -138,11 +149,15 @@ export function GamificationSection({
 
         <BreakdownPie
           title="Distribución de XP"
+          metric="xp_distribution"
           items={g.xpDistribution.map((t) => ({ label: t.name, value: t.count }))}
         />
 
         <Card className="flex min-w-0 flex-col gap-3">
-          <CardTitle>Ítems más comprados</CardTitle>
+          <div className="flex items-center gap-1.5">
+            <CardTitle>Ítems más comprados</CardTitle>
+            <InfoPopover metric="shop_top" className="ml-auto" />
+          </div>
           {g.shop.topItems.length === 0 ? (
             <p className="text-text-muted text-sm">Sin compras en el período.</p>
           ) : (
@@ -165,9 +180,14 @@ export function GamificationSection({
 
       {/* Ranking de logros: los más y los menos desbloqueados. */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <AchievementRanking title="Logros más desbloqueados" items={g.achievements.topUnlocked} />
+        <AchievementRanking
+          title="Logros más desbloqueados"
+          metric="achievements_unlocked"
+          items={g.achievements.topUnlocked}
+        />
         <AchievementRanking
           title="Logros menos desbloqueados"
+          metric="achievements_least"
           items={g.achievements.leastUnlocked}
         />
       </div>
@@ -176,10 +196,21 @@ export function GamificationSection({
 }
 
 /** A ranked list of achievements by unlock count (used for both most- and least-unlocked). */
-function AchievementRanking({ title, items }: { title: string; items: NameCount[] }) {
+function AchievementRanking({
+  title,
+  metric,
+  items,
+}: {
+  title: string;
+  metric: MetricId;
+  items: NameCount[];
+}) {
   return (
     <Card className="flex min-w-0 flex-col gap-3">
-      <CardTitle>{title}</CardTitle>
+      <div className="flex items-center gap-1.5">
+        <CardTitle>{title}</CardTitle>
+        <InfoPopover metric={metric} className="ml-auto" />
+      </div>
       {items.length === 0 ? (
         <p className="text-text-muted text-sm">Sin logros.</p>
       ) : (

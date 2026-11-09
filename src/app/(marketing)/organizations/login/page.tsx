@@ -271,7 +271,7 @@ export default function IngresarPage() {
     <div className="bg-background text-text flex min-h-screen flex-col">
       <header className="border-border border-b px-5 py-4 sm:px-8">
         <Link
-          href="/organizaciones"
+          href="/organizations"
           className="font-display text-text flex items-center gap-2 text-xl font-extrabold tracking-tight"
         >
           <Image
@@ -287,7 +287,7 @@ export default function IngresarPage() {
       </header>
 
       <div className="page-enter relative flex flex-1 flex-col">
-        <BackButton href="/organizaciones" />
+        <BackButton href="/organizations" />
         <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-5 py-12 sm:px-0">
           <div className="flex flex-col gap-1">
             <h1 className="font-display text-3xl font-extrabold tracking-tight">

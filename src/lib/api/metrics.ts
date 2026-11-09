@@ -95,7 +95,23 @@ export type GrowthMetrics = {
     refundRatePercent: number;
     daily: SeriesAmount[];
   };
-  gems: { purchases: number; gemsGranted: number; daily: SeriesCount[] };
+  /** Real-money gem economy (end users, no org): money in/out plus gems granted. */
+  gems: {
+    purchases: number;
+    gemsGranted: number;
+    paidAmount: number;
+    refundedAmount: number;
+    refundedCount: number;
+    daily: SeriesAmount[];
+  };
+  /** Individual paid-course purchases bought directly by end users (no organization). */
+  courseSales: {
+    purchases: number;
+    paidAmount: number;
+    refundedAmount: number;
+    refundedCount: number;
+    daily: SeriesAmount[];
+  };
   seats: { sold: number; active: number; utilizationPercent: number };
   organizations: CountItem[];
   orgs: {
