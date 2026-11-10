@@ -2,9 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { AdminAvatar } from "@/components/admin/admin-avatar";
+import { AvatarPicker } from "@/components/admin/avatar-picker";
 import { useAdminAuth } from "@/features/admin/admin-auth-context";
 import {
   adminProfileSchema,
@@ -13,7 +13,6 @@ import {
   type AvatarChange,
 } from "@/lib/admin-profile";
 import { adminApi, type AdminUser } from "@/lib/api/admin";
-import { imageFileToAvatarDataUrl } from "@/lib/image-resize";
 
 const inputClass =
   "border-border bg-fill focus:border-primary rounded-xl border px-3 py-2 outline-none";
@@ -26,9 +25,7 @@ function FieldError({ message }: { message?: string }) {
 export function EditAdminForm({ admin, onDone }: { admin: AdminUser; onDone: () => void }) {
   const qc = useQueryClient();
   const { admin: me, refresh } = useAdminAuth();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [avatarChange, setAvatarChange] = useState<AvatarChange>(undefined);
-  const [photoError, setPhotoError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -55,7 +52,10 @@ export function EditAdminForm({ admin, onDone }: { admin: AdminUser; onDone: () 
       return adminApi.updateAdmin(admin.id, body);
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["admin", "admins"] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin", "admins"] }),
+        qc.invalidateQueries({ queryKey: ["admin", "users"] }),
+      ]);
       // The header shows the signed-in admin's own name and photo.
       if (me?.id === admin.id) await refresh();
       onDone();
@@ -64,18 +64,6 @@ export function EditAdminForm({ admin, onDone }: { admin: AdminUser; onDone: () 
       setError(err instanceof Error ? err.message : "No pudimos guardar los cambios.");
     },
   });
-
-  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setPhotoError(null);
-    try {
-      setAvatarChange(await imageFileToAvatarDataUrl(file));
-    } catch (err) {
-      setPhotoError(err instanceof Error ? err.message : "No pudimos usar esa imagen.");
-    }
-  }
 
   return (
     <form
@@ -90,41 +78,12 @@ export function EditAdminForm({ admin, onDone }: { admin: AdminUser; onDone: () 
         Editar a {admin.name} {admin.lastName}
       </h2>
 
-      <div className="flex items-center gap-4">
-        <AdminAvatar
-          name={admin.name}
-          lastName={admin.lastName}
-          avatar={shownAvatar}
-          className="size-16 text-lg"
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            onChange={onPickFile}
-            className="hidden"
-            aria-label="Elegir foto"
-          />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="border-border text-text hover:bg-fill rounded-xl border px-3 py-1.5 text-sm font-semibold"
-          >
-            {shownAvatar ? "Cambiar foto" : "Subir foto"}
-          </button>
-          {shownAvatar && (
-            <button
-              type="button"
-              onClick={() => setAvatarChange(null)}
-              className="text-danger rounded-xl px-3 py-1.5 text-sm font-semibold hover:underline"
-            >
-              Quitar foto
-            </button>
-          )}
-        </div>
-      </div>
-      {photoError && <p className="text-danger text-sm">{photoError}</p>}
+      <AvatarPicker
+        name={admin.name}
+        lastName={admin.lastName}
+        value={shownAvatar}
+        onChange={setAvatarChange}
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="text-text flex flex-col gap-1 text-sm font-medium">

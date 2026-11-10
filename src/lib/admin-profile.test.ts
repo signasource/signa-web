@@ -3,6 +3,7 @@ import {
   adminInitials,
   adminProfileSchema,
   buildAdminUpdate,
+  createAdminSchema,
   fitWithin,
   type AdminProfileValues,
 } from "@/lib/admin-profile";
@@ -94,5 +95,27 @@ describe("adminInitials", () => {
 
   it("falls back to ? with no names", () => {
     expect(adminInitials("", " ")).toBe("?");
+  });
+});
+
+describe("createAdminSchema", () => {
+  const valid = { name: "Ana", lastName: "Pérez", email: "ana@signa.com", password: "claveNueva1" };
+
+  it("accepts a complete admin", () => {
+    expect(createAdminSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("requires every field and a valid email", () => {
+    const r = createAdminSchema.safeParse({ name: "", lastName: "", email: "x", password: "" });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      const fields = r.error.issues.map((i) => i.path[0]);
+      expect(fields).toEqual(expect.arrayContaining(["name", "lastName", "email", "password"]));
+    }
+  });
+
+  it("requires a password of 8–72 characters", () => {
+    expect(createAdminSchema.safeParse({ ...valid, password: "corta" }).success).toBe(false);
+    expect(createAdminSchema.safeParse({ ...valid, password: "x".repeat(73) }).success).toBe(false);
   });
 });

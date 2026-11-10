@@ -291,8 +291,14 @@ export const adminApi = {
 
   admins: () => api<AdminUser[]>("/admin/admins"),
 
-  createAdmin: (data: { email: string; name: string; lastName: string; password: string }) =>
-    api<AdminUser>("/admin/admins", { method: "POST", body: data }),
+  createAdmin: (data: {
+    email: string;
+    name: string;
+    lastName: string;
+    password: string;
+    /** Optional profile photo as a data URL. */
+    avatar?: string;
+  }) => api<AdminUser>("/admin/admins", { method: "POST", body: data }),
 
   /** Partial update: omitted fields stay; `avatar: ""` removes the photo. */
   updateAdmin: (id: string, data: UpdateAdminInput) =>
