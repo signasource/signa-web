@@ -57,9 +57,7 @@ const BLOCK_TYPES: Record<
     bg: "bg-[#EEE8FF]",
     xp: true,
     wide: false,
-    fields: [
-      ["meaning", "sign", "Seña"],
-    ],
+    fields: [["meaning", "sign", "Seña"]],
   },
   SELECT_MEANING: {
     label: "Elegir significado",
@@ -852,8 +850,27 @@ export default function CoursesPage() {
             onClick={() => setSortAsc((v) => !v)}
             className="flex items-center gap-1.5 rounded-xl border border-[#ECE5DE] bg-white px-3.5 py-2 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6]"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              {sortAsc ? <><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></> : <><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></>}
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {sortAsc ? (
+                <>
+                  <path d="M12 19V5" />
+                  <path d="M6 11l6-6 6 6" />
+                </>
+              ) : (
+                <>
+                  <path d="M12 5v14" />
+                  <path d="M6 13l6 6 6-6" />
+                </>
+              )}
             </svg>
             {sortAsc ? "Menos reciente" : "Más reciente"}
           </button>
@@ -964,12 +981,16 @@ export default function CoursesPage() {
                       key={v.id}
                       item={v}
                       onOpen={() => adminApi.courseVersion(v.id).then(openEditor)}
-                      onArchive={v.status === "PUBLISHED" ? () =>
-                        setConfirmDialog({
-                          title: "¿Archivar este curso?",
-                          body: "El curso pasará al archivo y dejará de estar activo para los alumnos.",
-                          onConfirm: () => archiveMutation.mutate(v.id),
-                        }) : undefined}
+                      onArchive={
+                        v.status === "PUBLISHED"
+                          ? () =>
+                              setConfirmDialog({
+                                title: "¿Archivar este curso?",
+                                body: "El curso pasará al archivo y dejará de estar activo para los alumnos.",
+                                onConfirm: () => archiveMutation.mutate(v.id),
+                              })
+                          : undefined
+                      }
                     />
                   ))}
                 </div>
@@ -978,36 +999,41 @@ export default function CoursesPage() {
           </div>
         )}
 
-      {/* confirm dialog */}
-      {confirmDialog && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-[rgba(30,23,20,.5)] p-6">
-          <div className="flex w-[420px] max-w-full flex-col gap-4 rounded-xl bg-white p-6 shadow-[0_24px_60px_rgba(30,23,20,.25)]">
-            <h3 className="font-display text-xl font-bold text-[#241A16]">{confirmDialog.title}</h3>
-            <p className="text-sm leading-relaxed text-[#8C817A]">{confirmDialog.body}</p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setConfirmDialog(null)}
-                className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6]"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
-                className="rounded-xl border-0 bg-[#E14E22] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c43d18]"
-              >
-                Confirmar
-              </button>
+        {/* confirm dialog */}
+        {confirmDialog && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-[rgba(30,23,20,.5)] p-6">
+            <div className="flex w-[420px] max-w-full flex-col gap-4 rounded-xl bg-white p-6 shadow-[0_24px_60px_rgba(30,23,20,.25)]">
+              <h3 className="font-display text-xl font-bold text-[#241A16]">
+                {confirmDialog.title}
+              </h3>
+              <p className="text-sm leading-relaxed text-[#8C817A]">{confirmDialog.body}</p>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setConfirmDialog(null)}
+                  className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    confirmDialog.onConfirm();
+                    setConfirmDialog(null);
+                  }}
+                  className="rounded-xl border-0 bg-[#E14E22] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c43d18]"
+                >
+                  Confirmar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* toast */}
-      {toast && (
-        <div className="fixed right-6 bottom-6 z-70 max-w-[420px] rounded-xl bg-[#241A16] px-4.5 py-3.5 text-sm font-medium text-[#FBF6F2] shadow-[0_12px_32px_rgba(30,23,20,.25)]">
-          {toast}
-        </div>
-      )}
+        {/* toast */}
+        {toast && (
+          <div className="fixed right-6 bottom-6 z-70 max-w-[420px] rounded-xl bg-[#241A16] px-4.5 py-3.5 text-sm font-medium text-[#FBF6F2] shadow-[0_12px_32px_rgba(30,23,20,.25)]">
+            {toast}
+          </div>
+        )}
       </div>
     );
   }
@@ -1265,10 +1291,25 @@ export default function CoursesPage() {
                 Color
               </span>
               <div className="flex items-center gap-2">
-                {["#E4F1EC","#FEF0DE","#FDE8F1","#E4F1FB","#EEE8FF","#E0F4F2","#FBE0D8","#EBE3DB"].map((c) => (
+                {[
+                  "#E4F1EC",
+                  "#FEF0DE",
+                  "#FDE8F1",
+                  "#E4F1FB",
+                  "#EEE8FF",
+                  "#E0F4F2",
+                  "#FBE0D8",
+                  "#EBE3DB",
+                ].map((c) => (
                   <button
                     key={c}
-                    onClick={() => canEdit && updateEd((d) => { d.color = c; return d; })}
+                    onClick={() =>
+                      canEdit &&
+                      updateEd((d) => {
+                        d.color = c;
+                        return d;
+                      })
+                    }
                     className="h-7 w-7 rounded-full border-2 transition-transform hover:scale-110"
                     style={{
                       background: c,
@@ -1277,12 +1318,30 @@ export default function CoursesPage() {
                   />
                 ))}
                 {canEdit && (
-                  <label className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-[rgba(36,26,22,.3)] hover:border-[#241A16]" title="Color personalizado">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  <label
+                    className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-[rgba(36,26,22,.3)] hover:border-[#241A16]"
+                    title="Color personalizado"
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                    >
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
                     <input
                       type="color"
                       value={ed.color ?? "#E4F1EC"}
-                      onChange={(e) => updateEd((d) => { d.color = e.target.value; return d; })}
+                      onChange={(e) =>
+                        updateEd((d) => {
+                          d.color = e.target.value;
+                          return d;
+                        })
+                      }
                       className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                     />
                   </label>
@@ -1743,22 +1802,48 @@ export default function CoursesPage() {
                 {pickedSign.animationFormat === "mp4" ? (
                   <div className="flex gap-2">
                     <div className="flex flex-1 flex-col gap-1">
-                      <span className="text-[10px] font-bold tracking-wider text-[#8C817A] uppercase">Frontal</span>
+                      <span className="text-[10px] font-bold tracking-wider text-[#8C817A] uppercase">
+                        Frontal
+                      </span>
                       <div className="flex h-44 items-center justify-center overflow-hidden rounded-lg bg-[#1E1714]">
                         {signAnimationUrl ? (
-                          <video key={signAnimationUrl} src={signAnimationUrl} autoPlay loop muted playsInline controls className="h-full w-full object-contain" />
+                          <video
+                            key={signAnimationUrl}
+                            src={signAnimationUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            controls
+                            className="h-full w-full object-contain"
+                          />
                         ) : (
-                          <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">Cargando…</span>
+                          <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">
+                            Cargando…
+                          </span>
                         )}
                       </div>
                     </div>
                     <div className="flex flex-1 flex-col gap-1">
-                      <span className="text-[10px] font-bold tracking-wider text-[#8C817A] uppercase">Lateral</span>
+                      <span className="text-[10px] font-bold tracking-wider text-[#8C817A] uppercase">
+                        Lateral
+                      </span>
                       <div className="flex h-44 items-center justify-center overflow-hidden rounded-lg bg-[#1E1714]">
                         {signLateralUrl ? (
-                          <video key={signLateralUrl} src={signLateralUrl} autoPlay loop muted playsInline controls className="h-full w-full object-contain" />
+                          <video
+                            key={signLateralUrl}
+                            src={signLateralUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            controls
+                            className="h-full w-full object-contain"
+                          />
                         ) : (
-                          <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">Sin lateral</span>
+                          <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">
+                            Sin lateral
+                          </span>
                         )}
                       </div>
                     </div>
@@ -1781,7 +1866,9 @@ export default function CoursesPage() {
                         </a>
                       </div>
                     ) : (
-                      <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">Cargando…</span>
+                      <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">
+                        Cargando…
+                      </span>
                     )}
                   </div>
                 )}
@@ -1957,7 +2044,10 @@ export default function CoursesPage() {
                 Cancelar
               </button>
               <button
-                onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+                onClick={() => {
+                  confirmDialog.onConfirm();
+                  setConfirmDialog(null);
+                }}
                 className="rounded-xl border-0 bg-[#E14E22] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c43d18]"
               >
                 Confirmar
@@ -2160,7 +2250,10 @@ function CourseCard({
               </span>
               {onArchive && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onArchive(); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onArchive();
+                  }}
                   className="rounded-md border border-[#ECE5DE] bg-white px-2 py-1 text-xs font-semibold text-[#8C817A] hover:border-[#241A16] hover:text-[#241A16]"
                 >
                   Archivar
