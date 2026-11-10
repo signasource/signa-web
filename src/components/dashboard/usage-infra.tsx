@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
 import { InfoPopover } from "@/components/dashboard/info-popover";
 import { MetricsTabs, type TabItem } from "@/components/dashboard/metrics-tabs";
@@ -9,15 +10,22 @@ import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import {
   fmtBytes,
   fmtCores,
-  fmtCount,
   fmtLatency,
   fmtPercent,
   fmtPercentRatio,
   fmtReqs,
 } from "@/components/dashboard/perf-format";
-import { PerfGoldenTile, PerfPanel, type PerfProps } from "@/components/dashboard/perf-panel";
-import { Card, CardTitle, ProgressBar } from "@/components/dashboard/ui";
+import {
+  PerfGoldenTile,
+  PerfPanel,
+  REFRESH_MS,
+  usePerfQuery,
+  type PerfProps,
+} from "@/components/dashboard/perf-panel";
+import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
 import { NUMBER, useBusinessMetrics } from "@/components/dashboard/usage-business";
+import { metricsApi } from "@/lib/api/metrics";
+import { PerfChart } from "@/components/dashboard/perf-chart";
 
 type InfraKey = "backend" | "web" | "ml";
 
@@ -46,13 +54,53 @@ export function InfraTab(props: InfraProps) {
   );
 }
 
-/** A labelled group of panels within a sub-tab (keeps the backend board from being one long wall). */
+/** A labelled group of panels within a sub-tab. */
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-text-muted text-sm font-extrabold tracking-wider uppercase">{title}</h3>
       <div className="grid gap-4 lg:grid-cols-2">{children}</div>
     </div>
+  );
+}
+
+/**
+ * Combined p95 + p99 latency panel: queries both widgets and renders them as two overlaid series
+ * with different colors on a single chart.
+ */
+function DualLatencyPanel({ onSelectRange, ...perf }: InfraProps) {
+  const p95 = usePerfQuery("latency_p95", perf);
+  const p99 = usePerfQuery("latency_p99", perf);
+
+  const p95Series = (p95.data?.series ?? []).map((s) => ({
+    ...s,
+    labels: { ...s.labels, name: "p95" },
+  }));
+  const p99Series = (p99.data?.series ?? []).map((s) => ({
+    ...s,
+    labels: { ...s.labels, name: "p99" },
+  }));
+
+  const combined =
+    p95.data || p99.data
+      ? {
+          widget: "latency_combined",
+          available: (p95.data?.available ?? false) || (p99.data?.available ?? false),
+          series: [...p95Series, ...p99Series],
+        }
+      : undefined;
+
+  return (
+    <PerfChart
+      title="Latencia HTTP (p95 / p99)"
+      metric="latency_p95"
+      data={combined}
+      isPending={p95.isPending && p99.isPending}
+      isError={p95.isError && p99.isError}
+      isFetching={p95.isFetching || p99.isFetching}
+      format={fmtLatency}
+      onSelectRange={onSelectRange}
+    />
   );
 }
 
@@ -73,22 +121,7 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
       </GoldenRow>
 
       <Section title="API · HTTP">
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="latency_p95"
-          metric="latency_p95"
-          title="Latencia HTTP p95"
-          format={fmtLatency}
-        />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="latency_p99"
-          metric="latency_p99"
-          title="Latencia HTTP p99"
-          format={fmtLatency}
-        />
+        <DualLatencyPanel {...perf} onSelectRange={onSelectRange} />
         <PerfPanel
           {...perf}
           onSelectRange={onSelectRange}
@@ -173,41 +206,6 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
           title="Pausas de GC"
           format={fmtLatency}
         />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="db_connections_active"
-          metric="db_connections_active"
-          title="Conexiones a la base (activas)"
-          format={fmtCount}
-        />
-      </Section>
-
-      <Section title="Servicios de Signa">
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="r2_presign_latency"
-          metric="r2_presign_latency"
-          title="Latencia de firma de R2 (p95)"
-          format={fmtLatency}
-        />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="email_failures"
-          metric="email_failures"
-          title="Fallos de email"
-          format={fmtReqs}
-        />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="push_failures"
-          metric="push_failures"
-          title="Fallos de push"
-          format={fmtReqs}
-        />
       </Section>
     </div>
   );
@@ -268,10 +266,20 @@ function WebInfra({ onSelectRange, ...perf }: InfraProps) {
 
 const CAMERA_BLOCK_TYPES = new Set(["VISUAL_RECOGNITION", "PERFORM_SIGN", "SPELL_NAME"]);
 
+function useMlMetrics(range: { from: string; to: string }, live: boolean) {
+  return useQuery({
+    queryKey: ["admin", "metrics", "ml", range.from, range.to],
+    queryFn: () => metricsApi.ml({ from: range.from, to: range.to }),
+    enabled: Boolean(range.from && range.to),
+    placeholderData: keepPreviousData,
+    refetchInterval: live ? REFRESH_MS : false,
+  });
+}
+
 function MlInfra({ onSelectRange, ...perf }: InfraProps) {
-  // Recognition hits/misses are real lesson data (camera block attempts), not Grafana — so the ML
-  // board works locally too, unlike the Prometheus-backed inference latency panel.
   const business = useBusinessMetrics(perf.range, perf.live);
+  const ml = useMlMetrics(perf.range, perf.live);
+
   const cameraTypes = (business.data?.accuracy.byBlockType ?? []).filter((b) =>
     CAMERA_BLOCK_TYPES.has(b.type),
   );
@@ -283,104 +291,84 @@ function MlInfra({ onSelectRange, ...perf }: InfraProps) {
     <div className="flex flex-col gap-6">
       <GoldenRow>
         <GoldenTile
-          metric="recognition_accuracy"
-          value={accuracy == null ? "—" : `${accuracy}%`}
-          rawValue={accuracy}
-          hint={`${NUMBER.format(correct)}/${NUMBER.format(evaluated)} aciertos`}
+          metric="recognition_attempts"
+          value={NUMBER.format(evaluated)}
+          tone="neutral"
         />
-        <GoldenTile metric="recognition_attempts" value={NUMBER.format(evaluated)} tone="neutral" />
         <PerfGoldenTile
           {...perf}
           widget="ml_inference_latency"
           metric="ml_inference_latency"
           format={fmtLatency}
-        />
-        <PerfGoldenTile
-          {...perf}
-          widget="ml_confidence"
-          metric="ml_confidence"
-          format={fmtPercent}
-        />
-        <PerfGoldenTile
-          {...perf}
-          widget="ml_inference_rate"
-          metric="ml_inference_rate"
-          format={fmtReqs}
         />
       </GoldenRow>
 
       <p className="text-text-muted text-[13px]">
         El reconocimiento corre <strong>en el dispositivo</strong>: su salud es independiente del
-        backend. Si el backend está operativo pero estas métricas caen a cero (sin inferencias, FPS
-        o confianza), el servicio de reconocimiento está degradado o caído aunque la API siga en
-        pie.
+        backend. La latencia de inferencia la reporta la app vía telemetría.
       </p>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="ml_inference_rate"
-          metric="ml_inference_rate"
-          title="Inferencias por segundo"
-          subtitle="Volumen de reconocimiento (consumo de IA), reportado por la app"
-          format={fmtReqs}
-        />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="ml_confidence"
-          metric="ml_confidence"
-          title="Confianza del modelo (promedio)"
-          subtitle="Reportada por la app"
-          format={fmtPercent}
-        />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="ml_fps"
-          metric="ml_fps"
-          title="FPS de cámara (promedio)"
-          subtitle="Reportado por la app"
-          format={fmtCount}
-        />
+      <PerfPanel
+        {...perf}
+        onSelectRange={onSelectRange}
+        widget="ml_inference_latency"
+        metric="ml_inference_latency"
+        title="Latencia de inferencia (p95)"
+        subtitle="Tiempo promedio del modelo en reconocer — reportado por la app"
+        format={fmtLatency}
+      />
+
+      {/* Señas reconocidas */}
+      <div className="border-border flex items-center gap-3 border-t pt-5">
+        <h3 className="font-display text-lg font-bold tracking-tight">Señas reconocidas</h3>
+      </div>
+
+      {ml.isPending ? (
+        <LoadingState>Cargando señas reconocidas…</LoadingState>
+      ) : ml.isError && !ml.data ? (
+        <ErrorState>No pudimos cargar las señas reconocidas.</ErrorState>
+      ) : (
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
-            <CardTitle>Precisión por tipo de ejercicio con cámara</CardTitle>
+            <CardTitle>Señas reconocidas por la cámara</CardTitle>
             <InfoPopover metric="recognition_accuracy" className="ml-auto" />
           </div>
-          <p className="text-text-muted -mt-1.5 text-[13px]">Menor precisión primero</p>
-          {cameraTypes.length === 0 ? (
-            <p className="text-text-muted text-sm">Sin ejercicios de cámara en este período.</p>
+          <p className="text-text-muted -mt-1.5 text-[13px]">
+            PERFORM_SIGN · SPELL_NAME en el período
+          </p>
+          {(ml.data?.recognizedSigns ?? []).length === 0 ? (
+            <p className="text-text-muted text-sm">Sin reconocimientos en este período.</p>
           ) : (
-            <ul className="flex flex-col gap-2.5">
-              {[...cameraTypes]
-                .sort((x, y) => x.accuracyPercent - y.accuracyPercent)
-                .map((b) => (
-                  <li key={b.type} className="flex flex-col gap-1">
-                    <div className="flex justify-between gap-2 text-[13px] font-bold">
-                      <span className="truncate">{b.type}</span>
-                      <span>
-                        {b.accuracyPercent}% · {NUMBER.format(b.evaluated)} ej.
-                      </span>
-                    </div>
-                    <ProgressBar percent={b.accuracyPercent} />
-                  </li>
-                ))}
-            </ul>
+            <dl className="flex flex-col">
+              {ml.data!.recognizedSigns.map((s) => (
+                <div
+                  key={s.sign}
+                  className="border-fill flex items-center justify-between gap-3 border-b py-2 text-sm last:border-b-0"
+                >
+                  <dt className="font-bold">{s.sign}</dt>
+                  <dd className="text-text-muted shrink-0 text-right">
+                    <span className="font-extrabold text-foreground">{s.accuracyPercent}%</span>
+                    {" · "}
+                    {NUMBER.format(s.attempts)} intentos
+                  </dd>
+                </div>
+              ))}
+            </dl>
           )}
         </Card>
+      )}
 
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="ml_inference_latency"
-          metric="ml_inference_latency"
-          title="Latencia de inferencia (p95)"
-          subtitle="Reconocimiento en el dispositivo, reportado por la app"
-          format={fmtLatency}
-        />
+      {/* Señas salteadas */}
+      <div className="border-border flex items-center gap-3 border-t pt-5">
+        <h3 className="font-display text-lg font-bold tracking-tight">Señas salteadas</h3>
       </div>
+
+      <Card className="flex min-w-0 flex-col gap-3">
+        <CardTitle>Señas con skip de cámara</CardTitle>
+        <p className="text-text-muted text-sm">
+          Próximamente — requiere que la app reporte el evento de skip al backend.
+        </p>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-4">
         <MetricStat
@@ -389,13 +377,6 @@ function MlInfra({ onSelectRange, ...perf }: InfraProps) {
           hint={`${NUMBER.format(evaluated)} ejercicios`}
         />
       </div>
-
-      <p className="text-text-muted text-[13px]">
-        La precisión y los intentos salen de los ejercicios reales con cámara (datos de lecciones);
-        la latencia, la confianza y el FPS los reporta la app por telemetría. El acierto por palabra
-        queda pendiente: requiere asociar cada intento de cámara con la seña objetivo (hoy no está
-        modelado).
-      </p>
     </div>
   );
 }

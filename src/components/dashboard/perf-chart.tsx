@@ -227,6 +227,7 @@ export function PerfChart({
                 axisLine={false}
                 tickLine={false}
                 width={44}
+                domain={[0, (max: number) => (max === 0 ? 1 : max * 1.1)]}
                 tickFormatter={(v) => format(Number(v))}
                 tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
               />

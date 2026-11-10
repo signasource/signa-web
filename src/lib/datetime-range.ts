@@ -64,7 +64,8 @@ export function spanSeconds(range: DateTimeRange): number {
  */
 export function deriveStepSeconds(range: DateTimeRange): number {
   const target = spanSeconds(range) / 120;
-  const nice = [15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 21600, 43200, 86400];
+  // Minimum 60 s matches the Prometheus scrape interval — sub-60 s steps return empty series.
+  const nice = [60, 120, 300, 600, 900, 1800, 3600, 7200, 21600, 43200, 86400];
   return nice.find((s) => s >= target) ?? nice[nice.length - 1]!;
 }
 

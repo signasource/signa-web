@@ -261,6 +261,20 @@ export type PerfMetrics = {
   series: PerfSeries[];
 };
 
+/** One sign's camera-recognition stats for the ML metrics tab. */
+export type MlSignRecognition = {
+  sign: string;
+  attempts: number;
+  correct: number;
+  accuracyPercent: number;
+};
+
+/** Global ML / on-device recognition metrics — the "ML (reconocimiento)" apartado. */
+export type MlMetrics = {
+  totalPredictions: number;
+  recognizedSigns: MlSignRecognition[];
+};
+
 export type RangeParams = { from: string; to: string };
 
 export const metricsApi = {
@@ -279,4 +293,6 @@ export const metricsApi = {
 
   perf: (widget: string, params: RangeParams & { step?: number }) =>
     api<PerfMetrics>(`/admin/metrics/perf/${widget}`, { query: params }),
+
+  ml: (params: RangeParams) => api<MlMetrics>("/admin/metrics/ml", { query: params }),
 };

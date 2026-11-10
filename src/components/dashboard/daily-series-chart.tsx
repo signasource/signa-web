@@ -229,6 +229,7 @@ export function DailySeriesChart({
                   stroke="var(--color-primary)"
                   strokeWidth={2}
                   dot={false}
+                  connectNulls
                   isAnimationActive={false}
                 />
               ) : (

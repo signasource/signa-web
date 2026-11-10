@@ -17,49 +17,8 @@ import {
   Row,
   useBusinessMetrics,
 } from "@/components/dashboard/usage-business";
-import { metricsApi, type ExerciseDifficulty, type SignDifficulty } from "@/lib/api/metrics";
+import { metricsApi, type SignDifficulty } from "@/lib/api/metrics";
 import type { DateTimeRange } from "@/lib/datetime-range";
-
-/** A ranked list of the hardest exercises, with a per-row bar driven by a caller-chosen metric. */
-function ExerciseRanking({
-  title,
-  metric,
-  exercises,
-  value,
-  percent,
-}: {
-  title: string;
-  metric: MetricId;
-  exercises: ExerciseDifficulty[];
-  value: (e: ExerciseDifficulty) => string;
-  percent: (e: ExerciseDifficulty) => number;
-}) {
-  return (
-    <Card className="flex min-w-0 flex-col gap-3">
-      <div className="flex items-center gap-1.5">
-        <CardTitle>{title}</CardTitle>
-        <InfoPopover metric={metric} className="ml-auto" />
-      </div>
-      {exercises.length === 0 ? (
-        <p className="text-text-muted text-sm">Sin ejercicios con muestra suficiente.</p>
-      ) : (
-        <ul className="flex flex-col gap-2.5">
-          {exercises.map((e) => (
-            <li key={e.blockId} className="flex flex-col gap-1">
-              <div className="flex justify-between gap-2 text-[13px] font-bold">
-                <span className="truncate">{e.label}</span>
-                <span className="shrink-0">
-                  {value(e)} · {NUMBER.format(e.evaluated)} ej.
-                </span>
-              </div>
-              <ProgressBar percent={percent(e)} tone="warning" />
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
-  );
-}
 
 /** Learning & content query (per-course, hardest lessons, vocabulary, reports, imports). */
 function useLearningMetrics(range: DateTimeRange, live: boolean, courseIds: string[]) {
@@ -134,28 +93,40 @@ function CourseFilter({
   );
 }
 
-/** Signs ranked by error rate — surfaces which signs users struggle with the most. */
-function HardestSigns({ signs }: { signs: SignDifficulty[] }) {
+/** Signs ranked by a chosen metric — error rate or retries. */
+function SignRanking({
+  title,
+  metric,
+  signs,
+  value,
+  percent,
+  subtitle,
+}: {
+  title: string;
+  metric: MetricId;
+  signs: SignDifficulty[];
+  value: (s: SignDifficulty) => string;
+  percent: (s: SignDifficulty) => number;
+  subtitle?: string;
+}) {
   return (
     <Card className="flex min-w-0 flex-col gap-3">
       <div className="flex items-center gap-1.5">
-        <CardTitle>Señas más difíciles</CardTitle>
-        <InfoPopover metric="hardest_signs" className="ml-auto" />
+        <CardTitle>{title}</CardTitle>
+        <InfoPopover metric={metric} className="ml-auto" />
       </div>
-      <p className="text-text-muted -mt-1.5 text-[13px]">Mayor tasa de error (SELECT_MEANING / SELECT_SIGN)</p>
+      {subtitle ? <p className="text-text-muted -mt-1.5 text-[13px]">{subtitle}</p> : null}
       {signs.length === 0 ? (
-        <p className="text-text-muted text-sm">Sin ejercicios con muestra suficiente.</p>
+        <p className="text-text-muted text-sm">Sin señas con muestra suficiente.</p>
       ) : (
         <ul className="flex flex-col gap-2.5">
           {signs.map((s) => (
             <li key={s.sign} className="flex flex-col gap-1">
               <div className="flex justify-between gap-2 text-[13px] font-bold">
                 <span className="truncate">{s.sign}</span>
-                <span className="shrink-0">
-                  {s.errorPercent}% · {NUMBER.format(s.evaluated)} ej.
-                </span>
+                <span className="shrink-0">{value(s)}</span>
               </div>
-              <ProgressBar percent={s.errorPercent} tone="warning" />
+              <ProgressBar percent={percent(s)} tone="warning" />
             </li>
           ))}
         </ul>
@@ -190,18 +161,17 @@ export function LearningTab({
   const l = learning.data!;
   const b = business.data;
 
-  const filteredCourses =
-    selectedCourses.length === 0
-      ? l.courses
-      : l.courses.filter((c) => selectedCourses.includes(c.courseId));
-
-  // Global course completion: sum of completions / (total users × total courses)
-  const totalUsers = b?.users.total ?? 0;
-  const totalCourses = l.courses.length;
+  // Completion over all user-course pairs that actually exist as enrollments (active + completed),
+  // not totalUsers × totalCourses — users without access to paid courses would inflate that.
   const totalCompletions = l.courses.reduce((s, c) => s + c.completed, 0);
-  const denominator = totalUsers * totalCourses;
+  const denominator = l.courses.reduce((s, c) => s + c.enrolled + c.completed, 0);
   const globalCompletionPercent =
     denominator > 0 ? Math.round((totalCompletions / denominator) * 1000) / 10 : 0;
+
+  const hardestSignsByError = l.hardestSigns ?? [];
+  const hardestSignsByRetries = [...(l.hardestSigns ?? [])].sort(
+    (a, b) => b.averageAttempts - a.averageAttempts,
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -258,10 +228,10 @@ export function LearningTab({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Completitud global de cursos */}
+        {/* Completitud de cursos */}
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
-            <CardTitle>Completitud global de cursos</CardTitle>
+            <CardTitle>Completitud de cursos</CardTitle>
             <InfoPopover metric="global_course_completion" className="ml-auto" />
           </div>
           {denominator === 0 ? (
@@ -272,7 +242,7 @@ export function LearningTab({
                 {globalCompletionPercent}%
               </p>
               <p className="text-text-muted text-[13px]">
-                {NUMBER.format(totalCompletions)}/{NUMBER.format(denominator)}
+                {NUMBER.format(totalCompletions)}/{NUMBER.format(denominator)} inscripciones
               </p>
               <ProgressBar percent={globalCompletionPercent} className="mt-1" />
             </>
@@ -293,9 +263,7 @@ export function LearningTab({
                 <li key={lesson.lessonId} className="flex flex-col gap-1">
                   <div className="flex justify-between gap-2 text-[13px] font-bold">
                     <span className="truncate">{lesson.lessonName}</span>
-                    <span className="shrink-0">
-                      {lesson.accuracyPercent}% · {NUMBER.format(lesson.evaluated)} ej.
-                    </span>
+                    <span className="shrink-0">{lesson.accuracyPercent}%</span>
                   </div>
                   <ProgressBar percent={lesson.accuracyPercent} />
                 </li>
@@ -336,23 +304,23 @@ export function LearningTab({
           )}
         </Card>
 
-        <ExerciseRanking
+        <SignRanking
           title="Mayor tasa de error"
           metric="exercise_error_rate"
-          exercises={l.highestErrorExercises}
-          value={(e) => `${e.errorPercent}%`}
-          percent={(e) => e.errorPercent}
+          subtitle="Por seña (SELECT_MEANING / SELECT_SIGN)"
+          signs={hardestSignsByError}
+          value={(s) => `${s.errorPercent}%`}
+          percent={(s) => s.errorPercent}
         />
-        <ExerciseRanking
+        <SignRanking
           title="Más reintentos"
           metric="exercise_retries"
-          exercises={l.mostRetriedExercises}
-          value={(e) => `${e.averageAttempts}×`}
-          percent={(e) => Math.min(100, e.averageAttempts * 25)}
+          subtitle="Por seña (SELECT_MEANING / SELECT_SIGN)"
+          signs={hardestSignsByRetries}
+          value={(s) => `${s.averageAttempts}×`}
+          percent={(s) => Math.min(100, s.averageAttempts * 25)}
         />
       </div>
-
-      <HardestSigns signs={l.hardestSigns ?? []} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <DailySeriesChart
