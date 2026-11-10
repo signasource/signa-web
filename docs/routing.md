@@ -24,6 +24,7 @@
 | `/invitacion?token=…`         | `(auth)/invitacion/page.tsx`                            | public | Employee accepts a seat invitation: log in or create the account with the invited email, then accept                                                                                         |
 | `/admin/courses`              | `(admin)/admin/courses/page.tsx`                        | SIGNA  | Course CMS: list all course versions (Borradores / Publicadas / Archivadas), create courses, full editor (units → lessons → blocks), publish with confirmation modal                         |
 | `/admin/purchases`            | `(admin)/admin/purchases/page.tsx`                      | SIGNA  | Back-office: list purchases, confirm a payment by hand (fallback to Mercado Pago)                                                                                                            |
+| `/admin/admins`               | `(admin)/admin/admins/page.tsx`                         | SIGNA  | Back-office admins: list with photo, create, and edit name, email, password and photo (`EditAdminForm`)                                                                                      |
 | `/admin/usage-metrics`        | `(admin)/admin/usage-metrics/page.tsx`                  | SIGNA  | Datadog-style usage dashboard (business + performance/infra), one datetime range picker + live. See [features/admin-usage-metrics.md](./features/admin-usage-metrics.md)                     |
 
 ## Guard

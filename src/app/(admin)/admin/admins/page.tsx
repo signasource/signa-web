@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { AdminAvatar } from "@/components/admin/admin-avatar";
+import { EditAdminForm } from "@/components/admin/edit-admin-form";
 import { adminApi } from "@/lib/api/admin";
 
 function CreateAdminForm({ onSuccess }: { onSuccess: () => void }) {
@@ -101,11 +103,14 @@ function CreateAdminForm({ onSuccess }: { onSuccess: () => void }) {
 
 export default function AdminsPage() {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "admins"],
     queryFn: adminApi.admins,
   });
+
+  const editing = data?.find((a) => a.id === editingId) ?? null;
 
   return (
     <div>
@@ -126,7 +131,15 @@ export default function AdminsPage() {
         </div>
       )}
 
-      {isLoading ? (
+      {editing && (
+        <div className="mb-6">
+          <EditAdminForm key={editing.id} admin={editing} onDone={() => setEditingId(null)} />
+        </div>
+      )}
+
+      {error ? (
+        <p className="text-danger">No pudimos cargar los administradores.</p>
+      ) : isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="bg-fill h-16 animate-pulse rounded-2xl" />
@@ -140,12 +153,15 @@ export default function AdminsPage() {
                 <th className="px-5 py-3 text-left font-semibold">Nombre</th>
                 <th className="px-5 py-3 text-left font-semibold">Email</th>
                 <th className="px-5 py-3 text-left font-semibold">Usuario</th>
+                <th className="px-5 py-3 text-right font-semibold">
+                  <span className="sr-only">Acciones</span>
+                </th>
               </tr>
             </thead>
             <tbody>
               {data?.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="text-text-muted px-5 py-8 text-center">
+                  <td colSpan={4} className="text-text-muted px-5 py-8 text-center">
                     No hay administradores.
                   </td>
                 </tr>
@@ -153,10 +169,29 @@ export default function AdminsPage() {
               {data?.map((admin) => (
                 <tr key={admin.id} className="border-border border-b last:border-0">
                   <td className="text-text px-5 py-4 font-semibold">
-                    {admin.name} {admin.lastName}
+                    <div className="flex items-center gap-3">
+                      <AdminAvatar
+                        name={admin.name}
+                        lastName={admin.lastName}
+                        avatar={admin.avatar}
+                      />
+                      {admin.name} {admin.lastName}
+                    </div>
                   </td>
                   <td className="text-text-muted px-5 py-4">{admin.email}</td>
                   <td className="text-text-muted px-5 py-4">@{admin.username}</td>
+                  <td className="px-5 py-4 text-right">
+                    <button
+                      onClick={() => {
+                        setShowForm(false);
+                        setEditingId(admin.id);
+                      }}
+                      aria-label={`Editar a ${admin.name} ${admin.lastName}`}
+                      className="text-primary text-sm font-semibold hover:underline"
+                    >
+                      Editar
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

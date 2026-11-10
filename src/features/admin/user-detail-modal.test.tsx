@@ -29,6 +29,7 @@ const user: AdminUser = {
   authProvider: "EMAIL",
   currentStreak: 0,
   lastStreakDate: null,
+  avatar: null,
 };
 
 function renderModal(target: AdminUser = user) {

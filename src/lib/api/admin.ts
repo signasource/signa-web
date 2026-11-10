@@ -6,6 +6,8 @@ export type AdminMe = {
   name: string;
   lastName: string;
   email: string;
+  /** Profile photo as a data URL; null when none. */
+  avatar: string | null;
 };
 
 export type OrganizationStatus = "PENDING" | "ACTIVE" | "REJECTED" | "SUSPENDED";
@@ -89,6 +91,7 @@ export type AdminUser = {
   authProvider: "GOOGLE" | "EMAIL";
   currentStreak: number;
   lastStreakDate: string | null;
+  avatar: string | null;
 };
 
 export type AdminWaitlistEntry = {
@@ -228,6 +231,14 @@ export type ContentImportRun = {
   details: string | null;
 };
 
+export type UpdateAdminInput = {
+  name?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  avatar?: string;
+};
+
 export const adminApi = {
   me: () => api<AdminMe>("/admin/me"),
 
@@ -282,6 +293,10 @@ export const adminApi = {
 
   createAdmin: (data: { email: string; name: string; lastName: string; password: string }) =>
     api<AdminUser>("/admin/admins", { method: "POST", body: data }),
+
+  /** Partial update: omitted fields stay; `avatar: ""` removes the photo. */
+  updateAdmin: (id: string, data: UpdateAdminInput) =>
+    api<AdminUser>(`/admin/admins/${id}`, { method: "PATCH", body: data }),
 
   courses: () => api<AdminCourse[]>("/admin/courses"),
 
