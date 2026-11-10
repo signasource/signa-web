@@ -353,7 +353,7 @@ export function LearningTab({
         />
       </div>
 
-      <HardestSigns signs={l.hardestSigns} />
+      <HardestSigns signs={l.hardestSigns ?? []} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <DailySeriesChart
