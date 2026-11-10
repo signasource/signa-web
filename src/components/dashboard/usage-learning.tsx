@@ -67,7 +67,7 @@ function CourseFilter({
         className={`rounded-full px-3 py-1 text-[13px] font-bold transition-colors ${
           allSelected
             ? "bg-primary text-white"
-            : "border-border border text-text-muted hover:border-primary hover:text-primary"
+            : "border-border text-text-muted hover:border-primary hover:text-primary border"
         }`}
       >
         Todos
@@ -82,7 +82,7 @@ function CourseFilter({
             className={`rounded-full px-3 py-1 text-[13px] font-bold transition-colors ${
               active
                 ? "bg-primary text-white"
-                : "border-border border text-text-muted hover:border-primary hover:text-primary"
+                : "border-border text-text-muted hover:border-primary hover:text-primary border"
             }`}
           >
             {c.courseName}
@@ -175,11 +175,7 @@ export function LearningTab({
 
   return (
     <div className="flex flex-col gap-6">
-      <CourseFilter
-        courses={l.courses}
-        selected={selectedCourses}
-        onChange={setSelectedCourses}
-      />
+      <CourseFilter courses={l.courses} selected={selectedCourses} onChange={setSelectedCourses} />
 
       {/* ¿La gente aprende LSA? Progreso de lecciones y ejercicios. */}
       <GoldenRow>
@@ -417,7 +413,9 @@ export function LearningTab({
                   className="border-fill flex justify-between gap-3 border-b py-2 text-sm last:border-b-0"
                 >
                   <dt className="font-bold">{m.meaning}</dt>
-                  <dd className="text-text-muted shrink-0">{NUMBER.format(m.count)} reporte{m.count !== 1 ? "s" : ""}</dd>
+                  <dd className="text-text-muted shrink-0">
+                    {NUMBER.format(m.count)} reporte{m.count !== 1 ? "s" : ""}
+                  </dd>
                 </div>
               ))}
             </dl>

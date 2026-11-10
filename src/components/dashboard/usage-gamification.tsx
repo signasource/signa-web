@@ -80,8 +80,7 @@ export function GamificationSection({
               );
             const pct = Math.round(((curr - prev) / prev) * 1000) / 10;
             const sign = pct > 0 ? "+" : "";
-            const cls =
-              pct > 0 ? "text-success-dark" : pct < 0 ? "text-danger" : "text-text-muted";
+            const cls = pct > 0 ? "text-success-dark" : pct < 0 ? "text-danger" : "text-text-muted";
             return (
               <>
                 {totalLine}
@@ -215,7 +214,7 @@ export function GamificationSection({
                       · {NUMBER.format(item.gemsSpent)} 💎
                     </span>
                   </dt>
-                  <dd className="font-extrabold shrink-0">{NUMBER.format(item.purchases)}×</dd>
+                  <dd className="shrink-0 font-extrabold">{NUMBER.format(item.purchases)}×</dd>
                 </div>
               ))}
             </dl>

@@ -118,8 +118,94 @@ export type AdminSign = {
   meaning: string;
   handedness: string;
   hasAnimation: boolean;
+  animationFormat: "glb" | "mp4" | null;
   openReports: number;
   lessonCount: number;
+};
+
+export type CourseVersionStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+export type AdminCourseVersionListItem = {
+  id: string;
+  courseId: string;
+  courseName: string;
+  version: string;
+  status: CourseVersionStatus;
+  publishedAt: string | null;
+  basedOnVersion: string | null;
+  isFree: boolean;
+  price: number | null;
+  unitCount: number;
+  lessonCount: number;
+  blockCount: number;
+  signCount: number;
+  updatedAt: string | null;
+  updatedBy: string | null;
+};
+
+export type BlockConfig = Record<string, unknown>;
+
+export type AdminBlock = {
+  id: string;
+  type: string;
+  order: number;
+  xpReward: number | null;
+  config: BlockConfig;
+};
+
+export type AdminLesson = {
+  id: string;
+  name: string;
+  description: string | null;
+  blocks: AdminBlock[];
+};
+
+export type AdminTopic = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  lessons: AdminLesson[];
+};
+
+export type AdminCourseVersionDetail = {
+  id: string;
+  courseId: string;
+  version: string;
+  status: CourseVersionStatus;
+  publishedAt: string | null;
+  basedOnVersion: string | null;
+  name: string;
+  description: string | null;
+  isFree: boolean;
+  price: number | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  topics: AdminTopic[];
+};
+
+export type SaveCourseVersionPayload = {
+  name: string;
+  description: string | null;
+  isFree: boolean;
+  price: number | null;
+  topics: Array<{
+    id?: string | null;
+    title: string;
+    subtitle: string | null;
+    description: string | null;
+    lessons: Array<{
+      id?: string | null;
+      name: string;
+      description: string | null;
+      blocks: Array<{
+        id?: string | null;
+        type: string;
+        xpReward: number | null;
+        config: BlockConfig;
+      }>;
+    }>;
+  }>;
 };
 
 export type ContentImportTrigger = "STARTUP" | "MANUAL";
@@ -195,6 +281,28 @@ export const adminApi = {
     api<AdminUser>("/admin/admins", { method: "POST", body: data }),
 
   courses: () => api<AdminCourse[]>("/admin/courses"),
+
+  courseVersions: () => api<AdminCourseVersionListItem[]>("/admin/course-versions"),
+
+  courseVersion: (id: string) => api<AdminCourseVersionDetail>(`/admin/course-versions/${id}`),
+
+  createCourse: (name: string) =>
+    api<AdminCourseVersionDetail>("/admin/course-versions", {
+      method: "POST",
+      body: { name },
+    }),
+
+  forkCourseVersion: (id: string) =>
+    api<AdminCourseVersionDetail>(`/admin/course-versions/${id}/fork`, { method: "POST" }),
+
+  saveCourseVersion: (id: string, payload: SaveCourseVersionPayload) =>
+    api<AdminCourseVersionDetail>(`/admin/course-versions/${id}`, {
+      method: "PUT",
+      body: payload,
+    }),
+
+  publishCourseVersion: (id: string) =>
+    api<AdminCourseVersionDetail>(`/admin/course-versions/${id}/publish`, { method: "POST" }),
 
   signs: (params?: { query?: string; page?: number; size?: number }) =>
     api<Page<AdminSign>>("/admin/signs", {

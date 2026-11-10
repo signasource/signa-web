@@ -290,11 +290,7 @@ function MlInfra({ onSelectRange, ...perf }: InfraProps) {
   return (
     <div className="flex flex-col gap-6">
       <GoldenRow>
-        <GoldenTile
-          metric="recognition_attempts"
-          value={NUMBER.format(evaluated)}
-          tone="neutral"
-        />
+        <GoldenTile metric="recognition_attempts" value={NUMBER.format(evaluated)} tone="neutral" />
         <PerfGoldenTile
           {...perf}
           widget="ml_inference_latency"
@@ -347,7 +343,7 @@ function MlInfra({ onSelectRange, ...perf }: InfraProps) {
                 >
                   <dt className="font-bold">{s.sign}</dt>
                   <dd className="text-text-muted shrink-0 text-right">
-                    <span className="font-extrabold text-foreground">{s.accuracyPercent}%</span>
+                    <span className="text-foreground font-extrabold">{s.accuracyPercent}%</span>
                     {" · "}
                     {NUMBER.format(s.attempts)} intentos
                   </dd>

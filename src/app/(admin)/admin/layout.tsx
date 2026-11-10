@@ -39,6 +39,7 @@ const NAV: NavItem[] = [
     icon: FlagIcon,
     badgeKey: "openSignReports",
   },
+  { href: "/admin/courses", label: "Cursos", icon: CoursesIcon },
   { href: "/admin/content", label: "Cursos y señas", icon: BookIcon },
   { href: "/admin/users", label: "Usuarios", icon: UsersIcon },
   { href: "/admin/usage-metrics", label: "Métricas de uso", icon: MetricsIcon },
@@ -182,6 +183,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
     </div>
+  );
+}
+
+function CoursesIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinejoin="round"
+    >
+      <path d="M12 3l9 5-9 5-9-5 9-5z" />
+      <path d="M3 12.5l9 5 9-5" />
+      <path d="M3 17l9 5 9-5" />
+    </svg>
   );
 }
 
