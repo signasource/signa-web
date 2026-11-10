@@ -21,6 +21,18 @@ export const adminProfileSchema = z
     message: "Las contraseñas no coinciden.",
   });
 
+export const createAdminSchema = z.object({
+  name: z.string().trim().min(1, "Ingresá el nombre.").max(100, "Máximo 100 caracteres."),
+  lastName: z.string().trim().min(1, "Ingresá el apellido.").max(100, "Máximo 100 caracteres."),
+  email: z.string().trim().min(1, "Ingresá el email.").email("Ingresá un email válido."),
+  password: z
+    .string()
+    .min(8, "La contraseña debe tener entre 8 y 72 caracteres.")
+    .max(72, "La contraseña debe tener entre 8 y 72 caracteres."),
+});
+
+export type CreateAdminValues = z.infer<typeof createAdminSchema>;
+
 export type AdminProfileValues = z.infer<typeof adminProfileSchema>;
 
 /** `undefined` keeps the photo, a data URL replaces it, `null` removes it. */

@@ -44,7 +44,6 @@ const NAV: NavItem[] = [
   { href: "/admin/content", label: "Cursos y señas", icon: BookIcon },
   { href: "/admin/users", label: "Usuarios", icon: UsersIcon },
   { href: "/admin/usage-metrics", label: "Métricas de uso", icon: MetricsIcon },
-  { href: "/admin/admins", label: "Administradores", icon: ShieldIcon },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -114,7 +113,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
         <div className="border-t border-white/10 px-4 py-4">
-          <div className="mb-3 flex items-center gap-2 px-1">
+          <Link
+            href="/admin/profile"
+            aria-label="Ver mi perfil"
+            className={cn(
+              "mb-3 flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-white/5",
+              pathname === "/admin/profile" && "bg-primary/20",
+            )}
+          >
             <AdminAvatar
               name={admin.name}
               lastName={admin.lastName}
@@ -127,7 +133,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </p>
               <p className="truncate text-xs text-white/40">{admin.email}</p>
             </div>
-          </div>
+          </Link>
           <button
             onClick={logout}
             className="w-full rounded-xl px-3 py-2 text-left text-sm text-white/40 transition-colors hover:bg-white/5 hover:text-white"
@@ -147,12 +153,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </span>
               <span className="text-xs font-medium text-white/30">Admin</span>
             </div>
-            <button
-              onClick={logout}
-              className="text-xs font-medium text-white/50 transition-colors hover:text-white"
-            >
-              Cerrar sesión
-            </button>
+            <div className="flex items-center gap-3">
+              <Link href="/admin/profile" aria-label="Ver mi perfil">
+                <AdminAvatar
+                  name={admin.name}
+                  lastName={admin.lastName}
+                  avatar={admin.avatar}
+                  className="size-7"
+                />
+              </Link>
+              <button
+                onClick={logout}
+                className="text-xs font-medium text-white/50 transition-colors hover:text-white"
+              >
+                Cerrar sesión
+              </button>
+            </div>
           </div>
           <nav className="flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-3 pb-3 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {NAV.map(({ href, label, icon: Icon, badgeKey }) => {
@@ -311,20 +327,6 @@ function MetricsIcon({ className }: { className?: string }) {
     >
       <path d="M3 3v18h18" />
       <path d="M7 15l4-5 3 3 4-6" />
-    </svg>
-  );
-}
-
-function ShieldIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.8}
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
   );
 }

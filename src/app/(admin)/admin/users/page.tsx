@@ -2,6 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { AdminAvatar } from "@/components/admin/admin-avatar";
+import { AdminsPanel } from "@/components/admin/admins-panel";
 import {
   relativeDate,
   ROLE_COLORS,
@@ -115,10 +117,11 @@ function UsersTab() {
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="bg-fill text-text-muted flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase">
-                          {user.name[0]}
-                          {user.lastName[0]}
-                        </div>
+                        <AdminAvatar
+                          name={user.name}
+                          lastName={user.lastName}
+                          avatar={user.avatar}
+                        />
                         <div className="min-w-0">
                           <p className="text-text truncate font-semibold">
                             {user.name} {user.lastName}
@@ -277,7 +280,7 @@ function WaitlistTab() {
 }
 
 export default function UsersPage() {
-  const [tab, setTab] = useState<"users" | "waitlist">("users");
+  const [tab, setTab] = useState<"users" | "admins" | "waitlist">("users");
 
   return (
     <div>
@@ -301,6 +304,17 @@ export default function UsersPage() {
           Usuarios
         </button>
         <button
+          onClick={() => setTab("admins")}
+          className={cn(
+            "px-4 py-2 text-sm font-semibold transition-colors",
+            tab === "admins"
+              ? "border-primary text-primary border-b-2"
+              : "text-text-muted hover:text-text",
+          )}
+        >
+          Administradores
+        </button>
+        <button
           onClick={() => setTab("waitlist")}
           className={cn(
             "px-4 py-2 text-sm font-semibold transition-colors",
@@ -313,7 +327,7 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {tab === "users" ? <UsersTab /> : <WaitlistTab />}
+      {tab === "users" ? <UsersTab /> : tab === "admins" ? <AdminsPanel /> : <WaitlistTab />}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { AdminAvatar } from "@/components/admin/admin-avatar";
 import { useAdminAuth } from "@/features/admin/admin-auth-context";
 import { adminApi, type AdminUser, type UserRole } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
@@ -61,10 +62,12 @@ export function UserDetailModal({ user, onClose }: { user: AdminUser; onClose: (
       <div className="bg-surface w-full max-w-md rounded-2xl p-6 shadow-2xl">
         <div className="mb-5 flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-fill text-text-muted flex size-10 items-center justify-center rounded-full text-sm font-bold uppercase">
-              {user.name[0]}
-              {user.lastName[0]}
-            </div>
+            <AdminAvatar
+              name={user.name}
+              lastName={user.lastName}
+              avatar={user.avatar}
+              className="size-10 text-sm"
+            />
             <div>
               <h2 className="font-display text-text text-lg font-bold">
                 {user.name} {user.lastName}
