@@ -62,10 +62,15 @@ function ExerciseRanking({
 }
 
 /** Learning & content query (per-course, hardest lessons, vocabulary, reports, imports). */
-function useLearningMetrics(range: DateTimeRange, live: boolean) {
+function useLearningMetrics(range: DateTimeRange, live: boolean, courseIds: string[]) {
   return useQuery({
-    queryKey: ["admin", "metrics", "learning", range.from, range.to],
-    queryFn: () => metricsApi.learning({ from: range.from, to: range.to }),
+    queryKey: ["admin", "metrics", "learning", range.from, range.to, ...courseIds],
+    queryFn: () =>
+      metricsApi.learning({
+        from: range.from,
+        to: range.to,
+        courseIds: courseIds.length > 0 ? courseIds : undefined,
+      }),
     enabled: Boolean(range.from && range.to),
     placeholderData: keepPreviousData,
     refetchInterval: live ? REFRESH_MS : false,
@@ -173,9 +178,9 @@ export function LearningTab({
   live: boolean;
   onSelectRange: RangeSelect;
 }) {
-  const learning = useLearningMetrics(range, live);
-  const business = useBusinessMetrics(range, live);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const learning = useLearningMetrics(range, live, selectedCourses);
+  const business = useBusinessMetrics(range, live);
 
   if (learning.isPending || business.isPending)
     return <LoadingState>Cargando métricas de aprendizaje…</LoadingState>;
@@ -189,12 +194,6 @@ export function LearningTab({
     selectedCourses.length === 0
       ? l.courses
       : l.courses.filter((c) => selectedCourses.includes(c.courseId));
-
-  const filteredLessonRanking =
-    selectedCourses.length === 0 ? l.lessonRanking : l.lessonRanking;
-
-  const filteredHardestLessons =
-    selectedCourses.length === 0 ? l.hardestLessons : l.hardestLessons;
 
   // Global course completion: sum of completions / (total users × total courses)
   const totalUsers = b?.users.total ?? 0;
@@ -286,11 +285,11 @@ export function LearningTab({
             <InfoPopover metric="hardest_lessons" className="ml-auto" />
           </div>
           <p className="text-text-muted -mt-1.5 text-[13px]">Menor precisión en el período</p>
-          {filteredHardestLessons.length === 0 ? (
+          {l.hardestLessons.length === 0 ? (
             <p className="text-text-muted text-sm">Sin ejercicios evaluados.</p>
           ) : (
             <ul className="flex flex-col gap-2.5">
-              {filteredHardestLessons.map((lesson) => (
+              {l.hardestLessons.map((lesson) => (
                 <li key={lesson.lessonId} className="flex flex-col gap-1">
                   <div className="flex justify-between gap-2 text-[13px] font-bold">
                     <span className="truncate">{lesson.lessonName}</span>
@@ -317,11 +316,11 @@ export function LearningTab({
             <CardTitle>Lecciones con mayor abandono</CardTitle>
             <InfoPopover metric="lesson_abandonment_detail" className="ml-auto" />
           </div>
-          {filteredLessonRanking.length === 0 ? (
+          {l.lessonRanking.length === 0 ? (
             <p className="text-text-muted text-sm">Sin lecciones con muestra suficiente.</p>
           ) : (
             <ul className="flex flex-col gap-2.5">
-              {filteredLessonRanking.map((lesson) => (
+              {l.lessonRanking.map((lesson) => (
                 <li key={lesson.lessonId} className="flex flex-col gap-1">
                   <div className="flex justify-between gap-2 text-[13px] font-bold">
                     <span className="truncate">{lesson.lessonName}</span>

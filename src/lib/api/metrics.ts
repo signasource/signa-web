@@ -269,8 +269,10 @@ export const metricsApi = {
 
   growth: (params: RangeParams) => api<GrowthMetrics>("/admin/metrics/growth", { query: params }),
 
-  learning: (params: RangeParams) =>
-    api<LearningMetrics>("/admin/metrics/learning", { query: params }),
+  learning: (params: RangeParams & { courseIds?: string[] }) =>
+    api<LearningMetrics>("/admin/metrics/learning", {
+      query: { from: params.from, to: params.to, courseIds: params.courseIds },
+    }),
 
   gamification: (params: RangeParams) =>
     api<GamificationMetrics>("/admin/metrics/gamification", { query: params }),
