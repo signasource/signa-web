@@ -39,6 +39,7 @@ export function buildCsp(nonce?: string): string {
     "img-src 'self' data: blob:",
     "font-src 'self'",
     `connect-src 'self' blob: ${apiUrl} https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev${demoModels}`,
+    `media-src 'self' https://*.r2.cloudflarestorage.com https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev`,
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",

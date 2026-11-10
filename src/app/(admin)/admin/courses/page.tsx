@@ -14,12 +14,19 @@ import {
   type CourseVersionStatus,
   type SaveCourseVersionPayload,
 } from "@/lib/api/admin";
+import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
 type HomeTab = "estado" | "curso";
 type SaveStatus = "saved" | "saving" | "unsaved";
+
+type ConfirmDialog = {
+  title: string;
+  body: string;
+  onConfirm: () => void;
+};
 
 type DrawerTarget = {
   topicIdx: number;
@@ -52,7 +59,6 @@ const BLOCK_TYPES: Record<
     wide: false,
     fields: [
       ["meaning", "sign", "Seña"],
-      ["word", "text", "Palabra que se muestra"],
     ],
   },
   SELECT_MEANING: {
@@ -101,7 +107,6 @@ const BLOCK_TYPES: Record<
     fields: [
       ["signSequence", "signs", "Secuencia"],
       ["options", "signs", "Opciones"],
-      ["keepOrder", "toggle", "Respetar orden"],
     ],
   },
   PERFORM_SIGN: {
@@ -116,7 +121,7 @@ const BLOCK_TYPES: Record<
     bg: "bg-[#E0F4F2]",
     xp: true,
     wide: false,
-    fields: [["max_letters", "number", "Máx. de letras"]],
+    fields: [],
   },
   INVISIBLE_SIGNS: {
     label: "Señas invisibles",
@@ -411,6 +416,7 @@ export default function CoursesPage() {
   // ── view state ──
   const [view, setView] = useState<"home" | "editor">("home");
   const [homeTab, setHomeTab] = useState<HomeTab>("estado");
+  const [sortAsc, setSortAsc] = useState(false);
 
   // ── editor state ──
   const [ed, setEd] = useState<AdminCourseVersionDetail | null>(null);
@@ -425,9 +431,13 @@ export default function CoursesPage() {
   const [signQuery, setSignQuery] = useState("");
   const [pickedSign, setPickedSign] = useState<AdminSign | null>(null);
   const [signAnimationUrl, setSignAnimationUrl] = useState<string | null>(null);
+  const [signLateralUrl, setSignLateralUrl] = useState<string | null>(null);
 
   // ── publish modal ──
   const [publishOpen, setPublishOpen] = useState(false);
+
+  // ── confirm dialog ──
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialog | null>(null);
 
   // ── toast ──
   const [toast, setToast] = useState<string | null>(null);
@@ -472,7 +482,11 @@ export default function CoursesPage() {
       setSaveStatus("saved");
       queryClient.invalidateQueries({ queryKey: ["admin", "course-versions"] });
     },
-    onError: () => setSaveStatus("unsaved"),
+    onError: (err) => {
+      setSaveStatus("unsaved");
+      const msg = err instanceof ApiError ? err.message : "Error al guardar. Intentá de nuevo.";
+      showToast(msg);
+    },
   });
 
   const publishMutation = useMutation({
@@ -482,6 +496,23 @@ export default function CoursesPage() {
       setPublishOpen(false);
       showToast("Curso publicado exitosamente.");
       openEditor(data);
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: (id: string) => adminApi.archiveCourseVersion(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "course-versions"] });
+      showToast("Curso archivado.");
+    },
+  });
+
+  const deleteDraftMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deleteCourseVersion(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "course-versions"] });
+      goHome();
+      showToast("Borrador eliminado.");
     },
   });
 
@@ -613,6 +644,7 @@ export default function CoursesPage() {
         else if (ft === "number") config[key] = 10;
         else config[key] = "";
       });
+      if (type === "SPELL_NAME") config["max_letters"] = 10;
       const order = d.topics[selectedTopicIdx]!.lessons[selectedLessonIdx]!.blocks.length;
       d.topics[selectedTopicIdx]!.lessons[selectedLessonIdx]!.blocks.push({
         id: `new-${Date.now()}`,
@@ -706,10 +738,17 @@ export default function CoursesPage() {
   function pickSignAndFetchAnimation(sign: AdminSign) {
     setPickedSign(sign);
     setSignAnimationUrl(null);
+    setSignLateralUrl(null);
     adminApi
       .signAnimation(sign.meaning)
       .then((r) => setSignAnimationUrl(r.url))
       .catch(() => setSignAnimationUrl(null));
+    if (sign.animationFormat === "mp4") {
+      adminApi
+        .signAnimation(sign.meaning + "_lateral")
+        .then((r) => setSignLateralUrl(r.url))
+        .catch(() => setSignLateralUrl(null));
+    }
   }
 
   // ── publish helpers ──
@@ -731,11 +770,19 @@ export default function CoursesPage() {
 
   // ── home data ──
 
+  function sortVersions(list: AdminCourseVersionListItem[]) {
+    return [...list].sort((a, b) => {
+      const ta = new Date(a.updatedAt ?? a.publishedAt ?? 0).getTime();
+      const tb = new Date(b.updatedAt ?? b.publishedAt ?? 0).getTime();
+      return sortAsc ? ta - tb : tb - ta;
+    });
+  }
+
   const allVersions = versions ?? [];
-  const drafts = allVersions.filter((v) => v.status === "DRAFT");
-  const published = allVersions.filter((v) => v.status === "PUBLISHED");
-  const archived = allVersions.filter((v) => v.status === "ARCHIVED");
-  const byCourse = groupByCourse(allVersions);
+  const drafts = sortVersions(allVersions.filter((v) => v.status === "DRAFT"));
+  const published = sortVersions(allVersions.filter((v) => v.status === "PUBLISHED"));
+  const archived = sortVersions(allVersions.filter((v) => v.status === "ARCHIVED"));
+  const byCourse = groupByCourse(sortVersions(allVersions));
 
   // ─── render ─────────────────────────────────────────────────────────────────
 
@@ -771,27 +818,38 @@ export default function CoursesPage() {
           </button>
         </div>
 
-        {/* tabs */}
-        <div className="mb-8 flex w-fit gap-1 rounded-xl bg-[#F2ECE6] p-1">
-          {(
-            [
-              { key: "estado", label: "Por estado" },
-              { key: "curso", label: "Por curso" },
-            ] as { key: HomeTab; label: string }[]
-          ).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setHomeTab(key)}
-              className={cn(
-                "rounded-lg border-0 px-4 py-2 text-sm font-semibold transition-colors",
-                homeTab === key
-                  ? "bg-white text-[#241A16] shadow-sm"
-                  : "bg-transparent text-[#8C817A] hover:text-[#241A16]",
-              )}
-            >
-              {label}
-            </button>
-          ))}
+        {/* tabs + sort */}
+        <div className="mb-8 flex flex-wrap items-center gap-3">
+          <div className="flex w-fit gap-1 rounded-xl bg-[#F2ECE6] p-1">
+            {(
+              [
+                { key: "estado", label: "Por estado" },
+                { key: "curso", label: "Por curso" },
+              ] as { key: HomeTab; label: string }[]
+            ).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setHomeTab(key)}
+                className={cn(
+                  "rounded-lg border-0 px-4 py-2 text-sm font-semibold transition-colors",
+                  homeTab === key
+                    ? "bg-white text-[#241A16] shadow-sm"
+                    : "bg-transparent text-[#8C817A] hover:text-[#241A16]",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setSortAsc((v) => !v)}
+            className="flex items-center gap-1.5 rounded-xl border border-[#ECE5DE] bg-white px-3.5 py-2 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6]"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              {sortAsc ? <><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></> : <><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></>}
+            </svg>
+            {sortAsc ? "Menos reciente" : "Más reciente"}
+          </button>
         </div>
 
         {isLoading && (
@@ -840,6 +898,13 @@ export default function CoursesPage() {
                       key={v.id}
                       item={v}
                       onOpen={() => adminApi.courseVersion(v.id).then(openEditor)}
+                      onArchive={() =>
+                        setConfirmDialog({
+                          title: "¿Archivar este curso?",
+                          body: "El curso pasará al archivo y dejará de estar activo para los alumnos.",
+                          onConfirm: () => archiveMutation.mutate(v.id),
+                        })
+                      }
                     />
                   ))}
                 </div>
@@ -892,6 +957,12 @@ export default function CoursesPage() {
                       key={v.id}
                       item={v}
                       onOpen={() => adminApi.courseVersion(v.id).then(openEditor)}
+                      onArchive={v.status === "PUBLISHED" ? () =>
+                        setConfirmDialog({
+                          title: "¿Archivar este curso?",
+                          body: "El curso pasará al archivo y dejará de estar activo para los alumnos.",
+                          onConfirm: () => archiveMutation.mutate(v.id),
+                        }) : undefined}
                     />
                   ))}
                 </div>
@@ -900,6 +971,36 @@ export default function CoursesPage() {
           </div>
         )}
 
+      {/* confirm dialog */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-[rgba(30,23,20,.5)] p-6">
+          <div className="flex w-[420px] max-w-full flex-col gap-4 rounded-xl bg-white p-6 shadow-[0_24px_60px_rgba(30,23,20,.25)]">
+            <h3 className="font-display text-xl font-bold text-[#241A16]">{confirmDialog.title}</h3>
+            <p className="text-sm leading-relaxed text-[#8C817A]">{confirmDialog.body}</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6]"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+                className="rounded-xl border-0 bg-[#E14E22] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c43d18]"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* toast */}
+      {toast && (
+        <div className="fixed right-6 bottom-6 z-70 max-w-[420px] rounded-xl bg-[#241A16] px-4.5 py-3.5 text-sm font-medium text-[#FBF6F2] shadow-[0_12px_32px_rgba(30,23,20,.25)]">
+          {toast}
+        </div>
+      )}
       </div>
     );
   }
@@ -967,12 +1068,35 @@ export default function CoursesPage() {
                     ? "Guardando…"
                     : "Sin guardar"}
               </span>
-              <span className="text-sm text-[#8C817A]">Visible para todos los admins</span>
+              <button
+                onClick={() => {
+                  if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+                  if (!ed) return;
+                  setSaveStatus("saving");
+                  saveMutation.mutate({ id: ed.id, payload: buildPayload(ed) });
+                }}
+                disabled={saveMutation.isPending}
+                className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6] disabled:opacity-50"
+              >
+                Guardar
+              </button>
               <button
                 onClick={() => setPublishOpen(true)}
                 className="rounded-xl border-0 bg-[#241A16] px-5 py-2.5 text-sm font-semibold text-[#FBF6F2] hover:bg-[#3A2F2A]"
               >
                 Publicar
+              </button>
+              <button
+                onClick={() =>
+                  setConfirmDialog({
+                    title: "¿Eliminar este borrador?",
+                    body: "Esta acción no se puede deshacer. El borrador se eliminará permanentemente.",
+                    onConfirm: () => deleteDraftMutation.mutate(ed.id),
+                  })
+                }
+                className="rounded-xl border border-[#FBE0D8] bg-[#FBE0D8] px-4 py-2.5 text-sm font-semibold text-[#E14E22] hover:bg-[#f5c9bb]"
+              >
+                Eliminar borrador
               </button>
             </>
           )}
@@ -994,6 +1118,21 @@ export default function CoursesPage() {
                 </svg>
                 Solo lectura
               </span>
+              {ed.status === "PUBLISHED" && (
+                <button
+                  onClick={() =>
+                    setConfirmDialog({
+                      title: "¿Archivar este curso?",
+                      body: "El curso pasará al archivo y dejará de estar activo para los alumnos.",
+                      onConfirm: () => archiveMutation.mutate(ed.id),
+                    })
+                  }
+                  disabled={archiveMutation.isPending}
+                  className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#FBE0D8] hover:text-[#E14E22] disabled:opacity-50"
+                >
+                  Archivar
+                </button>
+              )}
               <button
                 onClick={() => forkMutation.mutate(ed.id)}
                 disabled={forkMutation.isPending}
@@ -1594,28 +1733,51 @@ export default function CoursesPage() {
 
             {pickedSign && (
               <div className="flex flex-col gap-2.5 border-b border-[#ECE5DE] px-6 py-4">
-                <div className="flex h-56 items-center justify-center overflow-hidden rounded-lg bg-[#1E1714]">
-                  {signAnimationUrl && pickedSign.animationFormat === "mp4" ? (
-                    <video
-                      key={signAnimationUrl}
-                      src={signAnimationUrl}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="h-full w-full object-contain"
-                    />
-                  ) : signAnimationUrl && pickedSign.animationFormat === "glb" ? (
-                    <div className="flex flex-col items-center gap-2 text-center">
-                      <span className="font-mono text-[11px] font-bold text-[#EEE8FF]">GLB</span>
-                      <span className="max-w-[200px] text-xs leading-snug text-[rgba(255,255,255,.6)]">
-                        La animación 3D se ve en la app. URL disponible.
-                      </span>
+                {pickedSign.animationFormat === "mp4" ? (
+                  <div className="flex gap-2">
+                    <div className="flex flex-1 flex-col gap-1">
+                      <span className="text-[10px] font-bold tracking-wider text-[#8C817A] uppercase">Frontal</span>
+                      <div className="flex h-44 items-center justify-center overflow-hidden rounded-lg bg-[#1E1714]">
+                        {signAnimationUrl ? (
+                          <video key={signAnimationUrl} src={signAnimationUrl} autoPlay loop muted playsInline controls className="h-full w-full object-contain" />
+                        ) : (
+                          <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">Cargando…</span>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">Cargando…</span>
-                  )}
-                </div>
+                    <div className="flex flex-1 flex-col gap-1">
+                      <span className="text-[10px] font-bold tracking-wider text-[#8C817A] uppercase">Lateral</span>
+                      <div className="flex h-44 items-center justify-center overflow-hidden rounded-lg bg-[#1E1714]">
+                        {signLateralUrl ? (
+                          <video key={signLateralUrl} src={signLateralUrl} autoPlay loop muted playsInline controls className="h-full w-full object-contain" />
+                        ) : (
+                          <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">Sin lateral</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-44 items-center justify-center overflow-hidden rounded-lg bg-[#1E1714]">
+                    {signAnimationUrl ? (
+                      <div className="flex flex-col items-center gap-2 text-center">
+                        <span className="font-mono text-[11px] font-bold text-[#EEE8FF]">GLB</span>
+                        <span className="max-w-[200px] text-xs leading-snug text-[rgba(255,255,255,.6)]">
+                          Animación 3D — se reproduce en la app.
+                        </span>
+                        <a
+                          href={signAnimationUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-md bg-[rgba(255,255,255,.12)] px-3 py-1.5 text-xs font-semibold text-[#EEE8FF] hover:bg-[rgba(255,255,255,.2)]"
+                        >
+                          Abrir archivo
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">Cargando…</span>
+                    )}
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-display text-[22px] font-bold">{pickedSign.meaning}</p>
@@ -1774,6 +1936,30 @@ export default function CoursesPage() {
         </div>
       )}
 
+      {/* confirm dialog */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-[rgba(30,23,20,.5)] p-6">
+          <div className="flex w-[420px] max-w-full flex-col gap-4 rounded-xl bg-white p-6 shadow-[0_24px_60px_rgba(30,23,20,.25)]">
+            <h3 className="font-display text-xl font-bold text-[#241A16]">{confirmDialog.title}</h3>
+            <p className="text-sm leading-relaxed text-[#8C817A]">{confirmDialog.body}</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6]"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}
+                className="rounded-xl border-0 bg-[#E14E22] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c43d18]"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* toast */}
       {toast && (
         <div className="fixed right-6 bottom-6 z-70 max-w-[420px] rounded-xl bg-[#241A16] px-4.5 py-3.5 text-sm font-medium text-[#FBF6F2] shadow-[0_12px_32px_rgba(30,23,20,.25)]">
@@ -1786,7 +1972,15 @@ export default function CoursesPage() {
 
 // ─── course card ──────────────────────────────────────────────────────────────
 
-function CourseCard({ item, onOpen }: { item: AdminCourseVersionListItem; onOpen: () => void }) {
+function CourseCard({
+  item,
+  onOpen,
+  onArchive,
+}: {
+  item: AdminCourseVersionListItem;
+  onOpen: () => void;
+  onArchive?: () => void;
+}) {
   const [hovered, setHovered] = useState(false);
   const defaultTint =
     UNIT_TINTS[
@@ -1953,9 +2147,19 @@ function CourseCard({ item, onOpen }: { item: AdminCourseVersionListItem; onOpen
             </div>
           )}
           {item.status === "PUBLISHED" && (
-            <span className="text-xs text-[#8C817A]">
-              Publicada el {formatDate(item.publishedAt)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#8C817A]">
+                Publicada el {formatDate(item.publishedAt)}
+              </span>
+              {onArchive && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onArchive(); }}
+                  className="rounded-md border border-[#ECE5DE] bg-white px-2 py-1 text-xs font-semibold text-[#8C817A] hover:border-[#241A16] hover:text-[#241A16]"
+                >
+                  Archivar
+                </button>
+              )}
+            </div>
           )}
           {item.status === "ARCHIVED" && (
             <span className="text-xs text-[#8C817A]">Publicada {formatDate(item.publishedAt)}</span>

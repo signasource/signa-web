@@ -307,6 +307,12 @@ export const adminApi = {
   publishCourseVersion: (id: string) =>
     api<AdminCourseVersionDetail>(`/admin/course-versions/${id}/publish`, { method: "POST" }),
 
+  archiveCourseVersion: (id: string) =>
+    api<AdminCourseVersionDetail>(`/admin/course-versions/${id}/archive`, { method: "POST" }),
+
+  deleteCourseVersion: (id: string) =>
+    api(`/admin/course-versions/${id}`, { method: "DELETE" }),
+
   signAnimation: (meaning: string) =>
     api<{ url: string }>(`/signs/${encodeURIComponent(meaning)}/animation`),
 
