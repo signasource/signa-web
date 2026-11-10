@@ -180,7 +180,7 @@ export function GrowthTab({
       </Section>
 
       <Section title="Organizaciones">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <MetricStat
             metric="orgs_active"
             value={NUMBER.format(orgCount(g.organizations, "ACTIVE"))}
@@ -193,14 +193,13 @@ export function GrowthTab({
           <MetricStat metric="avg_users_per_org" value={NUMBER.format(g.orgs.avgUsersPerOrg)} />
           <MetricStat metric="avg_revenue_per_org" value={fmtMoney(g.orgs.avgRevenuePerOrg)} />
           <MetricStat
-            metric="purchases_count"
-            value={NUMBER.format(g.orgs.purchasesInRange)}
-            hint={`ticket prom. ${fmtMoney(g.revenue.averageTicket)}`}
-          />
-          <MetricStat
-            metric="refund_rate"
-            value={`${g.revenue.refundRatePercent}%`}
-            hint={fmtMoney(g.revenue.refundedAmount)}
+            metric="org_utilization"
+            value={
+              g.orgs.utilization.length > 0
+                ? `${Math.round(g.orgs.utilization.reduce((sum, o) => sum + o.occupancyPercent, 0) / g.orgs.utilization.length)}%`
+                : "—"
+            }
+            hint={`${NUMBER.format(g.orgs.utilization.length)} org${g.orgs.utilization.length !== 1 ? "s" : ""}`}
           />
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
