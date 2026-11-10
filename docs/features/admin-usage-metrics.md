@@ -31,7 +31,7 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   the whole history), total base al cierre,
   XP per active user (with its own period-over-period delta), and new/active-users time series; a **sessions** row — sesiones por usuario (frequency)
   and duración promedio de sesión (time spent) from app telemetry (`signa-mobile` `useSessionTracker` →
-  `POST /sessions`), with a sessions chart. Then the **gamification** section (`GamificationSection` in
+  `POST /sessions`), with a **usuarios conectados** chart (distinct users with the app open per bucket: each session is spread from its start to start+duration, so one user connected 15 min draws a plateau at 1). Then the **gamification** section (`GamificationSection` in
   `usage-gamification.tsx`): "¿La gamificación ayuda?" — **XP por usuario activo** (con el total como
   contexto), tasa de desbloqueo de logros, reclamo de desafíos, **tasa de canje de gemas**
   (gastadas en el período / gemas que los usuarios tienen hoy en su inventario); visualizaciones: **distribución de XP** por tramos (BreakdownPie) y **ranking de
