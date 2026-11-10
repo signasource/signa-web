@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
-type Filter = "all" | "DRAFT" | "PUBLISHED" | "ARCHIVED";
+type HomeTab = "estado" | "curso" | "fecha";
 type SaveStatus = "saved" | "saving" | "unsaved";
 
 type DrawerTarget = {
@@ -139,20 +139,40 @@ const UNIT_TINTS = [
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function versionInt(v: string): number {
-  const n = parseInt(v, 10);
-  return isNaN(n) ? 0 : n;
-}
-
 function formatAgo(iso: string | null): string {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 2) return "justo ahora";
+  if (mins < 2) return "recién";
   if (mins < 60) return `hace ${mins} min`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `hace ${hours} h`;
-  return `hace ${Math.floor(hours / 24)} d`;
+  if (hours < 48) return "ayer";
+  return `hace ${Math.floor(hours / 24)} días`;
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function groupByCourse(
+  versions: AdminCourseVersionListItem[],
+): { courseName: string; items: AdminCourseVersionListItem[] }[] {
+  const map = new Map<string, AdminCourseVersionListItem[]>();
+  for (const v of versions) {
+    const list = map.get(v.courseId) ?? [];
+    list.push(v);
+    map.set(v.courseId, list);
+  }
+  return Array.from(map.values()).map((items) => ({
+    courseName: items[0]!.courseName,
+    items,
+  }));
 }
 
 function priceLabel(item: AdminCourseVersionListItem): string {
@@ -390,7 +410,7 @@ export default function CoursesPage() {
 
   // ── view state ──
   const [view, setView] = useState<"home" | "editor">("home");
-  const [filter, setFilter] = useState<Filter>("all");
+  const [homeTab, setHomeTab] = useState<HomeTab>("estado");
 
   // ── editor state ──
   const [ed, setEd] = useState<AdminCourseVersionDetail | null>(null);
@@ -696,9 +716,13 @@ export default function CoursesPage() {
     return issues;
   }
 
-  // ── filtered versions ──
+  // ── home data ──
 
-  const filteredVersions = versions?.filter((v) => filter === "all" || v.status === filter) ?? [];
+  const allVersions = versions ?? [];
+  const drafts = allVersions.filter((v) => v.status === "DRAFT");
+  const published = allVersions.filter((v) => v.status === "PUBLISHED");
+  const archived = allVersions.filter((v) => v.status === "ARCHIVED");
+  const byCourse = groupByCourse(allVersions);
 
   // ─── render ─────────────────────────────────────────────────────────────────
 
@@ -709,11 +733,9 @@ export default function CoursesPage() {
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="font-display mb-2 text-2xl font-bold text-[#241A16]">Cursos</h1>
-            <p
-              className="max-w-xl text-sm text-[#8C817A]"
-              style={{ textWrap: "pretty" } as React.CSSProperties}
-            >
-              Borradores, versiones publicadas y archivo de cada curso.
+            <p className="max-w-xl text-sm text-[#8C817A]">
+              Borradores, versiones publicadas y archivo de cada curso. Los borradores se guardan
+              solos y los ven todos los administradores.
             </p>
           </div>
           <button
@@ -736,22 +758,21 @@ export default function CoursesPage() {
           </button>
         </div>
 
-        {/* filter tabs */}
-        <div className="mb-8 flex w-fit flex-wrap gap-1 rounded-xl bg-[#F2ECE6] p-1">
+        {/* tabs */}
+        <div className="mb-8 flex w-fit gap-1 rounded-xl bg-[#F2ECE6] p-1">
           {(
             [
-              { key: "all", label: "Todos" },
-              { key: "DRAFT", label: "Borradores" },
-              { key: "PUBLISHED", label: "Publicadas" },
-              { key: "ARCHIVED", label: "Archivadas" },
-            ] as { key: Filter; label: string }[]
+              { key: "estado", label: "Por estado" },
+              { key: "curso", label: "Por curso" },
+              { key: "fecha", label: "Por fecha" },
+            ] as { key: HomeTab; label: string }[]
           ).map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setFilter(key)}
+              onClick={() => setHomeTab(key)}
               className={cn(
                 "rounded-lg border-0 px-4 py-2 text-sm font-semibold transition-colors",
-                filter === key
+                homeTab === key
                   ? "bg-white text-[#241A16] shadow-sm"
                   : "bg-transparent text-[#8C817A] hover:text-[#241A16]",
               )}
@@ -769,22 +790,122 @@ export default function CoursesPage() {
           </div>
         )}
 
-        {!isLoading && filteredVersions.length === 0 && (
-          <div className="rounded-lg border border-dashed border-[#EBE3DB] px-5 py-8 text-center text-sm text-[#8C817A]">
-            No hay cursos en esta categoría.
+        {/* por estado */}
+        {!isLoading && homeTab === "estado" && (
+          <div className="flex flex-col gap-10">
+            {drafts.length > 0 && (
+              <section>
+                <div className="mb-5 flex items-baseline gap-3">
+                  <h2 className="text-lg font-bold text-[#241A16]">Borradores</h2>
+                  <span className="rounded-full bg-[rgba(251,191,36,.18)] px-2 py-0.5 text-xs font-bold text-[#B85806]">
+                    {drafts.length}
+                  </span>
+                  <span className="text-sm text-[#8C817A]">En edición, todavía sin publicar</span>
+                </div>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+                  {drafts.map((v) => (
+                    <CourseCard
+                      key={v.id}
+                      item={v}
+                      onOpen={() => adminApi.courseVersion(v.id).then(openEditor)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {published.length > 0 && (
+              <section>
+                <div className="mb-5 flex items-baseline gap-3">
+                  <h2 className="text-lg font-bold text-[#241A16]">Publicados</h2>
+                  <span className="rounded-full bg-[rgba(76,166,92,.12)] px-2 py-0.5 text-xs font-bold text-[#2E7D45]">
+                    {published.length}
+                  </span>
+                  <span className="text-sm text-[#8C817A]">La versión activa de cada curso</span>
+                </div>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+                  {published.map((v) => (
+                    <CourseCard
+                      key={v.id}
+                      item={v}
+                      onOpen={() => adminApi.courseVersion(v.id).then(openEditor)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {archived.length > 0 && (
+              <section>
+                <div className="mb-5 flex items-baseline gap-3">
+                  <h2 className="text-lg font-bold text-[#241A16]">Archivados</h2>
+                  <span className="rounded-full bg-[#EBE3DB] px-2 py-0.5 text-xs font-bold text-[#8C817A]">
+                    {archived.length}
+                  </span>
+                  <span className="text-sm text-[#8C817A]">
+                    Por fecha de publicación · más recientes primero
+                  </span>
+                </div>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+                  {archived.map((v) => (
+                    <CourseCard
+                      key={v.id}
+                      item={v}
+                      onOpen={() => adminApi.courseVersion(v.id).then(openEditor)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {allVersions.length === 0 && (
+              <div className="rounded-lg border border-dashed border-[#EBE3DB] px-5 py-10 text-center text-sm text-[#8C817A]">
+                Todavía no hay cursos. Creá el primero.
+              </div>
+            )}
           </div>
         )}
 
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-          {filteredVersions.map((v) => (
-            <CourseCard
-              key={v.id}
-              item={v}
-              onOpen={() => adminApi.courseVersion(v.id).then(openEditor)}
-              onFork={() => forkMutation.mutate(v.id)}
-            />
-          ))}
-        </div>
+        {/* por curso */}
+        {!isLoading && homeTab === "curso" && (
+          <div className="flex flex-col gap-10">
+            {byCourse.map(({ courseName, items }) => (
+              <section key={courseName}>
+                <div className="mb-5 flex items-baseline gap-3">
+                  <h2 className="text-lg font-bold text-[#241A16]">{courseName}</h2>
+                  <span className="text-sm text-[#8C817A]">
+                    {items.length} versión{items.length !== 1 ? "es" : ""}
+                  </span>
+                </div>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+                  {items.map((v) => (
+                    <CourseCard
+                      key={v.id}
+                      item={v}
+                      onOpen={() => adminApi.courseVersion(v.id).then(openEditor)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+
+        {/* por fecha */}
+        {!isLoading && homeTab === "fecha" && (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+            {[...allVersions]
+              .sort((a, b) => {
+                const ta = a.updatedAt ?? a.publishedAt ?? "";
+                const tb = b.updatedAt ?? b.publishedAt ?? "";
+                return tb.localeCompare(ta);
+              })
+              .map((v) => (
+                <CourseCard
+                  key={v.id}
+                  item={v}
+                  onOpen={() => adminApi.courseVersion(v.id).then(openEditor)}
+                />
+              ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -825,7 +946,11 @@ export default function CoursesPage() {
         </span>
         <span className="font-mono text-xs text-[#8C817A]">
           v{ed.version}
-          {ed.basedOnVersion ? ` · basado en v${ed.basedOnVersion}` : ""}
+          {ed.status === "PUBLISHED" && ed.publishedAt
+            ? ` · publicada el ${formatDate(ed.publishedAt)}`
+            : ed.basedOnVersion
+              ? ` · basado en v${ed.basedOnVersion}`
+              : ""}
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-4">
           {canEdit && (
@@ -893,7 +1018,9 @@ export default function CoursesPage() {
                   <path d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16v4z" />
                   <path d="M13.5 6.5l4 4" />
                 </svg>
-                {ed.status === "PUBLISHED" ? "Crear nueva versión" : "Editar como borrador"}
+                {ed.status === "PUBLISHED"
+                  ? `Abrir borrador v${parseInt(ed.version, 10) + 1}`
+                  : `Abrir borrador v${ed.version}`}
               </button>
             </>
           )}
@@ -1626,15 +1753,7 @@ export default function CoursesPage() {
 
 // ─── course card ──────────────────────────────────────────────────────────────
 
-function CourseCard({
-  item,
-  onOpen,
-  onFork,
-}: {
-  item: AdminCourseVersionListItem;
-  onOpen: () => void;
-  onFork: () => void;
-}) {
+function CourseCard({ item, onOpen }: { item: AdminCourseVersionListItem; onOpen: () => void }) {
   const [hovered, setHovered] = useState(false);
   const tint =
     UNIT_TINTS[
@@ -1642,54 +1761,67 @@ function CourseCard({
         UNIT_TINTS.length
     ];
 
+  const hoverLabel =
+    item.status === "DRAFT" ? "Seguir editando en el editor visual" : "Ver en el editor visual";
+
+  const initials = item.updatedBy
+    ? (item.updatedBy
+        .split("@")[0]
+        ?.split(/[._-]/)
+        .map((s) => s[0]?.toUpperCase() ?? "")
+        .slice(0, 2)
+        .join("") ?? "?")
+    : "";
+
   return (
     <article
       onClick={onOpen}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className={cn(
-        "flex cursor-pointer flex-col overflow-hidden rounded-lg border bg-white transition-all duration-300",
+        "flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-white transition-all duration-200",
         hovered
-          ? "translate-y-[-2px] border-[#D9CFC5] shadow-[0_8px_24px_rgba(36,26,22,.12)]"
-          : "border-[#ECE5DE]",
+          ? "translate-y-[-2px] border-[#241A16] shadow-[0_8px_28px_rgba(36,26,22,.14)]"
+          : "border-[#ECE5DE] shadow-none",
       )}
     >
-      <div className={cn("flex flex-col gap-3.5 p-4.5 pb-3.5", tint)}>
-        <div className="flex flex-wrap items-center gap-2">
+      {/* tinted header */}
+      <div className={cn("flex flex-col gap-3 p-4 pb-3.5", tint)}>
+        {/* badges row */}
+        <div className="flex items-center gap-2">
           <span
             className={cn(
-              "rounded-full px-2 py-0.5 text-xs font-semibold",
+              "rounded-full px-2.5 py-0.5 text-xs font-semibold",
               statusColors(item.status),
             )}
           >
             {statusLabel(item.status)}
           </span>
-          <span className="font-mono text-xs font-semibold text-[#241A16]">
-            v{versionInt(item.version) || item.version}
-          </span>
+          <span className="font-mono text-xs font-semibold text-[#241A16]">v{item.version}</span>
           {item.basedOnVersion && (
-            <span className="font-mono text-xs text-[rgba(36,26,22,.6)]">
+            <span className="font-mono text-xs text-[rgba(36,26,22,.5)]">
               · basado en v{item.basedOnVersion}
             </span>
           )}
-          <span
+          {/* action icon */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen();
+            }}
             className={cn(
-              "ml-auto flex h-9 w-9 items-center justify-center rounded-lg border border-[rgba(36,26,22,.08)] transition-colors",
-              item.status === "DRAFT"
-                ? hovered
-                  ? "bg-[#241A16] text-white"
-                  : "bg-white text-[#241A16]"
-                : "bg-white text-[#241A16]",
+              "ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[rgba(36,26,22,.1)] transition-colors",
+              hovered ? "bg-[#241A16] text-white" : "bg-white text-[#241A16]",
             )}
           >
             {item.status === "DRAFT" ? (
               <svg
-                width="15"
-                height="15"
+                width="14"
+                height="14"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
@@ -1698,12 +1830,12 @@ function CourseCard({
               </svg>
             ) : (
               <svg
-                width="16"
-                height="16"
+                width="15"
+                height="15"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
@@ -1711,41 +1843,46 @@ function CourseCard({
                 <circle cx="12" cy="12" r="3" />
               </svg>
             )}
-          </span>
+          </button>
         </div>
-        <h3
-          className="font-display text-[28px] leading-[1.05] font-bold text-[#241A16]"
-          style={{ textWrap: "balance" } as React.CSSProperties}
-        >
+
+        {/* course name */}
+        <h3 className="font-display text-[26px] leading-[1.08] font-bold text-[#241A16]">
           {item.courseName}
         </h3>
-        <span
-          className={cn(
-            "flex items-center gap-1.5 text-sm font-semibold text-[#241A16] transition-all duration-300",
-            hovered ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0",
-          )}
+
+        {/* hover CTA */}
+        <div
+          className="flex items-center gap-1.5 text-sm font-semibold text-[#241A16]"
+          style={{
+            opacity: hovered ? 1 : 0,
+            transform: hovered ? "translateY(0)" : "translateY(4px)",
+            transition: "opacity .2s, transform .2s",
+          }}
         >
-          {item.status === "DRAFT" ? "Editar borrador" : "Ver versión"}
+          {hoverLabel}
           <svg
-            width="15"
-            height="15"
+            width="14"
+            height="14"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2.2"
+            strokeWidth="2.4"
             strokeLinecap="round"
             strokeLinejoin="round"
             style={{
-              transform: hovered ? "translateX(4px)" : "translateX(0)",
-              transition: "transform .35s",
+              transform: hovered ? "translateX(3px)" : "translateX(0)",
+              transition: "transform .25s",
             }}
           >
             <path d="M5 12h14M13 6l6 6-6 6" />
           </svg>
-        </span>
+        </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 p-4.5">
+      {/* stats + footer */}
+      <div className="flex flex-1 flex-col gap-3.5 p-4">
+        {/* stats */}
         <div className="grid grid-cols-4 gap-2">
           {[
             [item.unitCount, "Unidades"],
@@ -1754,49 +1891,47 @@ function CourseCard({
             [item.signCount, "Señas"],
           ].map(([val, label]) => (
             <div key={label as string}>
-              <p className="font-display text-xl font-bold">{val}</p>
-              <p className="text-[11px] font-medium tracking-wide text-[#8C817A] uppercase">
+              <p className="font-display text-xl font-bold text-[#241A16]">{val}</p>
+              <p className="mt-0.5 text-[10px] font-semibold tracking-wide text-[#8C817A] uppercase">
                 {label}
               </p>
             </div>
           ))}
         </div>
 
+        {/* footer */}
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-[#ECE5DE] pt-3">
-          {item.status === "DRAFT" && item.updatedBy && (
+          {/* left side */}
+          {item.status === "DRAFT" && (
             <div className="flex min-w-0 items-center gap-2">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEE8FF] font-mono text-[11px] font-bold text-[#5E3ED1]">
-                {item.updatedBy[0]?.toUpperCase()}
+              {/* avatar */}
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEE8FF] text-[10px] font-bold text-[#5E3ED1]">
+                {initials || "?"}
               </span>
-              <span className="rounded-full bg-[#EEE8FF] px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-[#5E3ED1]">
-                {item.updatedBy.split("@")[0]}
-              </span>
+              {item.updatedBy && (
+                <span className="max-w-[80px] truncate rounded-full bg-[#EEE8FF] px-2 py-0.5 text-xs font-semibold text-[#5E3ED1]">
+                  {item.updatedBy.split("@")[0]}
+                </span>
+              )}
               <span className="text-xs whitespace-nowrap text-[#8C817A]">
                 {formatAgo(item.updatedAt)}
               </span>
             </div>
           )}
-          {item.status !== "DRAFT" && (
+          {item.status === "PUBLISHED" && (
             <span className="text-xs text-[#8C817A]">
-              {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString("es-AR") : "—"}
+              Publicada el {formatDate(item.publishedAt)}
             </span>
           )}
-          <span className="font-display text-lg font-bold whitespace-nowrap text-[#241A16]">
+          {item.status === "ARCHIVED" && (
+            <span className="text-xs text-[#8C817A]">Publicada {formatDate(item.publishedAt)}</span>
+          )}
+
+          {/* price */}
+          <span className="font-display shrink-0 text-lg font-bold text-[#241A16]">
             {priceLabel(item)}
           </span>
         </div>
-
-        {item.status === "PUBLISHED" && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onFork();
-            }}
-            className="w-full rounded-lg border border-[#ECE5DE] bg-transparent px-3 py-2 text-xs font-semibold text-[#8C817A] hover:border-[#241A16] hover:text-[#241A16]"
-          >
-            Crear nueva versión (borrador)
-          </button>
-        )}
       </div>
     </article>
   );
