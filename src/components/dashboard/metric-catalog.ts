@@ -107,6 +107,13 @@ export const METRICS = {
       "Dividimos la cantidad de veces que se abrió la app por la cantidad de personas que la abrieron.",
     goodWhen: "Más alto = la gente vuelve más seguido.",
   },
+  users_online: {
+    label: "Usuarios conectados",
+    description: "Cuántas personas distintas tuvieron la app abierta en cada momento del período.",
+    howComputed:
+      "Para cada intervalo del gráfico contamos las personas con una sesión abierta en ese momento. Quien está conectado varios minutos aparece en todos esos intervalos, y una persona con varias sesiones a la vez cuenta una sola vez.",
+    goodWhen: "Picos en los horarios de estudio habituales; caídas a cero fuera de ellos.",
+  },
   session_duration: {
     label: "Duración promedio de sesión",
     description: "Cuánto dura en promedio cada vez que alguien usa la app (tiempo dedicado).",
