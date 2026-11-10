@@ -149,7 +149,8 @@ export function UsersTab({
         />
       </div>
 
-      {/* Sesiones: frecuencia de uso y tiempo dedicado (telemetría de la app). */}
+      {/* Sesiones: frecuencia de uso y tiempo dedicado (telemetría de la app); el gráfico muestra
+          cuántos usuarios tuvieron la app abierta en cada intervalo (meseta mientras dura la sesión). */}
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="flex flex-col gap-4">
           <MetricStat
@@ -163,8 +164,8 @@ export function UsersTab({
           />
         </div>
         <DailySeriesChart
-          title="Sesiones"
-          metric="sessions_per_user"
+          title="Usuarios conectados"
+          metric="users_online"
           points={g.sessions.daily.map((d) => ({ t: d.t, value: d.count }))}
           format={fmtCount}
           range={range}
