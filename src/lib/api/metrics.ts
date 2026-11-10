@@ -185,6 +185,17 @@ export type LearningMetrics = {
   mostRetriedExercises: ExerciseDifficulty[];
   /** Daily accuracy (correct / evaluated) — the correct-answer evolution over the window. */
   dailyAccuracy: { day: string; evaluated: number; correct: number; accuracyPercent: number }[];
+  /** Signs ranked by error rate across SELECT_MEANING / SELECT_SIGN blocks, worst first. */
+  hardestSigns: SignDifficulty[];
+};
+
+/** One sign ranked by difficulty across exercise blocks that test it. */
+export type SignDifficulty = {
+  sign: string;
+  evaluated: number;
+  correct: number;
+  errorPercent: number;
+  averageAttempts: number;
 };
 
 /** One exercise (lesson block) in a difficulty ranking. */
@@ -202,7 +213,14 @@ export type NameCount = { name: string; count: number };
 
 /** Global gamification & engagement metrics — the "Gamificación" apartado. */
 export type GamificationMetrics = {
-  xp: { total: number; perActiveUser: number; activeUsers: number; daily: DailyCount[] };
+  xp: {
+    total: number;
+    perActiveUser: number;
+    activeUsers: number;
+    daily: DailyCount[];
+    /** XP per active user in the previous equal-length window; `null` for whole-history range. */
+    previousPerActiveUser: number | null;
+  };
   streaks: {
     averageCurrentStreak: number;
     averageStreakActive: number;

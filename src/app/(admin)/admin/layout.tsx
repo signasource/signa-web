@@ -82,7 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Desktop sidebar */}
-      <aside className="bg-ink-900 hidden w-64 shrink-0 flex-col text-white lg:flex">
+      <aside className="bg-ink-900 sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto text-white lg:flex">
         <div className="flex items-center gap-2 px-6 py-6">
           <span className="font-display text-primary text-sm font-bold tracking-wide uppercase">
             Signa

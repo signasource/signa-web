@@ -92,7 +92,16 @@ export function UsersTab({
         <GoldenTile
           metric="new_users"
           value={NUMBER.format(u.newInRange)}
-          hint={<Delta current={u.newInRange} previous={u.previousNewInRange} />}
+          hint={
+            <>
+              <Delta current={u.newInRange} previous={u.previousNewInRange} />
+              {u.total > 0 ? (
+                <span className="text-text-muted block">
+                  {NUMBER.format(u.newInRange)} / {NUMBER.format(u.total)} totales
+                </span>
+              ) : null}
+            </>
+          }
           tone="neutral"
         />
         <GoldenTile
@@ -104,15 +113,17 @@ export function UsersTab({
         <GoldenTile
           metric="users_active"
           value={NUMBER.format(active)}
-          hint={<Delta current={active} previous={e.previousActiveInRange} />}
+          hint={
+            <>
+              <Delta current={active} previous={e.previousActiveInRange} />
+              {u.newInRange > 0 ? (
+                <span className="text-text-muted block">
+                  {Math.round((active / u.newInRange) * 1000) / 10}% de nuevos usuarios
+                </span>
+              ) : null}
+            </>
+          }
           tone="neutral"
-        />
-        <GoldenTile metric="users_total" value={NUMBER.format(u.total)} tone="neutral" />
-        <GoldenTile
-          metric="engagement_rate"
-          value={engagement == null ? "—" : `${engagement}%`}
-          rawValue={engagement}
-          hint={`${NUMBER.format(active)} / ${NUMBER.format(total)} usuarios`}
         />
         <GoldenTile
           metric="xp_per_user"
@@ -167,7 +178,12 @@ export function UsersTab({
       <div className="border-border flex items-center gap-3 border-t pt-5">
         <h2 className="font-display text-xl font-bold tracking-tight">Gamificación & engagement</h2>
       </div>
-      <GamificationSection range={range} live={live} onSelectRange={onSelectRange} />
+      <GamificationSection
+        range={range}
+        live={live}
+        onSelectRange={onSelectRange}
+        dailyActiveUsers={e.dailyActive}
+      />
     </div>
   );
 }

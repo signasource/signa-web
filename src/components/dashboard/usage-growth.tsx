@@ -134,7 +134,7 @@ export function GrowthTab({
       </div>
 
       <Section title="Sin organización">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <MetricStat
             metric="gems_revenue"
             value={fmtMoney(g.gems.paidAmount)}
@@ -145,6 +145,19 @@ export function GrowthTab({
             value={fmtMoney(g.courseSales.paidAmount)}
             hint={`${NUMBER.format(g.courseSales.purchases)} ${g.courseSales.purchases === 1 ? "curso" : "cursos"}`}
           />
+          {(() => {
+            const totalIncome = g.gems.paidAmount + g.courseSales.paidAmount;
+            const totalRefunded = g.gems.refundedAmount + g.courseSales.refundedAmount;
+            const rate =
+              totalIncome > 0 ? Math.round((totalRefunded / totalIncome) * 1000) / 10 : 0;
+            return (
+              <MetricStat
+                metric="refund_rate_users"
+                value={`${rate}%`}
+                hint={fmtMoney(totalRefunded)}
+              />
+            );
+          })()}
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <DailySeriesChart

@@ -1,30 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { BreakdownPie } from "@/components/dashboard/breakdown-pie";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { Funnel } from "@/components/dashboard/funnel";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
 import { InfoPopover } from "@/components/dashboard/info-popover";
 import type { MetricId } from "@/components/dashboard/metric-catalog";
-import { MetricStat } from "@/components/dashboard/metric-stat";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount } from "@/components/dashboard/perf-format";
 import { REFRESH_MS } from "@/components/dashboard/perf-panel";
 import { Card, CardTitle, ErrorState, LoadingState, ProgressBar } from "@/components/dashboard/ui";
 import {
-  Breakdown,
-  ENROLLMENT_STATUS,
   NUMBER,
   REPORT_STATUS,
   Row,
-  countOf,
   useBusinessMetrics,
 } from "@/components/dashboard/usage-business";
-import { metricsApi, type ExerciseDifficulty } from "@/lib/api/metrics";
+import { metricsApi, type ExerciseDifficulty, type SignDifficulty } from "@/lib/api/metrics";
 import type { DateTimeRange } from "@/lib/datetime-range";
-
-const IMPORT_STATUS: Record<string, string> = { SUCCESS: "Exitosos", FAILED: "Fallidos" };
 
 /** A ranked list of the hardest exercises, with a per-row bar driven by a caller-chosen metric. */
 function ExerciseRanking({
@@ -78,10 +72,97 @@ function useLearningMetrics(range: DateTimeRange, live: boolean) {
   });
 }
 
+/** Multi-select course filter pill list. */
+function CourseFilter({
+  courses,
+  selected,
+  onChange,
+}: {
+  courses: { courseId: string; courseName: string }[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  if (courses.length === 0) return null;
+  const allSelected = selected.length === 0;
+
+  const toggle = (id: string) => {
+    if (selected.includes(id)) {
+      const next = selected.filter((s) => s !== id);
+      onChange(next);
+    } else {
+      onChange([...selected, id]);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-text-muted text-[13px] font-bold">Filtrar por curso:</span>
+      <button
+        type="button"
+        onClick={() => onChange([])}
+        className={`rounded-full px-3 py-1 text-[13px] font-bold transition-colors ${
+          allSelected
+            ? "bg-primary text-white"
+            : "border-border border text-text-muted hover:border-primary hover:text-primary"
+        }`}
+      >
+        Todos
+      </button>
+      {courses.map((c) => {
+        const active = selected.includes(c.courseId);
+        return (
+          <button
+            key={c.courseId}
+            type="button"
+            onClick={() => toggle(c.courseId)}
+            className={`rounded-full px-3 py-1 text-[13px] font-bold transition-colors ${
+              active
+                ? "bg-primary text-white"
+                : "border-border border text-text-muted hover:border-primary hover:text-primary"
+            }`}
+          >
+            {c.courseName}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Signs ranked by error rate — surfaces which signs users struggle with the most. */
+function HardestSigns({ signs }: { signs: SignDifficulty[] }) {
+  return (
+    <Card className="flex min-w-0 flex-col gap-3">
+      <div className="flex items-center gap-1.5">
+        <CardTitle>Señas más difíciles</CardTitle>
+        <InfoPopover metric="hardest_signs" className="ml-auto" />
+      </div>
+      <p className="text-text-muted -mt-1.5 text-[13px]">Mayor tasa de error (SELECT_MEANING / SELECT_SIGN)</p>
+      {signs.length === 0 ? (
+        <p className="text-text-muted text-sm">Sin ejercicios con muestra suficiente.</p>
+      ) : (
+        <ul className="flex flex-col gap-2.5">
+          {signs.map((s) => (
+            <li key={s.sign} className="flex flex-col gap-1">
+              <div className="flex justify-between gap-2 text-[13px] font-bold">
+                <span className="truncate">{s.sign}</span>
+                <span className="shrink-0">
+                  {s.errorPercent}% · {NUMBER.format(s.evaluated)} ej.
+                </span>
+              </div>
+              <ProgressBar percent={s.errorPercent} tone="warning" />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
 /**
  * Aprendizaje & contenido. Completion (global, funnel and per course), accuracy (global + per block
  * type), the hardest lessons, vocabulary growth, and content-quality signals (sign-report resolution,
- * most-reported signs, imports). Golden tiles summarise learning health up top.
+ * most-reported signs). Golden tiles summarise learning health up top.
  */
 export function LearningTab({
   range,
@@ -94,6 +175,7 @@ export function LearningTab({
 }) {
   const learning = useLearningMetrics(range, live);
   const business = useBusinessMetrics(range, live);
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
 
   if (learning.isPending || business.isPending)
     return <LoadingState>Cargando métricas de aprendizaje…</LoadingState>;
@@ -103,8 +185,33 @@ export function LearningTab({
   const l = learning.data!;
   const b = business.data;
 
+  const filteredCourses =
+    selectedCourses.length === 0
+      ? l.courses
+      : l.courses.filter((c) => selectedCourses.includes(c.courseId));
+
+  const filteredLessonRanking =
+    selectedCourses.length === 0 ? l.lessonRanking : l.lessonRanking;
+
+  const filteredHardestLessons =
+    selectedCourses.length === 0 ? l.hardestLessons : l.hardestLessons;
+
+  // Global course completion: sum of completions / (total users × total courses)
+  const totalUsers = b?.users.total ?? 0;
+  const totalCourses = l.courses.length;
+  const totalCompletions = l.courses.reduce((s, c) => s + c.completed, 0);
+  const denominator = totalUsers * totalCourses;
+  const globalCompletionPercent =
+    denominator > 0 ? Math.round((totalCompletions / denominator) * 1000) / 10 : 0;
+
   return (
     <div className="flex flex-col gap-6">
+      <CourseFilter
+        courses={l.courses}
+        selected={selectedCourses}
+        onChange={setSelectedCourses}
+      />
+
       {/* ¿La gente aprende LSA? Progreso de lecciones y ejercicios. */}
       <GoldenRow>
         <GoldenTile
@@ -125,47 +232,11 @@ export function LearningTab({
           rawValue={l.exercises.attempted ? l.exercises.averageAttempts : null}
         />
         <GoldenTile
-          metric="accuracy_global"
-          value={b && b.accuracy.evaluated ? `${b.accuracy.accuracyPercent}%` : "—"}
-          rawValue={b && b.accuracy.evaluated ? b.accuracy.accuracyPercent : null}
-          hint={b ? `${NUMBER.format(b.accuracy.evaluated)} ejercicios` : undefined}
-        />
-        <GoldenTile
           metric="vocabulary_growth"
           value={NUMBER.format(l.learnedSigns)}
           tone="neutral"
         />
       </GoldenRow>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        <MetricStat metric="lessons_started" value={NUMBER.format(l.lessons.started)} />
-        <MetricStat
-          metric="lessons_completed"
-          value={NUMBER.format(l.lessons.completed)}
-          hint={b ? `${NUMBER.format(b.progress.topicsCompleted)} temas` : undefined}
-        />
-        <MetricStat metric="exercises_attempted" value={NUMBER.format(l.exercises.attempted)} />
-        <MetricStat
-          metric="sign_report_resolution"
-          value={`${l.reports.averageResolutionHours} h`}
-          hint={`${NUMBER.format(l.reports.resolvedCount)} resueltos`}
-        />
-        {b ? <MetricStat metric="courses_total" value={NUMBER.format(b.courses.total)} /> : null}
-        {b ? (
-          <MetricStat
-            metric="versions_published"
-            value={NUMBER.format(countOf(b.courses.versionsByStatus, "PUBLISHED"))}
-          />
-        ) : null}
-        <MetricStat
-          metric="sign_reports_pending"
-          value={b ? NUMBER.format(b.errors.pendingSignReports) : "—"}
-        />
-        <MetricStat
-          metric="imports_failed"
-          value={b ? NUMBER.format(b.errors.failedImports) : "—"}
-        />
-      </div>
 
       {/* Embudo de aprendizaje + evolución de aciertos. */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -188,31 +259,24 @@ export function LearningTab({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        {/* Completitud global de cursos */}
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
-            <CardTitle>Completitud por curso</CardTitle>
-            <InfoPopover metric="course_completion" className="ml-auto" />
+            <CardTitle>Completitud global de cursos</CardTitle>
+            <InfoPopover metric="global_course_completion" className="ml-auto" />
           </div>
-          <p className="text-text-muted -mt-1.5 text-[13px]">Menor completitud primero</p>
-          {l.courses.length === 0 ? (
+          {denominator === 0 ? (
             <p className="text-text-muted text-sm">Sin inscripciones.</p>
           ) : (
-            <ul className="flex flex-col gap-2.5">
-              {[...l.courses]
-                .sort((x, y) => x.completionPercent - y.completionPercent)
-                .map((c) => (
-                  <li key={c.courseId} className="flex flex-col gap-1">
-                    <div className="flex justify-between gap-2 text-[13px] font-bold">
-                      <span className="truncate">{c.courseName}</span>
-                      <span>
-                        {c.completionPercent}% · {NUMBER.format(c.completed)}/
-                        {NUMBER.format(c.total)}
-                      </span>
-                    </div>
-                    <ProgressBar percent={c.completionPercent} />
-                  </li>
-                ))}
-            </ul>
+            <>
+              <p className="font-display dash-stat-pop mt-1 text-4xl leading-10 font-extrabold tracking-tight">
+                {globalCompletionPercent}%
+              </p>
+              <p className="text-text-muted text-[13px]">
+                {NUMBER.format(totalCompletions)}/{NUMBER.format(denominator)}
+              </p>
+              <ProgressBar percent={globalCompletionPercent} className="mt-1" />
+            </>
           )}
         </Card>
 
@@ -222,15 +286,15 @@ export function LearningTab({
             <InfoPopover metric="hardest_lessons" className="ml-auto" />
           </div>
           <p className="text-text-muted -mt-1.5 text-[13px]">Menor precisión en el período</p>
-          {l.hardestLessons.length === 0 ? (
+          {filteredHardestLessons.length === 0 ? (
             <p className="text-text-muted text-sm">Sin ejercicios evaluados.</p>
           ) : (
             <ul className="flex flex-col gap-2.5">
-              {l.hardestLessons.map((lesson) => (
+              {filteredHardestLessons.map((lesson) => (
                 <li key={lesson.lessonId} className="flex flex-col gap-1">
                   <div className="flex justify-between gap-2 text-[13px] font-bold">
                     <span className="truncate">{lesson.lessonName}</span>
-                    <span>
+                    <span className="shrink-0">
                       {lesson.accuracyPercent}% · {NUMBER.format(lesson.evaluated)} ej.
                     </span>
                   </div>
@@ -251,17 +315,17 @@ export function LearningTab({
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
             <CardTitle>Lecciones con mayor abandono</CardTitle>
-            <InfoPopover metric="lesson_abandonment" className="ml-auto" />
+            <InfoPopover metric="lesson_abandonment_detail" className="ml-auto" />
           </div>
-          {l.lessonRanking.length === 0 ? (
+          {filteredLessonRanking.length === 0 ? (
             <p className="text-text-muted text-sm">Sin lecciones con muestra suficiente.</p>
           ) : (
             <ul className="flex flex-col gap-2.5">
-              {l.lessonRanking.map((lesson) => (
+              {filteredLessonRanking.map((lesson) => (
                 <li key={lesson.lessonId} className="flex flex-col gap-1">
                   <div className="flex justify-between gap-2 text-[13px] font-bold">
                     <span className="truncate">{lesson.lessonName}</span>
-                    <span>
+                    <span className="shrink-0">
                       {lesson.abandonmentPercent}% · {NUMBER.format(lesson.completed)}/
                       {NUMBER.format(lesson.started)}
                     </span>
@@ -289,7 +353,9 @@ export function LearningTab({
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <HardestSigns signs={l.hardestSigns} />
+
+      <div className="grid gap-4 lg:grid-cols-2">
         <DailySeriesChart
           title="Señas aprendidas"
           metric="vocabulary_growth"
@@ -298,19 +364,8 @@ export function LearningTab({
           range={range}
           dayResolution
           onSelectRange={onSelectRange}
-          className="flex min-w-0 flex-col gap-3 lg:col-span-2"
+          className="flex min-w-0 flex-col gap-3"
         />
-        <BreakdownPie
-          title="Inscripciones por estado"
-          metric="enrollments_active"
-          items={l.enrollmentFunnel.map((i) => ({
-            label: ENROLLMENT_STATUS[i.key] ?? i.key,
-            value: i.count,
-          }))}
-        />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
         {b ? (
           <Card className="flex min-w-0 flex-col gap-3">
             <div className="flex items-center gap-1.5">
@@ -337,7 +392,14 @@ export function LearningTab({
             )}
           </Card>
         ) : null}
+      </div>
 
+      {/* Señas reportadas */}
+      <div className="border-border flex items-center gap-3 border-t pt-5">
+        <h2 className="font-display text-xl font-bold tracking-tight">Señas reportadas</h2>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
             <CardTitle>Reportes de señas</CardTitle>
@@ -345,44 +407,54 @@ export function LearningTab({
           </div>
           <dl className="flex flex-col gap-2 text-sm">
             {b ? <Row label="Pendientes" value={b.errors.pendingSignReports} danger /> : null}
-            <Row label="Resueltos (en resolución)" value={l.reports.resolvedCount} />
+            <Row label="Resueltos" value={l.reports.resolvedCount} />
+            {l.reports.averageResolutionHours > 0 ? (
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-text-muted">Tiempo prom. de resolución</dt>
+                <dd className="font-extrabold">{l.reports.averageResolutionHours} h</dd>
+              </div>
+            ) : null}
           </dl>
-          <div className="border-fill mt-1 border-t pt-3">
-            <p className="text-text-muted mb-1.5 text-xs font-extrabold tracking-wider uppercase">
-              Señas más reportadas
-            </p>
-            {l.reports.mostReported.length === 0 ? (
-              <p className="text-text-muted text-sm">Sin reportes.</p>
-            ) : (
+          {b && b.errors.signReportsByStatus.length > 0 ? (
+            <div className="border-fill mt-1 border-t pt-3">
+              <p className="text-text-muted mb-1.5 text-xs font-extrabold tracking-wider uppercase">
+                Por estado
+              </p>
               <dl className="flex flex-col">
-                {l.reports.mostReported.map((m) => (
+                {b.errors.signReportsByStatus.map((item) => (
                   <div
-                    key={m.meaning}
+                    key={item.key}
                     className="border-fill flex justify-between gap-3 border-b py-2 text-sm last:border-b-0"
                   >
-                    <dt className="text-text-muted truncate">{m.meaning}</dt>
-                    <dd className="font-extrabold">{NUMBER.format(m.count)}</dd>
+                    <dt className="text-text-muted">{REPORT_STATUS[item.key] ?? item.key}</dt>
+                    <dd className="font-extrabold">{NUMBER.format(item.count)}</dd>
                   </div>
                 ))}
               </dl>
-            )}
-          </div>
-        </Card>
-
-        <Card className="flex min-w-0 flex-col gap-3">
-          <div className="flex items-center gap-1.5">
-            <CardTitle>Imports de contenido</CardTitle>
-            <InfoPopover metric="imports_failed" className="ml-auto" />
-          </div>
-          <Breakdown items={l.imports} labels={IMPORT_STATUS} />
-          {b ? (
-            <div className="border-fill mt-1 border-t pt-3">
-              <p className="text-text-muted mb-1.5 text-xs font-extrabold tracking-wider uppercase">
-                Reportes por estado
-              </p>
-              <Breakdown items={b.errors.signReportsByStatus} labels={REPORT_STATUS} />
             </div>
           ) : null}
+        </Card>
+
+        <Card className="flex min-w-0 flex-col gap-3 lg:col-span-2">
+          <div className="flex items-center gap-1.5">
+            <CardTitle>Señas más reportadas</CardTitle>
+            <InfoPopover metric="most_reported_signs" className="ml-auto" />
+          </div>
+          {l.reports.mostReported.length === 0 ? (
+            <p className="text-text-muted text-sm">Sin reportes.</p>
+          ) : (
+            <dl className="flex flex-col">
+              {l.reports.mostReported.map((m) => (
+                <div
+                  key={m.meaning}
+                  className="border-fill flex justify-between gap-3 border-b py-2 text-sm last:border-b-0"
+                >
+                  <dt className="font-bold">{m.meaning}</dt>
+                  <dd className="text-text-muted shrink-0">{NUMBER.format(m.count)} reporte{m.count !== 1 ? "s" : ""}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </Card>
       </div>
     </div>

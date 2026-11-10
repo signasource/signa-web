@@ -182,6 +182,15 @@ export const METRICS = {
     goodWhen: "Lo más baja posible.",
     threshold: { dir: "down", warn: 5, danger: 10 },
   },
+  refund_rate_users: {
+    label: "Tasa de reembolso",
+    description:
+      "Qué parte de los ingresos de usuarios finales (gemas y cursos) se termina devolviendo.",
+    howComputed:
+      "Dividimos el dinero devuelto a usuarios finales por lo que ingresaron en el período, como porcentaje.",
+    goodWhen: "Lo más baja posible.",
+    threshold: { dir: "down", warn: 5, danger: 10 },
+  },
   seat_utilization: {
     label: "Uso de cupos",
     description: "Cupos comprados por organizaciones que efectivamente usa un participante.",
@@ -347,14 +356,14 @@ export const METRICS = {
     label: "Ejercicios con más errores",
     description: "Los ejercicios que más se responden mal.",
     howComputed:
-      "Para cada ejercicio con suficiente muestra, qué parte de las respuestas son incorrectas, de mayor a menor.",
+      "Para cada ejercicio con suficiente muestra, mostramos la tasa de error (% = porcentaje de respuestas incorrectas) y la cantidad de ejercicios evaluados (ej. = intentos registrados en el período). Mayor a menor por tasa de error.",
     goodWhen: "Permite detectar ejercicios confusos o mal calibrados.",
   },
   exercise_retries: {
     label: "Ejercicios con más reintentos",
     description: "Los ejercicios que requieren más intentos por persona.",
     howComputed:
-      "Para cada ejercicio, cuántos intentos hace en promedio cada persona, de mayor a menor.",
+      "Para cada ejercicio, mostramos los reintentos promedio por usuario (× = intentos promedio por persona) y la cantidad de ejercicios evaluados (ej. = intentos registrados en el período). Mayor a menor por reintentos.",
     goodWhen: "Reintentos moderados; muchos reintentos marcan fricción.",
   },
   accuracy_evolution: {
@@ -418,11 +427,41 @@ export const METRICS = {
     howComputed: "Para cada curso, qué parte de sus inscripciones llegó a completarlo.",
     goodWhen: "Permite detectar cursos con mucho abandono.",
   },
+  global_course_completion: {
+    label: "Completitud global de cursos",
+    description:
+      "Qué porcentaje de las combinaciones posibles usuario–curso se finalizó. Es una medida de cuánto se aprovecha el contenido.",
+    howComputed:
+      "Dividimos el total de finalizaciones de curso por las combinaciones posibles (cantidad de usuarios × cantidad de cursos). El denominador refleja el máximo teórico: si cada usuario terminara cada curso, daría 100%.",
+    goodWhen: "Crece a medida que más usuarios avanzan en los cursos.",
+  },
+  lesson_abandonment_detail: {
+    label: "Lecciones con mayor abandono",
+    description: "Lecciones que se empiezan pero no se terminan.",
+    howComputed:
+      "Para cada lección con suficiente muestra, mostramos el porcentaje de abandono (% = quienes empezaron y no terminaron) y la cantidad de personas que la completaron sobre las que la empezaron (completadas/empezadas). Mayor abandono primero.",
+    goodWhen: "Ninguna lección con abandono muy por encima del resto.",
+  },
   hardest_lessons: {
     label: "Lecciones más difíciles",
     description: "Las lecciones con menor porcentaje de aciertos: candidatas a revisar.",
-    howComputed: "Ordenamos las lecciones por su porcentaje de aciertos, de menor a mayor.",
+    howComputed:
+      "Ordenamos las lecciones por su porcentaje de aciertos (% = aciertos sobre total de ejercicios). La cifra al lado (ej.) indica cuántos ejercicios se evaluaron en esa lección.",
     goodWhen: "Ninguna lección con aciertos muy por debajo del promedio.",
+  },
+  hardest_signs: {
+    label: "Señas más difíciles",
+    description: "Las señas con menor tasa de aciertos en los ejercicios del período.",
+    howComputed:
+      "Para cada seña evaluada en ejercicios de selección, calculamos qué porcentaje de los intentos fue correcto. Las mostramos de menor precisión a mayor. La cifra al lado (ej.) indica cuántos intentos se registraron.",
+    goodWhen: "Permite identificar señas que cuestan más y requieren más práctica o revisión.",
+  },
+  most_reported_signs: {
+    label: "Señas más reportadas",
+    description: "Las señas que los usuarios reportaron con mayor frecuencia.",
+    howComputed:
+      "Contamos los reportes de cada seña (sin filtro de período — es el estado acumulado). Incluye reportes pendientes, revisados y resueltos.",
+    goodWhen: "Pocos reportes por seña; una seña con muchos reportes necesita revisión urgente.",
   },
   vocabulary_growth: {
     label: "Señas aprendidas",
