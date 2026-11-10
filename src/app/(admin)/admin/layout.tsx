@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { AdminAvatar } from "@/components/admin/admin-avatar";
 import { useAdminAuth } from "@/features/admin/admin-auth-context";
 import { adminApi } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
@@ -114,9 +115,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
         <div className="border-t border-white/10 px-4 py-4">
           <div className="mb-3 flex items-center gap-2 px-1">
-            <div className="bg-primary/20 text-primary flex size-7 items-center justify-center rounded-full text-xs font-bold">
-              {admin.name[0]}
-            </div>
+            <AdminAvatar
+              name={admin.name}
+              lastName={admin.lastName}
+              avatar={admin.avatar}
+              className="size-7"
+            />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-white">
                 {admin.name} {admin.lastName}
