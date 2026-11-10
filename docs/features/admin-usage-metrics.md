@@ -28,13 +28,13 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
 - **Usuarios** (`usage-usuarios.tsx`) — "¿La gente usa Signa?": adquisición y actividad medidas sobre la
   ventana elegida. Range-based tasa de actividad (active/total, numerator/denominator), new users and active
   users each with a **period-over-period delta** (`Delta`, vs. the previous equal-length window; hidden for
-  the whole history), tasa de activación (new users who made an attempt / new users), total base al cierre,
-  XP per active user, and new/active-users time series; a **sessions** row — sesiones por usuario (frequency)
+  the whole history), total base al cierre,
+  XP per active user (with its own period-over-period delta), and new/active-users time series; a **sessions** row — sesiones por usuario (frequency)
   and duración promedio de sesión (time spent) from app telemetry (`signa-mobile` `useSessionTracker` →
   `POST /sessions`), with a sessions chart. Then the **gamification** section (`GamificationSection` in
   `usage-gamification.tsx`): "¿La gamificación ayuda?" — **XP por usuario activo** (con el total como
   contexto), tasa de desbloqueo de logros, reclamo de desafíos, **tasa de canje de gemas**
-  (gastadas/acreditadas); visualizaciones: **distribución de XP** por tramos (BreakdownPie) y **ranking de
+  (gastadas en el período / gemas que los usuarios tienen hoy en su inventario); visualizaciones: **distribución de XP** por tramos (BreakdownPie) y **ranking de
   logros** más y menos desbloqueados (`AchievementRanking`); más daily XP/achievements/gems-spent.
   Rolling DAU/WAU/MAU + stickiness, current-streak tiles and the weekly-cohort retention table were removed
   (no reaccionaban al rango desde/hasta).
@@ -112,6 +112,16 @@ suggested `step` (`deriveStepSeconds`). While **live**, rolling presets re-ancho
 all TanStack queries (`refetchInterval`) refresh. Query keys: `["admin","metrics",<kind>,…,from,to,step]`.
 
 ## Notes & limits
+
+- **Universe:** every Usuarios metric (new, total, activation, active, sessions) counts accounts that are not
+  `Role.ADMIN` (SIGNA staff). The "% de usuarios totales" under active users uses the same growth `users.total`.
+  XP windows are by UTC calendar day, end-exclusive, and the previous window shares no day with the current.
+- **Active user:** a distinct learner (`Role.USER`) with _any_ authenticated activity in the app in the
+  window (exercises, friends, shop, boosters, …), not just exercise attempts. `signa-api` records a
+  throttled `user_activity` row (≤1/min/user) from `JwtAuthFilter`; counts are `COUNT(DISTINCT user)`, so
+  20 connections in an hour = 1 active user. Backfilled from attempts and sessions.
+- **Sessions:** `signa-mobile` re-sends the running session every 30 s (same `sessionId`, server upserts
+  and keeps the max duration), so sessions appear without having to background the app.
 
 - **Resolution:** the **Growth** series (`SeriesCount`/`SeriesAmount` with a `t` instant) are
   **adaptive**: signa-api buckets them by `floor(epoch/bucket)` with `bucket = MetricsRange.bucketSeconds()`
