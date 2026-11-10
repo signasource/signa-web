@@ -6,7 +6,7 @@ import { MetricStat } from "@/components/dashboard/metric-stat";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount } from "@/components/dashboard/perf-format";
 import { GamificationSection } from "@/components/dashboard/usage-gamification";
-import { NUMBER, useBusinessMetrics } from "@/components/dashboard/usage-business";
+import { NUMBER } from "@/components/dashboard/usage-business";
 import { useGrowthMetrics } from "@/components/dashboard/usage-growth";
 import { metricsApi } from "@/lib/api/metrics";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -67,11 +67,9 @@ export function UsersTab({
   onSelectRange: RangeSelect;
 }) {
   const growth = useGrowthMetrics(range, live);
-  const business = useBusinessMetrics(range, live);
   const gamification = useGamificationMetrics(range, live);
 
-  if (growth.isPending || business.isPending)
-    return <p className="text-text-muted">Cargando métricas de usuarios…</p>;
+  if (growth.isPending) return <p className="text-text-muted">Cargando métricas de usuarios…</p>;
   if (growth.isError && !growth.data)
     return <p className="text-danger">No pudimos cargar las métricas de usuarios.</p>;
 
@@ -79,14 +77,15 @@ export function UsersTab({
   const u = g.users;
   const e = g.engagement;
   const active = e.activeInRange;
-  const total = business.data?.users.total ?? 0;
-  const engagement = total ? Math.round((active / total) * 1000) / 10 : null;
-  const xpTotal = gamification.data?.xp.total ?? 0;
-  const xpPerUser = active ? Math.round(xpTotal / active) : null;
+  // Same universe as the other tiles (growth endpoint): non-staff accounts created before the window closes.
+  const engagement = u.total ? Math.round((active / u.total) * 1000) / 10 : null;
+  const xp = gamification.data?.xp;
+  // Same figure (and same "active" definition) as the gamification section, so the delta matches.
+  const xpPerUser = xp && xp.activeUsers ? xp.perActiveUser : null;
 
   return (
     <div className="flex flex-col gap-7">
-      {/* Adquisición y actividad medidas sobre la ventana elegida (altas, activación, activos,
+      {/* Adquisición y actividad medidas sobre la ventana elegida (altas, activos,
           base total al cierre y engagement/XP por usuario del período). */}
       <GoldenRow>
         <GoldenTile
@@ -105,20 +104,14 @@ export function UsersTab({
           tone="neutral"
         />
         <GoldenTile
-          metric="activation_rate"
-          value={`${u.activationPercent}%`}
-          rawValue={u.activationPercent}
-          hint={`${NUMBER.format(u.activatedInRange)} / ${NUMBER.format(u.newInRange)} nuevos empezaron`}
-        />
-        <GoldenTile
           metric="users_active"
           value={NUMBER.format(active)}
           hint={
             <>
               <Delta current={active} previous={e.previousActiveInRange} />
-              {u.newInRange > 0 ? (
+              {engagement != null ? (
                 <span className="text-text-muted block">
-                  {Math.round((active / u.newInRange) * 1000) / 10}% de nuevos usuarios
+                  {engagement}% de {NUMBER.format(u.total)} usuarios totales
                 </span>
               ) : null}
             </>
@@ -128,6 +121,11 @@ export function UsersTab({
         <GoldenTile
           metric="xp_per_user"
           value={xpPerUser == null ? "—" : NUMBER.format(xpPerUser)}
+          hint={
+            xpPerUser == null ? undefined : (
+              <Delta current={xpPerUser} previous={xp?.previousPerActiveUser ?? null} />
+            )
+          }
           tone="neutral"
         />
       </GoldenRow>

@@ -109,8 +109,8 @@ export function GamificationSection({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <MetricStat
           metric="gem_redemption_rate"
-          value={g.shop.gemsCredited ? `${g.shop.redemptionRatePercent}%` : "—"}
-          hint={`${NUMBER.format(g.shop.totalGemsSpent)} / ${NUMBER.format(g.shop.gemsCredited)} 💎`}
+          value={g.shop.gemsInInventory ? `${g.shop.redemptionRatePercent}%` : "—"}
+          hint={`${NUMBER.format(g.shop.totalGemsSpent)} / ${NUMBER.format(g.shop.gemsInInventory)} 💎`}
         />
         <MetricStat
           metric="gifts"

@@ -45,9 +45,10 @@ export const METRICS = {
   },
   users_active: {
     label: "Usuarios activos",
-    description: "Personas que hicieron al menos un ejercicio dentro del período elegido.",
+    description:
+      "Personas que hicieron alguna actividad en la app dentro del período elegido (ejercicios, amigos, tienda, potenciadores…).",
     howComputed:
-      "Contamos cuántas personas distintas practicaron al menos una vez dentro del período.",
+      "Contamos personas distintas con alguna actividad en el período: quien entra 20 veces cuenta una sola vez.",
     goodWhen: "Es una fracción alta de los usuarios totales.",
   },
   dau: {
@@ -112,14 +113,6 @@ export const METRICS = {
     howComputed:
       "Promediamos cuánto tiempo estuvo abierta la app en cada uso. Un uso va desde que se abre hasta que se deja.",
     goodWhen: "Suficiente para progresar, sin señales de frustración.",
-  },
-  activation_rate: {
-    label: "Tasa de activación",
-    description: "Qué parte de los usuarios nuevos del período realmente empieza a aprender.",
-    howComputed:
-      "De los usuarios que se registraron en el período, qué porcentaje hizo al menos un ejercicio.",
-    goodWhen: "Alta: la mayoría de las altas pasan del registro a la primera lección.",
-    threshold: { dir: "up", warn: 40, danger: 20 },
   },
   cohort_retention: {
     label: "Retención por grupo de registro",
@@ -518,9 +511,9 @@ export const METRICS = {
   },
   gem_redemption_rate: {
     label: "Tasa de canje de gemas",
-    description: "Qué parte de las gemas que la gente gana se gasta en la tienda.",
+    description: "Qué parte de las gemas que la gente tiene guardadas se gasta en la tienda.",
     howComputed:
-      "Dividimos las gemas gastadas por las gemas que la gente ganó (desafíos, logros y compras) en el período.",
+      "Dividimos las gemas gastadas en el período por el total de gemas que todos los usuarios tienen hoy en su inventario.",
     goodWhen:
       "Equilibrada: cerca del 100% indica una economía sana; muy baja = gemas acumuladas sin usar.",
   },

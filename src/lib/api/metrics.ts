@@ -65,8 +65,6 @@ export type GrowthMetrics = {
     newInRange: number;
     /** New users in the previous equal-length window, or `null` for the whole history. */
     previousNewInRange: number | null;
-    activatedInRange: number;
-    activationPercent: number;
     daily: SeriesCount[];
   };
   engagement: {
@@ -239,7 +237,7 @@ export type GamificationMetrics = {
   gifts: { sent: number; claimed: number };
   shop: {
     totalGemsSpent: number;
-    gemsCredited: number;
+    gemsInInventory: number;
     redemptionRatePercent: number;
     topItems: { title: string; purchases: number; gemsSpent: number }[];
     dailySpent: DailyCount[];
