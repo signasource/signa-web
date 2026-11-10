@@ -548,6 +548,7 @@ export default function CoursesPage() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       setSaveStatus("unsaved");
       saveTimerRef.current = setTimeout(() => {
+        saveTimerRef.current = null;
         setSaveStatus("saving");
         const payload = buildPayload(draft);
         saveMutation.mutate({ id: draft.id, payload });
@@ -566,7 +567,13 @@ export default function CoursesPage() {
   }
 
   function goHome() {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    if (ed && ed.status === "DRAFT" && saveStatus === "unsaved") {
+      saveMutation.mutate({ id: ed.id, payload: buildPayload(ed) });
+    }
     setView("home");
     setEd(null);
   }
