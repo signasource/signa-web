@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
-type HomeTab = "estado" | "curso" | "fecha";
+type HomeTab = "estado" | "curso";
 type SaveStatus = "saved" | "saving" | "unsaved";
 
 type DrawerTarget = {
@@ -220,7 +220,7 @@ function BlockField({
   value: unknown;
   readOnly: boolean;
   onChange: (v: unknown) => void;
-  onPickSign: () => void;
+  onPickSign: (currentMeaning?: string) => void;
   onPickSigns: () => void;
 }) {
   const [, fieldType, label] = fieldDef;
@@ -307,7 +307,7 @@ function BlockField({
         </span>
         {meaning ? (
           <button
-            onClick={onPickSign}
+            onClick={() => onPickSign(meaning)}
             className="flex cursor-pointer items-center gap-2.5 rounded-md border-0 bg-white p-1.5 text-left hover:shadow-[0_0_0_2px_#241A16]"
           >
             <span className="flex h-11 w-11 items-center justify-center rounded bg-[#1E1714] font-mono text-[10px] font-bold text-white">
@@ -320,7 +320,7 @@ function BlockField({
           </button>
         ) : (
           <button
-            onClick={onPickSign}
+            onClick={() => onPickSign()}
             className="flex items-center gap-2 rounded-md border border-dashed border-[rgba(36,26,22,.25)] bg-[rgba(255,255,255,.4)] px-3 py-3.5 text-sm font-semibold text-[rgba(36,26,22,.75)] hover:border-[#241A16] hover:text-[#241A16]"
           >
             <svg
@@ -424,6 +424,7 @@ export default function CoursesPage() {
   const [drawerTarget, setDrawerTarget] = useState<DrawerTarget | null>(null);
   const [signQuery, setSignQuery] = useState("");
   const [pickedSign, setPickedSign] = useState<AdminSign | null>(null);
+  const [signAnimationUrl, setSignAnimationUrl] = useState<string | null>(null);
 
   // ── publish modal ──
   const [publishOpen, setPublishOpen] = useState(false);
@@ -492,6 +493,7 @@ export default function CoursesPage() {
       description: draft.description,
       isFree: draft.isFree,
       price: draft.price,
+      color: draft.color,
       topics: draft.topics.map((t) => ({
         title: t.title,
         subtitle: t.subtitle,
@@ -672,10 +674,11 @@ export default function CoursesPage() {
 
   // ── drawer helpers ──
 
-  function openSignPicker(target: DrawerTarget) {
+  function openSignPicker(target: DrawerTarget, initialQuery?: string) {
     setDrawerTarget(target);
     setPickedSign(null);
-    setSignQuery("");
+    setSignAnimationUrl(null);
+    setSignQuery(initialQuery ?? "");
     setDrawerOpen(true);
   }
 
@@ -697,6 +700,16 @@ export default function CoursesPage() {
     });
     setDrawerOpen(false);
     setPickedSign(null);
+    setSignAnimationUrl(null);
+  }
+
+  function pickSignAndFetchAnimation(sign: AdminSign) {
+    setPickedSign(sign);
+    setSignAnimationUrl(null);
+    adminApi
+      .signAnimation(sign.meaning)
+      .then((r) => setSignAnimationUrl(r.url))
+      .catch(() => setSignAnimationUrl(null));
   }
 
   // ── publish helpers ──
@@ -764,7 +777,6 @@ export default function CoursesPage() {
             [
               { key: "estado", label: "Por estado" },
               { key: "curso", label: "Por curso" },
-              { key: "fecha", label: "Por fecha" },
             ] as { key: HomeTab; label: string }[]
           ).map(({ key, label }) => (
             <button
@@ -888,24 +900,6 @@ export default function CoursesPage() {
           </div>
         )}
 
-        {/* por fecha */}
-        {!isLoading && homeTab === "fecha" && (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-            {[...allVersions]
-              .sort((a, b) => {
-                const ta = a.updatedAt ?? a.publishedAt ?? "";
-                const tb = b.updatedAt ?? b.publishedAt ?? "";
-                return tb.localeCompare(ta);
-              })
-              .map((v) => (
-                <CourseCard
-                  key={v.id}
-                  item={v}
-                  onOpen={() => adminApi.courseVersion(v.id).then(openEditor)}
-                />
-              ))}
-          </div>
-        )}
       </div>
     );
   }
@@ -1031,10 +1025,8 @@ export default function CoursesPage() {
       <div className="flex flex-wrap gap-3 px-8 py-6 pb-16">
         {/* course meta card */}
         <div
-          className={cn(
-            "flex min-w-0 flex-[999_1_420px] flex-col gap-3.5 self-stretch rounded-lg p-6",
-            UNIT_TINTS[selectedTopicIdx % UNIT_TINTS.length],
-          )}
+          className="flex min-w-0 flex-[999_1_420px] flex-col gap-3.5 self-stretch rounded-lg p-6"
+          style={{ background: ed.color ?? "#E4F1EC" }}
         >
           <span className="text-[11px] font-bold tracking-widest text-[rgba(36,26,22,.7)] uppercase">
             Curso
@@ -1122,14 +1114,35 @@ export default function CoursesPage() {
                 />
               </label>
             )}
-          </div>
-        </div>
-
-        {/* cover placeholder */}
-        <div className="flex min-h-[220px] flex-[1_1_220px] items-center justify-center rounded-lg border border-dashed border-[rgba(36,26,22,.15)] bg-[repeating-linear-gradient(135deg,#F2ECE6_0_10px,#EBE3DB_10px_20px)] p-4 text-center">
-          <div>
-            <p className="font-mono text-xs text-[#8C817A]">portada del curso</p>
-            <p className="mt-1 text-xs text-[#8C817A]">16:9</p>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+                Color
+              </span>
+              <div className="flex items-center gap-2">
+                {["#E4F1EC","#FEF0DE","#FDE8F1","#E4F1FB","#EEE8FF","#E0F4F2","#FBE0D8","#EBE3DB"].map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => canEdit && updateEd((d) => { d.color = c; return d; })}
+                    className="h-7 w-7 rounded-full border-2 transition-transform hover:scale-110"
+                    style={{
+                      background: c,
+                      borderColor: (ed.color ?? "#E4F1EC") === c ? "#241A16" : "transparent",
+                    }}
+                  />
+                ))}
+                {canEdit && (
+                  <label className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-[rgba(36,26,22,.3)] hover:border-[#241A16]" title="Color personalizado">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    <input
+                      type="color"
+                      value={ed.color ?? "#E4F1EC"}
+                      onChange={(e) => updateEd((d) => { d.color = e.target.value; return d; })}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1452,14 +1465,17 @@ export default function CoursesPage() {
                         value={block.config[fieldKey]}
                         readOnly={!canEdit}
                         onChange={(v) => setBlockConfigField(bi, fieldKey, v)}
-                        onPickSign={() =>
-                          openSignPicker({
-                            topicIdx: selectedTopicIdx,
-                            lessonIdx: selectedLessonIdx,
-                            blockIdx: bi,
-                            field: fieldKey,
-                            multi: false,
-                          })
+                        onPickSign={(currentMeaning) =>
+                          openSignPicker(
+                            {
+                              topicIdx: selectedTopicIdx,
+                              lessonIdx: selectedLessonIdx,
+                              blockIdx: bi,
+                              field: fieldKey,
+                              multi: false,
+                            },
+                            currentMeaning,
+                          )
                         }
                         onPickSigns={() =>
                           openSignPicker({
@@ -1578,10 +1594,27 @@ export default function CoursesPage() {
 
             {pickedSign && (
               <div className="flex flex-col gap-2.5 border-b border-[#ECE5DE] px-6 py-4">
-                <div className="flex h-56 items-center justify-center rounded-lg bg-[#E0D5FF]">
-                  <span className="font-mono text-xs text-[#5E3ED1]">
-                    {pickedSign.animationFormat?.toUpperCase() ?? "GLB"} · Preview
-                  </span>
+                <div className="flex h-56 items-center justify-center overflow-hidden rounded-lg bg-[#1E1714]">
+                  {signAnimationUrl && pickedSign.animationFormat === "mp4" ? (
+                    <video
+                      key={signAnimationUrl}
+                      src={signAnimationUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="h-full w-full object-contain"
+                    />
+                  ) : signAnimationUrl && pickedSign.animationFormat === "glb" ? (
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <span className="font-mono text-[11px] font-bold text-[#EEE8FF]">GLB</span>
+                      <span className="max-w-[200px] text-xs leading-snug text-[rgba(255,255,255,.6)]">
+                        La animación 3D se ve en la app. URL disponible.
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">Cargando…</span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -1627,7 +1660,7 @@ export default function CoursesPage() {
                 .map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => setPickedSign(s)}
+                    onClick={() => pickSignAndFetchAnimation(s)}
                     className={cn(
                       "flex items-center gap-3 rounded-lg border-0 px-2.5 py-2.5 text-left",
                       pickedSign?.id === s.id
@@ -1755,11 +1788,18 @@ export default function CoursesPage() {
 
 function CourseCard({ item, onOpen }: { item: AdminCourseVersionListItem; onOpen: () => void }) {
   const [hovered, setHovered] = useState(false);
-  const tint =
+  const defaultTint =
     UNIT_TINTS[
       Math.abs(item.courseName.split("").reduce((h, c) => h * 31 + c.charCodeAt(0), 0)) %
         UNIT_TINTS.length
-    ];
+    ]!;
+  const tintStyle =
+    item.status === "ARCHIVED"
+      ? { background: "#F0EFEE" }
+      : item.color
+        ? { background: item.color }
+        : undefined;
+  const tintClass = tintStyle ? undefined : defaultTint;
 
   const hoverLabel =
     item.status === "DRAFT" ? "Seguir editando en el editor visual" : "Ver en el editor visual";
@@ -1786,7 +1826,7 @@ function CourseCard({ item, onOpen }: { item: AdminCourseVersionListItem; onOpen
       )}
     >
       {/* tinted header */}
-      <div className={cn("flex flex-col gap-3 p-4 pb-3.5", tint)}>
+      <div className={cn("flex flex-col gap-3 p-4 pb-3.5", tintClass)} style={tintStyle}>
         {/* badges row */}
         <div className="flex items-center gap-2">
           <span
@@ -1904,15 +1944,9 @@ function CourseCard({ item, onOpen }: { item: AdminCourseVersionListItem; onOpen
           {/* left side */}
           {item.status === "DRAFT" && (
             <div className="flex min-w-0 items-center gap-2">
-              {/* avatar */}
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEE8FF] text-[10px] font-bold text-[#5E3ED1]">
                 {initials || "?"}
               </span>
-              {item.updatedBy && (
-                <span className="max-w-[80px] truncate rounded-full bg-[#EEE8FF] px-2 py-0.5 text-xs font-semibold text-[#5E3ED1]">
-                  {item.updatedBy.split("@")[0]}
-                </span>
-              )}
               <span className="text-xs whitespace-nowrap text-[#8C817A]">
                 {formatAgo(item.updatedAt)}
               </span>

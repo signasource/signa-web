@@ -141,6 +141,7 @@ export type AdminCourseVersionListItem = {
   signCount: number;
   updatedAt: string | null;
   updatedBy: string | null;
+  color: string | null;
 };
 
 export type BlockConfig = Record<string, unknown>;
@@ -181,6 +182,7 @@ export type AdminCourseVersionDetail = {
   price: number | null;
   updatedAt: string | null;
   updatedBy: string | null;
+  color: string | null;
   topics: AdminTopic[];
 };
 
@@ -189,6 +191,7 @@ export type SaveCourseVersionPayload = {
   description: string | null;
   isFree: boolean;
   price: number | null;
+  color: string | null;
   topics: Array<{
     id?: string | null;
     title: string;
@@ -303,6 +306,9 @@ export const adminApi = {
 
   publishCourseVersion: (id: string) =>
     api<AdminCourseVersionDetail>(`/admin/course-versions/${id}/publish`, { method: "POST" }),
+
+  signAnimation: (meaning: string) =>
+    api<{ url: string }>(`/signs/${encodeURIComponent(meaning)}/animation`),
 
   signs: (params?: { query?: string; page?: number; size?: number }) =>
     api<Page<AdminSign>>("/admin/signs", {
