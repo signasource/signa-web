@@ -203,6 +203,9 @@ export function GrowthTab({
             hint={fmtMoney(g.revenue.refundedAmount)}
           />
         </div>
+
+        <OrgUtilizationTable rows={g.orgs.utilization} />
+
         <div className="grid gap-4 lg:grid-cols-3">
           <DailySeriesChart
             title="Ingresos de organizaciones"
@@ -222,8 +225,6 @@ export function GrowthTab({
             }))}
           />
         </div>
-
-        <OrgUtilizationTable rows={g.orgs.utilization} />
       </Section>
     </div>
   );
