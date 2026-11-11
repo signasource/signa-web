@@ -1,6 +1,7 @@
 "use client";
 
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
+import { Delta } from "@/components/dashboard/delta";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
 import { MetricStat } from "@/components/dashboard/metric-stat";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
@@ -29,26 +30,6 @@ function fmtDuration(seconds: number): string {
   const s = Math.round(seconds);
   if (s < 60) return `${s}s`;
   return `${Math.floor(s / 60)}m ${s % 60}s`;
-}
-
-/**
- * Period-over-period delta vs. the previous equal-length window. `null` previous (the whole history)
- * renders nothing; otherwise a signed percentage, coloured by direction.
- */
-function Delta({ current, previous }: { current: number; previous: number | null }) {
-  if (previous == null) return null;
-  if (previous === 0) {
-    return current > 0 ? <span className="text-success-dark font-bold">nuevo</span> : null;
-  }
-  const change = Math.round(((current - previous) / previous) * 1000) / 10;
-  const sign = change > 0 ? "+" : "";
-  const tone = change > 0 ? "text-success-dark" : change < 0 ? "text-danger" : "text-text-muted";
-  return (
-    <span className={tone}>
-      {sign}
-      {change}% vs. período anterior
-    </span>
-  );
 }
 
 /**

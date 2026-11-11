@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Link from "next/link";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { BreakdownPie } from "@/components/dashboard/breakdown-pie";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
+import { Delta } from "@/components/dashboard/delta";
+import { daysSince, expiryTone, fmtShortDate } from "@/components/dashboard/format";
 import { InfoPopover } from "@/components/dashboard/info-popover";
 import { METRICS, type MetricId } from "@/components/dashboard/metric-catalog";
 import { MetricStat } from "@/components/dashboard/metric-stat";
@@ -14,6 +17,7 @@ import { Card, CardTitle, ProgressBar } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import { metricsApi, type OrgUtilization } from "@/lib/api/metrics";
 import type { DateTimeRange } from "@/lib/datetime-range";
+import { cn } from "@/lib/utils";
 
 const ORG_STATUS: Record<string, string> = {
   ACTIVE: "Activas",
@@ -188,7 +192,16 @@ export function GrowthTab({
           <MetricStat
             metric="seat_utilization"
             value={g.seats.sold ? `${g.seats.utilizationPercent}%` : "—"}
-            hint={`${NUMBER.format(g.seats.active)}/${NUMBER.format(g.seats.sold)} cupos`}
+            hint={
+              <>
+                {`${NUMBER.format(g.seats.active)}/${NUMBER.format(g.seats.sold)} cupos`}{" "}
+                <Delta
+                  current={g.seats.utilizationPercent}
+                  previous={g.seats.previousUtilizationPercent}
+                  mode="pp"
+                />
+              </>
+            }
           />
           <MetricStat metric="avg_users_per_org" value={NUMBER.format(g.orgs.avgUsersPerOrg)} />
           <MetricStat metric="avg_revenue_per_org" value={fmtMoney(g.orgs.avgRevenuePerOrg)} />
@@ -200,9 +213,51 @@ export function GrowthTab({
           <MetricStat
             metric="refund_rate"
             value={`${g.revenue.refundRatePercent}%`}
-            hint={fmtMoney(g.revenue.refundedAmount)}
+            hint={
+              <>
+                {fmtMoney(g.revenue.refundedAmount)}{" "}
+                {g.revenue.previousPaidAmount != null ? (
+                  <Delta
+                    current={g.revenue.refundRatePercent}
+                    previous={
+                      g.revenue.previousPaidAmount > 0
+                        ? Math.round(
+                            ((g.revenue.previousRefundedAmount ?? 0) /
+                              g.revenue.previousPaidAmount) *
+                              1000,
+                          ) / 10
+                        : 0
+                    }
+                    mode="pp"
+                  />
+                ) : null}
+              </>
+            }
           />
         </div>
+
+        {g.orgs.pending > 0 ? (
+          <div className="bg-shop-amber-light flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-2.5 text-[13px]">
+            <span className="text-shop-amber-dark font-extrabold">
+              {NUMBER.format(g.orgs.pending)}{" "}
+              {g.orgs.pending === 1 ? "pendiente de validar" : "pendientes de validar"}
+            </span>
+            {(() => {
+              const d = daysSince(g.orgs.oldestPendingCreatedAt);
+              return d != null ? (
+                <span className="text-shop-amber-dark">
+                  la más antigua hace {d} {d === 1 ? "día" : "días"}
+                </span>
+              ) : null;
+            })()}
+            <Link
+              href="/admin/organizations"
+              className="text-shop-amber-dark ml-auto font-extrabold hover:underline"
+            >
+              Validar
+            </Link>
+          </div>
+        ) : null}
 
         <OrgUtilizationTable rows={g.orgs.utilization} />
 
@@ -245,12 +300,18 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
   return (
     <Card className="mt-4">
       <div className="flex items-center gap-1.5">
-        <CardTitle>Utilización de licencias por organización</CardTitle>
-        <InfoPopover metric="org_utilization" className="ml-auto" />
+        <CardTitle>Licencias por organización</CardTitle>
+        <Link
+          href="/admin/organizations"
+          className="text-primary hover:text-primary-dark ml-auto text-[13px] font-extrabold"
+        >
+          Gestionar
+        </Link>
+        <InfoPopover metric="org_utilization" />
       </div>
       <p className="text-text-muted mt-1 text-[13px]">
-        Cupos contratados vs. utilizados. Una ocupación baja en un contrato grande es una señal
-        comercial.
+        Ordenadas por riesgo: contratos grandes con poco uso o próximos a vencer. Una ocupación baja
+        en un contrato grande es una señal comercial.
       </p>
       {rows.length === 0 ? (
         <p className="text-text-muted mt-4 text-sm">Sin compras de cupos todavía.</p>
@@ -260,9 +321,10 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
             <thead>
               <tr className="text-text-muted text-left text-xs font-bold">
                 <th className="pb-2 font-bold">Organización</th>
-                <th className="pb-2 pl-3 text-right font-bold">Miembros</th>
                 <th className="pb-2 pl-3 text-right font-bold">Cupos</th>
                 <th className="w-40 pb-2 pl-3 font-bold">Ocupación</th>
+                <th className="pb-2 pl-3 text-right font-bold">Activos 7 d</th>
+                <th className="pb-2 pl-3 font-bold">Vence</th>
                 <th className="pb-2 pl-3 text-right font-bold">Ingresos</th>
               </tr>
             </thead>
@@ -270,7 +332,6 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
               {visible.map((o) => (
                 <tr key={o.orgId} className="border-fill border-t">
                   <td className="py-2 font-bold">{o.name}</td>
-                  <td className="py-2 pl-3 text-right">{NUMBER.format(o.members)}</td>
                   <td className="py-2 pl-3 text-right">
                     {NUMBER.format(o.seatsActive)}/{NUMBER.format(o.seatsSold)}
                   </td>
@@ -285,6 +346,19 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
                         {o.occupancyPercent}%
                       </span>
                     </div>
+                  </td>
+                  <td className="py-2 pl-3 text-right">{NUMBER.format(o.active7d)}</td>
+                  <td
+                    className={cn(
+                      "py-2 pl-3",
+                      expiryTone(o.expiresAt) === "danger"
+                        ? "text-danger font-bold"
+                        : expiryTone(o.expiresAt) === "warning"
+                          ? "text-warning-dark font-semibold"
+                          : "text-text-muted",
+                    )}
+                  >
+                    {fmtShortDate(o.expiresAt)}
                   </td>
                   <td className="py-2 pl-3 text-right font-extrabold">{fmtMoney(o.revenue)}</td>
                 </tr>

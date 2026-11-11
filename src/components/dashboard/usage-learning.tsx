@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
+import { Delta } from "@/components/dashboard/delta";
 import { Funnel } from "@/components/dashboard/funnel";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
 import { InfoPopover } from "@/components/dashboard/info-popover";
@@ -135,6 +137,104 @@ function SignRanking({
   );
 }
 
+type ReviewLesson = {
+  lessonId: string;
+  lessonName: string;
+  evaluated: number;
+  accuracyPercent: number;
+};
+
+/**
+ * "Contenido a revisar": one table with a lecciones ↔ señas toggle, ranked by lowest accuracy /
+ * highest error, each row linking to where it's fixed (courses / sign reports). Replaces scanning
+ * several separate difficulty rankings to decide what needs attention.
+ */
+function ContentToReview({ lessons, signs }: { lessons: ReviewLesson[]; signs: SignDifficulty[] }) {
+  const [view, setView] = useState<"lessons" | "signs">("lessons");
+  const rows = view === "lessons" ? lessons : signs;
+  return (
+    <Card className="flex min-w-0 flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <CardTitle>Contenido a revisar</CardTitle>
+        <div className="border-border flex items-center rounded-full border p-0.5 text-xs font-extrabold">
+          {(["lessons", "signs"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              className={`cursor-pointer rounded-full px-2.5 py-1 ${
+                view === v ? "bg-primary-light text-primary-dark" : "text-text-muted"
+              }`}
+            >
+              {v === "lessons" ? "Lecciones" : "Señas"}
+            </button>
+          ))}
+        </div>
+        <span className="text-text-muted ml-auto text-[13px]">
+          Ordenado por {view === "lessons" ? "menor precisión" : "mayor tasa de error"}
+        </span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-text-muted text-sm">Sin contenido con muestra suficiente.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="text-text-muted text-left text-xs font-bold">
+                <th className="pb-2 font-bold">{view === "lessons" ? "Lección" : "Seña"}</th>
+                <th className="pb-2 pl-3 text-right font-bold">
+                  {view === "lessons" ? "Precisión" : "Error"}
+                </th>
+                <th className="pb-2 pl-3 text-right font-bold">Ejercicios</th>
+                <th className="pb-2 pl-3 text-right font-bold">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {view === "lessons"
+                ? lessons.map((r) => (
+                    <tr key={r.lessonId} className="border-fill border-t">
+                      <td className="py-2 font-bold">{r.lessonName}</td>
+                      <td className="py-2 pl-3 text-right font-extrabold">{r.accuracyPercent}%</td>
+                      <td className="text-text-muted py-2 pl-3 text-right">
+                        {NUMBER.format(r.evaluated)}
+                      </td>
+                      <td className="py-2 pl-3 text-right">
+                        <Link
+                          href="/admin/courses"
+                          className="text-primary hover:text-primary-dark font-extrabold"
+                        >
+                          Abrir
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                : signs.map((s) => (
+                    <tr key={s.sign} className="border-fill border-t">
+                      <td className="py-2 font-bold">{s.sign}</td>
+                      <td className="text-danger py-2 pl-3 text-right font-extrabold">
+                        {s.errorPercent}%
+                      </td>
+                      <td className="text-text-muted py-2 pl-3 text-right">
+                        {NUMBER.format(s.evaluated)}
+                      </td>
+                      <td className="py-2 pl-3 text-right">
+                        <Link
+                          href="/admin/sign-reports"
+                          className="text-primary hover:text-primary-dark font-extrabold"
+                        >
+                          Abrir
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 /**
  * Aprendizaje & contenido. Completion (global, funnel and per course), accuracy (global + per block
  * type), the hardest lessons, vocabulary growth, and content-quality signals (sign-report resolution,
@@ -168,6 +268,16 @@ export function LearningTab({
   const globalCompletionPercent =
     denominator > 0 ? Math.round((totalCompletions / denominator) * 1000) / 10 : 0;
 
+  // Previous-window rates for the period-over-period deltas (pp), null for the whole history.
+  const previousSuccessPercent =
+    l.exercises.previousAttempted && l.exercises.previousAttempted > 0
+      ? Math.round(((l.exercises.previousCorrect ?? 0) / l.exercises.previousAttempted) * 1000) / 10
+      : null;
+  const previousCompletionPercent =
+    l.lessons.previousStarted && l.lessons.previousStarted > 0
+      ? Math.round(((l.lessons.previousCompleted ?? 0) / l.lessons.previousStarted) * 1000) / 10
+      : null;
+
   const hardestSignsByError = l.hardestSigns ?? [];
   const hardestSignsByRetries = [...(l.hardestSigns ?? [])].sort(
     (a, b) => b.averageAttempts - a.averageAttempts,
@@ -183,13 +293,31 @@ export function LearningTab({
           metric="exercise_success_rate"
           value={l.exercises.attempted ? `${l.exercises.successPercent}%` : "—"}
           rawValue={l.exercises.attempted ? l.exercises.successPercent : null}
-          hint={`${NUMBER.format(l.exercises.correct)} / ${NUMBER.format(l.exercises.attempted)} ejercicios`}
+          hint={
+            <>
+              {`${NUMBER.format(l.exercises.correct)} / ${NUMBER.format(l.exercises.attempted)} ejercicios`}{" "}
+              <Delta
+                current={l.exercises.successPercent}
+                previous={previousSuccessPercent}
+                mode="pp"
+              />
+            </>
+          }
         />
         <GoldenTile
           metric="lesson_completion_rate"
           value={l.lessons.started ? `${l.lessons.completionPercent}%` : "—"}
           rawValue={l.lessons.started ? l.lessons.completionPercent : null}
-          hint={`${NUMBER.format(l.lessons.completed)} / ${NUMBER.format(l.lessons.started)} lecciones`}
+          hint={
+            <>
+              {`${NUMBER.format(l.lessons.completed)} / ${NUMBER.format(l.lessons.started)} lecciones`}{" "}
+              <Delta
+                current={l.lessons.completionPercent}
+                previous={previousCompletionPercent}
+                mode="pp"
+              />
+            </>
+          }
         />
         <GoldenTile
           metric="avg_attempts"
@@ -273,6 +401,8 @@ export function LearningTab({
       <div className="border-border flex items-center gap-3 border-t pt-5">
         <h2 className="font-display text-xl font-bold tracking-tight">Dificultad y calidad</h2>
       </div>
+
+      <ContentToReview lessons={l.hardestLessons} signs={hardestSignsByError} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="flex min-w-0 flex-col gap-3">

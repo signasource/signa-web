@@ -157,6 +157,45 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
         />
       </Section>
 
+      <Section title="Email y notificaciones">
+        <PerfPanel
+          {...perf}
+          onSelectRange={onSelectRange}
+          widget="email_sent"
+          metric="email_sent"
+          title="Emails enviados"
+          subtitle="Verificación, reset de contraseña, invitaciones"
+          format={fmtReqs}
+        />
+        <PerfPanel
+          {...perf}
+          onSelectRange={onSelectRange}
+          widget="email_failures"
+          metric="email_failures"
+          title="Fallos de email"
+          subtitle="Un fallo impide verificar cuentas o recuperar contraseñas"
+          format={fmtReqs}
+        />
+        <PerfPanel
+          {...perf}
+          onSelectRange={onSelectRange}
+          widget="push_sent"
+          metric="push_sent"
+          title="Notificaciones enviadas"
+          subtitle="Push aceptadas por FCM (por token)"
+          format={fmtReqs}
+        />
+        <PerfPanel
+          {...perf}
+          onSelectRange={onSelectRange}
+          widget="push_failures"
+          metric="push_failures"
+          title="Fallos de notificaciones"
+          subtitle="Push rechazadas o que no se pudieron enviar"
+          format={fmtReqs}
+        />
+      </Section>
+
       <Section title="Sistema y recursos">
         <PerfPanel
           {...perf}

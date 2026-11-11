@@ -22,6 +22,7 @@ Tokens **mirror `signa-mobile`** (`src/theme/colors.ts`, `typography.ts`; see it
 | `border`                         | `#ECE5DE`                         | borders                                                                       |
 | `success` / `warning` / `danger` | `#4CA65C` / `#FBBF24` / `#E14E22` | status                                                                        |
 | `success-dark` / `success-light` | `#2E7D45` / `#E7F5EA`             | status, active/positive state (e.g. "¡Te salió!")                             |
+| `warning-dark`                   | `#B45309`                         | readable warning text on light backgrounds (e.g. license "vence" soon)        |
 | `danger-light`                   | `#FBE0D8`                         | icon medallion tint for danger-toned items                                    |
 | `primary-medallion`              | `#E0D5FF`                         | decorative rings/strokes over `primary` (mirrors mobile's `primaryMedallion`) |
 

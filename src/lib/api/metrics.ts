@@ -91,6 +91,10 @@ export type GrowthMetrics = {
     averageTicket: number;
     refundedAmount: number;
     refundRatePercent: number;
+    /** Previous equal-length window for a period-over-period delta; `null` for the whole history. */
+    previousPaidAmount: number | null;
+    previousPaidCount: number | null;
+    previousRefundedAmount: number | null;
     daily: SeriesAmount[];
   };
   /** Real-money gem economy (end users, no org): money in/out plus gems granted. */
@@ -110,22 +114,36 @@ export type GrowthMetrics = {
     refundedCount: number;
     daily: SeriesAmount[];
   };
-  seats: { sold: number; active: number; utilizationPercent: number };
+  seats: {
+    sold: number;
+    active: number;
+    utilizationPercent: number;
+    /** Utilization as of the window's start for a delta; `null` for the whole history. */
+    previousUtilizationPercent: number | null;
+  };
   organizations: CountItem[];
   orgs: {
     newInRange: number;
     pending: number;
+    /** When the oldest still-pending org was created (ISO-8601), or `null` if none pending. */
+    oldestPendingCreatedAt: string | null;
     avgUsersPerOrg: number;
     avgRevenuePerOrg: number;
     purchasesInRange: number;
     dailyPurchases: SeriesCount[];
     utilization: OrgUtilization[];
-    conversion: { freeCourseUsers: number; paidCourseUsers: number; conversionPercent: number };
+    conversion: {
+      freeCourseUsers: number;
+      paidCourseUsers: number;
+      conversionPercent: number;
+      /** Conversion as of the window's start for a delta; `null` for the whole history. */
+      previousConversionPercent: number | null;
+    };
   };
   paidCourseUsers: number;
 };
 
-/** One organization's B2B license utilization row (contracted vs. used seats). */
+/** One organization's B2B license utilization row (contracted vs. used seats), ranked by risk. */
 export type OrgUtilization = {
   orgId: string;
   name: string;
@@ -133,6 +151,10 @@ export type OrgUtilization = {
   seatsSold: number;
   seatsActive: number;
   occupancyPercent: number;
+  /** Members active in the last 7 days of the window. */
+  active7d: number;
+  /** Next upcoming seat expiry (ISO-8601), or `null` when no active seat has a future expiry. */
+  expiresAt: string | null;
   revenue: number;
 };
 
@@ -162,12 +184,21 @@ export type LearningMetrics = {
     mostReported: { meaning: string; count: number }[];
   };
   imports: CountItem[];
-  lessons: { started: number; completed: number; completionPercent: number };
+  lessons: {
+    started: number;
+    completed: number;
+    completionPercent: number;
+    /** Previous equal-length window for a period-over-period delta; `null` for the whole history. */
+    previousStarted: number | null;
+    previousCompleted: number | null;
+  };
   exercises: {
     attempted: number;
     correct: number;
     successPercent: number;
     averageAttempts: number;
+    previousAttempted: number | null;
+    previousCorrect: number | null;
   };
   /** Onboarding steps (registrados → … → completaron 2+ lecciones), as of the window's close. */
   onboardingFunnel: CountItem[];

@@ -9,6 +9,7 @@ import { PageHeading } from "@/components/dashboard/ui";
 import { GrowthTab } from "@/components/dashboard/usage-growth";
 import { InfraTab } from "@/components/dashboard/usage-infra";
 import { LearningTab } from "@/components/dashboard/usage-learning";
+import { ResumenTab, type ResumenTarget } from "@/components/dashboard/usage-resumen";
 import { UsersTab } from "@/components/dashboard/usage-usuarios";
 import {
   DEFAULT_SELECTION,
@@ -18,9 +19,10 @@ import {
 } from "@/lib/datetime-range";
 import { cn } from "@/lib/utils";
 
-type TabKey = "negocio" | "usuarios" | "aprendizaje" | "infraestructura";
+type TabKey = "resumen" | "negocio" | "usuarios" | "aprendizaje" | "infraestructura";
 
 const TABS: TabItem<TabKey>[] = [
+  { key: "resumen", label: "Resumen" },
   { key: "negocio", label: "Negocio" },
   { key: "usuarios", label: "Usuarios" },
   { key: "aprendizaje", label: "Aprendizaje" },
@@ -34,6 +36,22 @@ function isTabKey(value: string | null): value is TabKey {
   return TABS.some((t) => t.key === value);
 }
 
+const WINDOW_DATE = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+/** "10 sep – 9 oct": the equal-length window immediately before the selected one, in UTC. */
+function previousWindowLabel(range: { from: string; to: string }): string {
+  const from = new Date(range.from).getTime();
+  const to = new Date(range.to).getTime();
+  if (Number.isNaN(from) || Number.isNaN(to)) return "el período anterior";
+  const prevFrom = new Date(from - (to - from));
+  const prevTo = new Date(from - 1);
+  return `${WINDOW_DATE.format(prevFrom)} – ${WINDOW_DATE.format(prevTo)}`;
+}
+
 export default function UsageMetricsPage() {
   const [selection, setSelection] = useState<RangeSelection>(DEFAULT_SELECTION);
   const [live, setLive] = useState(true);
@@ -41,9 +59,9 @@ export default function UsageMetricsPage() {
   // Seed the apartado from the URL (bookmarkable) without useSearchParams. Safe as a lazy initializer:
   // the admin page only mounts client-side, after the auth gate in the layout resolves.
   const [tab, setTab] = useState<TabKey>(() => {
-    if (typeof window === "undefined") return "negocio";
+    if (typeof window === "undefined") return "resumen";
     const t = new URLSearchParams(window.location.search).get("tab");
-    return isTabKey(t) ? t : "negocio";
+    return isTabKey(t) ? t : "resumen";
   });
   const changeTab = (next: TabKey) => {
     setTab(next);
@@ -93,10 +111,7 @@ export default function UsageMetricsPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <PageHeading
-        title="Métricas de uso"
-        subtitle="Uso general de toda la app (con y sin organización), organizado por área. Arrastrá sobre un gráfico para filtrar por esa franja horaria."
-      >
+      <PageHeading title="Métricas de uso">
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"
@@ -114,9 +129,23 @@ export default function UsageMetricsPage() {
         </div>
       </PageHeading>
 
-      <MetricsTabs tabs={TABS} active={tab} onChange={changeTab} idBase="metrics" />
+      <div className="flex flex-col gap-1">
+        <MetricsTabs tabs={TABS} active={tab} onChange={changeTab} idBase="metrics" />
+        <p className="text-text-muted text-right text-xs">
+          Comparando con {previousWindowLabel(range)} · horario UTC
+        </p>
+      </div>
 
       <div role="tabpanel" id={`metrics-panel-${tab}`} aria-labelledby={`metrics-tab-${tab}`}>
+        {tab === "resumen" ? (
+          <ResumenTab
+            range={range}
+            live={live}
+            step={step}
+            onSelectRange={onSelectRange}
+            onSelectTab={(t: ResumenTarget) => changeTab(t)}
+          />
+        ) : null}
         {tab === "negocio" ? (
           <GrowthTab range={range} live={live} onSelectRange={onSelectRange} />
         ) : null}

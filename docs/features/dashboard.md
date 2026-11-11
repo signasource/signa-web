@@ -40,3 +40,33 @@ The prototype mocked data the API does not expose. Revisit if `signa-api` adds i
 
 - **Admin accept-invite flow** (`/accept-invite?code=…`): register/login then redeem; admin invitations (`POST …/admin-invitations`).
 - Renewal rules, and what happens with a course completed from another account (undefined in the business rules).
+
+## Admin · Métricas de uso (v2)
+
+SIGNA back-office apartado at `/admin/usage-metrics` (`src/app/(admin)/admin/usage-metrics/page.tsx`),
+backed by the `metrics` module of `signa-api`. Design source: Claude Design "Métricas de Uso v2"
+(`Métricas de Uso v2.dc.html`). Five tabs, bookmarkable via `?tab=`: **Resumen** (default), Negocio,
+Usuarios, Aprendizaje, Infraestructura. One global period (`DatetimeRangePicker`, instant precision incl.
+"Últimos 15 minutos") + "En vivo" drive every widget; a "Comparando con <período anterior> · horario UTC"
+caption sits under the tabs.
+
+- **Resumen** (`usage-resumen.tsx`): five north-star `KpiCard`s (activos, nuevos, ingresos netos,
+  lecciones, retención 7 d) with period-over-period deltas (`delta.tsx`: `Delta`/`DeltaPill`,
+  `pct`/`pp` modes) + sparklines; two trend charts; **"Requiere atención"** (orgs pendientes + antigüedad,
+  reportes de señas, imports fallidos → links to `/admin/organizations|sign-reports|content`); services
+  strip (backend/R2 via the perf proxy) with a jump to Infraestructura.
+- **Negocio** (`usage-growth.tsx`): pp deltas on uso de cupos / tasa de reembolso; license table with
+  **Activos 7 d** and **Vence** (risk-ordered server-side), "Gestionar" link, and an amber pending strip.
+- **Aprendizaje** (`usage-learning.tsx`): pp deltas on tasa de éxito / finalización; **"Contenido a
+  revisar"** (lecciones ↔ señas toggle, sample-size column, "Abrir" → `/admin/courses|sign-reports`).
+- **Infraestructura** (`usage-infra.tsx`): adds Email/Push panels (enviados + fallos).
+
+Shared helpers: `kpi-card.tsx`, `delta.tsx`, `format.ts` (dates/expiry). New token `warning-dark`
+(readable warning text; see design-system/tokens.md). Contract fields consumed from `metrics.ts`:
+revenue/seats/conversion `previous*`, `OrgUtilization.active7d`/`expiresAt`, `orgs.oldestPendingCreatedAt`,
+lessons/exercises `previous*`.
+
+**Remaining vs. the prototype:** fine pixel-restyle of the Usuarios/Infra layouts, a stacked
+"ingresos por fuente" bar chart, and the cohort-retention table as a standalone widget; the charts use
+the Recharts-based `DailySeriesChart` rather than the mock's hand-drawn SVG style. Camera-skip and
+time-per-lesson/exercise stay "requiere app" until signa-mobile's courses/ML flows are real.
