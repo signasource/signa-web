@@ -398,12 +398,15 @@ function MlInfra({ onSelectRange, ...perf }: InfraProps) {
         <h3 className="font-display text-lg font-bold tracking-tight">Señas salteadas</h3>
       </div>
 
-      <Card className="flex min-w-0 flex-col gap-3">
-        <CardTitle>Señas con skip de cámara</CardTitle>
-        <p className="text-text-muted text-sm">
-          Próximamente — requiere que la app reporte el evento de skip al backend.
-        </p>
-      </Card>
+      <PerfPanel
+        {...perf}
+        onSelectRange={onSelectRange}
+        widget="camera_skip"
+        metric="camera_skip"
+        title="Señas salteadas (skip de cámara)"
+        subtitle="Veces por segundo que se saltea un ejercicio con cámara — reportado por la app"
+        format={fmtReqs}
+      />
 
       <div className="grid gap-4 lg:grid-cols-4">
         <MetricStat

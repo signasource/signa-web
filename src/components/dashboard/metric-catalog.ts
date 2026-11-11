@@ -783,6 +783,14 @@ export const METRICS = {
     howComputed: "Promediamos las imágenes por segundo que reportan los celulares.",
     goodWhen: "Fluido (idealmente 15 o más por segundo).",
   },
+  camera_skip: {
+    label: "Señas salteadas",
+    description:
+      "Con qué frecuencia la gente saltea un ejercicio con cámara (deletreo o hacer una seña) en lugar de intentarlo.",
+    howComputed:
+      "Contamos por segundo las veces que alguien tocó «Saltear por ahora» en un ejercicio con cámara, según reporta la app. No se identifica la seña ni a la persona.",
+    goodWhen: "Bajo: la gente intenta las señas con la cámara en vez de evitarlas.",
+  },
   ml_inference_rate: {
     label: "Volumen de reconocimiento",
     description:
