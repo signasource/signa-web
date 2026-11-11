@@ -66,7 +66,12 @@ Shared helpers: `kpi-card.tsx`, `delta.tsx`, `format.ts` (dates/expiry). New tok
 revenue/seats/conversion `previous*`, `OrgUtilization.active7d`/`expiresAt`, `orgs.oldestPendingCreatedAt`,
 lessons/exercises `previous*`.
 
-**Remaining vs. the prototype:** fine pixel-restyle of the Usuarios/Infra layouts, a stacked
-"ingresos por fuente" bar chart, and the cohort-retention table as a standalone widget; the charts use
-the Recharts-based `DailySeriesChart` rather than the mock's hand-drawn SVG style. Camera-skip and
-time-per-lesson/exercise stay "requiere app" until signa-mobile's courses/ML flows are real.
+The stacked **"ingresos por fuente"** chart (`revenue-by-source-chart.tsx`, Negocio: organizaciones +
+gemas + cursos, click-to-filter) and the **cohort-retention table** (`CohortRetentionTable` in
+`usage-usuarios.tsx`, D1/D7/D30 by signup week, "—" while unobservable) are built. **Señas salteadas**
+is live: signa-mobile emits `camera_skip` on "Saltear por ahora" in the camera blocks → `CAMERA_SKIP`
+perf widget (data appears once an app release ships).
+
+**Remaining vs. the prototype:** fine pixel-restyle of the Usuarios/Infra layouts; charts use the
+Recharts-based components rather than the mock's hand-drawn SVG style; **time-per-lesson/exercise**
+stays pending (needs lesson-container timing in signa-mobile + a backend timer).

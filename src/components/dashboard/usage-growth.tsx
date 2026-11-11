@@ -8,6 +8,7 @@ import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { Delta } from "@/components/dashboard/delta";
 import { daysSince, expiryTone, fmtShortDate } from "@/components/dashboard/format";
 import { InfoPopover } from "@/components/dashboard/info-popover";
+import { RevenueBySourceChart } from "@/components/dashboard/revenue-by-source-chart";
 import { METRICS, type MetricId } from "@/components/dashboard/metric-catalog";
 import { MetricStat } from "@/components/dashboard/metric-stat";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
@@ -136,6 +137,34 @@ export function GrowthTab({
           userAmount={refundUsers}
         />
       </div>
+
+      <RevenueBySourceChart
+        title="Ingresos por fuente"
+        metric="income"
+        range={range}
+        format={fmtMoney}
+        onSelectRange={onSelectRange}
+        sources={[
+          {
+            key: "orgs",
+            label: "Organizaciones",
+            color: "var(--color-primary)",
+            points: g.revenue.daily,
+          },
+          {
+            key: "gems",
+            label: "Gemas",
+            color: "var(--color-gems-blue)",
+            points: g.gems.daily,
+          },
+          {
+            key: "courses",
+            label: "Cursos",
+            color: "var(--color-course-teal)",
+            points: g.courseSales.daily,
+          },
+        ]}
+      />
 
       <Section title="Sin organización">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">

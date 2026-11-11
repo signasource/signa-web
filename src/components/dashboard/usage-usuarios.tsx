@@ -2,16 +2,20 @@
 
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { Delta } from "@/components/dashboard/delta";
+import { fmtShortDate } from "@/components/dashboard/format";
 import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
+import { InfoPopover } from "@/components/dashboard/info-popover";
 import { MetricStat } from "@/components/dashboard/metric-stat";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount } from "@/components/dashboard/perf-format";
+import { Card, CardTitle } from "@/components/dashboard/ui";
 import { GamificationSection } from "@/components/dashboard/usage-gamification";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import { useGrowthMetrics } from "@/components/dashboard/usage-growth";
-import { metricsApi } from "@/lib/api/metrics";
+import { metricsApi, type CohortRetention } from "@/lib/api/metrics";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { REFRESH_MS } from "@/components/dashboard/perf-panel";
+import { cn } from "@/lib/utils";
 import type { DateTimeRange } from "@/lib/datetime-range";
 
 function useGamificationMetrics(range: DateTimeRange, live: boolean) {
@@ -22,6 +26,67 @@ function useGamificationMetrics(range: DateTimeRange, live: boolean) {
     placeholderData: keepPreviousData,
     refetchInterval: live ? REFRESH_MS : false,
   });
+}
+
+/** Tints a retention cell by how well it held: ≥40% success, ≥20% warning, else danger. */
+function retentionCellClass(pct: number | null): string {
+  if (pct == null) return "text-text-muted";
+  if (pct >= 40) return "text-success-dark font-extrabold";
+  if (pct >= 20) return "text-warning-dark font-bold";
+  return "text-danger font-bold";
+}
+
+/**
+ * Weekly registration cohorts and the share active again at D1/D7/D30. Cells read "—" while a
+ * horizon is still unobservable for that week (the API returns null), so an incomplete week never
+ * looks like 0% retention.
+ */
+function CohortRetentionTable({ rows }: { rows: CohortRetention[] }) {
+  return (
+    <Card className="flex min-w-0 flex-col gap-3">
+      <div className="flex items-center gap-1.5">
+        <CardTitle>Retención por cohorte</CardTitle>
+        <InfoPopover metric="cohort_retention" className="ml-auto" />
+      </div>
+      <p className="text-text-muted -mt-1.5 text-[13px]">
+        Por semana de registro: qué parte volvió 1, 7 y 30 días después.
+      </p>
+      {rows.length === 0 ? (
+        <p className="text-text-muted text-sm">Sin cohortes en el período.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="text-text-muted text-left text-xs font-bold">
+                <th className="pb-2 font-bold">Semana</th>
+                <th className="pb-2 pl-3 text-right font-bold">Registrados</th>
+                <th className="pb-2 pl-3 text-right font-bold">D1</th>
+                <th className="pb-2 pl-3 text-right font-bold">D7</th>
+                <th className="pb-2 pl-3 text-right font-bold">D30</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((c) => (
+                <tr key={c.weekStart} className="border-fill border-t">
+                  <td className="py-2 font-bold">{fmtShortDate(c.weekStart)}</td>
+                  <td className="py-2 pl-3 text-right">{NUMBER.format(c.cohortSize)}</td>
+                  <td className={cn("py-2 pl-3 text-right", retentionCellClass(c.d1Percent))}>
+                    {c.d1Percent == null ? "—" : `${c.d1Percent}%`}
+                  </td>
+                  <td className={cn("py-2 pl-3 text-right", retentionCellClass(c.d7Percent))}>
+                    {c.d7Percent == null ? "—" : `${c.d7Percent}%`}
+                  </td>
+                  <td className={cn("py-2 pl-3 text-right", retentionCellClass(c.d30Percent))}>
+                    {c.d30Percent == null ? "—" : `${c.d30Percent}%`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
 }
 
 /** Seconds → "3m 4s" / "45s" / "—" for a session-duration value. */
@@ -154,6 +219,8 @@ export function UsersTab({
           className="flex min-w-0 flex-col gap-3 lg:col-span-2"
         />
       </div>
+
+      <CohortRetentionTable rows={g.retention} />
 
       <div className="border-border flex items-center gap-3 border-t pt-5">
         <h2 className="font-display text-xl font-bold tracking-tight">Gamificación & engagement</h2>
