@@ -783,6 +783,13 @@ export const METRICS = {
     howComputed: "Promediamos las imágenes por segundo que reportan los celulares.",
     goodWhen: "Fluido (idealmente 15 o más por segundo).",
   },
+  lesson_time: {
+    label: "Tiempo por lección",
+    description: "Cuánto tarda la gente en completar una lección, de principio a fin.",
+    howComputed:
+      "La app mide el tiempo desde que se abre una lección hasta que se termina; mostramos la mediana (el valor del medio).",
+    goodWhen: "Razonable: ni tan corto que no se practique, ni tan largo que indique fricción.",
+  },
   camera_skip: {
     label: "Señas salteadas",
     description:

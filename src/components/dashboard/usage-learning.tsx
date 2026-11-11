@@ -10,8 +10,8 @@ import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
 import { InfoPopover } from "@/components/dashboard/info-popover";
 import type { MetricId } from "@/components/dashboard/metric-catalog";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
-import { fmtCount } from "@/components/dashboard/perf-format";
-import { REFRESH_MS } from "@/components/dashboard/perf-panel";
+import { fmtCount, fmtLatency } from "@/components/dashboard/perf-format";
+import { PerfPanel, REFRESH_MS } from "@/components/dashboard/perf-panel";
 import { Card, CardTitle, ErrorState, LoadingState, ProgressBar } from "@/components/dashboard/ui";
 import {
   NUMBER,
@@ -243,10 +243,12 @@ function ContentToReview({ lessons, signs }: { lessons: ReviewLesson[]; signs: S
 export function LearningTab({
   range,
   live,
+  step,
   onSelectRange,
 }: {
   range: DateTimeRange;
   live: boolean;
+  step: number;
   onSelectRange: RangeSelect;
 }) {
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
@@ -403,6 +405,18 @@ export function LearningTab({
       </div>
 
       <ContentToReview lessons={l.hardestLessons} signs={hardestSignsByError} />
+
+      <PerfPanel
+        range={range}
+        step={step}
+        live={live}
+        onSelectRange={onSelectRange}
+        widget="lesson_time"
+        metric="lesson_time"
+        title="Tiempo por lección (mediana)"
+        subtitle="Desde que se abre hasta que se termina — reportado por la app"
+        format={fmtLatency}
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="flex min-w-0 flex-col gap-3">
