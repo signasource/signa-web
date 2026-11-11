@@ -49,7 +49,7 @@ const MAX_FILLED_POINTS = 1500;
 
 /** One series point. `t` is the bucket's start instant (ISO-8601) or a `YYYY-MM-DD` day. */
 type Point = { t: string; value: number };
-type Datum = { label: string; epoch: number; value: number | null };
+type Datum = { label: string; epoch: number; value: number | null; prev?: number | null };
 
 /**
  * Bucket size (seconds) for a window, matching how the API buckets the series: minute if the span is
@@ -88,10 +88,46 @@ function makeTooltip(format: ValueFormat, fullTime: boolean) {
       <div className="border-border bg-surface rounded-xl border px-3 py-2 text-[13px] shadow-lg">
         <p className="text-text-muted font-bold">{fmt.format(new Date(point.epoch))}</p>
         <p className="font-extrabold">{point.value == null ? "Sin datos" : format(point.value)}</p>
+        {point.prev !== undefined ? (
+          <p className="text-text-muted">
+            Período anterior: {point.prev == null ? "sin datos" : format(point.prev)}
+          </p>
+        ) : null}
       </div>
     );
   };
 }
+
+/** "— Activos  - - Período anterior": the legend under a chart's title. */
+export function SeriesLegend({
+  items,
+}: {
+  items: { label: string; color: string; dashed?: boolean }[];
+}) {
+  return (
+    <div className="text-text-muted mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]">
+      {items.map((item) => (
+        <span key={item.label} className="inline-flex items-center gap-1.5">
+          <svg width="14" height="4" aria-hidden="true">
+            <line
+              x1="0"
+              y1="2"
+              x2="14"
+              y2="2"
+              stroke={item.color}
+              strokeWidth="2"
+              strokeDasharray={item.dashed ? "3 3" : undefined}
+            />
+          </svg>
+          {item.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Colour of the dashed "Período anterior" comparison line. */
+export const PREVIOUS_COLOR = "var(--color-text-muted)";
 
 /**
  * Generic time-series for a `{ t, value }` series (revenue, new users, …). When a `range` is given it
@@ -111,11 +147,23 @@ export function DailySeriesChart({
   format = (v) => v.toLocaleString("es-AR"),
   onSelectRange,
   className,
+  previous,
+  seriesLabel,
+  showKindToggle = true,
 }: {
   title: string;
   subtitle?: string;
   metric: MetricId;
   points: Point[];
+  /**
+   * The same series over the previous equal-length window. It is shifted forward by the window's
+   * span and drawn as a dashed "Período anterior" line, so the change reads straight off the chart.
+   */
+  previous?: Point[];
+  /** Legend name of the main series (shown when a previous series is drawn). */
+  seriesLabel?: string;
+  /** Show the per-chart "Línea / Barras" switch (default on). */
+  showKindToggle?: boolean;
   /** The active window; when set, the x axis spans the whole period (gaps filled with 0). */
   range?: DateTimeRange;
   /** This series is always day-resolution (not adaptive) — fill the window day by day. */
@@ -146,6 +194,13 @@ export function DailySeriesChart({
   const subDay = bucketSeconds < DAY_SECONDS;
   const tickFmt = subDay ? TIME_FMT : DAY_FMT;
 
+  // The previous window's points, moved forward by the span so they line up with this window.
+  const spanMs = haveRange ? toMs - fromMs : 0;
+  const prevValid = (previous ?? [])
+    .map((p) => ({ epoch: new Date(p.t).getTime() + spanMs, value: p.value }))
+    .filter((d) => Number.isFinite(d.epoch));
+  const withPrevious = previous !== undefined && haveRange;
+
   let data: Datum[];
   const bucketMs = bucketSeconds * 1000;
   const bucketCount = haveRange ? Math.ceil((toMs - fromMs) / bucketMs) : 0;
@@ -153,15 +208,25 @@ export function DailySeriesChart({
     // Lay out every bucket of the window, filling the ones without data with 0.
     const valueByEpoch = new Map<number, number>();
     for (const d of valid) valueByEpoch.set(Math.floor(d.epoch / bucketMs) * bucketMs, d.value);
+    const prevByEpoch = new Map<number, number>();
+    for (const d of prevValid) prevByEpoch.set(Math.floor(d.epoch / bucketMs) * bucketMs, d.value);
     const start = Math.floor(fromMs / bucketMs) * bucketMs;
     data = [];
     for (let epoch = start; epoch < toMs; epoch += bucketMs) {
       const has = valueByEpoch.has(epoch);
-      data.push({
+      const datum: Datum = {
         epoch,
         value: has ? valueByEpoch.get(epoch)! : emptyAsNull ? null : 0,
         label: tickFmt.format(new Date(epoch)),
-      });
+      };
+      if (withPrevious) {
+        datum.prev = prevByEpoch.has(epoch)
+          ? prevByEpoch.get(epoch)!
+          : emptyAsNull || prevValid.length === 0
+            ? null
+            : 0;
+      }
+      data.push(datum);
     }
   } else {
     data = valid.map((d) => ({ ...d, label: tickFmt.format(new Date(d.epoch)) }));
@@ -188,9 +253,17 @@ export function DailySeriesChart({
         <div className="min-w-0">
           <CardTitle>{title}</CardTitle>
           {subtitle ? <p className="text-text-muted mt-0.5 text-[13px]">{subtitle}</p> : null}
+          {withPrevious ? (
+            <SeriesLegend
+              items={[
+                { label: seriesLabel ?? title, color: "var(--color-primary)" },
+                { label: "Período anterior", color: PREVIOUS_COLOR, dashed: true },
+              ]}
+            />
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <ChartKindToggle kind={kind} onChange={setKind} />
+          {showKindToggle ? <ChartKindToggle kind={kind} onChange={setKind} /> : null}
           <InfoPopover metric={metric} />
         </div>
       </div>
@@ -222,6 +295,18 @@ export function DailySeriesChart({
                 cursor={{ fill: "var(--color-fill)", radius: 8 }}
                 isAnimationActive={false}
               />
+              {withPrevious ? (
+                <Line
+                  type="monotone"
+                  dataKey="prev"
+                  stroke={PREVIOUS_COLOR}
+                  strokeWidth={1.5}
+                  strokeDasharray="4 4"
+                  dot={false}
+                  connectNulls
+                  isAnimationActive={false}
+                />
+              ) : null}
               {kind === "line" ? (
                 <Line
                   type="monotone"

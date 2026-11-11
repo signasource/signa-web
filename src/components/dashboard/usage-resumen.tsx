@@ -1,62 +1,157 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
-import { KpiCard } from "@/components/dashboard/kpi-card";
-import type { RangeSelect } from "@/components/dashboard/perf-chart";
-import { fmtCount, fmtMoney } from "@/components/dashboard/perf-format";
-import { latestValue, REFRESH_MS, usePerfQuery } from "@/components/dashboard/perf-panel";
-import { Card, CardTitle } from "@/components/dashboard/ui";
-import { NUMBER, useBusinessMetrics } from "@/components/dashboard/usage-business";
-import { useGrowthMetrics } from "@/components/dashboard/usage-growth";
 import { daysSince } from "@/components/dashboard/format";
-import { metricsApi } from "@/lib/api/metrics";
-import type { DateTimeRange } from "@/lib/datetime-range";
+import { KpiCard, KpiRow } from "@/components/dashboard/kpi-card";
+import type { RangeSelect } from "@/components/dashboard/perf-chart";
+import { fmtCount, fmtMoneyCompact } from "@/components/dashboard/perf-format";
+import { ServicesStrip, useServiceStatus } from "@/components/dashboard/services-status";
+import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
+import { NUMBER } from "@/components/dashboard/usage-business";
+import {
+  dailyRevenue,
+  pct1,
+  perDayHint,
+  rate1,
+  rateOrNull,
+  revenueTotals,
+} from "@/components/dashboard/usage-math";
+import {
+  useBusinessQuery,
+  useGrowthQuery,
+  useLearningQuery,
+} from "@/components/dashboard/usage-queries";
+import type { BusinessMetrics, GrowthMetrics, LearningMetrics } from "@/lib/api/metrics";
+import { courseLessonHref } from "@/lib/course-deep-link";
+import { previousRange, type DateTimeRange } from "@/lib/datetime-range";
 import { cn } from "@/lib/utils";
-
-/** An actionable exception for the "Requiere atención" panel (only shown when it has a count). */
-type Alert = {
-  n: number;
-  title: string;
-  sub: string;
-  cta: string;
-  href: string;
-  tone: "danger" | "warning";
-};
-
-/** Learning snapshot for the Resumen KPIs (lesson completion + exercise success rates). */
-function useLearningSnapshot(range: DateTimeRange, live: boolean) {
-  return useQuery({
-    queryKey: ["admin", "metrics", "learning", range.from, range.to],
-    queryFn: () => metricsApi.learning({ from: range.from, to: range.to }),
-    enabled: Boolean(range.from && range.to),
-    placeholderData: keepPreviousData,
-    refetchInterval: live ? REFRESH_MS : false,
-  });
-}
-
-/** A labelled status dot for the services strip; neutral when the signal is unavailable. */
-function ServiceStatus({ label, up }: { label: string; up: boolean | null }) {
-  const tone = up == null ? "bg-text-muted" : up ? "bg-success" : "bg-danger";
-  return (
-    <span className="inline-flex items-center gap-1.5 text-[13px]">
-      <span className={cn("size-2 rounded-full", tone)} />
-      <span className="font-bold">{label}</span>
-      <span className="text-text-muted">
-        {up == null ? "sin datos" : up ? "operativo" : "con fallos"}
-      </span>
-    </span>
-  );
-}
 
 export type ResumenTarget = "negocio" | "usuarios" | "aprendizaje" | "infraestructura";
 
+/** Below this occupancy a contract counts as under-used (same rule as the license table). */
+export const LOW_USE_PERCENT = 50;
+/** A lesson's abandonment worth flagging on the Resumen. */
+export const ABANDONMENT_ALERT_PERCENT = 40;
+
+/** An actionable exception for "Requiere atención": a badge, what happened, and where to fix it. */
+export type Alert = {
+  key: string;
+  badge: string;
+  title: string;
+  sub: string;
+  cta: string;
+  tone: "danger" | "warning";
+  href?: string;
+  tab?: ResumenTarget;
+  /** Element id to scroll to once the tab is shown. */
+  anchor?: string;
+};
+
 /**
- * Resumen — the dashboard's at-a-glance view: five north-star KPIs with period-over-period deltas
- * (ingresos, actividad, adquisición, finalización y éxito de aprendizaje), a "Requiere atención"
- * list of actionable exceptions beside the two trend charts, and a services status strip.
+ * Builds the "Requiere atención" list: only exceptions that need someone to act, each pointing at
+ * the screen where it's resolved. Nothing here is informational.
+ */
+export function buildAlerts({
+  growth: g,
+  business: b,
+  learning: l,
+  emailFailures,
+}: {
+  growth: GrowthMetrics;
+  business: BusinessMetrics;
+  learning: LearningMetrics | undefined;
+  emailFailures: number | null;
+}): Alert[] {
+  const alerts: Alert[] = [];
+  if (g.orgs.pending > 0) {
+    const d = daysSince(g.orgs.oldestPendingCreatedAt);
+    alerts.push({
+      key: "orgs",
+      badge: NUMBER.format(g.orgs.pending),
+      title: "Organizaciones pendientes de validar",
+      sub:
+        d != null
+          ? `La más antigua espera hace ${d} ${d === 1 ? "día" : "días"}`
+          : "Esperan aprobación",
+      cta: "Validar",
+      href: "/admin/organizations",
+      tone: "warning",
+    });
+  }
+  if (b.errors.pendingSignReports > 0) {
+    const top = l?.reports.mostReportedPending?.[0];
+    alerts.push({
+      key: "reports",
+      badge: NUMBER.format(b.errors.pendingSignReports),
+      title: "Reportes de señas sin resolver",
+      sub: top
+        ? `«${top.meaning}» acumula ${NUMBER.format(top.count)} ${top.count === 1 ? "reporte" : "reportes"}`
+        : "Usuarios reportaron señas incorrectas o de baja calidad",
+      cta: "Revisar",
+      href: "/admin/sign-reports",
+      tone: "danger",
+    });
+  }
+  const lowUse = g.orgs.utilization
+    .filter((o) => o.seatsSold > 0 && o.occupancyPercent < LOW_USE_PERCENT)
+    .sort((a, b) => b.seatsSold - a.seatsSold);
+  if (lowUse.length > 0) {
+    alerts.push({
+      key: "low-use",
+      badge: NUMBER.format(lowUse.length),
+      title: "Contratos grandes con poco uso",
+      sub: lowUse
+        .slice(0, 2)
+        .map((o) => `${o.name} ${Math.round(o.occupancyPercent)}%`)
+        .join(" · "),
+      cta: "Ver licencias",
+      tab: "negocio",
+      anchor: "licencias",
+      tone: "warning",
+    });
+  }
+  const worst = l?.lessonsToReview?.[0];
+  if (worst && worst.abandonmentPercent >= ABANDONMENT_ALERT_PERCENT) {
+    alerts.push({
+      key: "abandonment",
+      badge: `${Math.round(worst.abandonmentPercent)}%`,
+      title: `Abandono en «${worst.lessonName}»`,
+      sub: "La lección con mayor caída del embudo",
+      cta: "Ver lección",
+      href: courseLessonHref(worst.courseId, worst.lessonId),
+      tone: "warning",
+    });
+  }
+  if (emailFailures != null && emailFailures > 0) {
+    alerts.push({
+      key: "emails",
+      badge: NUMBER.format(emailFailures),
+      title: "Emails que no se enviaron",
+      sub: "Verificaciones, invitaciones o recuperos de contraseña",
+      cta: "Ver detalle",
+      tab: "infraestructura",
+      tone: "danger",
+    });
+  }
+  if (b.errors.failedImports > 0) {
+    alerts.push({
+      key: "imports",
+      badge: NUMBER.format(b.errors.failedImports),
+      title: "Actualizaciones de contenido fallidas",
+      sub: "El contenido de los cursos no se actualizó",
+      cta: "Ver contenido",
+      href: "/admin/content",
+      tone: "danger",
+    });
+  }
+  return alerts;
+}
+
+/**
+ * Resumen — "¿está todo bien?" in seconds: five north-star KPIs with period-over-period deltas, the
+ * actionable exceptions next to the two trend charts (with the previous window dashed), and the
+ * services status strip.
  */
 export function ResumenTab({
   range,
@@ -69,183 +164,107 @@ export function ResumenTab({
   live: boolean;
   step: number;
   onSelectRange: RangeSelect;
-  onSelectTab: (tab: ResumenTarget) => void;
+  onSelectTab: (tab: ResumenTarget, anchor?: string) => void;
 }) {
-  const growth = useGrowthMetrics(range, live);
-  const business = useBusinessMetrics(range, live);
-  const learning = useLearningSnapshot(range, live);
-  const backendUp = usePerfQuery("backend_up", { range, step, live });
-  const r2Up = usePerfQuery("r2_up", { range, step, live });
-  const emailFailures = usePerfQuery("email_failures", { range, step, live });
-  const pushFailures = usePerfQuery("push_failures", { range, step, live });
+  const prev = previousRange(range);
+  const growth = useGrowthQuery(range, live);
+  const prevGrowth = useGrowthQuery(prev, live);
+  const business = useBusinessQuery(range, live);
+  const prevBusiness = useBusinessQuery(prev, live);
+  const learning = useLearningQuery(range, live);
+  const services = useServiceStatus(range, step, live);
 
-  if (growth.isPending || business.isPending)
-    return <p className="text-text-muted">Cargando resumen…</p>;
-  if ((growth.isError && !growth.data) || (business.isError && !business.data))
-    return <p className="text-danger">No pudimos cargar el resumen.</p>;
+  if (growth.isPending || business.isPending) return <LoadingState>Cargando resumen…</LoadingState>;
+  if (!growth.data || !business.data) return <ErrorState>No pudimos cargar el resumen.</ErrorState>;
 
-  const g = growth.data!;
-  const b = business.data!;
+  const g = growth.data;
+  const pg = prevGrowth.data;
+  const b = business.data;
   const l = learning.data;
 
-  const netIncome = g.revenue.paidAmount - g.revenue.refundedAmount;
-  const previousNet =
-    g.revenue.previousPaidAmount == null
-      ? null
-      : g.revenue.previousPaidAmount - (g.revenue.previousRefundedAmount ?? 0);
+  const money = revenueTotals(g);
+  const prevMoney = pg ? revenueTotals(pg) : null;
+  const activeShare = rate1(g.engagement.activeInRange, g.users.total);
+  const prevCompletion = rateOrNull(l?.lessons.previousCompleted, l?.lessons.previousStarted);
+  const prevSuccess = rateOrNull(l?.exercises.previousCorrect, l?.exercises.previousAttempted);
 
-  // Previous-window learning rates for the pp deltas (null for the whole history).
-  const previousCompletion =
-    l && l.lessons.previousStarted && l.lessons.previousStarted > 0
-      ? Math.round(((l.lessons.previousCompleted ?? 0) / l.lessons.previousStarted) * 1000) / 10
-      : null;
-  const previousSuccess =
-    l && l.exercises.previousAttempted && l.exercises.previousAttempted > 0
-      ? Math.round(((l.exercises.previousCorrect ?? 0) / l.exercises.previousAttempted) * 1000) / 10
-      : null;
-
-  const alerts: Alert[] = [];
-  if (g.orgs.pending > 0) {
-    const d = daysSince(g.orgs.oldestPendingCreatedAt);
-    alerts.push({
-      n: g.orgs.pending,
-      title: "Organizaciones pendientes de validar",
-      sub:
-        d != null ? `La más antigua hace ${d} ${d === 1 ? "día" : "días"}` : "Esperan aprobación",
-      cta: "Validar",
-      href: "/admin/organizations",
-      tone: d != null && d >= 5 ? "danger" : "warning",
-    });
-  }
-  if (b.errors.pendingSignReports > 0) {
-    alerts.push({
-      n: b.errors.pendingSignReports,
-      title: "Reportes de señas sin resolver",
-      sub: "Usuarios reportaron señas incorrectas o de baja calidad",
-      cta: "Ver reportes",
-      href: "/admin/sign-reports",
-      tone: b.errors.pendingSignReports >= 10 ? "danger" : "warning",
-    });
-  }
-  if (b.errors.failedImports > 0) {
-    alerts.push({
-      n: b.errors.failedImports,
-      title: "Actualizaciones de contenido fallidas",
-      sub: "El contenido de los cursos no se actualizó",
-      cta: "Ver contenido",
-      href: "/admin/content",
-      tone: "danger",
-    });
-  }
-
-  // 1/0 "up" widget → latest status; null while unavailable.
-  const upOf = (q: typeof backendUp): boolean | null => {
-    if (!q.data?.available) return null;
-    const pts = q.data.series[0]?.points ?? [];
-    const last = [...pts].reverse().find((p) => p.v != null);
-    return last ? last.v! >= 1 : null;
-  };
-  // A failures-rate widget → healthy (green) when there are effectively no recent failures.
-  const healthyOf = (q: typeof emailFailures): boolean | null => {
-    if (!q.data?.available) return null;
-    const v = latestValue(q.data);
-    return v == null ? null : v < 0.01;
-  };
+  const alerts = buildAlerts({
+    growth: g,
+    business: b,
+    learning: l,
+    emailFailures: services.emailFailures,
+  });
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))] gap-3">
+      <KpiRow>
         <KpiCard
           metric="income"
-          value={fmtMoney(netIncome)}
-          current={netIncome}
-          previous={previousNet}
-          spark={g.revenue.daily.map((d) => d.amount)}
-          hint="Ingresos netos (org. + usuarios finales)"
+          value={fmtMoneyCompact(money.net)}
+          delta={{ current: money.net, previous: prevMoney?.net }}
+          hint={`Bruto ${fmtMoneyCompact(money.gross)} · reembolsos ${fmtMoneyCompact(money.refunded)}`}
+          spark={dailyRevenue(g)}
         />
         <KpiCard
           metric="users_active"
           value={NUMBER.format(g.engagement.activeInRange)}
-          current={g.engagement.activeInRange}
-          previous={g.engagement.previousActiveInRange}
+          delta={{
+            current: g.engagement.activeInRange,
+            previous: g.engagement.previousActiveInRange,
+          }}
+          hint={`${pct1(activeShare)} de ${NUMBER.format(g.users.total)} usuarios`}
           spark={g.engagement.dailyActive.map((d) => d.count)}
-          hint="Personas con actividad en el período"
         />
         <KpiCard
           metric="new_users"
           value={NUMBER.format(g.users.newInRange)}
-          current={g.users.newInRange}
-          previous={g.users.previousNewInRange}
+          delta={{ current: g.users.newInRange, previous: g.users.previousNewInRange }}
+          hint={perDayHint(g.users.newInRange, range) ?? `${NUMBER.format(g.users.total)} en total`}
           spark={g.users.daily.map((d) => d.count)}
-          hint="Cuentas nuevas en el período"
         />
         <KpiCard
           metric="lesson_completion_rate"
-          value={l && l.lessons.started ? `${l.lessons.completionPercent}%` : "—"}
-          current={l && l.lessons.started ? l.lessons.completionPercent : undefined}
-          previous={previousCompletion}
-          mode="pp"
-          hint="Lecciones terminadas sobre iniciadas"
+          value={l && l.lessons.started ? pct1(l.lessons.completionPercent) : "—"}
+          toneValue={l && l.lessons.started ? l.lessons.completionPercent : null}
+          delta={
+            l && l.lessons.started
+              ? { current: l.lessons.completionPercent, previous: prevCompletion, mode: "pp" }
+              : undefined
+          }
+          hint={
+            l
+              ? `${NUMBER.format(l.lessons.completed)} de ${NUMBER.format(l.lessons.started)} iniciadas`
+              : undefined
+          }
         />
         <KpiCard
           metric="exercise_success_rate"
-          value={l && l.exercises.attempted ? `${l.exercises.successPercent}%` : "—"}
-          current={l && l.exercises.attempted ? l.exercises.successPercent : undefined}
-          previous={previousSuccess}
-          mode="pp"
+          value={l && l.exercises.attempted ? pct1(l.exercises.successPercent) : "—"}
+          toneValue={l && l.exercises.attempted ? l.exercises.successPercent : null}
+          delta={
+            l && l.exercises.attempted
+              ? { current: l.exercises.successPercent, previous: prevSuccess, mode: "pp" }
+              : undefined
+          }
+          hint={
+            l
+              ? `${l.exercises.averageAttempts.toLocaleString("es-AR")} intentos por ejercicio`
+              : undefined
+          }
           spark={l?.dailyAccuracy.map((d) => d.accuracyPercent)}
-          hint="Ejercicios respondidos correctamente"
         />
-      </div>
+      </KpiRow>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="flex flex-col gap-3">
-          <div className="flex items-baseline gap-2">
-            <CardTitle>Requiere atención</CardTitle>
-            <span className="text-text-muted text-[13px]">
-              {alerts.length} {alerts.length === 1 ? "tema" : "temas"}
-            </span>
-          </div>
-          {alerts.length === 0 ? (
-            <p className="text-text-muted text-sm">Todo en orden: nada pendiente de resolver.</p>
-          ) : (
-            <ul className="flex flex-col">
-              {alerts.map((a) => (
-                <li
-                  key={a.title}
-                  className="border-fill flex items-center gap-3 border-t py-2.5 first:border-t-0"
-                >
-                  <span
-                    className={cn(
-                      "font-display flex size-8 shrink-0 items-center justify-center rounded-full text-[13px] font-extrabold",
-                      a.tone === "danger"
-                        ? "bg-danger-light text-danger"
-                        : "bg-shop-amber-light text-shop-amber-dark",
-                    )}
-                  >
-                    {NUMBER.format(a.n)}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold">{a.title}</p>
-                    <p className="text-text-muted text-[13px]">{a.sub}</p>
-                  </div>
-                  <Link
-                    href={a.href}
-                    className="text-primary hover:text-primary-dark text-[13px] font-extrabold whitespace-nowrap"
-                  >
-                    {a.cta} →
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
+        <AttentionList alerts={alerts} onSelectTab={onSelectTab} />
         <div className="flex flex-col gap-4">
           <DailySeriesChart
             title="Usuarios activos por día"
             metric="users_active"
+            seriesLabel="Activos"
+            showKindToggle={false}
             points={g.engagement.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
+            previous={pg?.engagement.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
             format={fmtCount}
             range={range}
             onSelectRange={onSelectRange}
@@ -253,7 +272,13 @@ export function ResumenTab({
           <DailySeriesChart
             title="Lecciones completadas por día"
             metric="lessons_completed"
+            seriesLabel="Completadas"
+            showKindToggle={false}
             points={b.activity.map((d) => ({ t: d.day, value: d.lessonsCompleted }))}
+            previous={prevBusiness.data?.activity.map((d) => ({
+              t: d.day,
+              value: d.lessonsCompleted,
+            }))}
             format={fmtCount}
             range={range}
             dayResolution
@@ -263,50 +288,68 @@ export function ResumenTab({
       </div>
 
       <ServicesStrip
-        apiUp={upOf(backendUp)}
-        r2Up={upOf(r2Up)}
-        emailsUp={healthyOf(emailFailures)}
-        pushUp={healthyOf(pushFailures)}
-        onGoInfra={() => onSelectTab("infraestructura")}
+        items={services.items}
+        unavailable={services.unavailable}
+        action={{ label: "Ver infraestructura", onClick: () => onSelectTab("infraestructura") }}
       />
     </div>
   );
 }
 
-function ServicesStrip({
-  apiUp,
-  r2Up,
-  emailsUp,
-  pushUp,
-  onGoInfra,
+const CTA = "text-primary hover:text-primary-dark text-[13px] font-extrabold whitespace-nowrap";
+
+function AttentionList({
+  alerts,
+  onSelectTab,
 }: {
-  apiUp: boolean | null;
-  r2Up: boolean | null;
-  emailsUp: boolean | null;
-  pushUp: boolean | null;
-  onGoInfra: () => void;
-}): ReactNode {
+  alerts: Alert[];
+  onSelectTab: (tab: ResumenTarget, anchor?: string) => void;
+}) {
   return (
     <Card className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <CardTitle>Estado de servicios</CardTitle>
-        <button
-          type="button"
-          onClick={onGoInfra}
-          className="text-primary hover:text-primary-dark ml-auto cursor-pointer text-[13px] font-extrabold"
-        >
-          Ver infraestructura →
-        </button>
+      <div className="flex items-baseline gap-2">
+        <CardTitle>Requiere atención</CardTitle>
+        <span className="text-text-muted text-[13px]">
+          {alerts.length} {alerts.length === 1 ? "tema" : "temas"}
+        </span>
       </div>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        <ServiceStatus label="API" up={apiUp} />
-        <ServiceStatus label="Almacenamiento" up={r2Up} />
-        <ServiceStatus label="Emails" up={emailsUp} />
-        <ServiceStatus label="Notificaciones" up={pushUp} />
-      </div>
-      <p className="text-text-muted text-[13px]">
-        El reconocimiento de señas corre en el dispositivo; su salud es independiente del backend.
-      </p>
+      {alerts.length === 0 ? (
+        <p className="text-text-muted text-sm">Todo en orden: nada pendiente de resolver.</p>
+      ) : (
+        <ul className="flex flex-col">
+          {alerts.map((a) => (
+            <li key={a.key} className="border-fill flex items-center gap-3 border-t py-3">
+              <span
+                className={cn(
+                  "font-display flex size-9 shrink-0 items-center justify-center rounded-full text-[13px] font-extrabold",
+                  a.tone === "danger"
+                    ? "bg-danger-light text-danger"
+                    : "bg-shop-amber-light text-shop-amber-dark",
+                )}
+              >
+                {a.badge}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-extrabold">{a.title}</p>
+                <p className="text-text-muted truncate text-[13px]">{a.sub}</p>
+              </div>
+              {a.href ? (
+                <Link href={a.href} className={CTA}>
+                  {a.cta} ›
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => a.tab && onSelectTab(a.tab, a.anchor)}
+                  className={cn(CTA, "cursor-pointer")}
+                >
+                  {a.cta} ›
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </Card>
   );
 }

@@ -15,6 +15,7 @@ import {
   type TooltipValueType,
 } from "recharts";
 import { ChartKindToggle, type ChartKind } from "@/components/dashboard/chart-kind";
+import { PREVIOUS_COLOR, SeriesLegend } from "@/components/dashboard/daily-series-chart";
 import { InfoPopover } from "@/components/dashboard/info-popover";
 import type { MetricId } from "@/components/dashboard/metric-catalog";
 import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
@@ -25,7 +26,7 @@ import { cn } from "@/lib/utils";
 export type RangeSelect = (fromSeconds: number, toSeconds: number) => void;
 
 /** Palette for overlaid series; tokens only, never Recharts defaults. */
-const COLORS = [
+export const COLORS = [
   "var(--color-primary)",
   "var(--color-accent-teal)",
   "var(--color-streak-orange)",
@@ -82,6 +83,12 @@ export function PerfChart({
   format = (v) => v.toLocaleString("es-AR"),
   delay,
   onSelectRange,
+  seriesNames,
+  colors = COLORS,
+  previous,
+  previousShiftSeconds = 0,
+  showKindToggle = true,
+  legend,
 }: {
   title: string;
   subtitle?: string;
@@ -95,10 +102,31 @@ export function PerfChart({
   delay?: number;
   /** When set, dragging across the chart selects a time window (drives the global filter). */
   onSelectRange?: RangeSelect;
+  /** Display names per series (overrides the Prometheus labels). */
+  seriesNames?: string[];
+  /** Colours per series (tokens). */
+  colors?: string[];
+  /** The first series over the previous window, drawn dashed as "Período anterior". */
+  previous?: PerfMetrics;
+  /** How far to move the previous window forward so it overlays this one (its span, seconds). */
+  previousShiftSeconds?: number;
+  /** Show the per-chart "Línea / Barras" switch (default on). */
+  showKindToggle?: boolean;
+  /** Show a legend under the title (default: when there are several series or a previous one). */
+  legend?: boolean;
 }) {
   const series = data?.series ?? [];
-  const { rows, keys } = toRows(series);
-  const names = series.map((s, i) => seriesName(s, `${title} ${i + 1}`));
+  const { rows: baseRows, keys } = toRows(series);
+  const names = series.map((s, i) => seriesNames?.[i] ?? seriesName(s, `${title} ${i + 1}`));
+  const previousPoints = previous?.available ? (previous.series[0]?.points ?? []) : [];
+  const withPrevious = previous !== undefined && baseRows.length > 0;
+  const rows: Row[] = withPrevious
+    ? (() => {
+        const prevByT = new Map(previousPoints.map((p) => [p.t + previousShiftSeconds, p.v]));
+        return baseRows.map((r) => ({ ...r, prev: prevByT.get(r.t) ?? null }));
+      })()
+    : baseRows;
+  const showLegend = legend ?? (series.length > 1 || withPrevious);
   const multiDay = rows.length > 1 && rows[rows.length - 1]!.t - rows[0]!.t > 36 * 3600;
   const timeFmt = multiDay ? DATE_TIME_FMT : TIME_FMT;
 
@@ -159,8 +187,10 @@ export function PerfChart({
             className="font-extrabold"
             style={{ color: entry.color }}
           >
-            {names[keys.indexOf(entry.dataKey as string)] ?? names[i]}:{" "}
-            {typeof entry.value === "number" ? format(entry.value) : "—"}
+            {entry.dataKey === "prev"
+              ? "Período anterior"
+              : (names[keys.indexOf(entry.dataKey as string)] ?? names[i])}
+            : {typeof entry.value === "number" ? format(entry.value) : "—"}
           </p>
         ))}
       </div>
@@ -170,12 +200,22 @@ export function PerfChart({
   return (
     <Card delay={delay} className="flex min-w-0 flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
-        <div>
+        <div className="min-w-0">
           <CardTitle>{title}</CardTitle>
           {subtitle ? <p className="text-text-muted mt-0.5 text-[13px]">{subtitle}</p> : null}
+          {showLegend && series.length > 0 ? (
+            <SeriesLegend
+              items={[
+                ...names.map((label, i) => ({ label, color: colors[i % colors.length]! })),
+                ...(withPrevious
+                  ? [{ label: "Período anterior", color: PREVIOUS_COLOR, dashed: true }]
+                  : []),
+              ]}
+            />
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <ChartKindToggle kind={kind} onChange={setKind} />
+          {showKindToggle ? <ChartKindToggle kind={kind} onChange={setKind} /> : null}
           {metric ? <InfoPopover metric={metric} /> : null}
         </div>
       </div>
@@ -232,12 +272,24 @@ export function PerfChart({
                 tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
               />
               <Tooltip content={ChartTooltip} isAnimationActive={false} />
+              {withPrevious ? (
+                <Line
+                  type="monotone"
+                  dataKey="prev"
+                  stroke={PREVIOUS_COLOR}
+                  strokeWidth={1.5}
+                  strokeDasharray="4 4"
+                  dot={false}
+                  connectNulls
+                  isAnimationActive={false}
+                />
+              ) : null}
               {keys.map((key, i) =>
                 kind === "bar" ? (
                   <Bar
                     key={key}
                     dataKey={key}
-                    fill={COLORS[i % COLORS.length]}
+                    fill={colors[i % colors.length]}
                     isAnimationActive={false}
                   />
                 ) : (
@@ -245,7 +297,7 @@ export function PerfChart({
                     key={key}
                     type="monotone"
                     dataKey={key}
-                    stroke={COLORS[i % COLORS.length]}
+                    stroke={colors[i % colors.length]}
                     strokeWidth={2}
                     dot={false}
                     connectNulls

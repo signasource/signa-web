@@ -186,7 +186,10 @@ export type LearningMetrics = {
   reports: {
     resolvedCount: number;
     averageResolutionHours: number;
+    /** All reports (any status), most reported first. */
     mostReported: { meaning: string; count: number }[];
+    /** Unresolved reports only, most reported first. */
+    mostReportedPending: { meaning: string; count: number }[];
   };
   imports: CountItem[];
   lessons: {
@@ -221,6 +224,25 @@ export type LearningMetrics = {
   dailyAccuracy: { day: string; evaluated: number; correct: number; accuracyPercent: number }[];
   /** Signs ranked by error rate across SELECT_MEANING / SELECT_SIGN blocks, worst first. */
   hardestSigns: SignDifficulty[];
+  /** "Contenido a revisar": lessons with ≥30 attempts in the window, worst abandonment first. */
+  lessonsToReview: LessonReview[];
+};
+
+/** One lesson of the "Contenido a revisar" table. */
+export type LessonReview = {
+  lessonId: string;
+  lessonName: string;
+  courseId: string;
+  courseName: string;
+  started: number;
+  completed: number;
+  /** Started but never completed, as of the window's close. */
+  abandonmentPercent: number;
+  /** Exercise attempts in the window and their accuracy. */
+  evaluated: number;
+  accuracyPercent: number;
+  /** Unresolved reports on signs the lesson uses. */
+  pendingReports: number;
 };
 
 /** One sign ranked by difficulty across exercise blocks that test it. */
@@ -268,6 +290,9 @@ export type GamificationMetrics = {
     daily: DailyCount[];
     topUnlocked: NameCount[];
     leastUnlocked: NameCount[];
+    previousUnlocked: number | null;
+    /** Accounts that can unlock achievements: the base for each achievement's share. */
+    eligibleUsers: number;
   };
   challenges: { type: string; completed: number; claimed: number; claimRatePercent: number }[];
   gifts: { sent: number; claimed: number };

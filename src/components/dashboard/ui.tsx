@@ -29,13 +29,16 @@ export function Card({
   className,
   children,
   delay,
+  id,
 }: {
   className?: string;
   children: ReactNode;
   delay?: number;
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       className={cn("border-border bg-surface dash-card-enter rounded-2xl border p-5", className)}
       style={delay !== undefined ? ({ "--delay": `${delay}ms` } as CSSProperties) : undefined}
     >

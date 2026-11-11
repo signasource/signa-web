@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { findLesson, pickVersionForCourse } from "@/lib/course-deep-link";
 import {
   adminApi,
   type AdminBlock,
@@ -555,14 +556,32 @@ export default function CoursesPage() {
     [saveMutation],
   );
 
-  function openEditor(detail: AdminCourseVersionDetail) {
+  function openEditor(detail: AdminCourseVersionDetail, lessonId?: string | null) {
+    const at = lessonId ? findLesson(detail, lessonId) : null;
     setEd(detail);
-    setSelectedTopicIdx(0);
-    setSelectedLessonIdx(0);
+    setSelectedTopicIdx(at?.topic ?? 0);
+    setSelectedLessonIdx(at?.lesson ?? 0);
     setAdding(false);
     setSaveStatus("saved");
     setView("editor");
   }
+
+  // Deep link from the usage dashboard ("Abrir" / "Ver lección"): `?course=<id>&lesson=<id>` opens
+  // the course's published version (or its latest) with that lesson selected. Consumed once.
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (deepLinkDone.current || !versions) return;
+    const params = new URLSearchParams(window.location.search);
+    const courseId = params.get("course");
+    if (!courseId) return;
+    deepLinkDone.current = true;
+    const target = pickVersionForCourse(versions, courseId);
+    if (!target) return;
+    void adminApi
+      .courseVersion(target.id)
+      .then((detail) => openEditor(detail, params.get("lesson")));
+    // openEditor only sets state; running once when the versions arrive is the intent.
+  }, [versions]);
 
   function goHome() {
     if (saveTimerRef.current) {
