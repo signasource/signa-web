@@ -31,4 +31,23 @@ describe("MetricsTabs", () => {
     fireEvent.keyDown(screen.getByRole("tab", { name: "Negocio" }), { key: "ArrowLeft" });
     expect(onChange).toHaveBeenCalledWith("c");
   });
+
+  it("flags an apartado's health with a dot and a screen-reader label", () => {
+    render(
+      <MetricsTabs
+        tabs={[
+          { key: "a", label: "Negocio" },
+          { key: "b", label: "Aprendizaje", dot: "warning" },
+        ]}
+        active="a"
+        onChange={() => {}}
+        idBase="t"
+        trailing={<span>Comparando con 10 sep – 9 oct</span>}
+      />,
+    );
+    expect(
+      screen.getByRole("tab", { name: "Aprendizaje (requiere atención)" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Comparando con 10 sep – 9 oct")).toBeInTheDocument();
+  });
 });

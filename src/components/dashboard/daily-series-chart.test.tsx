@@ -38,4 +38,41 @@ describe("DailySeriesChart", () => {
     );
     expect(screen.getByText("Sin datos en este período.")).toBeInTheDocument();
   });
+
+  it("overlays the previous window shifted onto this one, with a legend", () => {
+    const { container } = render(
+      <DailySeriesChart
+        title="Usuarios activos"
+        metric="users_active"
+        seriesLabel="Activos"
+        range={{ from: "2026-11-03T00:00:00.000Z", to: "2026-11-05T00:00:00.000Z" }}
+        dayResolution
+        points={[
+          { t: "2026-11-03", value: 10 },
+          { t: "2026-11-04", value: 20 },
+        ]}
+        previous={[
+          { t: "2026-11-01", value: 7 },
+          { t: "2026-11-02", value: 9 },
+        ]}
+        format={fmtCount}
+      />,
+    );
+    expect(screen.getByText("Activos")).toBeInTheDocument();
+    expect(screen.getByText("Período anterior")).toBeInTheDocument();
+    expect(screen.getByRole("img")).toHaveAttribute("aria-label", "3 nov: 10. 4 nov: 20");
+    expect(container.querySelectorAll('[role="group"]').length).toBe(1);
+  });
+
+  it("can hide the line/bar switch", () => {
+    const { container } = render(
+      <DailySeriesChart
+        title="Lecciones"
+        metric="lessons_completed"
+        showKindToggle={false}
+        points={[{ t: "2026-11-01", value: 1 }]}
+      />,
+    );
+    expect(container.querySelector('[role="group"]')).toBeNull();
+  });
 });

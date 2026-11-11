@@ -2,18 +2,31 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { daysSince, expiryTone, fmtShortDate } from "@/components/dashboard/format";
-import { InfoPopover } from "@/components/dashboard/info-popover";
-import { KpiCard } from "@/components/dashboard/kpi-card";
+import { daysSince, expiryTone, fmtDayMonth } from "@/components/dashboard/format";
+import { KpiCard, KpiRow } from "@/components/dashboard/kpi-card";
 import { RevenueBySourceChart } from "@/components/dashboard/revenue-by-source-chart";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtMoney, fmtMoneyCompact } from "@/components/dashboard/perf-format";
-import { REFRESH_MS } from "@/components/dashboard/perf-panel";
-import { Card, CardTitle, ProgressBar, StatRows } from "@/components/dashboard/ui";
+import {
+  Card,
+  CardTitle,
+  ErrorState,
+  LoadingState,
+  ProgressBar,
+  StatRows,
+} from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
-import { metricsApi, type OrgUtilization } from "@/lib/api/metrics";
-import type { DateTimeRange } from "@/lib/datetime-range";
+import {
+  dailyRevenue,
+  paymentConversion,
+  pct0,
+  pct1,
+  rate1,
+  revenueTotals,
+} from "@/components/dashboard/usage-math";
+import { useGrowthQuery } from "@/components/dashboard/usage-queries";
+import type { GrowthMetrics, OrgUtilization } from "@/lib/api/metrics";
+import { previousRange, type DateTimeRange } from "@/lib/datetime-range";
 import { cn } from "@/lib/utils";
 
 /** The organization pipeline, in the order the segmented bar and legend read left-to-right. */
@@ -24,27 +37,13 @@ const ORG_PIPELINE: { key: string; label: string; color: string }[] = [
   { key: "REJECTED", label: "Rechazadas", color: "var(--color-text-muted)" },
 ];
 
-/** Growth & business snapshot query — shared by the Negocio and Usuarios tabs (one cache). */
+/** Growth & business snapshot query — shared by the Resumen, Negocio and Usuarios tabs. */
 export function useGrowthMetrics(range: DateTimeRange, live: boolean) {
-  return useQuery({
-    queryKey: ["admin", "metrics", "growth", range.from, range.to],
-    queryFn: () => metricsApi.growth({ from: range.from, to: range.to }),
-    enabled: Boolean(range.from && range.to),
-    placeholderData: keepPreviousData,
-    refetchInterval: live ? REFRESH_MS : false,
-  });
+  return useGrowthQuery(range, live);
 }
 
 function orgCount(items: { key: string; count: number }[], key: string): number {
   return items.find((i) => i.key === key)?.count ?? 0;
-}
-
-/** One decimal, Argentine comma, with a trailing "%": `pct1(5.8)` → `"5,8%"`. */
-function pct1(value: number): string {
-  return `${value.toLocaleString("es-AR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  })}%`;
 }
 
 /** A part-of-whole percentage rounded to a whole number (0 when the whole is 0). */
@@ -52,9 +51,12 @@ function share(part: number, whole: number): number {
   return whole > 0 ? Math.round((part / whole) * 100) : 0;
 }
 
-/** A refund rate (refunded / paid, one decimal; 0 when nothing was paid). */
-function rate1(refunded: number, paid: number): number {
-  return paid > 0 ? Math.round((refunded / paid) * 1000) / 10 : 0;
+/** Average org ticket per bucket (org income ÷ org purchases), for the KPI sparkline. */
+function dailyTicket(g: GrowthMetrics): number[] {
+  const purchases = new Map(g.orgs.dailyPurchases.map((d) => [d.t, d.count]));
+  return g.revenue.daily
+    .filter((d) => (purchases.get(d.t) ?? 0) > 0)
+    .map((d) => d.amount / purchases.get(d.t)!);
 }
 
 /**
@@ -71,79 +73,90 @@ export function GrowthTab({
   live: boolean;
   onSelectRange: RangeSelect;
 }) {
-  const query = useGrowthMetrics(range, live);
+  const query = useGrowthQuery(range, live);
+  const previous = useGrowthQuery(previousRange(range), live);
 
-  if (query.isPending) return <p className="text-text-muted">Cargando métricas de negocio…</p>;
-  if (query.isError && !query.data)
-    return <p className="text-danger">No pudimos cargar las métricas de negocio.</p>;
+  if (query.isPending) return <LoadingState>Cargando métricas de negocio…</LoadingState>;
+  if (!query.data) return <ErrorState>No pudimos cargar las métricas de negocio.</ErrorState>;
 
-  const g = query.data!;
-
-  // Income is split between organizations (seat purchases) and end users (gems + paid courses).
-  const incomeUsers = g.gems.paidAmount + g.courseSales.paidAmount;
-  const refundUsers = g.gems.refundedAmount + g.courseSales.refundedAmount;
-  const usersNet = incomeUsers - refundUsers;
-
-  const orgNet = g.revenue.paidAmount - g.revenue.refundedAmount;
-  const totalPaid = g.revenue.paidAmount + incomeUsers;
-  const totalRefunded = g.revenue.refundedAmount + refundUsers;
-  const netTotal = orgNet + usersNet;
-  const previousOrgNet =
-    g.revenue.previousPaidAmount == null
-      ? null
-      : g.revenue.previousPaidAmount - (g.revenue.previousRefundedAmount ?? 0);
-  const unifiedRefundRate = rate1(totalRefunded, totalPaid);
-
-  const previousTicket =
-    g.revenue.previousPaidCount == null || g.revenue.previousPaidCount === 0
-      ? null
-      : (g.revenue.previousPaidAmount ?? 0) / g.revenue.previousPaidCount;
-
+  const g = query.data;
+  const pg = previous.data;
+  const money = revenueTotals(g);
+  const prevMoney = pg ? revenueTotals(pg) : null;
+  const conversion = paymentConversion(g);
   const payingUsers = g.endUsers.payingUsers;
-  const conversionPercent =
-    g.users.total > 0 ? Math.round((payingUsers / g.users.total) * 1000) / 10 : 0;
-  const revenuePerPayer = payingUsers > 0 ? incomeUsers / payingUsers : 0;
+  const revenuePerPayer = payingUsers > 0 ? money.usersPaid / payingUsers : 0;
 
   return (
-    <div className="flex flex-col gap-7">
-      <div className="grid [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))] gap-3">
+    <div className="flex flex-col gap-5">
+      <KpiRow>
         <KpiCard
           metric="income"
-          value={fmtMoneyCompact(netTotal)}
-          current={orgNet}
-          previous={previousOrgNet}
-          spark={g.revenue.daily.map((d) => d.amount)}
-          hint={`Orgs ${share(orgNet, netTotal)}% · usuarios finales ${share(usersNet, netTotal)}%`}
+          value={fmtMoneyCompact(money.net)}
+          delta={{ current: money.net, previous: prevMoney?.net }}
+          spark={dailyRevenue(g)}
+          hint={`Orgs ${share(money.orgNet, money.net)}% · usuarios finales ${share(money.usersNet, money.net)}%`}
         />
         <KpiCard
           metric="refund_rate"
-          value={pct1(unifiedRefundRate)}
-          hint={`${fmtMoneyCompact(totalRefunded)} · orgs ${pct1(rate1(g.revenue.refundedAmount, g.revenue.paidAmount))} · usuarios ${pct1(rate1(refundUsers, incomeUsers))}`}
+          value={pct1(money.refundRate)}
+          toneValue={money.gross > 0 ? money.refundRate : null}
+          delta={{
+            current: money.refundRate,
+            previous: prevMoney && prevMoney.gross > 0 ? prevMoney.refundRate : null,
+            mode: "pp",
+            good: "down",
+          }}
+          hint={`${fmtMoneyCompact(money.refunded)} · orgs ${pct1(rate1(money.orgRefunded, money.orgPaid))} · usuarios ${pct1(rate1(money.usersRefunded, money.usersPaid))}`}
         />
         <KpiCard
           metric="seat_utilization"
-          value={g.seats.sold ? `${Math.round(g.seats.utilizationPercent)}%` : "—"}
-          current={g.seats.sold ? g.seats.utilizationPercent : undefined}
-          previous={g.seats.previousUtilizationPercent}
-          mode="pp"
+          value={g.seats.sold ? pct0(g.seats.utilizationPercent) : "—"}
+          toneValue={g.seats.sold ? g.seats.utilizationPercent : null}
+          delta={
+            g.seats.sold
+              ? {
+                  current: Math.round(g.seats.utilizationPercent),
+                  previous:
+                    g.seats.previousUtilizationPercent == null
+                      ? null
+                      : Math.round(g.seats.previousUtilizationPercent),
+                  mode: "pp",
+                  decimals: 0,
+                }
+              : undefined
+          }
           hint={`${NUMBER.format(g.seats.active)} de ${NUMBER.format(g.seats.sold)} cupos vendidos`}
         />
         <KpiCard
           metric="average_ticket"
-          value={fmtMoney(g.revenue.averageTicket)}
-          current={g.revenue.averageTicket}
-          previous={previousTicket}
+          value={g.revenue.paidCount ? fmtMoney(g.revenue.averageTicket) : "—"}
+          delta={
+            g.revenue.paidCount
+              ? {
+                  current: g.revenue.averageTicket,
+                  previous: pg && pg.revenue.paidCount ? pg.revenue.averageTicket : null,
+                }
+              : undefined
+          }
+          spark={dailyTicket(g)}
           hint={`${NUMBER.format(g.orgs.purchasesInRange)} ${g.orgs.purchasesInRange === 1 ? "compra de organizaciones" : "compras de organizaciones"}`}
         />
         <KpiCard
           metric="payment_conversion"
-          value={pct1(conversionPercent)}
+          value={pct1(conversion)}
+          delta={{
+            current: conversion,
+            previous: pg ? paymentConversion(pg) : null,
+            mode: "pp",
+          }}
           hint={`${NUMBER.format(payingUsers)} ${payingUsers === 1 ? "usuario pagó algo" : "usuarios pagaron algo"}`}
         />
-      </div>
+      </KpiRow>
 
       <RevenueBySourceChart
         title="Ingresos por fuente"
+        subtitle="Ingresos brutos por día. Hacé clic en una barra para ver ese día."
         metric="income"
         range={range}
         format={fmtMoneyCompact}
@@ -190,11 +203,7 @@ export function GrowthTab({
 }
 
 /** B2B pipeline panel: a segmented status bar + legend, the pending-validation strip and org stats. */
-function OrganizationsPanel({
-  g,
-}: {
-  g: NonNullable<ReturnType<typeof useGrowthMetrics>["data"]>;
-}) {
+function OrganizationsPanel({ g }: { g: GrowthMetrics }) {
   const segments = ORG_PIPELINE.map((s) => ({ ...s, count: orgCount(g.organizations, s.key) }));
   const total = segments.reduce((sum, s) => sum + s.count, 0);
   return (
@@ -348,40 +357,40 @@ function licenseStatus(o: OrgUtilization): { label: string; className: string } 
   return { label: "Saludable", className: "bg-success-light text-success-dark" };
 }
 
+/** Occupancy bar colour: under-used warns, healthy (≥ 80 %) is green, the rest neutral. */
+function occupancyTone(percent: number): "warning" | "primary" | "success" {
+  if (percent < 50) return "warning";
+  if (percent >= 80) return "success";
+  return "primary";
+}
+
 /**
  * Per-organization license utilization: contracted vs. used seats, active members, expiry and a
  * health badge. Ranked by risk (big contracts barely used or soon to renew). Long lists collapse to
- * {@link ORG_TABLE_PREVIEW} rows behind a "Ver más" toggle.
+ * {@link ORG_TABLE_PREVIEW} rows behind a "Ver las N organizaciones" toggle.
  */
 function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
   const [expanded, setExpanded] = useState(false);
   const canExpand = rows.length > ORG_TABLE_PREVIEW;
   const visible = expanded ? rows : rows.slice(0, ORG_TABLE_PREVIEW);
   return (
-    <Card>
-      <div className="flex items-center gap-1.5">
+    <Card id="licencias" className="scroll-mt-6">
+      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <CardTitle>Licencias por organización</CardTitle>
-        <Link
-          href="/admin/organizations"
-          className="text-primary hover:text-primary-dark ml-auto text-[13px] font-extrabold"
-        >
-          Gestionar
-        </Link>
-        <InfoPopover metric="org_utilization" />
+        <p className="text-text-muted text-[13px]">
+          Ordenadas por riesgo: contratos grandes con poco uso o próximos a vencer
+        </p>
       </div>
-      <p className="text-text-muted mt-1 text-[13px]">
-        Ordenadas por riesgo: contratos grandes con poco uso o próximos a vencer.
-      </p>
       {rows.length === 0 ? (
         <p className="text-text-muted mt-4 text-sm">Sin compras de cupos todavía.</p>
       ) : (
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
               <tr className="text-text-muted text-left text-xs font-bold">
                 <th className="pb-2 font-bold">Organización</th>
                 <th className="pb-2 pl-3 text-right font-bold">Cupos</th>
-                <th className="w-40 pb-2 pl-3 font-bold">Ocupación</th>
+                <th className="w-44 pb-2 pl-3 font-bold">Ocupación</th>
                 <th className="pb-2 pl-3 text-right font-bold">Activos 7 d</th>
                 <th className="pb-2 pl-3 font-bold">Vence</th>
                 <th className="pb-2 pl-3 text-right font-bold">Ingresos</th>
@@ -391,39 +400,41 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
             <tbody>
               {visible.map((o) => {
                 const status = licenseStatus(o);
+                const expiry = expiryTone(o.expiresAt);
                 return (
                   <tr key={o.orgId} className="border-fill border-t">
-                    <td className="py-2 font-bold">{o.name}</td>
-                    <td className="py-2 pl-3 text-right">
+                    <td className="py-2.5 font-extrabold">{o.name}</td>
+                    <td className="py-2.5 pl-3 text-right">
                       {NUMBER.format(o.seatsActive)}/{NUMBER.format(o.seatsSold)}
                     </td>
-                    <td className="py-2 pl-3">
+                    <td className="py-2.5 pl-3">
                       <div className="flex items-center gap-2">
                         <ProgressBar
                           percent={o.occupancyPercent}
-                          tone={o.occupancyPercent < 50 ? "warning" : undefined}
+                          tone={occupancyTone(o.occupancyPercent)}
                           className="flex-1"
+                          label={`Ocupación de ${o.name}`}
                         />
                         <span className="w-10 text-right text-xs font-extrabold">
-                          {o.occupancyPercent}%
+                          {Math.round(o.occupancyPercent)}%
                         </span>
                       </div>
                     </td>
-                    <td className="py-2 pl-3 text-right">{NUMBER.format(o.active7d)}</td>
+                    <td className="py-2.5 pl-3 text-right">{NUMBER.format(o.active7d)}</td>
                     <td
                       className={cn(
-                        "py-2 pl-3",
-                        expiryTone(o.expiresAt) === "danger"
-                          ? "text-danger font-bold"
-                          : expiryTone(o.expiresAt) === "warning"
-                            ? "text-warning-dark font-semibold"
-                            : "text-text-muted",
+                        "py-2.5 pl-3 whitespace-nowrap",
+                        expiry === "danger"
+                          ? "text-danger font-extrabold"
+                          : expiry === "warning"
+                            ? "text-shop-amber-dark font-extrabold"
+                            : "",
                       )}
                     >
-                      {fmtShortDate(o.expiresAt)}
+                      {fmtDayMonth(o.expiresAt)}
                     </td>
-                    <td className="py-2 pl-3 text-right font-extrabold">{fmtMoney(o.revenue)}</td>
-                    <td className="py-2 pl-3">
+                    <td className="py-2.5 pl-3 text-right font-extrabold">{fmtMoney(o.revenue)}</td>
+                    <td className="py-2.5 pl-3">
                       <span
                         className={cn(
                           "inline-block rounded-full px-2.5 py-1 text-xs font-extrabold whitespace-nowrap",
@@ -444,9 +455,7 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
               onClick={() => setExpanded((v) => !v)}
               className="text-primary hover:text-primary-dark mt-3 cursor-pointer text-[13px] font-extrabold"
             >
-              {expanded
-                ? "Ver menos"
-                : `Ver más (${NUMBER.format(rows.length - ORG_TABLE_PREVIEW)})`}
+              {expanded ? "Ver menos" : `Ver las ${NUMBER.format(rows.length)} organizaciones`}
             </button>
           ) : null}
         </div>

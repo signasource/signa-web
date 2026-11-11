@@ -66,6 +66,34 @@ Each tab opens with a **GoldenRow** (`golden-row.tsx`): 3–5 headline tiles tha
 at a glance, coloured success/warning/danger from the metric's `threshold`. Perf (Prometheus/Grafana)
 panels only populate in production; the Infra tab says so, and shows "sin datos" locally.
 
+## v3 layout (mockups, nov 2026)
+
+- **Every KPI has the same anatomy** (`KpiCard`): value, a ▲/▼ delta pill vs. the previous
+  equal-length window (`delta.tsx`: `pct`/`pp`/`abs` modes, `good: up|down` colours the change as
+  good or bad news, es-AR comma), hint and sparkline. Health KPIs pass `toneValue` → dot + coloured
+  value from the catalog threshold. Previous windows come from the same endpoints queried with
+  `previousRange(range)` (`usage-queries.ts`), no extra API.
+- **Período anterior** is drawn dashed on `DailySeriesChart` (`previous` prop) and `PerfChart`
+  (`previous` + `previousShiftSeconds`).
+- **Tabs** carry health dots (Aprendizaje: completion/success; Infraestructura: services) and the
+  "Comparando con … · horario UTC" caption on the same row.
+- **Resumen**: "Requiere atención" (`buildAlerts`): pending orgs, pending reports (top sign), low-use
+  contracts (→ Negocio `#licencias`), worst lesson abandonment ≥ 40 % (deep link
+  `/admin/courses?course=&lesson=`, `lib/course-deep-link.ts`), email failures, failed imports.
+  `ServicesStrip` (`services-status.tsx`): API/R2 availability (avg of `avg_over_time(up)`),
+  email/push failure counts (Σ rate × step), on-device recognition.
+- **Usuarios**: retention at 7 days of the window's signups (`retention7`), cohort table removed;
+  gamification is one stat strip + XP histogram (XP earned in the window, API tiers 0–100 … 2k+),
+  challenge claims, achievements Más/Menos (share of `eligibleUsers`).
+- **Aprendizaje**: single course picker, funnel flags the biggest drop, "Contenido a revisar" from
+  `lessonsToReview` (API: course, abandonment, accuracy, attempts ≥ 30, pending reports per lesson).
+- **Infraestructura**: Backend KPIs are window averages (peak in hint); 4xx+5xx and p95+p99 share a
+  chart; slow ops table with per-endpoint req/s (`endpoint_rate` widget); "Emails y notificaciones"
+  and "Sistema y recursos" collapsed.
+- Designer "Notas de diseño" boxes in the mockups are annotations, not UI.
+- Sparklines are omitted where no faithful series exists (refund rate, seat use, conversion,
+  sessions, lesson completion).
+
 ## Self-documenting widgets
 
 `metric-catalog.ts` is the single source of per-metric copy: `label`, `description` (what it is),

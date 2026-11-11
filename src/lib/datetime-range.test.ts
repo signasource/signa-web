@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  previousRange,
   deriveStepSeconds,
   isoToLocalInput,
   localInputToIso,
@@ -100,5 +101,20 @@ describe("selectionLabel", () => {
       to: "2026-11-02T00:00:00.000Z",
     });
     expect(label).toContain("–");
+  });
+});
+
+describe("previousRange", () => {
+  it("returns the equal-length window that ends where the range starts", () => {
+    expect(
+      previousRange({ from: "2026-11-10T00:00:00.000Z", to: "2026-11-11T12:00:00.000Z" }),
+    ).toEqual({ from: "2026-11-08T12:00:00.000Z", to: "2026-11-10T00:00:00.000Z" });
+  });
+
+  it("returns null for an empty or unparseable range", () => {
+    expect(previousRange({ from: "", to: "" })).toBeNull();
+    expect(
+      previousRange({ from: "2026-11-10T00:00:00.000Z", to: "2026-11-10T00:00:00.000Z" }),
+    ).toBeNull();
   });
 });

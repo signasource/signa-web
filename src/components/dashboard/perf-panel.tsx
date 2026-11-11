@@ -1,25 +1,19 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { GoldenTile } from "@/components/dashboard/golden-row";
 import type { MetricId } from "@/components/dashboard/metric-catalog";
 import { PerfChart, type RangeSelect, type ValueFormat } from "@/components/dashboard/perf-chart";
 import { fmtCount } from "@/components/dashboard/perf-format";
-import { metricsApi, type PerfMetrics } from "@/lib/api/metrics";
+import { usePerfWidget } from "@/components/dashboard/usage-queries";
+import type { PerfMetrics } from "@/lib/api/metrics";
 
-export const REFRESH_MS = 30_000;
+export { REFRESH_MS } from "@/components/dashboard/usage-queries";
 
 export type PerfProps = { range: { from: string; to: string }; step: number; live: boolean };
 
 /** Query for a single performance widget; rolling refetch while "live". */
 export function usePerfQuery(widget: string, { range, step, live }: PerfProps) {
-  return useQuery({
-    queryKey: ["admin", "metrics", "perf", widget, range.from, range.to, step],
-    queryFn: () => metricsApi.perf(widget, { from: range.from, to: range.to, step }),
-    enabled: Boolean(range.from && range.to),
-    placeholderData: keepPreviousData,
-    refetchInterval: live ? REFRESH_MS : false,
-  });
+  return usePerfWidget(widget, range, step, live);
 }
 
 /** A line-chart panel backed by a performance widget (Prometheus via the backend). */

@@ -58,6 +58,18 @@ export function spanSeconds(range: DateTimeRange): number {
 }
 
 /**
+ * The equal-length window immediately before {@code range} (ending where it starts), used for the
+ * "vs. período anterior" comparisons and the dashed "Período anterior" chart lines. `null` when the
+ * range is unparseable or empty.
+ */
+export function previousRange(range: DateTimeRange): DateTimeRange | null {
+  const from = Date.parse(range.from);
+  const to = Date.parse(range.to);
+  if (Number.isNaN(from) || Number.isNaN(to) || to <= from) return null;
+  return { from: new Date(from - (to - from)).toISOString(), to: new Date(from).toISOString() };
+}
+
+/**
  * A resolution that keeps a line chart readable: aim for ~120 points, never finer than 15s (the
  * scrape interval is 60s, so sub-15s is pointless) and snapped to a "nice" step. The backend
  * clamps too, so this is only a hint.

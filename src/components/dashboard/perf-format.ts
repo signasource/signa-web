@@ -6,22 +6,37 @@ import type { ValueFormat } from "@/components/dashboard/perf-chart";
  * tab and the metric catalog format the same metric the same way.
  */
 
+/** Fixed decimals with the Argentine comma (UI copy is es-AR). */
+function dec(v: number, digits: number): string {
+  return v.toLocaleString("es-AR", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
 export const fmtLatency: ValueFormat = (v) =>
-  v >= 1 ? `${v.toFixed(2)} s` : `${Math.round(v * 1000)} ms`;
+  v >= 1 ? `${dec(v, 2)} s` : `${Math.round(v * 1000)} ms`;
 
 /** A Prometheus ratio (0–1) shown as a percentage. */
-export const fmtPercentRatio: ValueFormat = (v) => `${(v * 100).toFixed(1)}%`;
+export const fmtPercentRatio: ValueFormat = (v) => `${dec(v * 100, 1)}%`;
 
 /** An already-percentage value (0–100). */
-export const fmtPercent: ValueFormat = (v) => `${v.toFixed(0)}%`;
+export const fmtPercent: ValueFormat = (v) => `${dec(v, 0)}%`;
 
-export const fmtPercent1: ValueFormat = (v) => `${v.toFixed(1)}%`;
+export const fmtPercent1: ValueFormat = (v) => `${dec(v, 1)}%`;
 
-export const fmtReqs: ValueFormat = (v) => `${v.toFixed(2)}/s`;
+export const fmtReqs: ValueFormat = (v) => `${dec(v, 2)}/s`;
+
+/** Requests per second for headline figures: "38 req/s", "0,4 req/s" under one. */
+export const fmtReqsShort: ValueFormat = (v) =>
+  v >= 10 ? `${Math.round(v).toLocaleString("es-AR")} req/s` : `${dec(v, 1)} req/s`;
+
+/** Per-endpoint rate for tables: "4,1/s". */
+export const fmtRate1: ValueFormat = (v) => `${dec(v, 1)}/s`;
 
 export const fmtCount: ValueFormat = (v) => v.toLocaleString("es-AR");
 
-export const fmtCores: ValueFormat = (v) => v.toFixed(2);
+export const fmtCores: ValueFormat = (v) => dec(v, 2);
 
 export const fmtBytes: ValueFormat = (v) => {
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -31,7 +46,7 @@ export const fmtBytes: ValueFormat = (v) => {
     n /= 1024;
     i += 1;
   }
-  return `${n.toFixed(1)} ${units[i]}`;
+  return `${dec(n, 1)} ${units[i]}`;
 };
 
 /** Argentine peso, no decimals (B2B revenue). */
