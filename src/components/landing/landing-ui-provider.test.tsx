@@ -13,7 +13,7 @@ describe("LandingUIProvider", () => {
     );
 
     const link = screen.getByRole("link", { name: "Soy una organización" });
-    expect(link).toHaveAttribute("href", "/organizaciones");
+    expect(link).toHaveAttribute("href", "/organizations");
   });
 
   it("opens a feature preview for the clicked card", async () => {

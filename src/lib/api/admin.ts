@@ -6,6 +6,8 @@ export type AdminMe = {
   name: string;
   lastName: string;
   email: string;
+  /** Profile photo as a data URL; null when none. */
+  avatar: string | null;
 };
 
 export type OrganizationStatus = "PENDING" | "ACTIVE" | "REJECTED" | "SUSPENDED";
@@ -89,6 +91,7 @@ export type AdminUser = {
   authProvider: "GOOGLE" | "EMAIL";
   currentStreak: number;
   lastStreakDate: string | null;
+  avatar: string | null;
 };
 
 export type AdminWaitlistEntry = {
@@ -118,8 +121,97 @@ export type AdminSign = {
   meaning: string;
   handedness: string;
   hasAnimation: boolean;
+  animationFormat: "glb" | "mp4" | null;
   openReports: number;
   lessonCount: number;
+};
+
+export type CourseVersionStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+
+export type AdminCourseVersionListItem = {
+  id: string;
+  courseId: string;
+  courseName: string;
+  version: string;
+  status: CourseVersionStatus;
+  publishedAt: string | null;
+  basedOnVersion: string | null;
+  isFree: boolean;
+  price: number | null;
+  unitCount: number;
+  lessonCount: number;
+  blockCount: number;
+  signCount: number;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  color: string | null;
+};
+
+export type BlockConfig = Record<string, unknown>;
+
+export type AdminBlock = {
+  id: string;
+  type: string;
+  order: number;
+  xpReward: number | null;
+  config: BlockConfig;
+};
+
+export type AdminLesson = {
+  id: string;
+  name: string;
+  description: string | null;
+  blocks: AdminBlock[];
+};
+
+export type AdminTopic = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  lessons: AdminLesson[];
+};
+
+export type AdminCourseVersionDetail = {
+  id: string;
+  courseId: string;
+  version: string;
+  status: CourseVersionStatus;
+  publishedAt: string | null;
+  basedOnVersion: string | null;
+  name: string;
+  description: string | null;
+  isFree: boolean;
+  price: number | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  color: string | null;
+  topics: AdminTopic[];
+};
+
+export type SaveCourseVersionPayload = {
+  name: string;
+  description: string | null;
+  isFree: boolean;
+  price: number | null;
+  color: string | null;
+  topics: Array<{
+    id?: string | null;
+    title: string;
+    subtitle: string | null;
+    description: string | null;
+    lessons: Array<{
+      id?: string | null;
+      name: string;
+      description: string | null;
+      blocks: Array<{
+        id?: string | null;
+        type: string;
+        xpReward: number | null;
+        config: BlockConfig;
+      }>;
+    }>;
+  }>;
 };
 
 export type ContentImportTrigger = "STARTUP" | "MANUAL";
@@ -137,6 +229,14 @@ export type ContentImportRun = {
   updated: number;
   unchanged: number;
   details: string | null;
+};
+
+export type UpdateAdminInput = {
+  name?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  avatar?: string;
 };
 
 export const adminApi = {
@@ -191,10 +291,50 @@ export const adminApi = {
 
   admins: () => api<AdminUser[]>("/admin/admins"),
 
-  createAdmin: (data: { email: string; name: string; lastName: string; password: string }) =>
-    api<AdminUser>("/admin/admins", { method: "POST", body: data }),
+  createAdmin: (data: {
+    email: string;
+    name: string;
+    lastName: string;
+    password: string;
+    /** Optional profile photo as a data URL. */
+    avatar?: string;
+  }) => api<AdminUser>("/admin/admins", { method: "POST", body: data }),
+
+  /** Partial update: omitted fields stay; `avatar: ""` removes the photo. */
+  updateAdmin: (id: string, data: UpdateAdminInput) =>
+    api<AdminUser>(`/admin/admins/${id}`, { method: "PATCH", body: data }),
 
   courses: () => api<AdminCourse[]>("/admin/courses"),
+
+  courseVersions: () => api<AdminCourseVersionListItem[]>("/admin/course-versions"),
+
+  courseVersion: (id: string) => api<AdminCourseVersionDetail>(`/admin/course-versions/${id}`),
+
+  createCourse: (name: string) =>
+    api<AdminCourseVersionDetail>("/admin/course-versions", {
+      method: "POST",
+      body: { name },
+    }),
+
+  forkCourseVersion: (id: string) =>
+    api<AdminCourseVersionDetail>(`/admin/course-versions/${id}/fork`, { method: "POST" }),
+
+  saveCourseVersion: (id: string, payload: SaveCourseVersionPayload) =>
+    api<AdminCourseVersionDetail>(`/admin/course-versions/${id}`, {
+      method: "PUT",
+      body: payload,
+    }),
+
+  publishCourseVersion: (id: string) =>
+    api<AdminCourseVersionDetail>(`/admin/course-versions/${id}/publish`, { method: "POST" }),
+
+  archiveCourseVersion: (id: string) =>
+    api<AdminCourseVersionDetail>(`/admin/course-versions/${id}/archive`, { method: "POST" }),
+
+  deleteCourseVersion: (id: string) => api(`/admin/course-versions/${id}`, { method: "DELETE" }),
+
+  signAnimation: (meaning: string) =>
+    api<{ url: string }>(`/signs/${encodeURIComponent(meaning)}/animation`),
 
   signs: (params?: { query?: string; page?: number; size?: number }) =>
     api<Page<AdminSign>>("/admin/signs", {

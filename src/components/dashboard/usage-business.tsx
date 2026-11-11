@@ -10,6 +10,7 @@ import {
   type TooltipContentProps,
   type TooltipValueType,
 } from "recharts";
+import { InfoPopover } from "@/components/dashboard/info-popover";
 import { Card, CardTitle } from "@/components/dashboard/ui";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { REFRESH_MS } from "@/components/dashboard/perf-panel";
@@ -104,12 +105,15 @@ export function DailyActivityChart({
 
   return (
     <Card className="flex min-w-0 flex-col gap-3 lg:col-span-2">
-      <div>
-        <CardTitle>Actividad diaria</CardTitle>
-        <p className="text-text-muted mt-0.5 text-[13px]">
-          Ejercicios por día (resolución diaria)
-          {onSelectRange ? " · clic en un día para filtrar" : ""}
-        </p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <CardTitle>Actividad diaria</CardTitle>
+          <p className="text-text-muted mt-0.5 text-[13px]">
+            Ejercicios por día (resolución diaria)
+            {onSelectRange ? " · clic en un día para filtrar" : ""}
+          </p>
+        </div>
+        <InfoPopover metric="daily_activity" className="mt-0.5" />
       </div>
       {bars.length === 0 ? (
         <p className="text-text-muted py-8 text-center text-sm">Sin actividad en este período.</p>

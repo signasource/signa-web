@@ -15,7 +15,7 @@ export class ApiError extends Error {
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
-  query?: Record<string, string | number | boolean | undefined>;
+  query?: Record<string, string | number | boolean | string[] | undefined>;
   anonymous?: boolean;
 };
 
@@ -29,7 +29,12 @@ export function setOnSessionExpired(cb: (() => void) | null) {
 function buildUrl(path: string, query?: RequestOptions["query"]) {
   const url = new URL(`${env.apiUrl}${path}`);
   for (const [key, value] of Object.entries(query ?? {})) {
-    if (value !== undefined) url.searchParams.set(key, String(value));
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const v of value) url.searchParams.append(key, v);
+    } else {
+      url.searchParams.set(key, String(value));
+    }
   }
   return url.toString();
 }

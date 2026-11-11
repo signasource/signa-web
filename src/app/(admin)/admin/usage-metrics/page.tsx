@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChartKindContext, type ChartKind } from "@/components/dashboard/chart-kind";
 import { DatetimeRangePicker } from "@/components/dashboard/datetime-range-picker";
 import { MetricsTabs, type TabItem } from "@/components/dashboard/metrics-tabs";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
@@ -10,6 +9,7 @@ import { PageHeading } from "@/components/dashboard/ui";
 import { GrowthTab } from "@/components/dashboard/usage-growth";
 import { InfraTab } from "@/components/dashboard/usage-infra";
 import { LearningTab } from "@/components/dashboard/usage-learning";
+import { ResumenTab, type ResumenTarget } from "@/components/dashboard/usage-resumen";
 import { UsersTab } from "@/components/dashboard/usage-usuarios";
 import {
   DEFAULT_SELECTION,
@@ -19,9 +19,10 @@ import {
 } from "@/lib/datetime-range";
 import { cn } from "@/lib/utils";
 
-type TabKey = "negocio" | "usuarios" | "aprendizaje" | "infraestructura";
+type TabKey = "resumen" | "negocio" | "usuarios" | "aprendizaje" | "infraestructura";
 
 const TABS: TabItem<TabKey>[] = [
+  { key: "resumen", label: "Resumen" },
   { key: "negocio", label: "Negocio" },
   { key: "usuarios", label: "Usuarios" },
   { key: "aprendizaje", label: "Aprendizaje" },
@@ -35,6 +36,22 @@ function isTabKey(value: string | null): value is TabKey {
   return TABS.some((t) => t.key === value);
 }
 
+const WINDOW_DATE = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+/** "10 sep – 9 oct": the equal-length window immediately before the selected one, in UTC. */
+function previousWindowLabel(range: { from: string; to: string }): string {
+  const from = new Date(range.from).getTime();
+  const to = new Date(range.to).getTime();
+  if (Number.isNaN(from) || Number.isNaN(to)) return "el período anterior";
+  const prevFrom = new Date(from - (to - from));
+  const prevTo = new Date(from - 1);
+  return `${WINDOW_DATE.format(prevFrom)} – ${WINDOW_DATE.format(prevTo)}`;
+}
+
 export default function UsageMetricsPage() {
   const [selection, setSelection] = useState<RangeSelection>(DEFAULT_SELECTION);
   const [live, setLive] = useState(true);
@@ -42,12 +59,10 @@ export default function UsageMetricsPage() {
   // Seed the apartado from the URL (bookmarkable) without useSearchParams. Safe as a lazy initializer:
   // the admin page only mounts client-side, after the auth gate in the layout resolves.
   const [tab, setTab] = useState<TabKey>(() => {
-    if (typeof window === "undefined") return "negocio";
+    if (typeof window === "undefined") return "resumen";
     const t = new URLSearchParams(window.location.search).get("tab");
-    return isTabKey(t) ? t : "negocio";
+    return isTabKey(t) ? t : "resumen";
   });
-  const [chartKind, setChartKind] = useState<ChartKind>("line");
-
   const changeTab = (next: TabKey) => {
     setTab(next);
     const url = new URL(window.location.href);
@@ -96,27 +111,8 @@ export default function UsageMetricsPage() {
 
   return (
     <section className="flex flex-col gap-6">
-      <PageHeading
-        title="Métricas de uso"
-        subtitle="Uso general de toda la app (con y sin organización), organizado por área. Arrastrá sobre un gráfico para filtrar por esa franja horaria."
-      >
+      <PageHeading title="Métricas de uso">
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-          <div className="border-border flex h-9 items-center rounded-full border p-0.5 text-[13px] font-extrabold">
-            {(["line", "bar"] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setChartKind(k)}
-                aria-pressed={chartKind === k}
-                className={cn(
-                  "h-8 cursor-pointer rounded-full px-3 transition-colors",
-                  chartKind === k ? "bg-primary-light text-primary-dark" : "text-text-muted",
-                )}
-              >
-                {k === "line" ? "Línea" : "Barras"}
-              </button>
-            ))}
-          </div>
           <button
             type="button"
             onClick={() => setLive((v) => !v)}
@@ -133,22 +129,34 @@ export default function UsageMetricsPage() {
         </div>
       </PageHeading>
 
-      <MetricsTabs tabs={TABS} active={tab} onChange={changeTab} idBase="metrics" />
+      <div className="flex flex-col gap-1">
+        <MetricsTabs tabs={TABS} active={tab} onChange={changeTab} idBase="metrics" />
+        <p className="text-text-muted text-right text-xs">
+          Comparando con {previousWindowLabel(range)} · horario UTC
+        </p>
+      </div>
 
-      <ChartKindContext.Provider value={chartKind}>
-        <div role="tabpanel" id={`metrics-panel-${tab}`} aria-labelledby={`metrics-tab-${tab}`}>
-          {tab === "negocio" ? (
-            <GrowthTab range={range} live={live} onSelectRange={onSelectRange} />
-          ) : null}
-          {tab === "usuarios" ? (
-            <UsersTab range={range} live={live} onSelectRange={onSelectRange} />
-          ) : null}
-          {tab === "aprendizaje" ? (
-            <LearningTab range={range} live={live} onSelectRange={onSelectRange} />
-          ) : null}
-          {tab === "infraestructura" ? <InfraTab {...perf} onSelectRange={onSelectRange} /> : null}
-        </div>
-      </ChartKindContext.Provider>
+      <div role="tabpanel" id={`metrics-panel-${tab}`} aria-labelledby={`metrics-tab-${tab}`}>
+        {tab === "resumen" ? (
+          <ResumenTab
+            range={range}
+            live={live}
+            step={step}
+            onSelectRange={onSelectRange}
+            onSelectTab={(t: ResumenTarget) => changeTab(t)}
+          />
+        ) : null}
+        {tab === "negocio" ? (
+          <GrowthTab range={range} live={live} onSelectRange={onSelectRange} />
+        ) : null}
+        {tab === "usuarios" ? (
+          <UsersTab range={range} live={live} onSelectRange={onSelectRange} />
+        ) : null}
+        {tab === "aprendizaje" ? (
+          <LearningTab range={range} live={live} onSelectRange={onSelectRange} />
+        ) : null}
+        {tab === "infraestructura" ? <InfraTab {...perf} onSelectRange={onSelectRange} /> : null}
+      </div>
     </section>
   );
 }

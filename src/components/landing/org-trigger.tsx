@@ -9,7 +9,7 @@ export function OrgTrigger({
   children: React.ReactNode;
 }) {
   return (
-    <Link href="/organizaciones" className={cn(className)}>
+    <Link href="/organizations" className={cn(className)}>
       {children}
     </Link>
   );

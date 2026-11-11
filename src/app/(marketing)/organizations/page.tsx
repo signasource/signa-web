@@ -9,7 +9,7 @@ import "@/app/(marketing)/landing.css";
 
 export const metadata: Metadata = {
   title: "Signa para organizaciones",
-  alternates: { canonical: "/organizaciones" },
+  alternates: { canonical: "/organizations" },
 };
 
 const STEPS = [
@@ -199,13 +199,13 @@ export default function OrganizacionesPage() {
                 </p>
                 <div className="flex flex-wrap justify-center gap-3">
                   <Link
-                    href="/organizaciones/ingresar"
+                    href="/organizations/login"
                     className="landing-btn bg-primary text-on-primary flex min-h-14 items-center rounded-full px-7 text-base font-extrabold"
                   >
                     Ingresar a mi panel
                   </Link>
                   <Link
-                    href="/organizaciones/ingresar#registro"
+                    href="/organizations/login#registro"
                     className="landing-btn bg-background text-text flex min-h-14 items-center rounded-full px-7 text-base font-extrabold"
                   >
                     Registrá tu organización

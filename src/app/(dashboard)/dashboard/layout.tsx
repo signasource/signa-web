@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const withFilters = useWithFilters();
 
   useEffect(() => {
-    if (status === "unauthenticated") router.replace("/login");
+    if (status === "unauthenticated") router.replace("/organizations/login");
   }, [status, router]);
 
   const pending = status === "authenticated" && organization?.status !== "ACTIVE";

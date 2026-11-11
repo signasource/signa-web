@@ -65,8 +65,6 @@ export type GrowthMetrics = {
     newInRange: number;
     /** New users in the previous equal-length window, or `null` for the whole history. */
     previousNewInRange: number | null;
-    activatedInRange: number;
-    activationPercent: number;
     daily: SeriesCount[];
   };
   engagement: {
@@ -93,25 +91,64 @@ export type GrowthMetrics = {
     averageTicket: number;
     refundedAmount: number;
     refundRatePercent: number;
+    /** Previous equal-length window for a period-over-period delta; `null` for the whole history. */
+    previousPaidAmount: number | null;
+    previousPaidCount: number | null;
+    previousRefundedAmount: number | null;
     daily: SeriesAmount[];
   };
-  gems: { purchases: number; gemsGranted: number; daily: SeriesCount[] };
-  seats: { sold: number; active: number; utilizationPercent: number };
+  /** Real-money gem economy (end users, no org): money in/out plus gems granted. */
+  gems: {
+    purchases: number;
+    gemsGranted: number;
+    paidAmount: number;
+    refundedAmount: number;
+    refundedCount: number;
+    daily: SeriesAmount[];
+  };
+  /** Individual paid-course purchases bought directly by end users (no organization). */
+  courseSales: {
+    purchases: number;
+    paidAmount: number;
+    refundedAmount: number;
+    refundedCount: number;
+    daily: SeriesAmount[];
+  };
+  /** End users (no org) who paid for anything: distinct payers and the repeat-buyer share. */
+  endUsers: {
+    payingUsers: number;
+    repeatBuyerPercent: number;
+  };
+  seats: {
+    sold: number;
+    active: number;
+    utilizationPercent: number;
+    /** Utilization as of the window's start for a delta; `null` for the whole history. */
+    previousUtilizationPercent: number | null;
+  };
   organizations: CountItem[];
   orgs: {
     newInRange: number;
     pending: number;
+    /** When the oldest still-pending org was created (ISO-8601), or `null` if none pending. */
+    oldestPendingCreatedAt: string | null;
     avgUsersPerOrg: number;
     avgRevenuePerOrg: number;
     purchasesInRange: number;
     dailyPurchases: SeriesCount[];
     utilization: OrgUtilization[];
-    conversion: { freeCourseUsers: number; paidCourseUsers: number; conversionPercent: number };
+    conversion: {
+      freeCourseUsers: number;
+      paidCourseUsers: number;
+      conversionPercent: number;
+      /** Conversion as of the window's start for a delta; `null` for the whole history. */
+      previousConversionPercent: number | null;
+    };
   };
   paidCourseUsers: number;
 };
 
-/** One organization's B2B license utilization row (contracted vs. used seats). */
+/** One organization's B2B license utilization row (contracted vs. used seats), ranked by risk. */
 export type OrgUtilization = {
   orgId: string;
   name: string;
@@ -119,6 +156,10 @@ export type OrgUtilization = {
   seatsSold: number;
   seatsActive: number;
   occupancyPercent: number;
+  /** Members active in the last 7 days of the window. */
+  active7d: number;
+  /** Next upcoming seat expiry (ISO-8601), or `null` when no active seat has a future expiry. */
+  expiresAt: string | null;
   revenue: number;
 };
 
@@ -148,12 +189,21 @@ export type LearningMetrics = {
     mostReported: { meaning: string; count: number }[];
   };
   imports: CountItem[];
-  lessons: { started: number; completed: number; completionPercent: number };
+  lessons: {
+    started: number;
+    completed: number;
+    completionPercent: number;
+    /** Previous equal-length window for a period-over-period delta; `null` for the whole history. */
+    previousStarted: number | null;
+    previousCompleted: number | null;
+  };
   exercises: {
     attempted: number;
     correct: number;
     successPercent: number;
     averageAttempts: number;
+    previousAttempted: number | null;
+    previousCorrect: number | null;
   };
   /** Onboarding steps (registrados → … → completaron 2+ lecciones), as of the window's close. */
   onboardingFunnel: CountItem[];
@@ -169,6 +219,17 @@ export type LearningMetrics = {
   mostRetriedExercises: ExerciseDifficulty[];
   /** Daily accuracy (correct / evaluated) — the correct-answer evolution over the window. */
   dailyAccuracy: { day: string; evaluated: number; correct: number; accuracyPercent: number }[];
+  /** Signs ranked by error rate across SELECT_MEANING / SELECT_SIGN blocks, worst first. */
+  hardestSigns: SignDifficulty[];
+};
+
+/** One sign ranked by difficulty across exercise blocks that test it. */
+export type SignDifficulty = {
+  sign: string;
+  evaluated: number;
+  correct: number;
+  errorPercent: number;
+  averageAttempts: number;
 };
 
 /** One exercise (lesson block) in a difficulty ranking. */
@@ -186,7 +247,14 @@ export type NameCount = { name: string; count: number };
 
 /** Global gamification & engagement metrics — the "Gamificación" apartado. */
 export type GamificationMetrics = {
-  xp: { total: number; perActiveUser: number; activeUsers: number; daily: DailyCount[] };
+  xp: {
+    total: number;
+    perActiveUser: number;
+    activeUsers: number;
+    daily: DailyCount[];
+    /** XP per active user in the previous equal-length window; `null` for whole-history range. */
+    previousPerActiveUser: number | null;
+  };
   streaks: {
     averageCurrentStreak: number;
     averageStreakActive: number;
@@ -205,7 +273,7 @@ export type GamificationMetrics = {
   gifts: { sent: number; claimed: number };
   shop: {
     totalGemsSpent: number;
-    gemsCredited: number;
+    gemsInInventory: number;
     redemptionRatePercent: number;
     topItems: { title: string; purchases: number; gemsSpent: number }[];
     dailySpent: DailyCount[];
@@ -227,6 +295,20 @@ export type PerfMetrics = {
   series: PerfSeries[];
 };
 
+/** One sign's camera-recognition stats for the ML metrics tab. */
+export type MlSignRecognition = {
+  sign: string;
+  attempts: number;
+  correct: number;
+  accuracyPercent: number;
+};
+
+/** Global ML / on-device recognition metrics — the "ML (reconocimiento)" apartado. */
+export type MlMetrics = {
+  totalPredictions: number;
+  recognizedSigns: MlSignRecognition[];
+};
+
 export type RangeParams = { from: string; to: string };
 
 export const metricsApi = {
@@ -235,12 +317,16 @@ export const metricsApi = {
 
   growth: (params: RangeParams) => api<GrowthMetrics>("/admin/metrics/growth", { query: params }),
 
-  learning: (params: RangeParams) =>
-    api<LearningMetrics>("/admin/metrics/learning", { query: params }),
+  learning: (params: RangeParams & { courseIds?: string[] }) =>
+    api<LearningMetrics>("/admin/metrics/learning", {
+      query: { from: params.from, to: params.to, courseIds: params.courseIds },
+    }),
 
   gamification: (params: RangeParams) =>
     api<GamificationMetrics>("/admin/metrics/gamification", { query: params }),
 
   perf: (widget: string, params: RangeParams & { step?: number }) =>
     api<PerfMetrics>(`/admin/metrics/perf/${widget}`, { query: params }),
+
+  ml: (params: RangeParams) => api<MlMetrics>("/admin/metrics/ml", { query: params }),
 };

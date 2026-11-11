@@ -14,7 +14,7 @@ import {
   type TooltipContentProps,
   type TooltipValueType,
 } from "recharts";
-import { useChartKind } from "@/components/dashboard/chart-kind";
+import { ChartKindToggle, type ChartKind } from "@/components/dashboard/chart-kind";
 import { InfoPopover } from "@/components/dashboard/info-popover";
 import type { MetricId } from "@/components/dashboard/metric-catalog";
 import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
@@ -102,7 +102,7 @@ export function PerfChart({
   const multiDay = rows.length > 1 && rows[rows.length - 1]!.t - rows[0]!.t > 36 * 3600;
   const timeFmt = multiDay ? DATE_TIME_FMT : TIME_FMT;
 
-  const kind = useChartKind();
+  const [kind, setKind] = useState<ChartKind>("line");
 
   // Drag-to-select: track the two edges (unix seconds from the x axis) while the mouse is down.
   const [selStart, setSelStart] = useState<number | null>(null);
@@ -174,7 +174,10 @@ export function PerfChart({
           <CardTitle>{title}</CardTitle>
           {subtitle ? <p className="text-text-muted mt-0.5 text-[13px]">{subtitle}</p> : null}
         </div>
-        {metric ? <InfoPopover metric={metric} className="mt-0.5" /> : null}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <ChartKindToggle kind={kind} onChange={setKind} />
+          {metric ? <InfoPopover metric={metric} /> : null}
+        </div>
       </div>
 
       {isPending ? <LoadingState>Cargando métricas…</LoadingState> : null}
@@ -224,6 +227,7 @@ export function PerfChart({
                 axisLine={false}
                 tickLine={false}
                 width={44}
+                domain={[0, (max: number) => (max === 0 ? 1 : max * 1.1)]}
                 tickFormatter={(v) => format(Number(v))}
                 tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
               />

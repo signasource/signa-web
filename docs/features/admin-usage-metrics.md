@@ -16,21 +16,30 @@ across every tab.
 tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their apartado. `MetricsTabs`
 (`metrics-tabs.tsx`) is the accessible `role="tablist"`.
 
-- **Negocio** (`usage-growth.tsx`) — the money, grouped **sin organización** (gem purchases, users on paid
-  courses) vs **organizaciones** (B2B revenue/refunds, seats, org status donut, revenue series, pipeline:
-  orgs nuevas, usuarios & ingreso promedio por org, compras, and the **per-org license utilization table**
-  `OrgUtilizationTable` — contracted vs. used seats, amber when a big contract is under-used; collapses to 6
-  rows behind a "Ver más (N)" toggle). Exposes `useGrowthMetrics` (shared with Usuarios).
+- **Negocio** (`usage-growth.tsx`) — the money. A **five-KPI north-star row** (`KpiCard`): **Ingresos
+  netos** (org + usuarios finales, neto de reembolsos; compact `fmtMoneyCompact`, with the org/usuario
+  split in its hint and an org-side period delta + sparkline), **Tasa de reembolso** (unificada, hint
+  desglosa orgs vs usuarios), **Uso de cupos** (pp delta), **Ticket promedio org.** (pct delta from the
+  previous window) and **Conversión a pago** (payers ÷ total users — `endUsers.payingUsers`). Then the
+  stacked **Ingresos por fuente** chart (`RevenueBySourceChart`: organizaciones + gemas + cursos pagos).
+  Below, two side-by-side panels: **Organizaciones** (a segmented status **pipeline** bar + legend —
+  Activas/Pendientes/Suspendidas/Rechazadas — the pending-validation amber strip with "Validar", and
+  usuarios/ingreso promedio por org + compras) and **Usuarios finales** (gem & paid-course money tiles,
+  usuarios que compraron, ingreso por usuario pagador, and recompra 2+ from `endUsers.repeatBuyerPercent`).
+  Finally the **per-org license utilization table** `OrgUtilizationTable` — contracted vs. used seats,
+  activos 7 d, vence (coloured by `expiryTone`), ingresos and an **Estado** badge (Bajo uso / Vence pronto /
+  Saludable / Sin cupos libres); ranked by risk, collapses to 6 rows behind a "Ver más (N)" toggle. Exposes
+  `useGrowthMetrics` (shared with Usuarios).
 - **Usuarios** (`usage-usuarios.tsx`) — "¿La gente usa Signa?": adquisición y actividad medidas sobre la
   ventana elegida. Range-based tasa de actividad (active/total, numerator/denominator), new users and active
   users each with a **period-over-period delta** (`Delta`, vs. the previous equal-length window; hidden for
-  the whole history), tasa de activación (new users who made an attempt / new users), total base al cierre,
-  XP per active user, and new/active-users time series; a **sessions** row — sesiones por usuario (frequency)
+  the whole history), total base al cierre,
+  XP per active user (with its own period-over-period delta), and new/active-users time series; a **sessions** row — sesiones por usuario (frequency)
   and duración promedio de sesión (time spent) from app telemetry (`signa-mobile` `useSessionTracker` →
-  `POST /sessions`), with a sessions chart. Then the **gamification** section (`GamificationSection` in
+  `POST /sessions`), with a **usuarios conectados** chart (distinct users with the app open per bucket: each session is spread from its start to start+duration, so one user connected 15 min draws a plateau at 1). Then the **gamification** section (`GamificationSection` in
   `usage-gamification.tsx`): "¿La gamificación ayuda?" — **XP por usuario activo** (con el total como
   contexto), tasa de desbloqueo de logros, reclamo de desafíos, **tasa de canje de gemas**
-  (gastadas/acreditadas); visualizaciones: **distribución de XP** por tramos (BreakdownPie) y **ranking de
+  (gastadas en el período / gemas que los usuarios tienen hoy en su inventario); visualizaciones: **distribución de XP** por tramos (BreakdownPie) y **ranking de
   logros** más y menos desbloqueados (`AchievementRanking`); más daily XP/achievements/gems-spent.
   Rolling DAU/WAU/MAU + stickiness, current-streak tiles and the weekly-cohort retention table were removed
   (no reaccionaban al rango desde/hasta).
@@ -60,8 +69,8 @@ panels only populate in production; the Infra tab says so, and shows "sin datos"
 ## Self-documenting widgets
 
 `metric-catalog.ts` is the single source of per-metric copy: `label`, `description` (what it is),
-`howComputed` (where the number comes from), `goodWhen` (what healthy looks like) and an optional
-`threshold`. Every golden tile (`GoldenTile`), stat (`MetricStat`) and perf chart (`PerfChart`, via its
+`howComputed` (how the number is worked out, in **plain language — no code, table or column names**, so
+anyone can read it), `goodWhen` (what healthy looks like) and an optional `threshold`. Every golden tile (`GoldenTile`), stat (`MetricStat`) and perf chart (`PerfChart`, via its
 `metric` prop) carries an `InfoPopover` ("i" button) that reads from this catalog, so the dashboard is
 understandable with no prior context. `toneFor(value, threshold)` maps a value to its tone. The popover
 renders in a **portal** with fixed positioning (not `absolute` inside the card): the cards keep their own
@@ -75,8 +84,12 @@ with the selected `[from, to]` seconds; clicking a day bar in `DailyActivityChar
 The page turns that into a `{ kind: "custom", from, to }` `RangeSelection`, which re-runs **every** widget
 (their query keys include `from/to`). No extra plumbing: the shared filter already propagates. A tiny
 selection is widened to a minimum span (`MIN_SPAN_SECONDS`, 5 min) so focusing on a spike never reads as
-"sin datos" (Prometheus scrapes every 60 s). A page-level **line/bar toggle** (`ChartKindContext`, header
-control) switches every time-series widget between a line and bars at once.
+"sin datos" (Prometheus scrapes every 60 s). Each time-series widget has its **own line/bar toggle**
+(`ChartKindToggle` in `chart-kind.tsx`, a local `useState` per chart, in the card header) — there is no
+page-level toggle. `DailySeriesChart` takes the active `range` and lays out **every** bucket of the period
+on the x axis (gaps filled with 0, or "sin datos"/null for rates via `emptyAsNull`), at a resolution that
+follows the window (minute/hour/day, or forced day via `dayResolution` for the day-only Learning/
+Gamification series); the y axis is labelled with values.
 
 ## Data sources (two, one picker)
 
@@ -104,6 +117,16 @@ suggested `step` (`deriveStepSeconds`). While **live**, rolling presets re-ancho
 all TanStack queries (`refetchInterval`) refresh. Query keys: `["admin","metrics",<kind>,…,from,to,step]`.
 
 ## Notes & limits
+
+- **Universe:** every Usuarios metric (new, total, activation, active, sessions) counts accounts that are not
+  `Role.ADMIN` (SIGNA staff). The "% de usuarios totales" under active users uses the same growth `users.total`.
+  XP windows are by UTC calendar day, end-exclusive, and the previous window shares no day with the current.
+- **Active user:** a distinct learner (`Role.USER`) with _any_ authenticated activity in the app in the
+  window (exercises, friends, shop, boosters, …), not just exercise attempts. `signa-api` records a
+  throttled `user_activity` row (≤1/min/user) from `JwtAuthFilter`; counts are `COUNT(DISTINCT user)`, so
+  20 connections in an hour = 1 active user. Backfilled from attempts and sessions.
+- **Sessions:** `signa-mobile` re-sends the running session every 30 s (same `sessionId`, server upserts
+  and keeps the max duration), so sessions appear without having to background the app.
 
 - **Resolution:** the **Growth** series (`SeriesCount`/`SeriesAmount` with a `t` instant) are
   **adaptive**: signa-api buckets them by `floor(epoch/bucket)` with `bucket = MetricsRange.bucketSeconds()`

@@ -37,3 +37,18 @@ export const fmtBytes: ValueFormat = (v) => {
 /** Argentine peso, no decimals (B2B revenue). */
 export const fmtMoney: ValueFormat = (v) =>
   v.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+
+/**
+ * Compact pesos for headline aggregates: "$13,77 M", "$847 k". Keeps two decimals in the millions
+ * so a big total stays legible; falls back to {@link fmtMoney} below a thousand.
+ */
+export const fmtMoneyCompact: ValueFormat = (v) => {
+  const abs = Math.abs(v);
+  if (abs >= 1_000_000)
+    return `$${(v / 1_000_000).toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} M`;
+  if (abs >= 1_000) return `$${Math.round(v / 1_000).toLocaleString("es-AR")} k`;
+  return fmtMoney(v);
+};

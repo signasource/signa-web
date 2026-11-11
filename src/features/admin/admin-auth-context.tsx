@@ -12,6 +12,8 @@ type AdminAuthContextValue = {
   admin: AdminMe | null;
   login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
+  /** Re-reads the signed-in admin (after editing their own profile). */
+  refresh: () => Promise<void>;
 };
 
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
@@ -54,9 +56,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     [signIn, signOut],
   );
 
+  const refresh = useCallback(async () => {
+    setAdmin(await adminApi.me());
+  }, []);
+
   const value = useMemo(
-    () => ({ status, admin, login, logout: signOut }),
-    [status, admin, login, signOut],
+    () => ({ status, admin, login, logout: signOut, refresh }),
+    [status, admin, login, signOut, refresh],
   );
 
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { AdminAvatar } from "@/components/admin/admin-avatar";
 import { useAdminAuth } from "@/features/admin/admin-auth-context";
 import { adminApi } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
@@ -39,10 +40,10 @@ const NAV: NavItem[] = [
     icon: FlagIcon,
     badgeKey: "openSignReports",
   },
+  { href: "/admin/courses", label: "Cursos", icon: CoursesIcon },
   { href: "/admin/content", label: "Cursos y señas", icon: BookIcon },
   { href: "/admin/users", label: "Usuarios", icon: UsersIcon },
   { href: "/admin/usage-metrics", label: "Métricas de uso", icon: MetricsIcon },
-  { href: "/admin/admins", label: "Administradores", icon: ShieldIcon },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -80,8 +81,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="bg-ink-900 flex w-64 flex-col text-white">
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      {/* Desktop sidebar */}
+      <aside className="bg-ink-900 sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto text-white lg:flex">
         <div className="flex items-center gap-2 px-6 py-6">
           <span className="font-display text-primary text-sm font-bold tracking-wide uppercase">
             Signa
@@ -111,17 +113,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
         <div className="border-t border-white/10 px-4 py-4">
-          <div className="mb-3 flex items-center gap-2 px-1">
-            <div className="bg-primary/20 text-primary flex size-7 items-center justify-center rounded-full text-xs font-bold">
-              {admin.name[0]}
-            </div>
+          <Link
+            href="/admin/profile"
+            aria-label="Ver mi perfil"
+            className={cn(
+              "mb-3 flex items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-white/5",
+              pathname === "/admin/profile" && "bg-primary/20",
+            )}
+          >
+            <AdminAvatar
+              name={admin.name}
+              lastName={admin.lastName}
+              avatar={admin.avatar}
+              className="size-7"
+            />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-white">
                 {admin.name} {admin.lastName}
               </p>
               <p className="truncate text-xs text-white/40">{admin.email}</p>
             </div>
-          </div>
+          </Link>
           <button
             onClick={logout}
             className="w-full rounded-xl px-3 py-2 text-left text-sm text-white/40 transition-colors hover:bg-white/5 hover:text-white"
@@ -130,10 +142,84 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
       </aside>
-      <main className="bg-background flex-1 overflow-auto">
-        <div className="mx-auto max-w-6xl p-8">{children}</div>
-      </main>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Mobile top bar: brand + logout, with a horizontally scrollable nav */}
+        <header className="bg-ink-900 sticky top-0 z-30 text-white lg:hidden">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="font-display text-primary text-sm font-bold tracking-wide uppercase">
+                Signa
+              </span>
+              <span className="text-xs font-medium text-white/30">Admin</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link href="/admin/profile" aria-label="Ver mi perfil">
+                <AdminAvatar
+                  name={admin.name}
+                  lastName={admin.lastName}
+                  avatar={admin.avatar}
+                  className="size-7"
+                />
+              </Link>
+              <button
+                onClick={logout}
+                className="text-xs font-medium text-white/50 transition-colors hover:text-white"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+          <nav className="flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-3 pb-3 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {NAV.map(({ href, label, icon: Icon, badgeKey }) => {
+              const active = isActive(pathname, href);
+              const badgeCount = badgeKey && stats ? (stats[badgeKey] ?? 0) : 0;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors",
+                    active
+                      ? "bg-primary/20 text-primary"
+                      : "text-white/50 hover:bg-white/5 hover:text-white",
+                  )}
+                >
+                  <Icon className="size-4 shrink-0" />
+                  {label}
+                  {badgeCount > 0 ? (
+                    <span className="bg-danger flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
+                      {badgeCount > 99 ? "99+" : badgeCount}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+        </header>
+
+        <main className="bg-background flex-1 overflow-auto">
+          <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">{children}</div>
+        </main>
+      </div>
     </div>
+  );
+}
+
+function CoursesIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinejoin="round"
+    >
+      <path d="M12 3l9 5-9 5-9-5 9-5z" />
+      <path d="M3 12.5l9 5 9-5" />
+      <path d="M3 17l9 5 9-5" />
+    </svg>
   );
 }
 
@@ -241,20 +327,6 @@ function MetricsIcon({ className }: { className?: string }) {
     >
       <path d="M3 3v18h18" />
       <path d="M7 15l4-5 3 3 4-6" />
-    </svg>
-  );
-}
-
-function ShieldIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.8}
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
   );
 }

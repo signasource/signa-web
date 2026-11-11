@@ -2,7 +2,7 @@
 
 > Responsibility: token storage, login, route guard, and logout.
 > Update when: token storage, `AuthProvider`, the dashboard guard, or the refresh/logout flow changes.
-> Sources: src/lib/api/token-store.ts, src/lib/api/session.ts, src/lib/session-server.ts, src/app/api/session/, src/features/auth/auth-context.tsx, src/app/(dashboard)/dashboard/layout.tsx, src/app/(auth)/login/page.tsx, src/app/(auth)/invitacion/page.tsx
+> Sources: src/lib/api/token-store.ts, src/lib/api/session.ts, src/lib/session-server.ts, src/app/api/session/, src/features/auth/auth-context.tsx, src/app/(dashboard)/dashboard/layout.tsx, src/app/(auth)/login/page.tsx, src/app/(auth)/invitacion/page.tsx, src/features/admin/admin-auth-context.tsx
 
 ## Storage
 
@@ -46,3 +46,5 @@ The provider is mounted for the whole app but does nothing on `/admin/*`: the SI
 - **Guard:** dashboard layout redirects to `/login` when unauthenticated. UX only — the API enforces authorization.
 
 Not covered yet: users with the SIGNA-level `ADMIN` role who manage many orgs (the panel assumes one org via `/organizations/me`).
+
+**Back-office admin.** `AdminAuthProvider` (`src/features/admin/admin-auth-context.tsx`) keeps the signed-in admin from `GET /admin/me`; `refresh()` re-reads it, which the edit form calls after an admin edits their own name, email or photo so the sidebar updates. Changing your own password through `PATCH /admin/admins/{id}` drops your refresh tokens: the current access token keeps working until it expires, then the next refresh fails and the panel returns to `/admin/login`.
