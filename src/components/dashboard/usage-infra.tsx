@@ -16,6 +16,7 @@ import {
   fmtReqs,
 } from "@/components/dashboard/perf-format";
 import {
+  latestValue,
   PerfGoldenTile,
   PerfPanel,
   REFRESH_MS,
@@ -24,8 +25,9 @@ import {
 } from "@/components/dashboard/perf-panel";
 import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
 import { NUMBER, useBusinessMetrics } from "@/components/dashboard/usage-business";
-import { metricsApi } from "@/lib/api/metrics";
+import { metricsApi, type PerfSeries } from "@/lib/api/metrics";
 import { PerfChart } from "@/components/dashboard/perf-chart";
+import { cn } from "@/lib/utils";
 
 type InfraKey = "backend" | "web" | "ml";
 
@@ -37,11 +39,57 @@ const SUB_TABS: TabItem<InfraKey>[] = [
 
 export type InfraProps = PerfProps & { onSelectRange: RangeSelect };
 
+/** Latest value of a 1/0 "up" widget → status; null while unavailable. */
+function upOf(q: ReturnType<typeof usePerfQuery>): boolean | null {
+  if (!q.data?.available) return null;
+  const v = latestValue(q.data);
+  return v == null ? null : v >= 1;
+}
+
+/** A failures-rate widget → healthy when there are effectively no recent failures. */
+function healthyOf(q: ReturnType<typeof usePerfQuery>): boolean | null {
+  if (!q.data?.available) return null;
+  const v = latestValue(q.data);
+  return v == null ? null : v < 0.01;
+}
+
+function ServiceDot({ label, up }: { label: string; up: boolean | null }) {
+  const tone = up == null ? "bg-text-muted" : up ? "bg-success" : "bg-danger";
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[13px]">
+      <span className={cn("size-2 rounded-full", tone)} />
+      <span className="font-bold">{label}</span>
+      <span className="text-text-muted">
+        {up == null ? "sin datos" : up ? "operativo" : "con fallos"}
+      </span>
+    </span>
+  );
+}
+
+/** Top-of-tab services strip: the health of the backend, storage, email and push at a glance. */
+function ServicesBar(perf: PerfProps) {
+  const backendUp = usePerfQuery("backend_up", perf);
+  const r2Up = usePerfQuery("r2_up", perf);
+  const emailFailures = usePerfQuery("email_failures", perf);
+  const pushFailures = usePerfQuery("push_failures", perf);
+  return (
+    <Card className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      <CardTitle>Estado de servicios</CardTitle>
+      <ServiceDot label="API" up={upOf(backendUp)} />
+      <ServiceDot label="Almacenamiento" up={upOf(r2Up)} />
+      <ServiceDot label="Emails" up={healthyOf(emailFailures)} />
+      <ServiceDot label="Notificaciones" up={healthyOf(pushFailures)} />
+    </Card>
+  );
+}
+
 /** Infraestructura, sub-dividida por superficie (backend, web, ML) para distintas personas de admin. */
 export function InfraTab(props: InfraProps) {
   const [sub, setSub] = useState<InfraKey>("backend");
+  const { range, step, live } = props;
   return (
     <div className="flex flex-col gap-5">
+      <ServicesBar range={range} step={step} live={live} />
       <MetricsTabs tabs={SUB_TABS} active={sub} onChange={setSub} idBase="infra" />
       <p className="text-text-muted text-[13px]">
         Las métricas de performance vienen de Prometheus vía Grafana Cloud: en producción se poblan
@@ -108,8 +156,6 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
   return (
     <div className="flex flex-col gap-6">
       <GoldenRow>
-        <PerfGoldenTile {...perf} widget="backend_up" metric="backend_up" kind="up" />
-        <PerfGoldenTile {...perf} widget="r2_up" metric="r2_up" kind="up" />
         <PerfGoldenTile {...perf} widget="latency_p95" metric="latency_p95" format={fmtLatency} />
         <PerfGoldenTile
           {...perf}
@@ -117,7 +163,9 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
           metric="error_rate"
           format={fmtPercentRatio}
         />
+        <PerfGoldenTile {...perf} widget="throughput" metric="throughput" format={fmtReqs} />
         <PerfGoldenTile {...perf} widget="cpu_host" metric="cpu_host" format={fmtPercent} />
+        <PerfGoldenTile {...perf} widget="mem_host" metric="mem_host" format={fmtPercent} />
       </GoldenRow>
 
       <Section title="API · HTTP">
@@ -127,7 +175,7 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
           onSelectRange={onSelectRange}
           widget="throughput"
           metric="throughput"
-          title="Throughput (req/s)"
+          title="Consultas por segundo"
           format={fmtReqs}
         />
         <PerfPanel
@@ -146,16 +194,9 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
           title="Tasa de error (4xx)"
           format={fmtPercentRatio}
         />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="slowest_ops"
-          metric="slowest_ops"
-          title="Operaciones más lentas (p95)"
-          subtitle="Top 10 por endpoint"
-          format={fmtLatency}
-        />
       </Section>
+
+      <SlowOpsTable {...perf} />
 
       <Section title="Email y notificaciones">
         <PerfPanel
@@ -196,57 +237,125 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
         />
       </Section>
 
-      <Section title="Sistema y recursos">
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="cpu_host"
-          metric="cpu_host"
-          title="CPU del host"
-          format={fmtPercent}
-        />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="mem_host"
-          metric="mem_host"
-          title="Memoria del host"
-          format={fmtPercent}
-        />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="cpu_containers"
-          metric="cpu_containers"
-          title="CPU por contenedor"
-          format={fmtCores}
-        />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="mem_containers"
-          metric="mem_containers"
-          title="Memoria por contenedor"
-          format={fmtBytes}
-        />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="jvm_heap"
-          metric="jvm_heap"
-          title="Heap de la JVM"
-          format={fmtBytes}
-        />
-        <PerfPanel
-          {...perf}
-          onSelectRange={onSelectRange}
-          widget="jvm_gc_pause"
-          metric="jvm_gc_pause"
-          title="Pausas de GC"
-          format={fmtLatency}
-        />
-      </Section>
+      <details className="group flex flex-col gap-3">
+        <summary className="text-text-muted hover:text-text flex cursor-pointer items-center gap-2 text-sm font-extrabold tracking-wider uppercase">
+          <span className="transition-transform group-open:rotate-90">▸</span>
+          Sistema y recursos
+        </summary>
+        <div className="mt-3 grid gap-4 lg:grid-cols-2">
+          <PerfPanel
+            {...perf}
+            onSelectRange={onSelectRange}
+            widget="cpu_host"
+            metric="cpu_host"
+            title="CPU del host"
+            format={fmtPercent}
+          />
+          <PerfPanel
+            {...perf}
+            onSelectRange={onSelectRange}
+            widget="mem_host"
+            metric="mem_host"
+            title="Memoria del host"
+            format={fmtPercent}
+          />
+          <PerfPanel
+            {...perf}
+            onSelectRange={onSelectRange}
+            widget="cpu_containers"
+            metric="cpu_containers"
+            title="CPU por contenedor"
+            format={fmtCores}
+          />
+          <PerfPanel
+            {...perf}
+            onSelectRange={onSelectRange}
+            widget="mem_containers"
+            metric="mem_containers"
+            title="Memoria por contenedor"
+            format={fmtBytes}
+          />
+          <PerfPanel
+            {...perf}
+            onSelectRange={onSelectRange}
+            widget="jvm_heap"
+            metric="jvm_heap"
+            title="Heap de la JVM"
+            format={fmtBytes}
+          />
+          <PerfPanel
+            {...perf}
+            onSelectRange={onSelectRange}
+            widget="jvm_gc_pause"
+            metric="jvm_gc_pause"
+            title="Pausas de GC"
+            format={fmtLatency}
+          />
+        </div>
+      </details>
     </div>
+  );
+}
+
+/**
+ * "Operaciones más lentas" as a ranking table: the latest p95 per endpoint, slowest first. Reads
+ * the slowest_ops widget's per-series latest value instead of overlaying ten lines on a chart.
+ */
+function SlowOpsTable(perf: PerfProps) {
+  const q = usePerfQuery("slowest_ops", perf);
+
+  const seriesLabel = (s: PerfSeries): string => {
+    const { uri, name, method } = s.labels;
+    const path = uri ?? name ?? Object.values(s.labels).find((v) => v) ?? "—";
+    return method ? `${method} ${path}` : path;
+  };
+  const seriesLatest = (s: PerfSeries): number | null => {
+    for (let i = s.points.length - 1; i >= 0; i -= 1) {
+      const v = s.points[i]!.v;
+      if (v != null) return v;
+    }
+    return null;
+  };
+
+  const rows = (q.data?.series ?? [])
+    .map((s) => ({ label: seriesLabel(s), value: seriesLatest(s) }))
+    .filter((r): r is { label: string; value: number } => r.value != null)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
+
+  return (
+    <Card className="flex min-w-0 flex-col gap-3">
+      <div className="flex items-center gap-1.5">
+        <CardTitle>Operaciones más lentas</CardTitle>
+        <span className="text-text-muted ml-auto text-[13px]">Top 10 por endpoint (p95)</span>
+      </div>
+      {q.isPending ? (
+        <LoadingState>Cargando operaciones…</LoadingState>
+      ) : q.data && !q.data.available ? (
+        <p className="text-text-muted text-sm">Sin acceso a Grafana.</p>
+      ) : rows.length === 0 ? (
+        <p className="text-text-muted text-sm">Sin datos en este período.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="text-text-muted text-left text-xs font-bold">
+                <th className="pb-2 font-bold">Operación</th>
+                <th className="pb-2 pl-3 text-right font-bold">p95</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.label} className="border-fill border-t">
+                  <td className="py-2 font-mono text-[13px] font-bold">{r.label}</td>
+                  <td className="py-2 pl-3 text-right font-extrabold">{fmtLatency(r.value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
   );
 }
 

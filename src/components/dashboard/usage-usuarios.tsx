@@ -1,32 +1,18 @@
 "use client";
 
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
-import { Delta } from "@/components/dashboard/delta";
 import { fmtShortDate } from "@/components/dashboard/format";
-import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
 import { InfoPopover } from "@/components/dashboard/info-popover";
-import { MetricStat } from "@/components/dashboard/metric-stat";
+import { KpiCard } from "@/components/dashboard/kpi-card";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount } from "@/components/dashboard/perf-format";
 import { Card, CardTitle } from "@/components/dashboard/ui";
 import { GamificationSection } from "@/components/dashboard/usage-gamification";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import { useGrowthMetrics } from "@/components/dashboard/usage-growth";
-import { metricsApi, type CohortRetention } from "@/lib/api/metrics";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { REFRESH_MS } from "@/components/dashboard/perf-panel";
+import type { CohortRetention } from "@/lib/api/metrics";
 import { cn } from "@/lib/utils";
 import type { DateTimeRange } from "@/lib/datetime-range";
-
-function useGamificationMetrics(range: DateTimeRange, live: boolean) {
-  return useQuery({
-    queryKey: ["admin", "metrics", "gamification", range.from, range.to],
-    queryFn: () => metricsApi.gamification({ from: range.from, to: range.to }),
-    enabled: Boolean(range.from && range.to),
-    placeholderData: keepPreviousData,
-    refetchInterval: live ? REFRESH_MS : false,
-  });
-}
 
 /** Tints a retention cell by how well it held: ≥40% success, ≥20% warning, else danger. */
 function retentionCellClass(pct: number | null): string {
@@ -113,7 +99,6 @@ export function UsersTab({
   onSelectRange: RangeSelect;
 }) {
   const growth = useGrowthMetrics(range, live);
-  const gamification = useGamificationMetrics(range, live);
 
   if (growth.isPending) return <p className="text-text-muted">Cargando métricas de usuarios…</p>;
   if (growth.isError && !growth.data)
@@ -125,66 +110,59 @@ export function UsersTab({
   const active = e.activeInRange;
   // Same universe as the other tiles (growth endpoint): non-staff accounts created before the window closes.
   const engagement = u.total ? Math.round((active / u.total) * 1000) / 10 : null;
-  const xp = gamification.data?.xp;
-  // Same figure (and same "active" definition) as the gamification section, so the delta matches.
-  const xpPerUser = xp && xp.activeUsers ? xp.perActiveUser : null;
+
+  // Most recent weekly cohort whose 7-day retention is already observable (null while unobservable).
+  const retention7 = (() => {
+    for (let i = g.retention.length - 1; i >= 0; i -= 1) {
+      const c = g.retention[i];
+      if (c && c.d7Percent != null) return c.d7Percent;
+    }
+    return null;
+  })();
 
   return (
     <div className="flex flex-col gap-7">
-      {/* Adquisición y actividad medidas sobre la ventana elegida (altas, activos,
-          base total al cierre y engagement/XP por usuario del período). */}
-      <GoldenRow>
-        <GoldenTile
-          metric="new_users"
-          value={NUMBER.format(u.newInRange)}
-          hint={
-            <>
-              <Delta current={u.newInRange} previous={u.previousNewInRange} />
-              {u.total > 0 ? (
-                <span className="text-text-muted block">
-                  {NUMBER.format(u.newInRange)} / {NUMBER.format(u.total)} totales
-                </span>
-              ) : null}
-            </>
-          }
-          tone="neutral"
-        />
-        <GoldenTile
+      {/* Adquisición, actividad y uso medidos sobre la ventana elegida: activos, altas, retención a
+          la semana y frecuencia/duración de sesión (telemetría de la app). */}
+      <div className="grid [grid-template-columns:repeat(auto-fit,minmax(180px,1fr))] gap-3">
+        <KpiCard
           metric="users_active"
           value={NUMBER.format(active)}
+          current={active}
+          previous={e.previousActiveInRange}
+          spark={e.dailyActive.map((d) => d.count)}
           hint={
-            <>
-              <Delta current={active} previous={e.previousActiveInRange} />
-              {engagement != null ? (
-                <span className="text-text-muted block">
-                  {engagement}% de {NUMBER.format(u.total)} usuarios totales
-                </span>
-              ) : null}
-            </>
+            engagement != null
+              ? `${engagement}% de ${NUMBER.format(u.total)} usuarios totales`
+              : undefined
           }
-          tone="neutral"
         />
-        <GoldenTile
-          metric="xp_per_user"
-          value={xpPerUser == null ? "—" : NUMBER.format(xpPerUser)}
-          hint={
-            xpPerUser == null ? undefined : (
-              <Delta current={xpPerUser} previous={xp?.previousPerActiveUser ?? null} />
-            )
-          }
-          tone="neutral"
+        <KpiCard
+          metric="new_users"
+          value={NUMBER.format(u.newInRange)}
+          current={u.newInRange}
+          previous={u.previousNewInRange}
+          spark={u.daily.map((d) => d.count)}
+          hint={u.total > 0 ? `${NUMBER.format(u.total)} usuarios totales` : undefined}
         />
-      </GoldenRow>
+        <KpiCard
+          metric="retention_w1"
+          value={retention7 == null ? "—" : `${retention7}%`}
+          hint="Cohorte observable más reciente"
+        />
+        <KpiCard
+          metric="sessions_per_user"
+          value={g.sessions.users ? NUMBER.format(g.sessions.perUser) : "—"}
+          hint={`${NUMBER.format(g.sessions.total)} sesiones · ${NUMBER.format(g.sessions.users)} usuarios`}
+        />
+        <KpiCard
+          metric="session_duration"
+          value={fmtDuration(g.sessions.averageDurationSeconds)}
+          hint="Tiempo promedio por uso de la app"
+        />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <DailySeriesChart
-          title="Nuevos usuarios"
-          metric="new_users"
-          points={u.daily.map((d) => ({ t: d.t, value: d.count }))}
-          format={fmtCount}
-          range={range}
-          onSelectRange={onSelectRange}
-        />
         <DailySeriesChart
           title="Usuarios activos"
           metric="users_active"
@@ -193,37 +171,20 @@ export function UsersTab({
           range={range}
           onSelectRange={onSelectRange}
         />
-      </div>
-
-      {/* Sesiones: frecuencia de uso y tiempo dedicado (telemetría de la app); el gráfico muestra
-          cuántos usuarios tuvieron la app abierta en cada intervalo (meseta mientras dura la sesión). */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="flex flex-col gap-4">
-          <MetricStat
-            metric="sessions_per_user"
-            value={g.sessions.users ? NUMBER.format(g.sessions.perUser) : "—"}
-            hint={`${NUMBER.format(g.sessions.total)} sesiones · ${NUMBER.format(g.sessions.users)} usuarios`}
-          />
-          <MetricStat
-            metric="session_duration"
-            value={fmtDuration(g.sessions.averageDurationSeconds)}
-          />
-        </div>
         <DailySeriesChart
-          title="Usuarios conectados"
-          metric="users_online"
-          points={g.sessions.daily.map((d) => ({ t: d.t, value: d.count }))}
+          title="Nuevos usuarios"
+          metric="new_users"
+          points={u.daily.map((d) => ({ t: d.t, value: d.count }))}
           format={fmtCount}
           range={range}
           onSelectRange={onSelectRange}
-          className="flex min-w-0 flex-col gap-3 lg:col-span-2"
         />
       </div>
 
       <CohortRetentionTable rows={g.retention} />
 
       <div className="border-border flex items-center gap-3 border-t pt-5">
-        <h2 className="font-display text-xl font-bold tracking-tight">Gamificación & engagement</h2>
+        <h2 className="font-display text-xl font-bold tracking-tight">Hábito y gamificación</h2>
       </div>
       <GamificationSection
         range={range}

@@ -153,7 +153,7 @@ export default function UsageMetricsPage() {
           <UsersTab range={range} live={live} onSelectRange={onSelectRange} />
         ) : null}
         {tab === "aprendizaje" ? (
-          <LearningTab range={range} live={live} step={step} onSelectRange={onSelectRange} />
+          <LearningTab range={range} live={live} onSelectRange={onSelectRange} />
         ) : null}
         {tab === "infraestructura" ? <InfraTab {...perf} onSelectRange={onSelectRange} /> : null}
       </div>

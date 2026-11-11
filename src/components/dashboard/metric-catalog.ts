@@ -260,6 +260,13 @@ export const METRICS = {
       "Dividimos todo el dinero ingresado por organizaciones entre las que hicieron al menos una compra.",
     goodWhen: "Alto y creciente.",
   },
+  average_ticket: {
+    label: "Ticket promedio",
+    description: "Cuánto dinero entra en promedio por cada compra de cupos de organizaciones.",
+    howComputed:
+      "Dividimos el dinero ingresado por organizaciones entre la cantidad de compras confirmadas en el período.",
+    goodWhen: "Alto y estable; refleja contratos de mayor tamaño.",
+  },
   purchases_count: {
     label: "Compras de organizaciones",
     description: "Compras de cupos confirmadas en el período.",
@@ -273,6 +280,35 @@ export const METRICS = {
     howComputed:
       "Dividimos la gente en cursos pagos por la gente en cursos gratuitos, al final del período.",
     goodWhen: "Cuanto más alta, mejor conversión del contenido gratis al pago.",
+  },
+  payment_conversion: {
+    label: "Conversión a pago",
+    description: "Qué parte de todos los usuarios pagó algo (gemas o cursos) dentro del período.",
+    howComputed:
+      "Dividimos las personas distintas que hicieron al menos una compra pagada en el período por el total de usuarios.",
+    goodWhen: "Cuanto más alta, más gente llega a pagar algo.",
+    threshold: { dir: "up", warn: 5, danger: 2 },
+  },
+  paying_users: {
+    label: "Usuarios que compraron",
+    description: "Personas distintas que pagaron algo (gemas o cursos) dentro del período.",
+    howComputed:
+      "Contamos las personas distintas con al menos una compra de gemas o de cursos confirmada en el período.",
+    goodWhen: "Crece: más gente que paga.",
+  },
+  revenue_per_payer: {
+    label: "Ingreso por usuario pagador",
+    description: "Cuánto gastó en promedio cada persona que pagó algo (gemas o cursos).",
+    howComputed:
+      "Dividimos el dinero de gemas y cursos del período por la cantidad de personas que pagaron.",
+    goodWhen: "Alto y estable; refleja compras de mayor valor.",
+  },
+  repeat_buyers: {
+    label: "Recompra",
+    description: "Qué parte de los que pagaron algo volvió a comprar (dos o más compras).",
+    howComputed:
+      "De las personas que pagaron en el período, qué parte hizo dos o más compras (gemas y cursos sumados).",
+    goodWhen: "Cuanto más alta, mejor fidelidad de los usuarios pagadores.",
   },
   org_utilization: {
     label: "Uso de cupos por organización",

@@ -114,6 +114,11 @@ export type GrowthMetrics = {
     refundedCount: number;
     daily: SeriesAmount[];
   };
+  /** End users (no org) who paid for anything: distinct payers and the repeat-buyer share. */
+  endUsers: {
+    payingUsers: number;
+    repeatBuyerPercent: number;
+  };
   seats: {
     sold: number;
     active: number;

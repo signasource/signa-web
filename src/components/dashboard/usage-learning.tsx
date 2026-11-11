@@ -4,14 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
-import { Delta } from "@/components/dashboard/delta";
 import { Funnel } from "@/components/dashboard/funnel";
-import { GoldenRow, GoldenTile } from "@/components/dashboard/golden-row";
 import { InfoPopover } from "@/components/dashboard/info-popover";
-import type { MetricId } from "@/components/dashboard/metric-catalog";
+import { KpiCard } from "@/components/dashboard/kpi-card";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
-import { fmtCount, fmtLatency } from "@/components/dashboard/perf-format";
-import { PerfPanel, REFRESH_MS } from "@/components/dashboard/perf-panel";
+import { REFRESH_MS } from "@/components/dashboard/perf-panel";
 import { Card, CardTitle, ErrorState, LoadingState, ProgressBar } from "@/components/dashboard/ui";
 import {
   NUMBER,
@@ -38,7 +35,7 @@ function useLearningMetrics(range: DateTimeRange, live: boolean, courseIds: stri
   });
 }
 
-/** Multi-select course filter pill list. */
+/** Multi-select course filter pill list, with a published-course count caption. */
 function CourseFilter({
   courses,
   selected,
@@ -53,8 +50,7 @@ function CourseFilter({
 
   const toggle = (id: string) => {
     if (selected.includes(id)) {
-      const next = selected.filter((s) => s !== id);
-      onChange(next);
+      onChange(selected.filter((s) => s !== id));
     } else {
       onChange([...selected, id]);
     }
@@ -62,7 +58,6 @@ function CourseFilter({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-text-muted text-[13px] font-bold">Filtrar por curso:</span>
       <button
         type="button"
         onClick={() => onChange([])}
@@ -72,7 +67,7 @@ function CourseFilter({
             : "border-border text-text-muted hover:border-primary hover:text-primary border"
         }`}
       >
-        Todos
+        Todos los cursos
       </button>
       {courses.map((c) => {
         const active = selected.includes(c.courseId);
@@ -91,49 +86,11 @@ function CourseFilter({
           </button>
         );
       })}
+      <span className="text-text-muted ml-auto text-[13px]">
+        {NUMBER.format(courses.length)}{" "}
+        {courses.length === 1 ? "curso publicado" : "cursos publicados"}
+      </span>
     </div>
-  );
-}
-
-/** Signs ranked by a chosen metric — error rate or retries. */
-function SignRanking({
-  title,
-  metric,
-  signs,
-  value,
-  percent,
-  subtitle,
-}: {
-  title: string;
-  metric: MetricId;
-  signs: SignDifficulty[];
-  value: (s: SignDifficulty) => string;
-  percent: (s: SignDifficulty) => number;
-  subtitle?: string;
-}) {
-  return (
-    <Card className="flex min-w-0 flex-col gap-3">
-      <div className="flex items-center gap-1.5">
-        <CardTitle>{title}</CardTitle>
-        <InfoPopover metric={metric} className="ml-auto" />
-      </div>
-      {subtitle ? <p className="text-text-muted -mt-1.5 text-[13px]">{subtitle}</p> : null}
-      {signs.length === 0 ? (
-        <p className="text-text-muted text-sm">Sin señas con muestra suficiente.</p>
-      ) : (
-        <ul className="flex flex-col gap-2.5">
-          {signs.map((s) => (
-            <li key={s.sign} className="flex flex-col gap-1">
-              <div className="flex justify-between gap-2 text-[13px] font-bold">
-                <span className="truncate">{s.sign}</span>
-                <span className="shrink-0">{value(s)}</span>
-              </div>
-              <ProgressBar percent={percent(s)} tone="warning" />
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
   );
 }
 
@@ -142,6 +99,7 @@ type ReviewLesson = {
   lessonName: string;
   evaluated: number;
   accuracyPercent: number;
+  abandonmentPercent: number | null;
 };
 
 /**
@@ -171,7 +129,7 @@ function ContentToReview({ lessons, signs }: { lessons: ReviewLesson[]; signs: S
           ))}
         </div>
         <span className="text-text-muted ml-auto text-[13px]">
-          Ordenado por {view === "lessons" ? "menor precisión" : "mayor tasa de error"}
+          Mínimo 30 intentos · ordenado por {view === "lessons" ? "menor precisión" : "mayor error"}
         </span>
       </div>
       {rows.length === 0 ? (
@@ -182,10 +140,13 @@ function ContentToReview({ lessons, signs }: { lessons: ReviewLesson[]; signs: S
             <thead>
               <tr className="text-text-muted text-left text-xs font-bold">
                 <th className="pb-2 font-bold">{view === "lessons" ? "Lección" : "Seña"}</th>
+                {view === "lessons" ? (
+                  <th className="pb-2 pl-3 text-right font-bold">Abandono</th>
+                ) : null}
                 <th className="pb-2 pl-3 text-right font-bold">
                   {view === "lessons" ? "Precisión" : "Error"}
                 </th>
-                <th className="pb-2 pl-3 text-right font-bold">Ejercicios</th>
+                <th className="pb-2 pl-3 text-right font-bold">Intentos</th>
                 <th className="pb-2 pl-3 text-right font-bold">Acción</th>
               </tr>
             </thead>
@@ -194,6 +155,9 @@ function ContentToReview({ lessons, signs }: { lessons: ReviewLesson[]; signs: S
                 ? lessons.map((r) => (
                     <tr key={r.lessonId} className="border-fill border-t">
                       <td className="py-2 font-bold">{r.lessonName}</td>
+                      <td className="text-shop-amber-dark py-2 pl-3 text-right font-extrabold">
+                        {r.abandonmentPercent == null ? "—" : `${r.abandonmentPercent}%`}
+                      </td>
                       <td className="py-2 pl-3 text-right font-extrabold">{r.accuracyPercent}%</td>
                       <td className="text-text-muted py-2 pl-3 text-right">
                         {NUMBER.format(r.evaluated)}
@@ -236,19 +200,17 @@ function ContentToReview({ lessons, signs }: { lessons: ReviewLesson[]; signs: S
 }
 
 /**
- * Aprendizaje & contenido. Completion (global, funnel and per course), accuracy (global + per block
- * type), the hardest lessons, vocabulary growth, and content-quality signals (sign-report resolution,
- * most-reported signs). Golden tiles summarise learning health up top.
+ * Aprendizaje & contenido. Four north-star KPIs (finalización de lecciones, tasa de éxito,
+ * completitud de curso/s, señas aprendidas), the learning funnel and accuracy evolution, the
+ * "Contenido a revisar" table, and accuracy by exercise type beside the sign-report summary.
  */
 export function LearningTab({
   range,
   live,
-  step,
   onSelectRange,
 }: {
   range: DateTimeRange;
   live: boolean;
-  step: number;
   onSelectRange: RangeSelect;
 }) {
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
@@ -263,8 +225,7 @@ export function LearningTab({
   const l = learning.data!;
   const b = business.data;
 
-  // Completion over all user-course pairs that actually exist as enrollments (active + completed),
-  // not totalUsers × totalCourses — users without access to paid courses would inflate that.
+  // Completion over all user-course pairs that actually exist as enrollments (active + completed).
   const totalCompletions = l.courses.reduce((s, c) => s + c.completed, 0);
   const denominator = l.courses.reduce((s, c) => s + c.enrolled + c.completed, 0);
   const globalCompletionPercent =
@@ -280,58 +241,54 @@ export function LearningTab({
       ? Math.round(((l.lessons.previousCompleted ?? 0) / l.lessons.previousStarted) * 1000) / 10
       : null;
 
-  const hardestSignsByError = l.hardestSigns ?? [];
-  const hardestSignsByRetries = [...(l.hardestSigns ?? [])].sort(
-    (a, b) => b.averageAttempts - a.averageAttempts,
+  // Merge abandonment (from the lesson ranking) into the hardest-lessons list for the review table.
+  const abandonmentByLesson = new Map(
+    l.lessonRanking.map((r) => [r.lessonId, r.abandonmentPercent]),
   );
+  const reviewLessons: ReviewLesson[] = l.hardestLessons.map((lesson) => ({
+    lessonId: lesson.lessonId,
+    lessonName: lesson.lessonName,
+    evaluated: lesson.evaluated,
+    accuracyPercent: lesson.accuracyPercent,
+    abandonmentPercent: abandonmentByLesson.get(lesson.lessonId) ?? null,
+  }));
+  const hardestSignsByError = l.hardestSigns ?? [];
 
   return (
     <div className="flex flex-col gap-6">
       <CourseFilter courses={l.courses} selected={selectedCourses} onChange={setSelectedCourses} />
 
-      {/* ¿La gente aprende LSA? Progreso de lecciones y ejercicios. */}
-      <GoldenRow>
-        <GoldenTile
-          metric="exercise_success_rate"
-          value={l.exercises.attempted ? `${l.exercises.successPercent}%` : "—"}
-          rawValue={l.exercises.attempted ? l.exercises.successPercent : null}
-          hint={
-            <>
-              {`${NUMBER.format(l.exercises.correct)} / ${NUMBER.format(l.exercises.attempted)} ejercicios`}{" "}
-              <Delta
-                current={l.exercises.successPercent}
-                previous={previousSuccessPercent}
-                mode="pp"
-              />
-            </>
-          }
-        />
-        <GoldenTile
+      {/* ¿La gente aprende LSA? Finalización, éxito, completitud de cursos y vocabulario. */}
+      <div className="grid [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))] gap-3">
+        <KpiCard
           metric="lesson_completion_rate"
           value={l.lessons.started ? `${l.lessons.completionPercent}%` : "—"}
-          rawValue={l.lessons.started ? l.lessons.completionPercent : null}
-          hint={
-            <>
-              {`${NUMBER.format(l.lessons.completed)} / ${NUMBER.format(l.lessons.started)} lecciones`}{" "}
-              <Delta
-                current={l.lessons.completionPercent}
-                previous={previousCompletionPercent}
-                mode="pp"
-              />
-            </>
-          }
+          current={l.lessons.started ? l.lessons.completionPercent : undefined}
+          previous={previousCompletionPercent}
+          mode="pp"
+          hint={`${NUMBER.format(l.lessons.completed)} de ${NUMBER.format(l.lessons.started)} iniciadas`}
         />
-        <GoldenTile
-          metric="avg_attempts"
-          value={l.exercises.attempted ? l.exercises.averageAttempts.toString() : "—"}
-          rawValue={l.exercises.attempted ? l.exercises.averageAttempts : null}
+        <KpiCard
+          metric="exercise_success_rate"
+          value={l.exercises.attempted ? `${l.exercises.successPercent}%` : "—"}
+          current={l.exercises.attempted ? l.exercises.successPercent : undefined}
+          previous={previousSuccessPercent}
+          mode="pp"
+          spark={l.dailyAccuracy.map((d) => d.accuracyPercent)}
+          hint={`${l.exercises.averageAttempts} intentos por ejercicio`}
         />
-        <GoldenTile
+        <KpiCard
+          metric="global_course_completion"
+          value={denominator > 0 ? `${globalCompletionPercent}%` : "—"}
+          hint={`${NUMBER.format(totalCompletions)} de ${NUMBER.format(denominator)} inscripciones`}
+        />
+        <KpiCard
           metric="vocabulary_growth"
           value={NUMBER.format(l.learnedSigns)}
-          tone="neutral"
+          spark={l.learnedSignsDaily.map((d) => d.count)}
+          hint="Señas nuevas incorporadas en el período"
         />
-      </GoldenRow>
+      </div>
 
       {/* Embudo de aprendizaje + evolución de aciertos. */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -342,7 +299,7 @@ export function LearningTab({
           steps={l.onboardingFunnel.map((s) => ({ key: s.key, count: s.count }))}
         />
         <DailySeriesChart
-          title="Evolución de respuestas correctas"
+          title="Respuestas correctas"
           metric="accuracy_evolution"
           points={l.dailyAccuracy.map((d) => ({ t: d.day, value: d.accuracyPercent }))}
           format={(v) => `${v}%`}
@@ -353,126 +310,9 @@ export function LearningTab({
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Completitud de cursos */}
-        <Card className="flex min-w-0 flex-col gap-3">
-          <div className="flex items-center gap-1.5">
-            <CardTitle>Completitud de cursos</CardTitle>
-            <InfoPopover metric="global_course_completion" className="ml-auto" />
-          </div>
-          {denominator === 0 ? (
-            <p className="text-text-muted text-sm">Sin inscripciones.</p>
-          ) : (
-            <>
-              <p className="font-display dash-stat-pop mt-1 text-4xl leading-10 font-extrabold tracking-tight">
-                {globalCompletionPercent}%
-              </p>
-              <p className="text-text-muted text-[13px]">
-                {NUMBER.format(totalCompletions)}/{NUMBER.format(denominator)} inscripciones
-              </p>
-              <ProgressBar percent={globalCompletionPercent} className="mt-1" />
-            </>
-          )}
-        </Card>
-
-        <Card className="flex min-w-0 flex-col gap-3">
-          <div className="flex items-center gap-1.5">
-            <CardTitle>Lecciones más difíciles</CardTitle>
-            <InfoPopover metric="hardest_lessons" className="ml-auto" />
-          </div>
-          <p className="text-text-muted -mt-1.5 text-[13px]">Menor precisión en el período</p>
-          {l.hardestLessons.length === 0 ? (
-            <p className="text-text-muted text-sm">Sin ejercicios evaluados.</p>
-          ) : (
-            <ul className="flex flex-col gap-2.5">
-              {l.hardestLessons.map((lesson) => (
-                <li key={lesson.lessonId} className="flex flex-col gap-1">
-                  <div className="flex justify-between gap-2 text-[13px] font-bold">
-                    <span className="truncate">{lesson.lessonName}</span>
-                    <span className="shrink-0">{lesson.accuracyPercent}%</span>
-                  </div>
-                  <ProgressBar percent={lesson.accuracyPercent} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
-
-      {/* Dificultad y calidad del contenido. */}
-      <div className="border-border flex items-center gap-3 border-t pt-5">
-        <h2 className="font-display text-xl font-bold tracking-tight">Dificultad y calidad</h2>
-      </div>
-
-      <ContentToReview lessons={l.hardestLessons} signs={hardestSignsByError} />
-
-      <PerfPanel
-        range={range}
-        step={step}
-        live={live}
-        onSelectRange={onSelectRange}
-        widget="lesson_time"
-        metric="lesson_time"
-        title="Tiempo por lección (mediana)"
-        subtitle="Desde que se abre hasta que se termina — reportado por la app"
-        format={fmtLatency}
-      />
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="flex min-w-0 flex-col gap-3">
-          <div className="flex items-center gap-1.5">
-            <CardTitle>Lecciones con mayor abandono</CardTitle>
-            <InfoPopover metric="lesson_abandonment_detail" className="ml-auto" />
-          </div>
-          {l.lessonRanking.length === 0 ? (
-            <p className="text-text-muted text-sm">Sin lecciones con muestra suficiente.</p>
-          ) : (
-            <ul className="flex flex-col gap-2.5">
-              {l.lessonRanking.map((lesson) => (
-                <li key={lesson.lessonId} className="flex flex-col gap-1">
-                  <div className="flex justify-between gap-2 text-[13px] font-bold">
-                    <span className="truncate">{lesson.lessonName}</span>
-                    <span className="shrink-0">
-                      {lesson.abandonmentPercent}% · {NUMBER.format(lesson.completed)}/
-                      {NUMBER.format(lesson.started)}
-                    </span>
-                  </div>
-                  <ProgressBar percent={lesson.abandonmentPercent} tone="warning" />
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        <SignRanking
-          title="Mayor tasa de error"
-          metric="exercise_error_rate"
-          subtitle="Por seña (SELECT_MEANING / SELECT_SIGN)"
-          signs={hardestSignsByError}
-          value={(s) => `${s.errorPercent}%`}
-          percent={(s) => s.errorPercent}
-        />
-        <SignRanking
-          title="Más reintentos"
-          metric="exercise_retries"
-          subtitle="Por seña (SELECT_MEANING / SELECT_SIGN)"
-          signs={hardestSignsByRetries}
-          value={(s) => `${s.averageAttempts}×`}
-          percent={(s) => Math.min(100, s.averageAttempts * 25)}
-        />
-      </div>
+      <ContentToReview lessons={reviewLessons} signs={hardestSignsByError} />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <DailySeriesChart
-          title="Señas aprendidas"
-          metric="vocabulary_growth"
-          points={l.learnedSignsDaily.map((d) => ({ t: d.day, value: d.count }))}
-          format={fmtCount}
-          range={range}
-          dayResolution
-          onSelectRange={onSelectRange}
-          className="flex min-w-0 flex-col gap-3"
-        />
         {b ? (
           <Card className="flex min-w-0 flex-col gap-3">
             <div className="flex items-center gap-1.5">
@@ -499,58 +339,44 @@ export function LearningTab({
             )}
           </Card>
         ) : null}
-      </div>
 
-      {/* Señas reportadas */}
-      <div className="border-border flex items-center gap-3 border-t pt-5">
-        <h2 className="font-display text-xl font-bold tracking-tight">Señas reportadas</h2>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
             <CardTitle>Reportes de señas</CardTitle>
-            <InfoPopover metric="sign_report_resolution" className="ml-auto" />
+            <Link
+              href="/admin/sign-reports"
+              className="text-primary hover:text-primary-dark ml-auto text-[13px] font-extrabold"
+            >
+              Ver reportes
+            </Link>
+            <InfoPopover metric="sign_report_resolution" />
           </div>
-          <dl className="flex flex-col gap-2 text-sm">
-            {b ? <Row label="Pendientes" value={b.errors.pendingSignReports} danger /> : null}
-            <Row label="Resueltos" value={l.reports.resolvedCount} />
-            {l.reports.averageResolutionHours > 0 ? (
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-text-muted">Tiempo prom. de resolución</dt>
-                <dd className="font-extrabold">{l.reports.averageResolutionHours} h</dd>
+          <div className="flex flex-wrap gap-x-8 gap-y-3">
+            {b ? (
+              <div>
+                <p className="font-display text-danger text-3xl font-extrabold tracking-tight">
+                  {NUMBER.format(b.errors.pendingSignReports)}
+                </p>
+                <p className="text-text-muted text-[13px] font-bold">Pendientes</p>
               </div>
             ) : null}
-          </dl>
-          {b && b.errors.signReportsByStatus.length > 0 ? (
-            <div className="border-fill mt-1 border-t pt-3">
-              <p className="text-text-muted mb-1.5 text-xs font-extrabold tracking-wider uppercase">
-                Por estado
+            <div>
+              <p className="font-display text-3xl font-extrabold tracking-tight">
+                {NUMBER.format(l.reports.resolvedCount)}
               </p>
-              <dl className="flex flex-col">
-                {b.errors.signReportsByStatus.map((item) => (
-                  <div
-                    key={item.key}
-                    className="border-fill flex justify-between gap-3 border-b py-2 text-sm last:border-b-0"
-                  >
-                    <dt className="text-text-muted">{REPORT_STATUS[item.key] ?? item.key}</dt>
-                    <dd className="font-extrabold">{NUMBER.format(item.count)}</dd>
-                  </div>
-                ))}
-              </dl>
+              <p className="text-text-muted text-[13px] font-bold">Resueltos</p>
             </div>
-          ) : null}
-        </Card>
-
-        <Card className="flex min-w-0 flex-col gap-3 lg:col-span-2">
-          <div className="flex items-center gap-1.5">
-            <CardTitle>Señas más reportadas</CardTitle>
-            <InfoPopover metric="most_reported_signs" className="ml-auto" />
+            {l.reports.averageResolutionHours > 0 ? (
+              <div>
+                <p className="font-display text-3xl font-extrabold tracking-tight">
+                  {l.reports.averageResolutionHours} h
+                </p>
+                <p className="text-text-muted text-[13px] font-bold">Resolución prom.</p>
+              </div>
+            ) : null}
           </div>
-          {l.reports.mostReported.length === 0 ? (
-            <p className="text-text-muted text-sm">Sin reportes.</p>
-          ) : (
-            <dl className="flex flex-col">
+          {l.reports.mostReported.length > 0 ? (
+            <dl className="border-fill flex flex-col border-t pt-1">
               {l.reports.mostReported.map((m) => (
                 <div
                   key={m.meaning}
@@ -563,7 +389,18 @@ export function LearningTab({
                 </div>
               ))}
             </dl>
-          )}
+          ) : null}
+          {b && b.errors.signReportsByStatus.length > 0 ? (
+            <dl className="flex flex-col">
+              {b.errors.signReportsByStatus.map((item) => (
+                <Row
+                  key={item.key}
+                  label={REPORT_STATUS[item.key] ?? item.key}
+                  value={item.count}
+                />
+              ))}
+            </dl>
+          ) : null}
         </Card>
       </div>
     </div>

@@ -16,15 +16,20 @@ across every tab.
 tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their apartado. `MetricsTabs`
 (`metrics-tabs.tsx`) is the accessible `role="tablist"`.
 
-- **Negocio** (`usage-growth.tsx`) — the money. Opens with **two headline tiles** (not the generic
-  `GoldenRow`): **Ingresos** and **Reembolsos**, each a `SplitMoneyTile` that breaks the total into
-  **organizaciones** (B2B) vs **usuarios finales** (end users). Then **sin organización** — two money-first
-  widgets, **Compras de gemas** (`$` + gemas/compras) and **Compras de cursos pagos** (`$` + cursos), each
-  with its revenue time-series — and **organizaciones** (orgs activas, uso de cupos, usuarios & ingreso
-  promedio por org, compras, refund rate; B2B revenue series, org status donut, and the **per-org license
-  utilization table** `OrgUtilizationTable` — contracted vs. used seats, amber when a big contract is
-  under-used; collapses to 6 rows behind a "Ver más (N)" toggle). End-user money/units come from the growth
-  endpoint's `gems`/`courseSales` sections. Exposes `useGrowthMetrics` (shared with Usuarios).
+- **Negocio** (`usage-growth.tsx`) — the money. A **five-KPI north-star row** (`KpiCard`): **Ingresos
+  netos** (org + usuarios finales, neto de reembolsos; compact `fmtMoneyCompact`, with the org/usuario
+  split in its hint and an org-side period delta + sparkline), **Tasa de reembolso** (unificada, hint
+  desglosa orgs vs usuarios), **Uso de cupos** (pp delta), **Ticket promedio org.** (pct delta from the
+  previous window) and **Conversión a pago** (payers ÷ total users — `endUsers.payingUsers`). Then the
+  stacked **Ingresos por fuente** chart (`RevenueBySourceChart`: organizaciones + gemas + cursos pagos).
+  Below, two side-by-side panels: **Organizaciones** (a segmented status **pipeline** bar + legend —
+  Activas/Pendientes/Suspendidas/Rechazadas — the pending-validation amber strip with "Validar", and
+  usuarios/ingreso promedio por org + compras) and **Usuarios finales** (gem & paid-course money tiles,
+  usuarios que compraron, ingreso por usuario pagador, and recompra 2+ from `endUsers.repeatBuyerPercent`).
+  Finally the **per-org license utilization table** `OrgUtilizationTable` — contracted vs. used seats,
+  activos 7 d, vence (coloured by `expiryTone`), ingresos and an **Estado** badge (Bajo uso / Vence pronto /
+  Saludable / Sin cupos libres); ranked by risk, collapses to 6 rows behind a "Ver más (N)" toggle. Exposes
+  `useGrowthMetrics` (shared with Usuarios).
 - **Usuarios** (`usage-usuarios.tsx`) — "¿La gente usa Signa?": adquisición y actividad medidas sobre la
   ventana elegida. Range-based tasa de actividad (active/total, numerator/denominator), new users and active
   users each with a **period-over-period delta** (`Delta`, vs. the previous equal-length window; hidden for

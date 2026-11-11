@@ -55,8 +55,12 @@ caption sits under the tabs.
   `pct`/`pp` modes) + sparklines; two trend charts; **"Requiere atención"** (orgs pendientes + antigüedad,
   reportes de señas, imports fallidos → links to `/admin/organizations|sign-reports|content`); services
   strip (backend/R2 via the perf proxy) with a jump to Infraestructura.
-- **Negocio** (`usage-growth.tsx`): pp deltas on uso de cupos / tasa de reembolso; license table with
-  **Activos 7 d** and **Vence** (risk-ordered server-side), "Gestionar" link, and an amber pending strip.
+- **Negocio** (`usage-growth.tsx`): 5-KPI row (ingresos netos · tasa de reembolso · uso de cupos ·
+  ticket promedio org. · **conversión a pago** = payers ÷ total users), stacked ingresos por fuente,
+  side-by-side **Organizaciones** (status pipeline bar + pending strip) and **Usuarios finales**
+  (gem/course money + usuarios que compraron, ingreso por pagador, recompra 2+), and the license table
+  with **Activos 7 d**, **Vence** and an **Estado** badge (risk-ordered server-side). New end-user
+  aggregates from `endUsers.payingUsers`/`repeatBuyerPercent`.
 - **Aprendizaje** (`usage-learning.tsx`): pp deltas on tasa de éxito / finalización; **"Contenido a
   revisar"** (lecciones ↔ señas toggle, sample-size column, "Abrir" → `/admin/courses|sign-reports`).
 - **Infraestructura** (`usage-infra.tsx`): adds Email/Push panels (enviados + fallos).
