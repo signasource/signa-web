@@ -209,6 +209,8 @@ export type AdminCourseVersionListItem = {
   signCount: number;
   updatedAt: string | null;
   updatedBy: string | null;
+  updatedByName: string | null;
+  updatedByAvatar: string | null;
   color: string | null;
 };
 

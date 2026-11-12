@@ -2235,10 +2235,23 @@ function CourseCard({
           {/* left side */}
           {item.status === "DRAFT" && (
             <div className="flex min-w-0 items-center gap-2">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEE8FF] text-[10px] font-bold text-[#5E3ED1]">
-                {initials || "?"}
-              </span>
-              <span className="text-xs whitespace-nowrap text-[#8C817A]">
+              {item.updatedByAvatar ? (
+                <img
+                  src={item.updatedByAvatar}
+                  alt=""
+                  className="h-7 w-7 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEE8FF] text-[10px] font-bold text-[#5E3ED1]">
+                  {initials || "?"}
+                </span>
+              )}
+              {item.updatedByName && (
+                <span className="shrink-0 rounded-full bg-[#EEE8FF] px-2.5 py-0.5 text-[11px] font-semibold text-[#5E3ED1]">
+                  {item.updatedByName}
+                </span>
+              )}
+              <span className="truncate text-xs text-[#8C817A]">
                 {formatAgo(item.updatedAt)}
               </span>
             </div>
