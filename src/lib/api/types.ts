@@ -275,6 +275,22 @@ export type AcceptedInvitation = {
   accessExpiresAt: string;
 };
 
+export type RefundRequestReason =
+  "NOT_RECEIVED" | "MISTAKE" | "DUPLICATE" | "TECHNICAL" | "NOT_AS_EXPECTED" | "OTHER";
+
+export type UserRefundRequestResponse = {
+  id: string;
+  purchaseType: string;
+  purchaseId: string;
+  reason: RefundRequestReason;
+  message: string;
+  status: string;
+  createdAt: string;
+  productName: string | null;
+  amount: number | null;
+  currency: string | null;
+};
+
 export type Page<T> = {
   content: T[];
   totalElements: number;

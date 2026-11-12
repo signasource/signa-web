@@ -15,7 +15,7 @@ Design source: Claude Design project "Panel Organizacional" (`Panel Organizacion
 | Members       | `/dashboard/members`                            | `members` (`query`, `status`, `activity`, `courseId`, `sort`, `page`, size 10)                                                              | Debounced search; state chips Todos / Activos / Inactivos / Sin iniciar / Completaron / Quitados; sortable headers (persona, avance, última vez, incorporación — first click on a number/date shows highest/most recent first); "N personas · Página x de y" with prev/next only when there is more than one page. Status pill and "current module" come from the server (`activityStatus`; a finished course reads "Terminó el curso")                                                                                                                                                                                                                                                                                                                                                                              |
 | Member detail | `/dashboard/members/[userId]`                   | `member`, `removeMember`                                                                                                                    | Stat tiles, progress per course, activity facts, remove confirmation dialog (redirects to the list)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Contents      | `/dashboard/modules`                            | `modules`, `overview` (total participants)                                                                                                  | One card per module: completed / in progress / correct % / attempts. Grouped by course when every course is shown and there are several                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| Purchases     | `/dashboard/purchases`, `/new`, `/[purchaseId]` | `purchases`, `purchase`, `catalog`, `quote`, `createPurchase`, `checkout`, `syncPayment`, `cancelPurchase`, `updateSeatEmail`, `remindSeat` | List with per-state counts and the invitation window; buy form (course radio with sign/module count, **the chosen course's signs by module** (`CourseSigns`), 15–60 days with presets, one email per seat pasted or imported from Excel, live quote with list price, volume discount and a "sumá N cupos más" hint, `purchaseFormSchema`) → **"Revisar la compra" summary** (`PurchaseInvoice`: course, signs (expandable list), seats (expandable emails), days, list price, subtotal, discount, total) → "Pagar" creates the purchase and sends the admin to **Mercado Pago Checkout Pro**. If the checkout fails after creating, retrying only re-opens the checkout (no second purchase) and "Volver y editar" is hidden. Detail: "Pagar con Mercado Pago" while unpaid; back from Mercado Pago (`?pago=aprobado | rechazado | pendiente`; its own params are ignored) it syncs the purchase's stored order once, cleans the URL, shows the result and polls every 5 s while it is still unpaid; **"Anular la compra"** while `canWithdraw`(paid with Mercado Pago, before`refundableUntil`, 10 days from payment): it spells out the real consequences (people who lose access, invitations cancelled, amount returned), takes an optional reason and confirms in the page (`WithdrawPurchase`, `withdrawPurchase`); a refunded purchase shows a banner with the date, its seats read "Acceso anulado" / "Invitación anulada" (`seatStatusLabel`) and "Sin aceptar" says the invitations were cancelled; a "Pagos devueltos" card lists every refund with its reason and note (a payment that could not pay the purchase, the withdrawal, a refund made in Mercado Pago or a chargeback) and, back from Mercado Pago on a cancelled purchase, the notice says the money was given back; seats filtered by state, inline email change (new link, same deadline), reminder (disabled until `nextReminderAvailableAt`), "Ver avance" for accepted seats, cancel while unpaid. Only a validated (`ACTIVE`) org can buy |
+| Purchases     | `/dashboard/purchases`, `/new`, `/[purchaseId]` | `purchases`, `purchase`, `catalog`, `quote`, `createPurchase`, `checkout`, `syncPayment`, `cancelPurchase`, `updateSeatEmail`, `remindSeat`, `createPurchaseRefundRequest` | List with per-state counts and the invitation window; buy form (course radio with sign/module count, **the chosen course's signs by module** (`CourseSigns`), 15–60 days with presets, one email per seat pasted or imported from Excel, live quote with list price, volume discount and a "sumá N cupos más" hint, `purchaseFormSchema`) → **"Revisar la compra" summary** (`PurchaseInvoice`: course, signs (expandable list), seats (expandable emails), days, list price, subtotal, discount, total) → "Pagar" creates the purchase and sends the admin to **Mercado Pago Checkout Pro**. If the checkout fails after creating, retrying only re-opens the checkout (no second purchase) and "Volver y editar" is hidden. Detail: "Pagar con Mercado Pago" while unpaid; back from Mercado Pago (`?pago=aprobado | rechazado | pendiente`; its own params are ignored) it syncs the purchase's stored order once, cleans the URL, shows the result and polls every 5 s while it is still unpaid; **"Anular la compra"** while `canWithdraw`(paid with Mercado Pago, before`refundableUntil`, 10 days from payment): it spells out the real consequences (people who lose access, invitations cancelled, amount returned), takes an optional reason and confirms in the page (`WithdrawPurchase`, `withdrawPurchase`); **"Pedir reembolso"** (`RefundRequestSection`) when `purchase.status === "PAID" && counts.active === 0 && !canWithdraw`: shows once the automatic withdrawal window has closed and no seat has been accepted — form with `RefundRequestReason` select + message textarea, submits `createPurchaseRefundRequest`, shows a "Reembolso solicitado" success state; a 400 means a pending request already exists or conditions changed; a refunded purchase shows a banner with the date, its seats read "Acceso anulado" / "Invitación anulada" (`seatStatusLabel`) and "Sin aceptar" says the invitations were cancelled; a "Pagos devueltos" card lists every refund with its reason and note (a payment that could not pay the purchase, the withdrawal, a refund made in Mercado Pago or a chargeback) and, back from Mercado Pago on a cancelled purchase, the notice says the money was given back; seats filtered by state, inline email change (new link, same deadline), reminder (disabled until `nextReminderAvailableAt`), "Ver avance" for accepted seats, cancel while unpaid. Only a validated (`ACTIVE`) org can buy |
 
 Navigation (header pills) lives in `(dashboard)/dashboard/layout.tsx`, next to the SIGNA logo and the organization name.
 
@@ -40,6 +40,65 @@ The prototype mocked data the API does not expose. Revisit if `signa-api` adds i
 
 - **Admin accept-invite flow** (`/accept-invite?code=…`): register/login then redeem; admin invitations (`POST …/admin-invitations`).
 - Renewal rules, and what happens with a course completed from another account (undefined in the business rules).
+
+## Admin · Compras (`/admin/purchases`)
+
+Design source: Claude Design "Refactorización apartado compras" (`Compras Admin.dc.html`).
+Back-end: V19 migration + new types + rewritten `AdminPurchaseController` / new `AdminRefundRequestController`.
+
+### Views
+
+The page manages view state client-side (`{ kind: "list" | "purchase" | "refund" }`):
+
+**List view — Compras tab**
+
+- Full-width table of all three purchase types (SEATS · GEMS · COURSE) merged and sorted newest-first.
+- Type segmented control (Todas/Cupos/Gemas/Cursos, with per-type counts on the full dataset).
+- Pill filters: Estado (PENDING_PAYMENT/PAID/CANCELLED/REFUNDED), Fecha (Hoy/7 d/30 d/Personalizado with two date inputs), Orden (date asc/desc, amount asc/desc).
+- Free-text search across buyer name, username, email, product name, MP order ID, purchase ID.
+- Active filter chips with individual remove and "Limpiar todo".
+- Pagination (10 rows/page, only rendered when needed), showing "N–M de total" count.
+- Rows show a coloured type badge, product name + detail, buyer, amount, status pill, and a "pending refund request" note when `pendingRefundRequest` is true.
+
+**List view — Reembolsos tab**
+
+- Card list of `RefundRequest` records; tab badge shows pending count in orange.
+- Same search + Tipo/Fecha/Orden filters; PENDING/RESOLVED/Todos segmented control.
+- Each card shows reason label, truncated message, requester info, age ("Hace N días") or resolution date.
+
+**Purchase detail view**
+
+- Three stat cards (total, buyer, payment date + method); full fact table with keys/values.
+- Refund request banner (amber when pending, grey when resolved) with "Ver pedido" button.
+- Confirmation banner when paid manually (`confirmedByName` set).
+- `ConfirmPaymentPanel` renders only when `status === "PENDING_PAYMENT"`: selects payment method, optional reference and date, and calls `adminApi.confirmPaymentFull()`.
+
+**Refund request detail view**
+
+- Left column: reason + user message, requester avatar, linked purchase card (clickable → purchase detail).
+- Right column: Resolution panel — internal note textarea, "Marcar como resuelto" (PENDING) or "Guardar nota" + "Reabrir" (RESOLVED). `updateRefundRequest()` with `action: "RESOLVE"/"REOPEN"` or just `note`.
+
+### Type / status colours
+
+| Type   | Background | Text      |
+| ------ | ---------- | --------- |
+| SEATS  | `#eee8ff`  | `#5e3ed1` |
+| GEMS   | `#e4f1fb`  | `#1b84ab` |
+| COURSE | `#e4f1ec`  | `#1f7e77` |
+
+| Status          | Background | Text      |
+| --------------- | ---------- | --------- |
+| PENDING_PAYMENT | `#fef0de`  | `#b85806` |
+| PAID            | `#e7f5ea`  | `#2e7d45` |
+| CANCELLED       | `#f2ece6`  | `#8c817a` |
+| REFUNDED        | `#fbe0d8`  | `#e14e22` |
+
+### New backend additions (V19 + API changes)
+
+- `refund_requests` table (polymorphic: `purchase_type` + `purchase_id`; `requested_by_id` FK to users).
+- `course_purchases` gains: `payment_method`, `manual_payment_date`, `confirmed_by_name`, `confirmed_at`.
+- `AdminPurchaseController`: `GET /admin/purchases` (unified list), `GET /admin/purchases/{id}?type=` (detail), `POST /admin/purchases/{id}/confirm-payment` (richer body with method/reference/date).
+- `AdminRefundRequestController`: `GET/PATCH /admin/refund-requests[/{id}]`.
 
 ## Admin · Métricas de uso (v2)
 

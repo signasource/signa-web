@@ -1,6 +1,71 @@
 import { api } from "@/lib/api/client";
 import type { Page, Purchase, PurchaseDetail, PurchaseStatus } from "@/lib/api/types";
 
+// ── Unified admin purchases ───────────────────────────────────────────────────
+
+export type PurchaseType = "SEATS" | "GEMS" | "COURSE";
+export type UnifiedPurchaseStatus = "PENDING_PAYMENT" | "PAID" | "CANCELLED" | "REFUNDED";
+export type ManualPaymentMethod = "MERCADO_PAGO" | "TRANSFER" | "DEPOSIT" | "CASH" | "OTHER";
+
+export type AdminPurchaseListItem = {
+  id: string;
+  type: PurchaseType;
+  productName: string;
+  productDetail: string;
+  buyerName: string;
+  buyerSub: string;
+  buyerEmail: string;
+  amount: number;
+  currency: string;
+  status: UnifiedPurchaseStatus;
+  createdAt: string;
+  paidAt: string | null;
+  refundedAt: string | null;
+  mpOrderId: string | null;
+  paymentMethod: ManualPaymentMethod | null;
+  manualRef: string | null;
+  confirmedByName: string | null;
+  confirmedAt: string | null;
+  externalRef: string;
+  pendingRefundRequest: boolean;
+};
+
+export type AdminPurchaseDetail = AdminPurchaseListItem & {
+  organizationId: string | null;
+  seats: number | null;
+  durationDays: number | null;
+  discountPercent: number | null;
+  gems: number | null;
+  refundRequests: AdminRefundRequest[];
+};
+
+export type RefundRequestStatus = "PENDING" | "RESOLVED";
+export type RefundRequestReason =
+  "NOT_RECEIVED" | "MISTAKE" | "DUPLICATE" | "TECHNICAL" | "NOT_AS_EXPECTED" | "OTHER";
+
+export type AdminRefundRequest = {
+  id: string;
+  purchaseType: PurchaseType;
+  purchaseId: string;
+  reason: RefundRequestReason;
+  channel: string;
+  message: string;
+  note: string | null;
+  status: RefundRequestStatus;
+  resolvedByName: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  requesterName: string;
+  requesterUsername: string;
+  requesterEmail: string;
+  productName: string;
+  productDetail: string;
+  amount: number;
+  currency: string;
+  purchaseStatus: UnifiedPurchaseStatus;
+  purchasePaidAt: string | null;
+};
+
 export type AdminMe = {
   id: string;
   name: string;
@@ -351,5 +416,33 @@ export const adminApi = {
   contentImportRuns: (params?: { page?: number; size?: number }) =>
     api<Page<ContentImportRun>>("/admin/content/import-runs", {
       query: params as Record<string, string | number | boolean | undefined>,
+    }),
+
+  // ── Unified purchases ──────────────────────────────────────────────────────
+
+  allPurchases: () => api<AdminPurchaseListItem[]>("/admin/purchases"),
+
+  purchaseDetail: (id: string, type: PurchaseType) =>
+    api<AdminPurchaseDetail>(`/admin/purchases/${id}`, { query: { type } }),
+
+  confirmPaymentFull: (
+    purchaseId: string,
+    data: { paymentReference?: string; paymentMethod?: ManualPaymentMethod; paymentDate?: string },
+  ) =>
+    api<AdminPurchaseDetail>(`/admin/purchases/${purchaseId}/confirm-payment`, {
+      method: "POST",
+      body: data,
+    }),
+
+  // ── Refund requests ────────────────────────────────────────────────────────
+
+  refundRequests: () => api<AdminRefundRequest[]>("/admin/refund-requests"),
+
+  refundRequest: (id: string) => api<AdminRefundRequest>(`/admin/refund-requests/${id}`),
+
+  updateRefundRequest: (id: string, data: { action?: "RESOLVE" | "REOPEN"; note?: string }) =>
+    api<AdminRefundRequest>(`/admin/refund-requests/${id}`, {
+      method: "PATCH",
+      body: data,
     }),
 };

@@ -18,6 +18,8 @@ import type {
   PurchaseDetail,
   PurchaseQuote,
   RedeemInviteCodeResponse,
+  RefundRequestReason,
+  UserRefundRequestResponse,
 } from "@/lib/api/types";
 
 /** Query params for a period; none for the whole history. */
@@ -128,6 +130,16 @@ export const organizationsApi = {
     api<PaymentSync>(`/organizations/${orgId}/purchases/${purchaseId}/payments/sync`, {
       method: "POST",
     }),
+
+  createPurchaseRefundRequest: (
+    orgId: string,
+    purchaseId: string,
+    data: { reason: RefundRequestReason; message: string },
+  ) =>
+    api<UserRefundRequestResponse>(
+      `/organizations/${orgId}/purchases/${purchaseId}/refund-request`,
+      { method: "POST", body: data },
+    ),
 
   updateSeatEmail: (orgId: string, purchaseId: string, seatId: string, email: string) =>
     api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/seats/${seatId}`, {

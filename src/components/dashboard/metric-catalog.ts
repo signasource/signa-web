@@ -152,7 +152,7 @@ export const METRICS = {
     threshold: { dir: "up", warn: 30, danger: 15 },
   },
   income: {
-    label: "Ingresos",
+    label: "Ingresos netos",
     description:
       "Todo el dinero que entra: por un lado las organizaciones (compra de cupos) y por otro los usuarios finales (gemas y cursos).",
     howComputed:
