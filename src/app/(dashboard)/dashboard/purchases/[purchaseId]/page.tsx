@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Icon } from "@/components/dashboard/icons";
 import { PurchaseStatusPill, SeatStatusPill } from "@/components/dashboard/purchase-status";
 import { WithdrawPurchase } from "@/components/dashboard/withdraw-purchase";
@@ -22,7 +23,13 @@ import {
 import { useAuth } from "@/features/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
-import type { PurchaseDetail, PurchaseStatus, Seat, SeatStatus } from "@/lib/api/types";
+import type {
+  PurchaseDetail,
+  PurchaseStatus,
+  RefundRequestReason,
+  Seat,
+  SeatStatus,
+} from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
 import {
   REFUNDED_MESSAGE,
@@ -118,6 +125,123 @@ function EmailEditor({
         </span>
       ) : null}
     </form>
+  );
+}
+
+const REFUND_REASON_OPTIONS: { value: RefundRequestReason; label: string }[] = [
+  { value: "MISTAKE", label: "Me equivoqué al comprar" },
+  { value: "DUPLICATE", label: "Compra duplicada" },
+  { value: "NOT_RECEIVED", label: "No recibí lo que esperaba" },
+  { value: "NOT_AS_EXPECTED", label: "El curso no era lo esperado" },
+  { value: "TECHNICAL", label: "Problemas técnicos" },
+  { value: "OTHER", label: "Otro motivo" },
+];
+
+const refundSchema = z.object({
+  reason: z
+    .enum([
+      "NOT_RECEIVED",
+      "MISTAKE",
+      "DUPLICATE",
+      "TECHNICAL",
+      "NOT_AS_EXPECTED",
+      "OTHER",
+    ] as const)
+    .refine((v) => v !== undefined, { message: "Seleccioná un motivo" }),
+  message: z
+    .string()
+    .min(10, "Escribí al menos 10 caracteres")
+    .max(2000, "El mensaje no puede superar los 2000 caracteres"),
+});
+type RefundFormValues = z.infer<typeof refundSchema>;
+
+function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId: string }) {
+  const [sent, setSent] = useState(false);
+  const form = useForm<RefundFormValues>({ resolver: zodResolver(refundSchema) });
+  const mutation = useMutation({
+    mutationFn: (values: RefundFormValues) =>
+      organizationsApi.createPurchaseRefundRequest(orgId, purchaseId, values),
+    onSuccess: () => setSent(true),
+  });
+
+  if (sent) {
+    return (
+      <Card className="flex flex-col gap-2">
+        <CardTitle>Reembolso solicitado</CardTitle>
+        <p className="text-text-muted text-sm text-pretty">
+          Recibimos tu pedido. Nuestro equipo lo analizará y te va a responder por email.
+        </p>
+      </Card>
+    );
+  }
+
+  const refundError =
+    mutation.error instanceof ApiError && mutation.error.status === 400
+      ? "No se puede pedir el reembolso: puede que haya un pedido pendiente o que las condiciones hayan cambiado."
+      : mutation.error
+        ? "No pudimos enviar el pedido. Probá de nuevo."
+        : null;
+
+  return (
+    <Card className="flex flex-col gap-3">
+      <CardTitle>Pedir reembolso</CardTitle>
+      <p className="text-text-muted text-sm text-pretty">
+        Si ningún participante aceptó la invitación, podés pedir que revisemos el reembolso. Nuestro
+        equipo lo analizará y te responderá por email. No se devuelve dinero automáticamente.
+      </p>
+      <form
+        noValidate
+        onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+        className="flex flex-col gap-3"
+      >
+        <div className="flex flex-col gap-1">
+          <label htmlFor="refund-reason" className="text-sm font-semibold">
+            Motivo
+          </label>
+          <select
+            id="refund-reason"
+            className="border-border bg-surface rounded-lg border px-3 py-2 text-sm"
+            {...form.register("reason")}
+          >
+            <option value="">Seleccioná un motivo…</option>
+            {REFUND_REASON_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          {form.formState.errors.reason ? (
+            <span className="text-danger text-xs">{form.formState.errors.reason.message}</span>
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="refund-message" className="text-sm font-semibold">
+            Comentario
+          </label>
+          <textarea
+            id="refund-message"
+            rows={4}
+            maxLength={2000}
+            placeholder="Contanos qué pasó para que podamos ayudarte mejor."
+            className="border-border bg-surface rounded-lg border px-3 py-2 text-sm"
+            {...form.register("message")}
+          />
+          {form.formState.errors.message ? (
+            <span className="text-danger text-xs">{form.formState.errors.message.message}</span>
+          ) : null}
+        </div>
+        {refundError ? <p className="text-danger text-sm">{refundError}</p> : null}
+        <div>
+          <button
+            type="submit"
+            disabled={mutation.isPending}
+            className={cn(primaryButton, "px-4 py-2 text-sm")}
+          >
+            {mutation.isPending ? "Enviando…" : "Enviar pedido"}
+          </button>
+        </div>
+      </form>
+    </Card>
   );
 }
 
@@ -392,6 +516,8 @@ export default function PurchaseDetailPage() {
           error={withdrawError}
           onConfirm={(reason) => withdraw.mutate(reason)}
         />
+      ) : purchase.status === "PAID" && counts.active === 0 && orgId ? (
+        <RefundRequestSection orgId={orgId} purchaseId={purchaseId} />
       ) : null}
 
       {data.refunds.length > 0 ? (

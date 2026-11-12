@@ -133,6 +133,7 @@ export function GrowthTab({
           value={fmtMoney(g.revenue.averageTicket)}
           current={g.revenue.averageTicket}
           previous={previousTicket}
+          spark={g.orgs.dailyPurchases.map((d) => d.count)}
           hint={`${NUMBER.format(g.orgs.purchasesInRange)} ${g.orgs.purchasesInRange === 1 ? "compra de organizaciones" : "compras de organizaciones"}`}
         />
         <KpiCard
@@ -201,9 +202,10 @@ function OrganizationsPanel({
     <Card className="flex flex-col gap-4">
       <div className="flex items-center gap-1.5">
         <CardTitle>Organizaciones</CardTitle>
+        <InfoPopover metric="orgs_active" className="ml-auto" />
         <Link
           href="/admin/organizations"
-          className="text-primary hover:text-primary-dark ml-auto text-[13px] font-extrabold"
+          className="text-primary hover:text-primary-dark text-[13px] font-extrabold"
         >
           Gestionar
         </Link>
@@ -310,7 +312,10 @@ function EndUsersPanel({
 }) {
   return (
     <Card className="flex flex-col gap-4">
-      <CardTitle>Usuarios finales</CardTitle>
+      <div className="flex items-center gap-1.5">
+        <CardTitle>Usuarios finales</CardTitle>
+        <InfoPopover metric="paying_users" className="ml-auto" />
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <MoneyTile
           label="Compras de gemas"
