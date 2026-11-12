@@ -2251,9 +2251,7 @@ function CourseCard({
                   {item.updatedByName}
                 </span>
               )}
-              <span className="truncate text-xs text-[#8C817A]">
-                {formatAgo(item.updatedAt)}
-              </span>
+              <span className="truncate text-xs text-[#8C817A]">{formatAgo(item.updatedAt)}</span>
             </div>
           )}
           {item.status === "PUBLISHED" && (
