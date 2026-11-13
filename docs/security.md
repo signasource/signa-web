@@ -6,7 +6,7 @@
 
 ## Why this matters here
 
-The refresh token lives in an `HttpOnly` cookie that page scripts cannot read ([api/session.md](./api/session.md)). CSP is still the main defense against injected scripts and, just as important, **blocks exfiltration** — `connect-src` only allows the app and the API origin, and `img-src`/`form-action`/`base-uri` are closed.
+The refresh token lives in an `HttpOnly` cookie that page scripts cannot read ([api/session.md](./api/session.md)). CSP is still the main defense against injected scripts and, just as important, **blocks exfiltration** — `connect-src` only allows the app and the API origin, and `img-src` (app, `data:`/`blob:` and the API origin, which serves profile photos)/`form-action`/`base-uri` are closed.
 
 ## Two tiers
 

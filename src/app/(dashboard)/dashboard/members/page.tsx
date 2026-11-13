@@ -21,6 +21,7 @@ import { useCourseFilter, useWithFilters } from "@/features/dashboard/use-course
 import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
 import type { MemberActivityStatus, MemberSort, MemberStatus } from "@/lib/api/types";
+import { avatarSrc } from "@/lib/avatar-url";
 import {
   currentModuleLabel,
   daysSince,
@@ -240,7 +241,12 @@ export default function MembersPage() {
                     )}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
-                      <Avatar seed={m.userId} name={m.name} lastName={m.lastName} />
+                      <Avatar
+                        seed={m.userId}
+                        name={m.name}
+                        lastName={m.lastName}
+                        src={avatarSrc(m.avatarUrl)}
+                      />
                       <span className="flex min-w-0 flex-col">
                         <span className="text-[15px] font-bold">
                           {m.name} {m.lastName}

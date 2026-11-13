@@ -20,15 +20,15 @@ All three are static, listed in `MARKETING_PATHS` ([security.md](./security.md))
 
 The policy makes factual claims. When the code changes, re-verify the claim (**code wins** — fix the page):
 
-| Claim in the text                                                                                                       | Verify in                                                                                                  |
-| ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Data collected (name, last name, email, username, progress, XP, streak, social, device token, Play purchase token)      | `signa-api` entities: `User`, `UserStats`, `Friendship`, `DeviceToken`, `GemPurchase`, `UserDailyActivity` |
-| Camera analysis is fully on-device; nothing uploaded                                                                    | `signa-mobile/docs/features/ml.md`                                                                         |
-| What org admins see per participant                                                                                     | `signa-api` `MemberProgressResponse`, `OrganizationMemberSummaryResponse`, `OrganizationOverviewResponse`  |
-| What account deletion erases and keeps (privacy §6 and `/eliminar-cuenta`)                                              | `signa-api` `UserService.deleteAccount`, `AccountErasureRepository`                                        |
-| Third parties (Google login/Play, Firebase FCM, Cloudflare R2, Mercado Pago, mail, hosting)                             | `signa-api/.env.example`, `signa-api/CLAUDE.md` §4                                                         |
-| Withdrawal: an organization can cancel a purchase within 10 days of paying (terms §7); access ends and progress is kept | signa-api `PurchasePolicy.withdrawalWindow`, `PurchaseRevocationService`                                   |
-| Mercado Pago gets only the purchase (course, seats, amount, purchase id); payment data is entered on Mercado Pago       | signa-api `RestMercadoPagoClient.createPreference` (no payer fields)                                       |
+| Claim in the text                                                                                                                          | Verify in                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Data collected (name, last name, email, username, optional profile photo, progress, XP, streak, social, device token, Play purchase token) | `signa-api` entities: `User`, `UserStats`, `Friendship`, `DeviceToken`, `GemPurchase`, `UserDailyActivity` |
+| Camera analysis is fully on-device; nothing uploaded                                                                                       | `signa-mobile/docs/features/ml.md`                                                                         |
+| What org admins see per participant                                                                                                        | `signa-api` `MemberProgressResponse`, `OrganizationMemberSummaryResponse`, `OrganizationOverviewResponse`  |
+| What account deletion erases and keeps (privacy §6 and `/eliminar-cuenta`)                                                                 | `signa-api` `UserService.deleteAccount`, `AccountErasureRepository`                                        |
+| Third parties (Google login/Play, Firebase FCM, Cloudflare R2, Mercado Pago, mail, hosting)                                                | `signa-api/.env.example`, `signa-api/CLAUDE.md` §4                                                         |
+| Withdrawal: an organization can cancel a purchase within 10 days of paying (terms §7); access ends and progress is kept                    | signa-api `PurchasePolicy.withdrawalWindow`, `PurchaseRevocationService`                                   |
+| Mercado Pago gets only the purchase (course, seats, amount, purchase id); payment data is entered on Mercado Pago                          | signa-api `RestMercadoPagoClient.createPreference` (no payer fields)                                       |
 
 Adding a new third-party SDK, analytics, a new personal-data field, or a new thing admins can see **requires updating both pages and `lastUpdated` in the same PR**.
 
