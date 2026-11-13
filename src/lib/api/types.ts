@@ -14,6 +14,17 @@ export type CourseSummary = {
   signLanguageCode: string;
 };
 
+/** `GET /users/me`: the signed-in account. */
+export type UserProfile = {
+  id: string;
+  email: string;
+  username: string;
+  name: string;
+  lastName: string | null;
+  /** Path to the profile photo on the API; null when none. See `avatarSrc`. */
+  avatarUrl: string | null;
+};
+
 export type MyOrganization = {
   id: string;
   name: string;
@@ -78,6 +89,8 @@ export type OrganizationMemberSummary = {
   currentModule: string | null;
   currentCourse: string | null;
   activityStatus: MemberActivityStatus;
+  /** Path to the profile photo on the API; null when none. See `avatarSrc`. */
+  avatarUrl: string | null;
 };
 
 export type MemberSort = "name" | "progress" | "lastActivity" | "joinedAt";
@@ -112,6 +125,7 @@ export type MemberProgress = {
   learningMinutes: number;
   activeDaysLast30: number;
   courses: MemberCourseProgress[];
+  avatarUrl: string | null;
 };
 
 export type ModuleStats = {

@@ -42,6 +42,16 @@ Refresh (`POST /auth/refresh`) is called internally by the client, not exposed a
 | `updateSeatEmail(orgId, p, s, e)` | `PATCH …/purchases/{id}/seats/{seatId}` | `PurchaseDetail` | Only while pending; re-sends with a new link, the deadline does not move |
 | `remindSeat(orgId, p, s)` | `POST …/purchases/{id}/seats/{seatId}/reminders` | `PurchaseDetail` | Pending invitations only, one per 24 h (400 otherwise) |
 
+## `usersApi` (`src/lib/api/users.ts`) — mirrors `UserController`
+
+| Method              | Endpoint                  | Returns       | Notes                                                                                                                |
+| ------------------- | ------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `me()`              | `GET /users/me`           | `UserProfile` | The signed-in account; `avatarUrl` is a path on the API (or null) — build the full URL with `avatarSrc()`            |
+| `setAvatar(avatar)` | `PUT /users/me/avatar`    | `UserProfile` | `avatar` = PNG/JPEG/WebP data URL (≤150 000 chars; `imageFileToAvatarDataUrl` makes a 256 px JPEG). 400 if malformed |
+| `removeAvatar()`    | `DELETE /users/me/avatar` | `UserProfile` | Back to initials                                                                                                     |
+
+The photo itself is fetched by `<img>` from the public `GET /users/{username}/avatar` (the `avatarUrl` carries a version, so browsers cache it).
+
 ## `invitationsApi` (`src/lib/api/invitations.ts`) — mirrors `InvitationController`
 
 | Method           | Path                               | Returns              | Notes                                                                                       |

@@ -20,6 +20,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { useWithFilters } from "@/features/dashboard/use-course-filter";
 import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
+import { avatarSrc } from "@/lib/avatar-url";
 import {
   currentModuleLabel,
   daysSince,
@@ -100,7 +101,13 @@ export default function MemberDetailPage() {
       {back}
 
       <div className="border-border bg-surface flex flex-wrap items-center gap-[18px] rounded-3xl border p-6">
-        <Avatar seed={m.userId} name={m.name} lastName={m.lastName} size="lg" />
+        <Avatar
+          seed={m.userId}
+          name={m.name}
+          lastName={m.lastName}
+          size="lg"
+          src={avatarSrc(m.avatarUrl)}
+        />
         <div className="flex min-w-[220px] flex-1 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="font-display text-3xl leading-9 font-bold">
