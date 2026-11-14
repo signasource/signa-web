@@ -14,6 +14,24 @@ export function fmtShortDate(iso: string | null | undefined): string {
   return Number.isNaN(d.getTime()) ? "—" : SHORT_DATE.format(d);
 }
 
+const DAY_MONTH = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
+
+/**
+ * A compact UTC date for tables: "18 nov" when it's within ~10 months of now (unambiguous), else
+ * with the year ("5 feb 2028"); "—" when absent/unparseable.
+ */
+export function fmtDayMonth(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const days = Math.abs(d.getTime() - now.getTime()) / 86_400_000;
+  return days <= 300 ? DAY_MONTH.format(d) : SHORT_DATE.format(d);
+}
+
 /** Whole days between now and an ISO instant (negative = in the past); `null` when absent. */
 export function daysUntil(iso: string | null | undefined): number | null {
   if (!iso) return null;
