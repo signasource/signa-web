@@ -41,7 +41,7 @@ const NAV: NavItem[] = [
     badgeKey: "openSignReports",
   },
   { href: "/admin/courses", label: "Cursos", icon: CoursesIcon },
-  { href: "/admin/content", label: "Cursos y señas", icon: BookIcon },
+  { href: "/admin/signs", label: "Señas", icon: HandIcon },
   { href: "/admin/users", label: "Usuarios", icon: UsersIcon },
   { href: "/admin/usage-metrics", label: "Métricas de uso", icon: MetricsIcon },
 ];
@@ -206,6 +206,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 }
 
+function HandIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M8 13V5.5a1.5 1.5 0 013 0V12" />
+      <path d="M11 11.5V4a1.5 1.5 0 013 0v7.5" />
+      <path d="M14 11.5V5.5a1.5 1.5 0 013 0V14" />
+      <path d="M8 13l-1.6-1.6a1.6 1.6 0 00-2.3 2.3L8 18c1.3 1.6 2.8 3 5.4 3 3.2 0 5.6-2.4 5.6-5.6V9.5a1.5 1.5 0 00-3 0" />
+    </svg>
+  );
+}
+
 function CoursesIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -281,21 +300,6 @@ function ReceiptIcon({ className }: { className?: string }) {
     >
       <path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z" />
       <path d="M9 7h6M9 11h6M9 15h4" />
-    </svg>
-  );
-}
-
-function BookIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.8}
-    >
-      <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
     </svg>
   );
 }

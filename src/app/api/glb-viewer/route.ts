@@ -1,20 +1,17 @@
 import { buildViewerCsp } from "@/lib/security/csp";
 import {
+  DRACO,
+  ENCUADRE,
+  FOV,
   isSafeSign,
   MAX_LOADED,
   MAX_PRELOAD,
+  MODEL_VIEWER_CDN,
+  MODEL_VIEWER_SRI,
   R2_GLB_BASE,
   VIEWER_MESSAGE,
   VIEWER_PRELOAD,
 } from "@/lib/glb";
-
-const MODEL_VIEWER_CDN =
-  "https://cdn.jsdelivr.net/npm/@google/model-viewer@3.5.0/dist/model-viewer.min.js";
-const DRACO = "https://www.gstatic.com/draco/versioned/decoders/1.5.6/";
-const MODEL_VIEWER_SRI = "sha384-Ftcjj/GNLxPvzNDftO/oryXB9aGxsGZY9JGqsXG0uUKgQDl9RfDgsx9NJ/4IVNPe";
-
-const FOV = 15;
-const ENCUADRE = 0.52;
 
 function buildViewerHtml(sign: string): string {
   return `<!doctype html>

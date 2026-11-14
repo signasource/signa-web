@@ -181,14 +181,68 @@ export type AdminCourse = {
   enrollmentCount: number;
 };
 
+export type Handedness = "ONE_HANDED" | "TWO_HANDED";
+/** Which video of an .mp4 sign: the front one (also the only file of a .glb sign) or the side one. */
+export type SignView = "front" | "lateral";
+export type AnimationFormat = "glb" | "mp4";
+
 export type AdminSign = {
   id: string;
   meaning: string;
   handedness: string;
   hasAnimation: boolean;
-  animationFormat: "glb" | "mp4" | null;
+  hasYoutube: boolean;
+  animationFormat: AnimationFormat | null;
+  /** Last upload from the sign editor; null = imported default. */
+  animationUpdatedAt: string | null;
   openReports: number;
+  /** Distinct lessons (draft or published versions) that reference the sign. */
   lessonCount: number;
+};
+
+/** A lesson that references a sign, in any course version. */
+export type AdminSignUsage = {
+  courseId: string;
+  courseName: string;
+  courseVersionId: string;
+  version: string;
+  versionStatus: CourseVersionStatus;
+  topicTitle: string;
+  lessonId: string;
+  lessonName: string;
+  blockTypes: string[];
+};
+
+export type AdminSignDetail = {
+  id: string;
+  meaning: string;
+  handedness: Handedness;
+  signLanguageCode: string;
+  /** Object key in the media bucket (e.g. `lsa/hola.glb`), not a URL. */
+  animationUrl: string | null;
+  hasAnimation: boolean;
+  animationFormat: AnimationFormat | null;
+  /** Public URL to load the animation from (cache-busted after an upload). */
+  mediaUrl: string | null;
+  /**
+   * Whether the file at `animationUrl` exists (null = could not check). Imported signs point at
+   * `lsa/<meaning>.glb` even when nobody uploaded it, and then the app shows nothing.
+   */
+  mediaAvailable: boolean | null;
+  /** Side-view video of an .mp4 sign: bucket key and public URL. Null for .glb signs. */
+  lateralAnimationUrl: string | null;
+  lateralMediaUrl: string | null;
+  animationUpdatedAt: string | null;
+  youtubeUrl: string | null;
+  openReports: number;
+  usages: AdminSignUsage[];
+};
+
+/** Partial update: omitted fields stay; `youtubeUrl: ""` clears it. Renaming cascades to lessons. */
+export type UpdateSignInput = {
+  meaning?: string;
+  handedness?: Handedness;
+  youtubeUrl?: string;
 };
 
 export type CourseVersionStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
@@ -279,23 +333,6 @@ export type SaveCourseVersionPayload = {
       }>;
     }>;
   }>;
-};
-
-export type ContentImportTrigger = "STARTUP" | "MANUAL";
-export type ContentImportStatus = "SUCCESS" | "FAILED";
-
-export type ContentImportRun = {
-  id: string;
-  startedAt: string;
-  finishedAt: string;
-  trigger: ContentImportTrigger;
-  status: ContentImportStatus;
-  triggeredBy: string | null;
-  coursesProcessed: number;
-  created: number;
-  updated: number;
-  unchanged: number;
-  details: string | null;
 };
 
 export type UpdateAdminInput = {
@@ -408,15 +445,35 @@ export const adminApi = {
       query: params as Record<string, string | number | boolean | undefined>,
     }),
 
+  sign: (id: string) => api<AdminSignDetail>(`/admin/signs/${id}`),
+
+  createSign: (data: { meaning: string; handedness: Handedness; youtubeUrl?: string }) =>
+    api<AdminSignDetail>("/admin/signs", { method: "POST", body: data }),
+
+  updateSign: (id: string, data: UpdateSignInput) =>
+    api<AdminSignDetail>(`/admin/signs/${id}`, { method: "PATCH", body: data }),
+
+  /**
+   * Replaces the sign's animation (max 50 MB); live in the app right away. `front`: a .glb or the
+   * front .mp4 (a .glb drops the lateral video). `lateral`: the side-view .mp4 of an .mp4 sign.
+   */
+  uploadSignAnimation: (id: string, file: File, view: SignView = "front") => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api<AdminSignDetail>(`/admin/signs/${id}/animation`, {
+      method: "POST",
+      formData,
+      query: { view },
+    });
+  },
+
+  removeSignLateral: (id: string) =>
+    api<AdminSignDetail>(`/admin/signs/${id}/animation/lateral`, { method: "DELETE" }),
+
+  deleteSign: (id: string) => api(`/admin/signs/${id}`, { method: "DELETE" }),
+
   waitlist: (params?: { page?: number; size?: number }) =>
     api<Page<AdminWaitlistEntry>>("/admin/waitlist", {
-      query: params as Record<string, string | number | boolean | undefined>,
-    }),
-
-  importContent: () => api<ContentImportRun>("/admin/content/import", { method: "POST" }),
-
-  contentImportRuns: (params?: { page?: number; size?: number }) =>
-    api<Page<ContentImportRun>>("/admin/content/import-runs", {
       query: params as Record<string, string | number | boolean | undefined>,
     }),
 

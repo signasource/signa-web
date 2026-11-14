@@ -13,6 +13,7 @@ All calls go through `api()` in `src/lib/api/client.ts`. **Never call `fetch` fr
 - **Auth:** attaches `Authorization: Bearer <access>` unless `anonymous: true` (login, refresh, forgot/reset password).
 - **Refresh on 401:** one single-flight `POST /auth/refresh` with the stored refresh token, then the original request is retried once. If refresh fails, tokens are cleared and the `setOnSessionExpired` callback (registered by `AuthProvider`) signs the user out.
 - **Errors:** non-2xx throws `ApiError(status, message)`; `message` comes from the API's `ErrorResponse.message` when present. UI code maps these to Spanish copy.
+- **Uploads:** pass `formData` instead of `body` — it is sent untouched (no casing conversion, no JSON `Content-Type`; the browser sets the multipart boundary). Used by `adminApi.uploadSignAnimation`.
 - **204/empty body** resolves to `undefined`.
 
 ## API-side requirements

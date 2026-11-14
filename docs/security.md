@@ -2,7 +2,7 @@
 
 > Responsibility: HTTP security headers, the two-tier CSP, and how to keep it working.
 > Update when: a header/CSP directive changes, a public static page is added, a third-party script/origin is introduced, or the API origin changes.
-> Sources: next.config.ts, src/proxy.ts, src/lib/security/csp.ts, src/lib/integrity.ts, scripts/strip-sourcemaps.mjs, src/app/api/glb-viewer/route.ts, src/app/(auth)/layout.tsx, src/app/(dashboard)/layout.tsx
+> Sources: next.config.ts, src/proxy.ts, src/lib/security/csp.ts, src/lib/integrity.ts, scripts/strip-sourcemaps.mjs, src/app/api/glb-viewer/route.ts, src/app/api/glb-viewer/file/route.ts, src/lib/glb.ts, src/app/(auth)/layout.tsx, src/app/(dashboard)/layout.tsx
 
 ## Why this matters here
 
@@ -43,14 +43,26 @@ Function` stay blocked) and `https://storage.googleapis.com` in `connect-src` (M
 - **`Permissions-Policy: camera=(self)` on `/` only** (`next.config.ts`, a more specific rule that
   overrides the global `camera=()`): the webcam is available to the landing page and nowhere else.
 
-## GLB viewer route (`/api/glb-viewer`)
+## GLB viewer routes
+
+### `/api/glb-viewer/file?src=<url>` (admin sign editor)
+
+Same CSP (`buildViewerCsp`), headers and SRI-pinned model-viewer as the route below, but loads one
+model **by URL** to preview an uploaded animation. `src` must pass `isAllowedGlbSource`
+(`src/lib/glb.ts`): a `.glb` on the public R2 origin, or under `<NEXT_PUBLIC_API_URL>/media/` (the
+API's local storage fallback, dev only); anything else is a 400. It is embedded with
+`JSON.stringify`, never raw. `Cache-Control: no-store`. Listed in `PASSTHROUGH_PATHS` (`src/proxy.ts`).
+For that dev fallback, `NEXT_PUBLIC_API_URL` is in the viewer's `connect-src` and in the app CSP's
+`media-src` (the editor's `<video>` preview).
+
+### `/api/glb-viewer` (landing)
 
 The Route Handler at `src/app/api/glb-viewer/route.ts` has its own third CSP tier:
 
 - `buildViewerCsp()` in `src/lib/security/csp.ts` — allows CDN scripts (model-viewer), R2 fetches
   (GLB models), blob workers (Three.js decoders), and restricts embedding via `frame-ancestors 'self'`.
   Also `object-src 'none'`, `base-uri 'none'`, `form-action 'none'`.
-- **model-viewer is pinned with Subresource Integrity** (`MODEL_VIEWER_SRI` in the route,
+- **model-viewer is pinned with Subresource Integrity** (`MODEL_VIEWER_SRI` in `src/lib/glb.ts`,
   `integrity` + `crossorigin="anonymous"`): if jsDelivr ever served different bytes, the browser
   refuses to run them. Bumping the version means recomputing the hash
   (`curl -s <url> | openssl dgst -sha384 -binary | openssl base64 -A`).

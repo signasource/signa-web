@@ -22,6 +22,7 @@ Detailed implementation docs for `signa-web`. Entry point and mandatory rules: [
 | What color/font tokens exist?                                                     | [design-system/tokens.md](./design-system/tokens.md) |
 | State of the landing page?                                                        | [features/landing.md](./features/landing.md)         |
 | State of the admin dashboard?                                                     | [features/dashboard.md](./features/dashboard.md)     |
+| How does the back-office sign editor (rename, upload .glb/.mp4) work?             | [features/admin-signs.md](./features/admin-signs.md) |
 | What is real vs stub? What is the tech debt?                                      | [status.md](./status.md)                             |
 
 ## Rules for these docs

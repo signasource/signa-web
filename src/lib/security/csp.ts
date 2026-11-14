@@ -16,7 +16,8 @@ export function buildViewerCsp(): string {
     "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
-    "connect-src 'self' blob: https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev https://cdn.jsdelivr.net https://www.gstatic.com",
+    // apiUrl: the sign editor previews uploads served by the API's local media fallback (dev).
+    `connect-src 'self' blob: ${apiUrl} https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev https://cdn.jsdelivr.net https://www.gstatic.com`,
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'none'",
@@ -39,7 +40,7 @@ export function buildCsp(nonce?: string): string {
     `img-src 'self' data: blob: ${apiUrl}`,
     "font-src 'self'",
     `connect-src 'self' blob: ${apiUrl} https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev${demoModels}`,
-    `media-src 'self' https://*.r2.cloudflarestorage.com https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev`,
+    `media-src 'self' ${apiUrl} https://*.r2.cloudflarestorage.com https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev`,
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
