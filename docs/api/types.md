@@ -29,3 +29,12 @@ Types live in `src/lib/api/types.ts`, camelCase (the client converts). They are 
 ## Loose placeholders
 
 None at the moment — every DTO the panel uses is typed.
+
+## Admin sign editor types (`src/lib/api/admin.ts`)
+
+| Web type          | API record                | Notes                                                                                                                                                                                                                                                          |
+| ----------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AdminSign`       | `AdminSignResponse`       | Catalog row. `animationFormat: "glb" \| "mp4" \| null`; `animationUpdatedAt` = last panel upload (null = imported); `lessonCount` = draft/published only                                                                                                       |
+| `AdminSignDetail` | `AdminSignDetailResponse` | `animationUrl` is the bucket **key** (`lsa/hola.glb`); load from `mediaUrl` (public, `?v=` cache-buster). `mediaAvailable` (false = the file does not exist), `lateralAnimationUrl`/`lateralMediaUrl` (side video of `.mp4` signs). `usages: AdminSignUsage[]` |
+| `AdminSignUsage`  | `SignUsageResponse`       | One lesson (any version status) referencing the sign; `blockTypes` lists the block types that do                                                                                                                                                               |
+| `UpdateSignInput` | `UpdateSignRequest`       | Partial; `null`/omitted = unchanged; `youtubeUrl: ""` clears                                                                                                                                                                                                   |

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { findLesson, pickVersionForCourse } from "@/lib/course-deep-link";
 import {
   adminApi,
   type AdminBlock,
@@ -555,14 +556,35 @@ export default function CoursesPage() {
     [saveMutation],
   );
 
-  function openEditor(detail: AdminCourseVersionDetail) {
+  function openEditor(detail: AdminCourseVersionDetail, lessonId?: string | null) {
+    const at = lessonId ? findLesson(detail, lessonId) : null;
     setEd(detail);
-    setSelectedTopicIdx(0);
-    setSelectedLessonIdx(0);
+    setSelectedTopicIdx(at?.topic ?? 0);
+    setSelectedLessonIdx(at?.lesson ?? 0);
     setAdding(false);
     setSaveStatus("saved");
     setView("editor");
   }
+
+  // Deep link (sign editor "Abrir lección", usage dashboard): `?course=<id>&lesson=<id>` opens that
+  // lesson in the course's published version (or its latest); `&version=<id>` picks the exact
+  // version instead. Consumed once.
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (deepLinkDone.current || !versions) return;
+    const params = new URLSearchParams(window.location.search);
+    const courseId = params.get("course");
+    if (!courseId) return;
+    deepLinkDone.current = true;
+    const versionId =
+      versions.find((v) => v.id === params.get("version") && v.courseId === courseId)?.id ??
+      pickVersionForCourse(versions, courseId)?.id;
+    if (!versionId) return;
+    void adminApi
+      .courseVersion(versionId)
+      .then((detail) => openEditor(detail, params.get("lesson")));
+    // openEditor only sets state; running once when the versions arrive is the intent.
+  }, [versions]);
 
   function goHome() {
     if (saveTimerRef.current) {
@@ -744,16 +766,14 @@ export default function CoursesPage() {
     setPickedSign(sign);
     setSignAnimationUrl(null);
     setSignLateralUrl(null);
+    // The sign's own media URLs (front + lateral for .mp4 signs), managed in /admin/signs.
     adminApi
-      .signAnimation(sign.meaning)
-      .then((r) => setSignAnimationUrl(r.url))
+      .sign(sign.id)
+      .then((detail) => {
+        setSignAnimationUrl(detail.mediaUrl);
+        setSignLateralUrl(detail.lateralMediaUrl);
+      })
       .catch(() => setSignAnimationUrl(null));
-    if (sign.animationFormat === "mp4") {
-      adminApi
-        .signAnimation(sign.meaning + "_lateral")
-        .then((r) => setSignLateralUrl(r.url))
-        .catch(() => setSignLateralUrl(null));
-    }
   }
 
   // ── publish helpers ──
@@ -1399,7 +1419,7 @@ export default function CoursesPage() {
                 {t.subtitle || "Sin subtítulo"}
               </span>
               <span className="mt-1.5 text-xs text-[rgba(36,26,22,.7)]">
-                {t.lessons.length} lección{t.lessons.length !== 1 ? "es" : ""}
+                {t.lessons.length} {t.lessons.length === 1 ? "lección" : "lecciones"}
               </span>
             </button>
           ))}
