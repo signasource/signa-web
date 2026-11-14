@@ -59,6 +59,14 @@ Refresh (`POST /auth/refresh`) is called internally by the client, not exposed a
 | `updateAdmin(id, data)`          | `PATCH /admin/admins/{id}`                                    | `AdminUser`                             | `{name?, lastName?, email?, password?, avatar?}`, only what changed. Any admin edits any admin; the password is replaced without the current one and ends that admin's other sessions. `avatar` is a ≤ 400 KB PNG/JPEG/WebP data URL (the panel sends a 256 px JPEG), `""` removes it. 409 when the email is taken |
 | `createAdmin(data)`              | `POST /admin/admins`                                          | `AdminUser`                             | `{email, name, lastName, password, avatar?}` (photo as for `updateAdmin`). An existing email is promoted: keeps its data and password (the temporary one only applies if it has none; a photo given now replaces its own) and is re-enabled if disabled                                                            |
 
+## `adminApi` organizations (`src/lib/api/admin.ts`)
+
+| Method                                          | Path                                                        | Returns                                         | Notes                                                                                                                                  |
+| ----------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `organizations(params?)` / `organization(id)`   | `GET /admin/organizations`, `GET /admin/organizations/{id}` | `Page<AdminOrganization>` / `AdminOrganization` | `status[]` filter; `suspensionReason` is set only while `SUSPENDED`                                                                    |
+| `updateOrganizationStatus(id, status, reason?)` | `PATCH /admin/organizations/{id}/status`                    | `AdminOrganization`                             | `PENDING→ACTIVE`, `SUSPENDED→ACTIVE` (clears the reason), `→REJECTED`, `→SUSPENDED` (400 without `reason`, max 500)                    |
+| `deleteOrganization(id)`                        | `DELETE /admin/organizations/{id}`                          | `void`                                          | Only `REJECTED`/`SUSPENDED` (400 otherwise); erases the org and its admin accounts, freeing their emails. 409 if the org has purchases |
+
 ## `adminApi` purchases (`src/lib/api/admin.ts`)
 
 `purchases(status?)` → `GET /admin/purchases`; `confirmPayment(id, reference?)` → `POST /admin/purchases/{id}/confirm-payment`. The same confirmation Mercado Pago triggers (webhook `POST /payments/mercado-pago/webhook` in signa-api, or the panel's `syncPayment`); the back-office stays as a manual fallback.
