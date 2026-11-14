@@ -2,11 +2,13 @@ import type { AdminCourseVersionDetail, AdminCourseVersionListItem } from "@/lib
 
 /**
  * Deep links into the course editor (`/admin/courses?course=<id>&lesson=<id>`), used by the usage
- * dashboard's "Abrir" / "Ver lección" actions.
+ * dashboard's "Abrir" / "Ver lección" actions and the sign editor's "Abrir lección". `version` pins
+ * the exact course version (otherwise the published one, else the latest).
  */
-export function courseLessonHref(courseId: string, lessonId?: string): string {
+export function courseLessonHref(courseId: string, lessonId?: string, versionId?: string): string {
   const params = new URLSearchParams({ course: courseId });
   if (lessonId) params.set("lesson", lessonId);
+  if (versionId) params.set("version", versionId);
   return `/admin/courses?${params.toString()}`;
 }
 

@@ -17,6 +17,8 @@ type RequestOptions = {
   body?: unknown;
   query?: Record<string, string | number | boolean | string[] | undefined>;
   anonymous?: boolean;
+  /** Multipart upload: sent as-is (no case conversion); the browser sets the boundary header. */
+  formData?: FormData;
 };
 
 let onSessionExpired: (() => void) | null = null;
@@ -41,14 +43,16 @@ function buildUrl(path: string, query?: RequestOptions["query"]) {
 
 async function send(path: string, options: RequestOptions): Promise<Response> {
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (options.body !== undefined && !options.formData) headers["Content-Type"] = "application/json";
   const token = tokenStore.getAccess();
   if (!options.anonymous && token) headers.Authorization = `Bearer ${token}`;
 
   return fetch(buildUrl(path, options.query), {
     method: options.method ?? "GET",
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(keysToSnake(options.body)),
+    body:
+      options.formData ??
+      (options.body === undefined ? undefined : JSON.stringify(keysToSnake(options.body))),
   });
 }
 

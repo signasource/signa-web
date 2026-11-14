@@ -21,6 +21,9 @@ describe("course deep links", () => {
   it("builds the editor link", () => {
     expect(courseLessonHref("c1", "l2")).toBe("/admin/courses?course=c1&lesson=l2");
     expect(courseLessonHref("c1")).toBe("/admin/courses?course=c1");
+    expect(courseLessonHref("c1", "l2", "v3")).toBe(
+      "/admin/courses?course=c1&lesson=l2&version=v3",
+    );
   });
 
   it("finds a lesson's topic and position", () => {

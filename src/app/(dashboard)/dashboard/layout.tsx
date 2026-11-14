@@ -4,8 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { AdminAvatar } from "@/components/admin/admin-avatar";
 import { useAuth } from "@/features/auth/auth-context";
 import { useWithFilters } from "@/features/dashboard/use-course-filter";
+import { usersApi } from "@/lib/api/users";
+import { avatarSrc } from "@/lib/avatar-url";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -24,6 +28,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { status, organization, logout, refreshOrganization } = useAuth();
   const withFilters = useWithFilters();
+  const { data: me } = useQuery({
+    queryKey: ["user", "me"],
+    queryFn: usersApi.me,
+    enabled: status === "authenticated",
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/organizations/login");
@@ -82,9 +91,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             })}
           </nav>
         </div>
-        <button onClick={logout} className="text-text-muted text-sm font-medium hover:underline">
-          Cerrar sesión
-        </button>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/dashboard/profile"
+            aria-label="Mi perfil"
+            aria-current={pathname === "/dashboard/profile" ? "page" : undefined}
+            className="rounded-full"
+          >
+            <AdminAvatar
+              name={me?.name ?? ""}
+              lastName={me?.lastName ?? ""}
+              avatar={avatarSrc(me?.avatarUrl)}
+              className="size-9"
+            />
+          </Link>
+          <button onClick={logout} className="text-text-muted text-sm font-medium hover:underline">
+            Cerrar sesión
+          </button>
+        </div>
       </header>
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
         {organization.status && organization.status !== "ACTIVE" ? (

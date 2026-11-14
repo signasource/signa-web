@@ -33,6 +33,24 @@ describe("api client", () => {
     expect(result).toEqual({ someValue: 1 });
   });
 
+  it("sends FormData untouched, without a JSON content type", async () => {
+    fetchMock.mockResolvedValueOnce(json({ animation_format: "mp4" }));
+    const form = new FormData();
+    form.append("file", new Blob(["x"]), "a.mp4");
+
+    const result = await api<{ animationFormat: string }>("/x", {
+      method: "POST",
+      formData: form,
+    });
+
+    const [, init] = fetchMock.mock.calls[0]!;
+    const headers = init!.headers as Record<string, string>;
+    expect(init!.body).toBe(form);
+    expect(headers["Content-Type"]).toBeUndefined();
+    expect(headers.Authorization).toBe("Bearer old");
+    expect(result).toEqual({ animationFormat: "mp4" });
+  });
+
   it("refreshes once on 401 and retries the original request", async () => {
     fetchMock
       .mockResolvedValueOnce(json({ message: "expired" }, 401))

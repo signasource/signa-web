@@ -140,8 +140,8 @@ export function buildAlerts({
       badge: NUMBER.format(b.errors.failedImports),
       title: "Actualizaciones de contenido fallidas",
       sub: "El contenido de los cursos no se actualizó",
-      cta: "Ver contenido",
-      href: "/admin/content",
+      cta: "Ver cursos",
+      href: "/admin/courses",
       tone: "danger",
     });
   }

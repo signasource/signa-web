@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { daysSince, expiryTone, fmtDayMonth } from "@/components/dashboard/format";
+import { InfoPopover } from "@/components/dashboard/info-popover";
 import { KpiCard, KpiRow } from "@/components/dashboard/kpi-card";
 import { RevenueBySourceChart } from "@/components/dashboard/revenue-by-source-chart";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
@@ -210,9 +211,10 @@ function OrganizationsPanel({ g }: { g: GrowthMetrics }) {
     <Card className="flex flex-col gap-4">
       <div className="flex items-center gap-1.5">
         <CardTitle>Organizaciones</CardTitle>
+        <InfoPopover metric="orgs_active" className="ml-auto" />
         <Link
           href="/admin/organizations"
-          className="text-primary hover:text-primary-dark ml-auto text-[13px] font-extrabold"
+          className="text-primary hover:text-primary-dark text-[13px] font-extrabold"
         >
           Gestionar
         </Link>
@@ -319,7 +321,10 @@ function EndUsersPanel({
 }) {
   return (
     <Card className="flex flex-col gap-4">
-      <CardTitle>Usuarios finales</CardTitle>
+      <div className="flex items-center gap-1.5">
+        <CardTitle>Usuarios finales</CardTitle>
+        <InfoPopover metric="paying_users" className="ml-auto" />
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <MoneyTile
           label="Compras de gemas"

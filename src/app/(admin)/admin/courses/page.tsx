@@ -566,8 +566,9 @@ export default function CoursesPage() {
     setView("editor");
   }
 
-  // Deep link from the usage dashboard ("Abrir" / "Ver lección"): `?course=<id>&lesson=<id>` opens
-  // the course's published version (or its latest) with that lesson selected. Consumed once.
+  // Deep link (sign editor "Abrir lección", usage dashboard): `?course=<id>&lesson=<id>` opens that
+  // lesson in the course's published version (or its latest); `&version=<id>` picks the exact
+  // version instead. Consumed once.
   const deepLinkDone = useRef(false);
   useEffect(() => {
     if (deepLinkDone.current || !versions) return;
@@ -575,10 +576,12 @@ export default function CoursesPage() {
     const courseId = params.get("course");
     if (!courseId) return;
     deepLinkDone.current = true;
-    const target = pickVersionForCourse(versions, courseId);
-    if (!target) return;
+    const versionId =
+      versions.find((v) => v.id === params.get("version") && v.courseId === courseId)?.id ??
+      pickVersionForCourse(versions, courseId)?.id;
+    if (!versionId) return;
     void adminApi
-      .courseVersion(target.id)
+      .courseVersion(versionId)
       .then((detail) => openEditor(detail, params.get("lesson")));
     // openEditor only sets state; running once when the versions arrive is the intent.
   }, [versions]);
@@ -763,16 +766,14 @@ export default function CoursesPage() {
     setPickedSign(sign);
     setSignAnimationUrl(null);
     setSignLateralUrl(null);
+    // The sign's own media URLs (front + lateral for .mp4 signs), managed in /admin/signs.
     adminApi
-      .signAnimation(sign.meaning)
-      .then((r) => setSignAnimationUrl(r.url))
+      .sign(sign.id)
+      .then((detail) => {
+        setSignAnimationUrl(detail.mediaUrl);
+        setSignLateralUrl(detail.lateralMediaUrl);
+      })
       .catch(() => setSignAnimationUrl(null));
-    if (sign.animationFormat === "mp4") {
-      adminApi
-        .signAnimation(sign.meaning + "_lateral")
-        .then((r) => setSignLateralUrl(r.url))
-        .catch(() => setSignLateralUrl(null));
-    }
   }
 
   // ── publish helpers ──
@@ -1418,7 +1419,7 @@ export default function CoursesPage() {
                 {t.subtitle || "Sin subtítulo"}
               </span>
               <span className="mt-1.5 text-xs text-[rgba(36,26,22,.7)]">
-                {t.lessons.length} lección{t.lessons.length !== 1 ? "es" : ""}
+                {t.lessons.length} {t.lessons.length === 1 ? "lección" : "lecciones"}
               </span>
             </button>
           ))}
@@ -2254,12 +2255,23 @@ function CourseCard({
           {/* left side */}
           {item.status === "DRAFT" && (
             <div className="flex min-w-0 items-center gap-2">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEE8FF] text-[10px] font-bold text-[#5E3ED1]">
-                {initials || "?"}
-              </span>
-              <span className="text-xs whitespace-nowrap text-[#8C817A]">
-                {formatAgo(item.updatedAt)}
-              </span>
+              {item.updatedByAvatar ? (
+                <img
+                  src={item.updatedByAvatar}
+                  alt=""
+                  className="h-7 w-7 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEE8FF] text-[10px] font-bold text-[#5E3ED1]">
+                  {initials || "?"}
+                </span>
+              )}
+              {item.updatedByName && (
+                <span className="shrink-0 rounded-full bg-[#EEE8FF] px-2.5 py-0.5 text-[11px] font-semibold text-[#5E3ED1]">
+                  {item.updatedByName}
+                </span>
+              )}
+              <span className="truncate text-xs text-[#8C817A]">{formatAgo(item.updatedAt)}</span>
             </div>
           )}
           {item.status === "PUBLISHED" && (
