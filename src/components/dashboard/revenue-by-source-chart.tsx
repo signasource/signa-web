@@ -78,6 +78,7 @@ function makeTooltip(sources: RevenueSource[], format: ValueFormat, fullTime: bo
  */
 export function RevenueBySourceChart({
   title,
+  subtitle,
   metric,
   sources,
   range,
@@ -86,6 +87,7 @@ export function RevenueBySourceChart({
   className,
 }: {
   title: string;
+  subtitle?: string;
   metric: MetricId;
   sources: RevenueSource[];
   range: DateTimeRange;
@@ -113,6 +115,15 @@ export function RevenueBySourceChart({
       byEpoch.set(epoch, row);
     }
   }
+  // Lay out every bucket of the window (days without income read as an empty slot, not a gap).
+  const bucketCount = haveRange ? Math.ceil((toMs - fromMs) / bucketMs) : 0;
+  if (haveRange && bucketCount > 0 && bucketCount <= 400) {
+    const start = Math.floor(fromMs / bucketMs) * bucketMs;
+    for (let epoch = start; epoch < toMs; epoch += bucketMs) {
+      if (!byEpoch.has(epoch))
+        byEpoch.set(epoch, { epoch, label: tickFmt.format(new Date(epoch)) } as Datum);
+    }
+  }
   const data = [...byEpoch.values()].sort((a, b) => a.epoch - b.epoch);
 
   const totals = sources.map((src) => ({
@@ -129,28 +140,33 @@ export function RevenueBySourceChart({
 
   return (
     <Card className={className ?? "flex min-w-0 flex-col gap-3"}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <CardTitle>{title}</CardTitle>
-          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
-            {totals.map((t) => (
-              <span key={t.key} className="inline-flex items-center gap-1.5 text-[13px]">
-                <span className="size-2.5 rounded-[3px]" style={{ background: t.color }} />
-                <span className="text-text-muted">{t.label}</span>
-                <span className="font-extrabold">{format(t.total)}</span>
-                <span className="text-text-muted">
-                  {grandTotal > 0 ? `${Math.round((t.total / grandTotal) * 100)}%` : "0%"}
-                </span>
-              </span>
-            ))}
-          </div>
+          {subtitle ? <p className="text-text-muted mt-0.5 text-[13px]">{subtitle}</p> : null}
         </div>
-        <InfoPopover metric={metric} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {totals.map((t) => (
+            <span key={t.key} className="inline-flex items-center gap-1.5 text-[13px]">
+              <span className="size-2.5 rounded-[3px]" style={{ background: t.color }} />
+              <span className="text-text-muted">{t.label}</span>
+              <span className="font-extrabold">{format(t.total)}</span>
+              <span className="text-text-muted">
+                {grandTotal > 0 ? `${Math.round((t.total / grandTotal) * 100)}%` : "0%"}
+              </span>
+            </span>
+          ))}
+          <InfoPopover metric={metric} />
+        </div>
       </div>
-      {data.length === 0 ? (
+      {grandTotal === 0 ? (
         <p className="text-text-muted py-8 text-center text-sm">Sin ingresos en este período.</p>
       ) : (
-        <div className="h-[210px]">
+        <div
+          role="img"
+          aria-label={totals.map((t) => `${t.label}: ${format(t.total)}`).join(". ")}
+          className="h-[230px]"
+        >
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data} margin={{ top: 16, right: 4, left: 4, bottom: 0 }}>
               <CartesianGrid stroke="var(--color-fill)" vertical={false} />

@@ -27,7 +27,9 @@ export default function PrivacyPage() {
           <li>
             <strong>Cuenta:</strong> nombre, apellido, email, nombre de usuario y contraseña. La
             contraseña se guarda cifrada (hash); nunca la almacenamos ni la vemos en texto plano. Si
-            ingresás con Google, recibimos de Google los datos básicos de tu cuenta.
+            ingresás con Google, recibimos de Google los datos básicos de tu cuenta. Si querés,
+            también podés subir una foto de perfil (la achicamos antes de enviarla); es opcional y
+            la podés quitar cuando quieras.
           </li>
           <li>
             <strong>Aprendizaje:</strong> cursos y lecciones, intentos y resultados de los
@@ -84,10 +86,10 @@ export default function PrivacyPage() {
       <Section title="4. Organizaciones y sus administradores">
         <p>
           Si usás Signa por una empresa o institución, los administradores de esa organización
-          pueden ver en el panel web: tu nombre, apellido y email, tu estado de membresía, tu
-          progreso en los cursos contratados, tu última actividad, el módulo que estás cursando, tus
-          aciertos en los ejercicios, las señas que aprendiste, tu racha, tus minutos de aprendizaje
-          y tus días activos.
+          pueden ver en el panel web: tu nombre, apellido, email y foto de perfil (si la cargaste),
+          tu estado de membresía, tu progreso en los cursos contratados, tu última actividad, el
+          módulo que estás cursando, tus aciertos en los ejercicios, las señas que aprendiste, tu
+          racha, tus minutos de aprendizaje y tus días activos.
         </p>
         <p>
           No ven tus amistades ni tus compras, y los resultados de los ejercicios solo incluyen los
@@ -134,9 +136,9 @@ export default function PrivacyPage() {
         <p>
           Conservamos tus datos mientras tu cuenta esté activa. Si eliminás tu cuenta, se desactiva
           de inmediato y borramos tus datos personales y de actividad: nombre, apellido, email,
-          usuario, progreso, estadísticas, logros, amistades, notificaciones, configuraciones, tu
-          pertenencia a organizaciones, las invitaciones enviadas a tu email y las sesiones y tokens
-          de tus dispositivos.
+          usuario, foto de perfil, progreso, estadísticas, logros, amistades, notificaciones,
+          configuraciones, tu pertenencia a organizaciones, las invitaciones enviadas a tu email y
+          las sesiones y tokens de tus dispositivos.
         </p>
         <p>
           Lo único que conservamos es el historial de compras y regalos de gemas, por obligaciones

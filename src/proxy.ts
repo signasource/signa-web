@@ -4,6 +4,7 @@ import { buildCsp, MARKETING_PATHS } from "@/lib/security/csp";
 const PASSTHROUGH_PATHS: readonly string[] = [
   ...(MARKETING_PATHS as readonly string[]),
   "/api/glb-viewer",
+  "/api/glb-viewer/file",
 ];
 
 export function proxy(request: NextRequest) {

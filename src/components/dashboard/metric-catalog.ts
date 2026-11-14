@@ -115,7 +115,7 @@ export const METRICS = {
     goodWhen: "Picos en los horarios de estudio habituales; caídas a cero fuera de ellos.",
   },
   session_duration: {
-    label: "Duración promedio de sesión",
+    label: "Duración de sesión",
     description: "Cuánto dura en promedio cada vez que alguien usa la app (tiempo dedicado).",
     howComputed:
       "Promediamos cuánto tiempo estuvo abierta la app en cada uso. Un uso va desde que se abre hasta que se deja.",
@@ -130,10 +130,11 @@ export const METRICS = {
     goodWhen: "Las columnas no caen a pico; a 7 y 30 días se sostiene una buena parte.",
   },
   retention_w1: {
-    label: "Retención a la semana",
-    description: "Qué porcentaje de los usuarios nuevos vuelve a usar la app la semana siguiente.",
+    label: "Retención a 7 días",
+    description:
+      "Qué porcentaje de los usuarios que se registraron en el período volvió a usar la app 7 días después.",
     howComputed:
-      "De la gente que se registró una semana, qué porcentaje volvió a estar activa la semana siguiente.",
+      "Tomamos las semanas de registro del período cuya marca de 7 días ya pasó y calculamos qué porcentaje de esas personas volvió a estar activa a los 7 días. La línea chica muestra cada semana de registro.",
     goodWhen: "Cuanto más alta, mejor; por encima del 40% es saludable.",
     threshold: { dir: "up", warn: 40, danger: 20 },
   },
@@ -152,11 +153,11 @@ export const METRICS = {
     threshold: { dir: "up", warn: 30, danger: 15 },
   },
   income: {
-    label: "Ingresos",
+    label: "Ingresos netos",
     description:
-      "Todo el dinero que entra: por un lado las organizaciones (compra de cupos) y por otro los usuarios finales (gemas y cursos).",
+      "Todo el dinero que entra, descontados los reembolsos: por un lado las organizaciones (compra de cupos) y por otro los usuarios finales (gemas y cursos).",
     howComputed:
-      "Sumamos el dinero de las compras con pago confirmado dentro del período, separado entre organizaciones y usuarios finales.",
+      "Sumamos el dinero de las compras con pago confirmado dentro del período y le restamos lo reembolsado en el mismo período. La variación compara contra el período anterior de igual duración.",
     goodWhen: "Crece y supera a los reembolsos.",
   },
   refunds: {
@@ -196,8 +197,8 @@ export const METRICS = {
     description: "Cupos comprados por organizaciones que efectivamente usa un participante.",
     howComputed:
       "Dividimos los cupos que ya tienen un participante activo por el total de cupos vendidos.",
-    goodWhen: "Cuanto más alta, mejor aprovechamiento.",
-    threshold: { dir: "up", warn: 60, danger: 40 },
+    goodWhen: "Por encima del 70%: los cupos vendidos se están usando.",
+    threshold: { dir: "up", warn: 70, danger: 50 },
   },
   gems_revenue: {
     label: "Compras de gemas",
@@ -261,7 +262,7 @@ export const METRICS = {
     goodWhen: "Alto y creciente.",
   },
   average_ticket: {
-    label: "Ticket promedio",
+    label: "Ticket promedio org.",
     description: "Cuánto dinero entra en promedio por cada compra de cupos de organizaciones.",
     howComputed:
       "Dividimos el dinero ingresado por organizaciones entre la cantidad de compras confirmadas en el período.",
@@ -345,11 +346,11 @@ export const METRICS = {
     goodWhen: "Alta y acompañada por una buena tasa de finalización.",
   },
   lesson_completion_rate: {
-    label: "Tasa de finalización de lecciones",
+    label: "Finalización de lecciones",
     description: "Qué parte de las lecciones que se empiezan se terminan.",
     howComputed: "Dividimos las lecciones completadas por las lecciones iniciadas en el período.",
-    goodWhen: "Cuanto más alta, mejor; una tasa baja marca lecciones que se abandonan.",
-    threshold: { dir: "up", warn: 50, danger: 30 },
+    goodWhen: "Por encima del 70%; una tasa baja marca lecciones que se abandonan.",
+    threshold: { dir: "up", warn: 70, danger: 50 },
   },
   exercises_attempted: {
     label: "Ejercicios realizados",
@@ -464,11 +465,11 @@ export const METRICS = {
     goodWhen: "Permite detectar cursos con mucho abandono.",
   },
   global_course_completion: {
-    label: "Completitud global de cursos",
+    label: "Completitud de curso/s",
     description:
-      "Qué porcentaje de las combinaciones posibles usuario–curso se finalizó. Es una medida de cuánto se aprovecha el contenido.",
+      "Qué porcentaje de las inscripciones a cursos terminó el curso. Es una medida de cuánto se aprovecha el contenido.",
     howComputed:
-      "Dividimos el total de finalizaciones de curso por las combinaciones posibles (cantidad de usuarios × cantidad de cursos). El denominador refleja el máximo teórico: si cada usuario terminara cada curso, daría 100%.",
+      "Dividimos las inscripciones que completaron el curso por todas las inscripciones en curso o completadas, al cierre del período. Con un curso elegido, solo cuenta ese curso.",
     goodWhen: "Crece a medida que más usuarios avanzan en los cursos.",
   },
   lesson_abandonment_detail: {
@@ -562,9 +563,10 @@ export const METRICS = {
   },
   xp_distribution: {
     label: "Distribución de experiencia",
-    description: "Cuántos usuarios hay en cada nivel de experiencia acumulada.",
-    howComputed: "Agrupamos a los usuarios por su experiencia total acumulada.",
-    goodWhen: "Una base sana con usuarios avanzando hacia los niveles altos.",
+    description: "Cuántos usuarios activos hay en cada tramo de experiencia ganada en el período.",
+    howComputed:
+      "Sumamos la experiencia que ganó cada usuario activo en el período y los agrupamos en tramos ordenados. Quien estuvo activo sin ganar experiencia cae en el primer tramo.",
+    goodWhen: "Una base sana con usuarios avanzando hacia los tramos altos.",
   },
   achievements_least: {
     label: "Logros menos desbloqueados",
@@ -625,12 +627,12 @@ export const METRICS = {
     goodWhen: "Bajo y estable (decenas de milisegundos).",
   },
   latency_p95: {
-    label: "Tiempo de respuesta en casos lentos",
+    label: "Latencia p95",
     description: "Cuánto tarda el servidor en el 95% más rápido de las consultas.",
     howComputed:
-      "Tomamos el tiempo que supera al 95% de las consultas (deja afuera el 5% más lento).",
-    goodWhen: "Por debajo de medio segundo.",
-    threshold: { dir: "down", warn: 0.5, danger: 1 },
+      "Tomamos el tiempo que supera al 95% de las consultas (deja afuera el 5% más lento). La tarjeta muestra el promedio del período.",
+    goodWhen: "Por debajo de 300 ms (el objetivo).",
+    threshold: { dir: "down", warn: 0.3, danger: 0.6 },
   },
   latency_p99: {
     label: "Tiempo de respuesta en el peor 1%",
@@ -641,7 +643,8 @@ export const METRICS = {
   throughput: {
     label: "Consultas por segundo",
     description: "Cuántas consultas por segundo atiende el servidor.",
-    howComputed: "Contamos cuántas consultas por segundo recibe el servidor en promedio.",
+    howComputed:
+      "Contamos cuántas consultas por segundo recibe el servidor en promedio en el período; el pico es el valor más alto.",
     goodWhen: "Acompaña el uso real sin saturar.",
   },
   error_rate: {
@@ -666,7 +669,7 @@ export const METRICS = {
     goodWhen: "Ninguna operación domina el tiempo de respuesta.",
   },
   cpu_host: {
-    label: "Uso de CPU del servidor",
+    label: "CPU del servidor",
     description: "Cuánta capacidad de cálculo del servidor se está usando.",
     howComputed: "Medimos el porcentaje de la CPU del servidor que está en uso.",
     goodWhen: "Con margen; sostenido por debajo del 85%.",
@@ -792,8 +795,9 @@ export const METRICS = {
     description: "Qué parte de los ejercicios con cámara se resuelve correctamente.",
     howComputed:
       "Dividimos los ejercicios con cámara respondidos bien por el total de ejercicios con cámara.",
-    goodWhen: "Alta; una caída puede indicar peor reconocimiento o peores condiciones de cámara.",
-    threshold: { dir: "up", warn: 65, danger: 50 },
+    goodWhen:
+      "Por encima del 75%; una caída puede indicar peor reconocimiento o peores condiciones de cámara.",
+    threshold: { dir: "up", warn: 75, danger: 60 },
   },
   recognition_attempts: {
     label: "Ejercicios con cámara",

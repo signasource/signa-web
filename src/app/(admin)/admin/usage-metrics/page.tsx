@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { DatetimeRangePicker } from "@/components/dashboard/datetime-range-picker";
 import { MetricsTabs, type TabItem } from "@/components/dashboard/metrics-tabs";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
-import { REFRESH_MS } from "@/components/dashboard/perf-panel";
+import { metricTone } from "@/components/dashboard/kpi-card";
+import { useServiceStatus, worstTone } from "@/components/dashboard/services-status";
+import { REFRESH_MS, useLearningQuery } from "@/components/dashboard/usage-queries";
 import { PageHeading } from "@/components/dashboard/ui";
 import { GrowthTab } from "@/components/dashboard/usage-growth";
 import { InfraTab } from "@/components/dashboard/usage-infra";
@@ -21,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 type TabKey = "resumen" | "negocio" | "usuarios" | "aprendizaje" | "infraestructura";
 
-const TABS: TabItem<TabKey>[] = [
+const BASE_TABS: TabItem<TabKey>[] = [
   { key: "resumen", label: "Resumen" },
   { key: "negocio", label: "Negocio" },
   { key: "usuarios", label: "Usuarios" },
@@ -33,7 +35,7 @@ const TABS: TabItem<TabKey>[] = [
 const MIN_SPAN_SECONDS = 300;
 
 function isTabKey(value: string | null): value is TabKey {
-  return TABS.some((t) => t.key === value);
+  return BASE_TABS.some((t) => t.key === value);
 }
 
 const WINDOW_DATE = new Intl.DateTimeFormat("es-AR", {
@@ -50,6 +52,16 @@ function previousWindowLabel(range: { from: string; to: string }): string {
   const prevFrom = new Date(from - (to - from));
   const prevTo = new Date(from - 1);
   return `${WINDOW_DATE.format(prevFrom)} – ${WINDOW_DATE.format(prevTo)}`;
+}
+
+/** Scrolls to an element of the newly shown tab once it renders (its data may still be loading). */
+function scrollToWhenReady(id: string, attempts = 40) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  if (attempts > 0) window.setTimeout(() => scrollToWhenReady(id, attempts - 1), 100);
 }
 
 export default function UsageMetricsPage() {
@@ -109,6 +121,28 @@ export default function UsageMetricsPage() {
 
   const perf = { range, step, live };
 
+  // Health dots on the tabs: learning from its two headline rates, infra from the services strip.
+  const learning = useLearningQuery(range, live);
+  const services = useServiceStatus(range, step, live);
+  const l = learning.data;
+  const learningTone = l
+    ? worstTone([
+        l.lessons.started
+          ? metricTone("lesson_completion_rate", l.lessons.completionPercent)
+          : "neutral",
+        l.exercises.attempted
+          ? metricTone("exercise_success_rate", l.exercises.successPercent)
+          : "neutral",
+      ])
+    : "neutral";
+  const tabs = BASE_TABS.map((t) =>
+    t.key === "aprendizaje"
+      ? { ...t, dot: learningTone }
+      : t.key === "infraestructura"
+        ? { ...t, dot: services.tone }
+        : t,
+  );
+
   return (
     <section className="flex flex-col gap-6">
       <PageHeading title="Métricas de uso">
@@ -129,12 +163,17 @@ export default function UsageMetricsPage() {
         </div>
       </PageHeading>
 
-      <div className="flex flex-col gap-1">
-        <MetricsTabs tabs={TABS} active={tab} onChange={changeTab} idBase="metrics" />
-        <p className="text-text-muted text-right text-xs">
-          Comparando con {previousWindowLabel(range)} · horario UTC
-        </p>
-      </div>
+      <MetricsTabs
+        tabs={tabs}
+        active={tab}
+        onChange={changeTab}
+        idBase="metrics"
+        trailing={
+          <p className="text-text-muted text-xs">
+            Comparando con {previousWindowLabel(range)} · horario UTC
+          </p>
+        }
+      />
 
       <div role="tabpanel" id={`metrics-panel-${tab}`} aria-labelledby={`metrics-tab-${tab}`}>
         {tab === "resumen" ? (
@@ -143,7 +182,10 @@ export default function UsageMetricsPage() {
             live={live}
             step={step}
             onSelectRange={onSelectRange}
-            onSelectTab={(t: ResumenTarget) => changeTab(t)}
+            onSelectTab={(t: ResumenTarget, anchor?: string) => {
+              changeTab(t);
+              if (anchor) scrollToWhenReady(anchor);
+            }}
           />
         ) : null}
         {tab === "negocio" ? (

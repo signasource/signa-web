@@ -29,13 +29,16 @@ export function Card({
   className,
   children,
   delay,
+  id,
 }: {
   className?: string;
   children: ReactNode;
   delay?: number;
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       className={cn("border-border bg-surface dash-card-enter rounded-2xl border p-5", className)}
       style={delay !== undefined ? ({ "--delay": `${delay}ms` } as CSSProperties) : undefined}
     >
@@ -134,22 +137,30 @@ export function Avatar({
   name,
   lastName,
   size = "md",
+  src,
 }: {
   seed: string;
   name: string;
   lastName: string;
   size?: "md" | "lg";
+  /** Profile photo (see `avatarSrc`); the initials show when there is none. */
+  src?: string | null;
 }) {
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "font-display dash-avatar-hover flex shrink-0 items-center justify-center rounded-full font-extrabold",
+        "font-display dash-avatar-hover flex shrink-0 items-center justify-center overflow-hidden rounded-full font-extrabold",
         size === "lg" ? "size-[72px] text-[26px]" : "size-[34px] text-xs",
         AVATARS[avatarIndex(seed)],
       )}
     >
-      {initials(name, lastName)}
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element -- a small photo served by the API; next/image cannot optimize it
+        <img src={src} alt="" className="size-full object-cover" />
+      ) : (
+        initials(name, lastName)
+      )}
     </span>
   );
 }

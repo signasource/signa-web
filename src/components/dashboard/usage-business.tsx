@@ -1,6 +1,5 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   Bar,
   BarChart,
@@ -13,8 +12,8 @@ import {
 import { InfoPopover } from "@/components/dashboard/info-popover";
 import { Card, CardTitle } from "@/components/dashboard/ui";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
-import { REFRESH_MS } from "@/components/dashboard/perf-panel";
-import { metricsApi, type CountItem } from "@/lib/api/metrics";
+import { useBusinessQuery } from "@/components/dashboard/usage-queries";
+import type { CountItem } from "@/lib/api/metrics";
 import type { DateTimeRange } from "@/lib/datetime-range";
 
 export const NUMBER = new Intl.NumberFormat("es-AR");
@@ -51,13 +50,7 @@ export function dayRangeSeconds(dayIso: string): { from: number; to: number } {
 
 /** Shared business-metrics query; both the Negocio and Aprendizaje tabs read from this cache. */
 export function useBusinessMetrics(range: DateTimeRange, live: boolean) {
-  return useQuery({
-    queryKey: ["admin", "metrics", "business", range.from, range.to],
-    queryFn: () => metricsApi.business({ from: range.from, to: range.to }),
-    enabled: Boolean(range.from && range.to),
-    placeholderData: keepPreviousData,
-    refetchInterval: live ? REFRESH_MS : false,
-  });
+  return useBusinessQuery(range, live);
 }
 
 function ActivityTooltip({
