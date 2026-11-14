@@ -109,7 +109,7 @@ through a PR from a new branch.
 - **Protection (`develop`, `master`):** PR required, 1 approval, stale approvals dismissed, branch must be
   up to date, no force-push or deletion. Only squash merge is enabled; merged branches are auto-deleted.
 - **To `master`:** only from `release/*` or `hotfix/*` PRs.
-- **Gates:** `ci.yml` runs on every push (format, lint, typecheck, tests, build); `branch-policy.yml`
+- **Gates:** `ci.yml` runs on PRs and on pushes to `develop`/`master` (format, lint, typecheck, tests, build); `branch-policy.yml`
   fails PRs with an invalid branch name/target.
 - **Release:** pushing to `master` runs `semantic-release` (tag + GitHub Release). Never tag by hand.
 - Never commit `.env*` (except `.env.example`).
