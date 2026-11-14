@@ -88,6 +88,8 @@ export type AdminOrganization = {
   activeMembers: number;
   adminName: string | null;
   adminEmail: string | null;
+  /** Why the organization was suspended; null unless it is SUSPENDED. */
+  suspensionReason: string | null;
 };
 
 export type AdminPurchase = {
@@ -355,11 +357,15 @@ export const adminApi = {
 
   organization: (id: string) => api<AdminOrganization>(`/admin/organizations/${id}`),
 
-  updateOrganizationStatus: (id: string, status: OrganizationStatus) =>
+  /** `reason` is required by the API when suspending. */
+  updateOrganizationStatus: (id: string, status: OrganizationStatus, reason?: string) =>
     api<AdminOrganization>(`/admin/organizations/${id}/status`, {
       method: "PATCH",
-      body: { status },
+      body: { status, reason },
     }),
+
+  /** Permanent removal of a rejected/suspended org; frees its emails. 409 if it has purchases. */
+  deleteOrganization: (id: string) => api<void>(`/admin/organizations/${id}`, { method: "DELETE" }),
 
   purchases: (status?: PurchaseStatus) =>
     api<AdminPurchase[]>("/admin/purchases", { query: { status } }),

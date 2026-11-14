@@ -26,6 +26,9 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   Activas/Pendientes/Suspendidas/Rechazadas — the pending-validation amber strip with "Validar", and
   usuarios/ingreso promedio por org + compras) and **Usuarios finales** (gem & paid-course money tiles,
   usuarios que compraron, ingreso por usuario pagador, and recompra 2+ from `endUsers.repeatBuyerPercent`).
+  The `/admin/organizations` list has tabs Pendientes/Activas/Rechazadas/Suspendidas/Todas; "Todas"
+  excludes suspended (dadas de baja) orgs, and a suspended org's detail panel offers "Reactivar
+  organización" (`PATCH status: ACTIVE`). Suspending asks for a mandatory reason (shown in the panel of a suspended org), and rejected/suspended orgs get "Dar de baja" (confirmed inline, `DELETE`), which frees their emails.
   Finally the **per-org license utilization table** `OrgUtilizationTable` — contracted vs. used seats,
   activos 7 d, vence (coloured by `expiryTone`), ingresos and an **Estado** badge (Bajo uso / Vence pronto /
   Saludable / Sin cupos libres); ranked by risk, collapses to 6 rows behind a "Ver más (N)" toggle. Exposes
