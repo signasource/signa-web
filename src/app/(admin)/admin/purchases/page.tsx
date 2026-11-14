@@ -880,14 +880,12 @@ function ConfirmPaymentPanel({
 }) {
   const qc = useQueryClient();
   const [method, setMethod] = useState<ManualPaymentMethod>("TRANSFER");
-  const [ref, setRef] = useState("");
   const [date, setDate] = useState(today);
 
   const confirm = useMutation({
     mutationFn: () =>
       adminApi.confirmPaymentFull(purchase.id, {
         paymentMethod: method,
-        paymentReference: ref.trim() || undefined,
         paymentDate: date || undefined,
       }),
     onSuccess: () => {
@@ -938,18 +936,6 @@ function ConfirmPaymentPanel({
           </select>
         </label>
         <label className="flex flex-col gap-1.5 text-xs font-semibold" style={{ color: "#8c817a" }}>
-          Referencia
-          <input
-            type="text"
-            maxLength={100}
-            value={ref}
-            onChange={(e) => setRef(e.target.value)}
-            placeholder="N.º de operación o comprobante"
-            className="h-10 rounded-xl border px-3 text-sm outline-none"
-            style={{ borderColor: "#ece5de", background: "#fff", color: "#241a16" }}
-          />
-        </label>
-        <label className="flex flex-col gap-1.5 text-xs font-semibold" style={{ color: "#8c817a" }}>
           Fecha del pago
           <input
             type="date"
@@ -977,7 +963,7 @@ function ConfirmPaymentPanel({
           </span>
         )}
         <span className="text-xs" style={{ color: "#8c817a" }}>
-          Queda registrado quién lo confirmó y con qué referencia.
+          Queda registrado quién lo confirmó.
         </span>
       </div>
     </div>
@@ -1130,7 +1116,7 @@ function PurchaseDetailView({
         </p>
       )}
 
-      {p.status === "PENDING_PAYMENT" && (
+      {p.status === "PENDING_PAYMENT" && p.type === "SEATS" && (
         <ConfirmPaymentPanel
           purchase={p}
           onConfirmed={() => qc.invalidateQueries({ queryKey: ["admin", "purchases", purchaseId] })}
