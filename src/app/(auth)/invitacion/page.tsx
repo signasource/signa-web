@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiError } from "@/lib/api/client";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { invitationsApi } from "@/lib/api/invitations";
 import { sessionApi } from "@/lib/api/session";
 import type { AcceptedInvitation, InvitationPreview } from "@/lib/api/types";
@@ -27,7 +28,7 @@ const SUBMIT = "bg-text text-on-dark mt-2 min-h-14 rounded-2xl font-extrabold di
 
 function acceptErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
-    if (err.status === 401) return "La contraseña no es correcta.";
+    if (err.status === 401) return "No pudimos validar tu sesión. Probá de nuevo.";
     if (err.status === 403) return "Esta invitación es para otro email.";
     if (err.status === 409)
       return "Tu cuenta ya pertenece a otra organización. Escribile a quien te invitó.";
@@ -35,6 +36,13 @@ function acceptErrorMessage(err: unknown): string {
     if (err.status === 404) return "No encontramos la invitación.";
   }
   return "No pudimos aceptar la invitación. Probá de nuevo.";
+}
+
+function loginErrorMessage(err: unknown): string {
+  if (err instanceof ApiError && err.status === 401) {
+    return "Email o contraseña incorrectos. Si te registraste con Google, no tenés contraseña: creala desde la app con «Olvidé mi contraseña».";
+  }
+  return acceptErrorMessage(err);
 }
 
 function registerErrorMessage(err: unknown): string {
@@ -50,6 +58,42 @@ async function acceptAndLeave(token: string): Promise<AcceptedInvitation> {
   } finally {
     sessionApi.logout();
   }
+}
+
+function GoogleAccept({
+  invitation,
+  onAccepted,
+}: {
+  invitation: InvitationPreview & { token: string };
+  onAccepted: (result: AcceptedInvitation) => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+
+  async function onCredential(idToken: string) {
+    setError(null);
+    try {
+      await sessionApi.google(idToken);
+    } catch {
+      setError("No pudimos iniciar sesión con Google. Probá de nuevo.");
+      return;
+    }
+    try {
+      onAccepted(await acceptAndLeave(invitation.token));
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? `Esta invitación es para ${invitation.email}. Elegí esa cuenta de Google.`
+          : acceptErrorMessage(err),
+      );
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <GoogleSignInButton onCredential={onCredential} />
+      {error && <p className={`${ERROR} text-center`}>{error}</p>}
+    </div>
+  );
 }
 
 function LoginForm({
@@ -70,6 +114,11 @@ function LoginForm({
     setServerError(null);
     try {
       await sessionApi.login(invitation.email, values.password);
+    } catch (err) {
+      setServerError(loginErrorMessage(err));
+      return;
+    }
+    try {
       onAccepted(await acceptAndLeave(invitation.token));
     } catch (err) {
       setServerError(acceptErrorMessage(err));
@@ -291,6 +340,8 @@ function InvitationContent() {
       ) : (
         <RegisterForm invitation={invitation} onAccepted={setAccepted} />
       )}
+
+      <GoogleAccept invitation={invitation} onAccepted={setAccepted} />
 
       <button
         type="button"
