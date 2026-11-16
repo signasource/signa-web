@@ -41,6 +41,10 @@ const REFUND_REASON_LABEL: Record<string, string> = {
   OTHER: "Otro",
 };
 
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  MERCADO_PAGO: "Mercado Pago",
+};
+
 const STATUS_OPTIONS: { v: UnifiedPurchaseStatus | "ALL"; l: string }[] = [
   { v: "ALL", l: "Todos" },
   { v: "PENDING_PAYMENT", l: "Pendiente de pago" },
