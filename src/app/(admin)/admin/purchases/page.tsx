@@ -7,7 +7,6 @@ import {
   type AdminPurchaseDetail,
   type AdminPurchaseListItem,
   type AdminRefundRequest,
-  type ManualPaymentMethod,
   type PurchaseType,
   type RefundRequestStatus,
   type UnifiedPurchaseStatus,
@@ -42,12 +41,8 @@ const REFUND_REASON_LABEL: Record<string, string> = {
   OTHER: "Otro",
 };
 
-const PAYMENT_METHOD_LABEL: Record<ManualPaymentMethod, string> = {
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
   MERCADO_PAGO: "Mercado Pago",
-  TRANSFER: "Transferencia bancaria",
-  DEPOSIT: "Depósito",
-  CASH: "Efectivo",
-  OTHER: "Otro",
 };
 
 const STATUS_OPTIONS: { v: UnifiedPurchaseStatus | "ALL"; l: string }[] = [
@@ -869,107 +864,6 @@ function RefundList({
   );
 }
 
-// ── Manual confirmation panel ─────────────────────────────────────────────────
-
-function ConfirmPaymentPanel({
-  purchase,
-  onConfirmed,
-}: {
-  purchase: AdminPurchaseDetail;
-  onConfirmed: () => void;
-}) {
-  const qc = useQueryClient();
-  const [method, setMethod] = useState<ManualPaymentMethod>("TRANSFER");
-  const [date, setDate] = useState(today);
-
-  const confirm = useMutation({
-    mutationFn: () =>
-      adminApi.confirmPaymentFull(purchase.id, {
-        paymentMethod: method,
-        paymentDate: date || undefined,
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin", "purchases"] });
-      onConfirmed();
-    },
-  });
-
-  const pendingEffect: Record<PurchaseType, string> = {
-    SEATS: "y se envían las invitaciones a los cupos",
-    GEMS: "y se acreditan las gemas en la cuenta",
-    COURSE: "y se habilita el curso en la cuenta",
-  };
-
-  return (
-    <div
-      className="flex flex-col gap-4 rounded-2xl border p-5"
-      style={{ borderColor: "#ece5de", background: "#fff" }}
-    >
-      <div>
-        <h2
-          className="font-display m-0 text-lg font-bold tracking-tight"
-          style={{ letterSpacing: "-0.015em" }}
-        >
-          Confirmar pago manual
-        </h2>
-        <p className="m-0 mt-1 max-w-xl text-sm text-pretty" style={{ color: "#8c817a" }}>
-          Usalo cuando el pago entró por fuera de Mercado Pago. La compra pasa a pagada{" "}
-          {pendingEffect[purchase.type]}.
-        </p>
-      </div>
-      <div
-        className="grid gap-3"
-        style={{ gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))" }}
-      >
-        <label className="flex flex-col gap-1.5 text-xs font-semibold" style={{ color: "#8c817a" }}>
-          Medio de pago
-          <select
-            value={method}
-            onChange={(e) => setMethod(e.target.value as ManualPaymentMethod)}
-            className="h-10 rounded-xl border px-3 text-sm outline-none"
-            style={{ borderColor: "#ece5de", background: "#fff", color: "#241a16" }}
-          >
-            <option value="TRANSFER">Transferencia bancaria</option>
-            <option value="DEPOSIT">Depósito</option>
-            <option value="CASH">Efectivo</option>
-            <option value="OTHER">Otro</option>
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5 text-xs font-semibold" style={{ color: "#8c817a" }}>
-          Fecha del pago
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="h-10 rounded-xl border px-3 text-sm outline-none"
-            style={{ borderColor: "#ece5de", background: "#fff", color: "#241a16" }}
-          />
-        </label>
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={() => confirm.mutate()}
-          disabled={confirm.isPending}
-          className="rounded-xl border-none px-4 py-2.5 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-          style={{ background: "#7857ff" }}
-        >
-          {confirm.isPending
-            ? "Confirmando…"
-            : `Confirmar pago de ${money(purchase.amount, purchase.currency)}`}
-        </button>
-        {confirm.error && (
-          <span className="text-xs" style={{ color: "#e14e22" }}>
-            No pudimos confirmar el pago.
-          </span>
-        )}
-        <span className="text-xs" style={{ color: "#8c817a" }}>
-          Queda registrado quién lo confirmó.
-        </span>
-      </div>
-    </div>
-  );
-}
-
 // ── Purchase detail view ──────────────────────────────────────────────────────
 
 function PurchaseDetailView({
@@ -983,7 +877,6 @@ function PurchaseDetailView({
   onBack: () => void;
   onOpenRefund: (id: string) => void;
 }) {
-  const qc = useQueryClient();
   const {
     data: p,
     isPending,
@@ -1030,20 +923,9 @@ function PurchaseDetailView({
   ];
   if (p.refundedAt) facts.push({ k: "Reembolsada", v: fdate(p.refundedAt) });
   facts.push({ k: "Referencia externa", v: p.externalRef });
-  facts.push({
-    k: "Medio de pago",
-    v: p.paymentMethod ? PAYMENT_METHOD_LABEL[p.paymentMethod] : "Sin pagar",
-  });
-  if (p.paymentMethod === "MERCADO_PAGO") {
-    facts.push({ k: "Orden de Mercado Pago", v: p.mpOrderId ?? "—" });
-  } else if (p.paymentMethod) {
-    facts.push({ k: "Referencia del pago", v: p.manualRef ?? "—" });
-    if (p.confirmedByName) {
-      facts.push({
-        k: "Confirmado por",
-        v: `${p.confirmedByName} · ${p.confirmedAt ? fdate(p.confirmedAt) : ""}`,
-      });
-    }
+  facts.push({ k: "Medio de pago", v: p.paymentMethod ?? "Sin pagar" });
+  if (p.mpOrderId) {
+    facts.push({ k: "Orden de Mercado Pago", v: p.mpOrderId });
   }
 
   return (
@@ -1103,24 +985,6 @@ function PurchaseDetailView({
             Ver pedido
           </button>
         </div>
-      )}
-
-      {p.confirmedByName && (
-        <p
-          className="m-0 rounded-2xl px-5 py-4 text-sm font-semibold"
-          style={{ background: "#e7f5ea", color: "#2e7d45" }}
-        >
-          Pago confirmado manualmente por {p.confirmedByName} (
-          {p.paymentMethod ? PAYMENT_METHOD_LABEL[p.paymentMethod] : ""}
-          {p.manualRef ? ` · ${p.manualRef}` : ""}).
-        </p>
-      )}
-
-      {p.status === "PENDING_PAYMENT" && p.type === "SEATS" && (
-        <ConfirmPaymentPanel
-          purchase={p}
-          onConfirmed={() => qc.invalidateQueries({ queryKey: ["admin", "purchases", purchaseId] })}
-        />
       )}
 
       <div

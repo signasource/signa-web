@@ -23,6 +23,7 @@ const TABS: { label: string; value: OrganizationStatus | "ALL" }[] = [
   { label: "Pendientes", value: "PENDING" },
   { label: "Activas", value: "ACTIVE" },
   { label: "Rechazadas", value: "REJECTED" },
+  { label: "Suspendidas", value: "SUSPENDED" },
   { label: "Todas", value: "ALL" },
 ];
 
@@ -37,13 +38,30 @@ function StatusBadge({ status }: { status: OrganizationStatus }) {
 function OrgDetailPanel({ org, onClose }: { org: AdminOrganization; onClose: () => void }) {
   const qc = useQueryClient();
 
+  const [suspending, setSuspending] = useState(false);
+  const [reason, setReason] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const done = () => {
+    qc.invalidateQueries({ queryKey: ["admin", "organizations"] });
+    qc.invalidateQueries({ queryKey: ["admin", "stats"] });
+    onClose();
+  };
+
   const mutate = useMutation({
-    mutationFn: (status: OrganizationStatus) => adminApi.updateOrganizationStatus(org.id, status),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin", "organizations"] });
-      onClose();
-    },
+    mutationFn: ({ status, reason }: { status: OrganizationStatus; reason?: string }) =>
+      adminApi.updateOrganizationStatus(org.id, status, reason),
+    onSuccess: done,
   });
+
+  const remove = useMutation({
+    mutationFn: () => adminApi.deleteOrganization(org.id),
+    onSuccess: done,
+  });
+
+  const busy = mutate.isPending || remove.isPending;
+  const error = mutate.error ?? remove.error;
+  const canDelete = org.status === "REJECTED" || org.status === "SUSPENDED";
 
   return (
     <div className="border-border bg-surface flex w-96 shrink-0 flex-col overflow-y-auto rounded-2xl border">
@@ -95,9 +113,40 @@ function OrgDetailPanel({ org, onClose }: { org: AdminOrganization; onClose: () 
           </p>
         )}
 
-        {mutate.error && (
+        {org.status === "SUSPENDED" && (
+          <div className="bg-fill-dark rounded-xl px-4 py-3 text-sm">
+            <p className="text-text-muted text-xs font-semibold">Motivo de la suspensión</p>
+            <p className="text-text mt-0.5">{org.suspensionReason ?? "Sin motivo registrado."}</p>
+          </div>
+        )}
+
+        {suspending && (
+          <div>
+            <label htmlFor="suspension-reason" className="text-text text-sm font-semibold">
+              Motivo de la suspensión
+            </label>
+            <textarea
+              id="suspension-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="Contá por qué suspendés a la organización"
+              className="border-border bg-surface text-text mt-1 w-full rounded-xl border px-3 py-2 text-sm"
+            />
+          </div>
+        )}
+
+        {confirmingDelete && (
           <p className="text-danger text-sm">
-            {mutate.error instanceof Error ? mutate.error.message : "Error al actualizar."}
+            Se elimina la organización de forma definitiva y se liberan sus mails para volver a
+            registrarse. No se puede deshacer.
+          </p>
+        )}
+
+        {error && (
+          <p className="text-danger text-sm">
+            {error instanceof Error ? error.message : "Error al actualizar."}
           </p>
         )}
       </div>
@@ -106,30 +155,83 @@ function OrgDetailPanel({ org, onClose }: { org: AdminOrganization; onClose: () 
         {org.status === "PENDING" && (
           <>
             <button
-              onClick={() => mutate.mutate("ACTIVE")}
-              disabled={mutate.isPending}
+              onClick={() => mutate.mutate({ status: "ACTIVE" })}
+              disabled={busy}
               className="bg-primary flex-1 rounded-xl px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
             >
               Validar organización
             </button>
             <button
-              onClick={() => mutate.mutate("REJECTED")}
-              disabled={mutate.isPending}
+              onClick={() => mutate.mutate({ status: "REJECTED" })}
+              disabled={busy}
               className="border-border text-text-muted hover:bg-fill flex-1 rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-50"
             >
               Rechazar
             </button>
           </>
         )}
-        {org.status === "ACTIVE" && (
+        {org.status === "ACTIVE" &&
+          (suspending ? (
+            <>
+              <button
+                onClick={() => mutate.mutate({ status: "SUSPENDED", reason: reason.trim() })}
+                disabled={busy || reason.trim().length === 0}
+                className="bg-danger flex-1 rounded-xl px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              >
+                Confirmar suspensión
+              </button>
+              <button
+                onClick={() => setSuspending(false)}
+                disabled={busy}
+                className="border-border text-text-muted hover:bg-fill rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setSuspending(true)}
+              className="border-danger text-danger hover:bg-danger/5 rounded-xl border px-4 py-2 text-sm font-semibold"
+            >
+              Suspender
+            </button>
+          ))}
+        {org.status === "SUSPENDED" && (
           <button
-            onClick={() => mutate.mutate("SUSPENDED")}
-            disabled={mutate.isPending}
-            className="border-danger text-danger hover:bg-danger/5 rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            onClick={() => mutate.mutate({ status: "ACTIVE" })}
+            disabled={busy}
+            className="bg-primary flex-1 rounded-xl px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
           >
-            Suspender
+            Reactivar organización
           </button>
         )}
+        {canDelete &&
+          (confirmingDelete ? (
+            <>
+              <button
+                onClick={() => remove.mutate()}
+                disabled={busy}
+                className="bg-danger flex-1 rounded-xl px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              >
+                Sí, dar de baja
+              </button>
+              <button
+                onClick={() => setConfirmingDelete(false)}
+                disabled={busy}
+                className="border-border text-text-muted hover:bg-fill rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setConfirmingDelete(true)}
+              disabled={busy}
+              className="border-danger text-danger hover:bg-danger/5 rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              Dar de baja
+            </button>
+          ))}
       </div>
     </div>
   );
@@ -144,7 +246,8 @@ export default function OrganizationsPage() {
     queryKey: ["admin", "organizations", tab, page],
     queryFn: () =>
       adminApi.organizations({
-        status: tab === "ALL" ? undefined : [tab],
+        // "Todas" excludes suspended (dadas de baja); they live in their own tab.
+        status: tab === "ALL" ? ["PENDING", "ACTIVE", "REJECTED"] : [tab],
         page,
         size: 20,
       }),

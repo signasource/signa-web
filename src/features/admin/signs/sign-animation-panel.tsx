@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 const FORMATS: { key: AnimationFormat; label: string; hint: string }[] = [
   { key: "glb", label: "Avatar 3D (.glb)", hint: "Un archivo; el alumno puede girar el avatar." },
-  { key: "mp4", label: "Video (.mp4)", hint: "Video de frente y, opcional, uno lateral." },
+  { key: "mp4", label: "Video (.mp4)", hint: "Video de frente y uno lateral." },
 ];
 
 /**
@@ -57,15 +57,6 @@ export function SignAnimationPanel({
     },
     onError: (err) =>
       setProblem(errorMessage(err, "No pudimos subir el archivo. Intentá de nuevo.")),
-  });
-
-  const removeLateral = useMutation({
-    mutationFn: () => adminApi.removeSignLateral(sign.id),
-    onSuccess: (saved) => {
-      onSaved(saved);
-      onToast("Video lateral quitado.");
-    },
-    onError: (err) => setProblem(errorMessage(err, "No pudimos quitar el video lateral.")),
   });
 
   async function pick(file: File, view: SignView) {
@@ -204,7 +195,7 @@ export function SignAnimationPanel({
               onFile={(f) => void pick(f, "front")}
             />
             <Dropzone
-              label="Video lateral (opcional)"
+              label="Video lateral"
               accept=".mp4,video/mp4"
               hint=".mp4 · hasta 50 MB"
               disabledReason={
@@ -216,18 +207,6 @@ export function SignAnimationPanel({
               currentUrl={sign.lateralMediaUrl}
               busy={busy === "lateral" ? upload.variables?.file : undefined}
               onFile={(f) => void pick(f, "lateral")}
-              onRemove={
-                sign.lateralAnimationUrl
-                  ? () =>
-                      onConfirm({
-                        title: "¿Quitar el video lateral?",
-                        body: "La app va a mostrar solo el video de frente. El archivo queda en el bucket.",
-                        confirmLabel: "Quitar",
-                        danger: true,
-                        onConfirm: () => removeLateral.mutate(),
-                      })
-                  : undefined
-              }
             />
           </div>
         )}
@@ -259,7 +238,6 @@ function Dropzone({
   busy,
   disabledReason,
   onFile,
-  onRemove,
 }: {
   label: string;
   accept: string;
@@ -269,7 +247,6 @@ function Dropzone({
   busy?: File;
   disabledReason?: string;
   onFile: (file: File) => void;
-  onRemove?: () => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -339,14 +316,6 @@ function Dropzone({
               </button>
             </p>
             <p className="text-text-muted text-xs">{hint}</p>
-            {onRemove && (
-              <button
-                onClick={onRemove}
-                className="text-danger mt-1 text-xs font-semibold underline underline-offset-2"
-              >
-                Quitar video lateral
-              </button>
-            )}
           </>
         )}
         <input

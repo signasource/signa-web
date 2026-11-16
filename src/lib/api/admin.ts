@@ -5,7 +5,6 @@ import type { Page, Purchase, PurchaseDetail, PurchaseStatus } from "@/lib/api/t
 
 export type PurchaseType = "SEATS" | "GEMS" | "COURSE";
 export type UnifiedPurchaseStatus = "PENDING_PAYMENT" | "PAID" | "CANCELLED" | "REFUNDED";
-export type ManualPaymentMethod = "MERCADO_PAGO" | "TRANSFER" | "DEPOSIT" | "CASH" | "OTHER";
 
 export type AdminPurchaseListItem = {
   id: string;
@@ -22,10 +21,7 @@ export type AdminPurchaseListItem = {
   paidAt: string | null;
   refundedAt: string | null;
   mpOrderId: string | null;
-  paymentMethod: ManualPaymentMethod | null;
-  manualRef: string | null;
-  confirmedByName: string | null;
-  confirmedAt: string | null;
+  paymentMethod: "MERCADO_PAGO" | null;
   externalRef: string;
   pendingRefundRequest: boolean;
 };
@@ -88,6 +84,8 @@ export type AdminOrganization = {
   activeMembers: number;
   adminName: string | null;
   adminEmail: string | null;
+  /** Why the organization was suspended; null unless it is SUSPENDED. */
+  suspensionReason: string | null;
 };
 
 export type AdminPurchase = {
@@ -355,20 +353,18 @@ export const adminApi = {
 
   organization: (id: string) => api<AdminOrganization>(`/admin/organizations/${id}`),
 
-  updateOrganizationStatus: (id: string, status: OrganizationStatus) =>
+  /** `reason` is required by the API when suspending. */
+  updateOrganizationStatus: (id: string, status: OrganizationStatus, reason?: string) =>
     api<AdminOrganization>(`/admin/organizations/${id}/status`, {
       method: "PATCH",
-      body: { status },
+      body: { status, reason },
     }),
+
+  /** Permanent removal of a rejected/suspended org; frees its emails. 409 if it has purchases. */
+  deleteOrganization: (id: string) => api<void>(`/admin/organizations/${id}`, { method: "DELETE" }),
 
   purchases: (status?: PurchaseStatus) =>
     api<AdminPurchase[]>("/admin/purchases", { query: { status } }),
-
-  confirmPayment: (purchaseId: string, paymentReference?: string) =>
-    api<PurchaseDetail>(`/admin/purchases/${purchaseId}/confirm-payment`, {
-      method: "POST",
-      body: { paymentReference: paymentReference || undefined },
-    }),
 
   signReports: (filters?: SignReportFilters) =>
     api<AdminSignReport[]>("/admin/sign-reports", {
@@ -483,15 +479,6 @@ export const adminApi = {
 
   purchaseDetail: (id: string, type: PurchaseType) =>
     api<AdminPurchaseDetail>(`/admin/purchases/${id}`, { query: { type } }),
-
-  confirmPaymentFull: (
-    purchaseId: string,
-    data: { paymentReference?: string; paymentMethod?: ManualPaymentMethod; paymentDate?: string },
-  ) =>
-    api<AdminPurchaseDetail>(`/admin/purchases/${purchaseId}/confirm-payment`, {
-      method: "POST",
-      body: data,
-    }),
 
   // ── Refund requests ────────────────────────────────────────────────────────
 
