@@ -1,8 +1,10 @@
 import { z } from "zod";
 import type {
   Purchase,
+  PurchaseDetail,
   PurchaseStatus,
   RefundReason,
+  Seat,
   SeatCounts,
   SeatStatus,
   VolumeDiscount,
@@ -42,6 +44,27 @@ export function seatStatusLabel(status: SeatStatus, purchaseStatus: PurchaseStat
     if (status === "CANCELLED") return "Invitación anulada";
   }
   return SEAT_STATUS_LABEL[status];
+}
+
+/** A seat whose person has not accepted yet, with the purchase it belongs to. */
+export type InvitedSeat = { seat: Seat; purchase: Purchase };
+
+const NOT_ACCEPTED: SeatStatus[] = ["PENDING_PAYMENT", "INVITED", "INVITATION_EXPIRED"];
+
+/** Whether the purchase may hold people who have not accepted (so its detail is worth loading). */
+export function hasInvitedSeats(purchase: Purchase): boolean {
+  if (purchase.status !== "PAID" && purchase.status !== "PENDING_PAYMENT") return false;
+  const c = purchase.seatCounts;
+  return c.pendingPayment + c.invited + c.invitationExpired > 0;
+}
+
+/** Seats of the purchase not yet accepted, optionally matching a case-insensitive email search. */
+export function invitedSeatsOf(detail: PurchaseDetail, query = ""): InvitedSeat[] {
+  const q = query.trim().toLowerCase();
+  return detail.seats
+    .filter((s) => NOT_ACCEPTED.includes(s.status))
+    .filter((s) => !q || s.email.toLowerCase().includes(q))
+    .map((seat) => ({ seat, purchase: detail.purchase }));
 }
 
 /** Whether the organization can still cancel this purchase for a full refund. */
