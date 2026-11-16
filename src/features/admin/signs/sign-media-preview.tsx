@@ -42,9 +42,6 @@ export function SignMediaPreview({
           Nueva seña
         </span>
         <div className="border-border bg-fill relative h-[300px] overflow-hidden rounded-3xl border">
-          <span className="text-text-muted absolute top-2.5 left-2.5 z-10 rounded-lg bg-white/95 px-2 py-0.5 text-[10px] font-semibold">
-            animación LSA
-          </span>
           {hasLateral && (
             <div
               className="absolute top-2 right-2 z-10 flex gap-0.5 rounded-lg bg-white/95 p-0.5"
