@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { BLOCK_TYPES, blockConfigIssues } from "@/lib/course-blocks";
 import { findLesson, pickVersionForCourse } from "@/lib/course-deep-link";
 import {
   adminApi,
@@ -35,100 +36,6 @@ type DrawerTarget = {
   blockIdx: number;
   field: string;
   multi: boolean;
-};
-
-// ─── block definitions ────────────────────────────────────────────────────────
-
-const BLOCK_TYPES: Record<
-  string,
-  { label: string; bg: string; xp: boolean; wide: boolean; fields: [string, string, string][] }
-> = {
-  INFO: {
-    label: "Información",
-    bg: "bg-[#EBE3DB]",
-    xp: false,
-    wide: true,
-    fields: [
-      ["title", "text", "Título"],
-      ["text", "textarea", "Texto"],
-    ],
-  },
-  INTRODUCE_SIGN: {
-    label: "Presentar seña",
-    bg: "bg-[#EEE8FF]",
-    xp: true,
-    wide: false,
-    fields: [["meaning", "sign", "Seña"]],
-  },
-  SELECT_MEANING: {
-    label: "Elegir significado",
-    bg: "bg-[#E4F1EC]",
-    xp: true,
-    wide: false,
-    fields: [
-      ["sign", "sign", "Seña correcta"],
-      ["options", "words", "Opciones de significado"],
-    ],
-  },
-  SELECT_SIGN: {
-    label: "Elegir seña",
-    bg: "bg-[#E4F1FB]",
-    xp: true,
-    wide: false,
-    fields: [
-      ["word", "text", "Palabra"],
-      ["options", "signs", "Señas opcionales"],
-    ],
-  },
-  CONTEXT_RESPONSE: {
-    label: "Respuesta en contexto",
-    bg: "bg-[#FEF0DE]",
-    xp: true,
-    wide: false,
-    fields: [
-      ["question", "text", "Pregunta"],
-      ["answer", "text", "Respuesta correcta"],
-      ["options", "words", "Opciones"],
-    ],
-  },
-  MATCH: {
-    label: "Emparejar",
-    bg: "bg-[#FDE8F1]",
-    xp: true,
-    wide: false,
-    fields: [["concepts", "signs", "Conceptos"]],
-  },
-  VISUAL_RECOGNITION: {
-    label: "Reconocimiento visual",
-    bg: "bg-[#E9F3EB]",
-    xp: true,
-    wide: false,
-    fields: [
-      ["signSequence", "signs", "Secuencia"],
-      ["options", "signs", "Opciones"],
-    ],
-  },
-  PERFORM_SIGN: {
-    label: "Hacer la seña",
-    bg: "bg-[#FBE0D8]",
-    xp: true,
-    wide: false,
-    fields: [["sign", "sign", "Seña a realizar"]],
-  },
-  SPELL_NAME: {
-    label: "Deletrear nombre",
-    bg: "bg-[#E0F4F2]",
-    xp: true,
-    wide: false,
-    fields: [],
-  },
-  INVISIBLE_SIGNS: {
-    label: "Señas invisibles",
-    bg: "bg-[#F2ECE6]",
-    xp: false,
-    wide: false,
-    fields: [["signs", "signs", "Señas"]],
-  },
 };
 
 const UNIT_TINTS = [
@@ -671,7 +578,6 @@ export default function CoursesPage() {
         else if (ft === "number") config[key] = 10;
         else config[key] = "";
       });
-      if (type === "SPELL_NAME") config["max_letters"] = 10;
       const order = d.topics[selectedTopicIdx]!.lessons[selectedLessonIdx]!.blocks.length;
       d.topics[selectedTopicIdx]!.lessons[selectedLessonIdx]!.blocks.push({
         id: `new-${Date.now()}`,
@@ -786,8 +692,13 @@ export default function CoursesPage() {
     ed.topics.forEach((t, ti) => {
       if (t.lessons.length === 0) issues.push({ text: `Unidad ${ti + 1} no tiene lecciones.` });
       t.lessons.forEach((l, li) => {
-        if (l.blocks.length === 0)
-          issues.push({ text: `Unidad ${ti + 1} · Lección ${li + 1} no tiene bloques.` });
+        const where = `Unidad ${ti + 1} · Lección ${li + 1}`;
+        if (l.blocks.length === 0) issues.push({ text: `${where} no tiene bloques.` });
+        l.blocks.forEach((b, bi) => {
+          blockConfigIssues(b.type, b.config).forEach((problem) =>
+            issues.push({ text: `${where} · Bloque ${bi + 1}: ${problem}` }),
+          );
+        });
       });
     });
     return issues;
