@@ -38,7 +38,8 @@ export function buildCsp(nonce?: string): string {
     `script-src ${scriptSrc}${isDev ? " 'unsafe-eval'" : ""}`,
     `style-src ${styleSrc} https://accounts.google.com/gsi/style`,
     `img-src 'self' data: blob: ${apiUrl} https://*.googleusercontent.com`,
-    "frame-src https://accounts.google.com/gsi/",
+    // 'self': the sign preview embeds our own GLB viewer route in an iframe.
+    "frame-src 'self' https://accounts.google.com/gsi/",
     "font-src 'self'",
     `connect-src 'self' blob: ${apiUrl} https://accounts.google.com/gsi/ https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev${demoModels}`,
     `media-src 'self' ${apiUrl} https://*.r2.cloudflarestorage.com https://pub-f40a1de4d1fc46b0b6f07299847c66e0.r2.dev`,

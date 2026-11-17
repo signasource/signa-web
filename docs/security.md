@@ -45,14 +45,14 @@ Function` stay blocked) and `https://storage.googleapis.com` in `connect-src` (M
 
 ## GLB viewer routes
 
-### `/api/glb-viewer/file?src=<url>` (admin sign editor)
+### `/api/glb-viewer/file?src=<url>` (admin sign editor, purchase preview)
 
 Same CSP (`buildViewerCsp`), headers and SRI-pinned model-viewer as the route below, but loads one
 model **by URL** to preview an uploaded animation. `src` must pass `isAllowedGlbSource`
 (`src/lib/glb.ts`): a `.glb` on the public R2 origin, or under `<NEXT_PUBLIC_API_URL>/media/` (the
 API's local storage fallback, dev only); anything else is a 400. It is embedded with
 `JSON.stringify`, never raw. `Cache-Control: no-store`. Listed in `PASSTHROUGH_PATHS` (`src/proxy.ts`).
-For that dev fallback, `NEXT_PUBLIC_API_URL` is in the viewer's `connect-src` and in the app CSP's
+It is embedded by same-origin pages, so the app CSP has `frame-src 'self'` and `next.config.ts` overrides the global `X-Frame-Options: DENY` with `SAMEORIGIN` for this path (otherwise the iframe shows "Este contenido está bloqueado"). For that dev fallback, `NEXT_PUBLIC_API_URL` is in the viewer's `connect-src` and in the app CSP's
 `media-src` (the editor's `<video>` preview).
 
 ### `/api/sign-formats?signs=a,b` (purchase preview)
