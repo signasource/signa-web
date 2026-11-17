@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SignMedia } from "@/lib/api/types";
-import { chunk, courseFormat, courseSignList, showcaseSigns } from "@/lib/course-preview";
+import { courseFormat, courseSignList, showcaseSigns } from "@/lib/course-preview";
 
 const media = (format: "glb" | "mp4"): SignMedia => ({
   meaning: "x",
@@ -36,12 +36,11 @@ describe("showcaseSigns", () => {
 });
 
 describe("helpers", () => {
-  it("lists distinct signs and chunks", () => {
+  it("lists distinct signs", () => {
     const modules = [
       { title: "A", signs: ["a", "b"] },
       { title: "B", signs: ["b", "c"] },
     ];
     expect(courseSignList(modules)).toEqual(["a", "b", "c"]);
-    expect(chunk([1, 2, 3], 2)).toEqual([[1, 2], [3]]);
   });
 });

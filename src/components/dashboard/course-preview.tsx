@@ -4,15 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
 import { CourseSigns } from "@/components/dashboard/course-signs";
 import { SignMediaPreview } from "@/features/admin/signs/sign-media-preview";
-import { SIGN_MEDIA_BATCH, signsApi } from "@/lib/api/signs";
-import type { CatalogCourse, SignMedia } from "@/lib/api/types";
+import { fetchSignFormats } from "@/lib/api/sign-formats";
+import type { CatalogCourse } from "@/lib/api/types";
 import {
-  chunk,
   courseFormat,
   courseSignList,
   showcaseSigns,
   type CourseFormat,
 } from "@/lib/course-preview";
+import { MAX_FORMAT_CHECK } from "@/lib/sign-formats";
 import { cn } from "@/lib/utils";
 
 const SHOWCASE_SIZE = 6;
@@ -33,30 +33,25 @@ const FORMAT_COPY: Record<CourseFormat, { label: string; text: string } | null> 
   unknown: null,
 };
 
-async function loadMedia(signs: string[]): Promise<SignMedia[]> {
-  const pages = await Promise.all(chunk(signs, SIGN_MEDIA_BATCH).map(signsApi.media));
-  return pages.flat();
-}
-
 /** The pitch for a course an admin is about to buy: what it is, how signs look, what it covers. */
 export function CoursePreview({ course }: { course: CatalogCourse }) {
-  const signs = useMemo(() => courseSignList(course.modules), [course.modules]);
+  // Signs are checked in the bucket in an order that spreads over the modules; the ones with no
+  // file are skipped, so the sample is the first few that do have an avatar or a video.
+  const candidates = useMemo(
+    () => showcaseSigns(course.modules, new Set(courseSignList(course.modules)), MAX_FORMAT_CHECK),
+    [course.modules],
+  );
   const media = useQuery({
     queryKey: ["course-preview-media", course.id],
-    queryFn: () => loadMedia(signs),
-    enabled: signs.length > 0,
+    queryFn: () => fetchSignFormats(candidates),
+    enabled: candidates.length > 0,
     staleTime: 10 * 60 * 1000,
   });
 
-  const byMeaning = useMemo(
-    () => new Map((media.data ?? []).map((m) => [m.meaning, m])),
-    [media.data],
-  );
-  const copy = FORMAT_COPY[courseFormat(media.data ?? [])];
-  const samples = useMemo(
-    () => showcaseSigns(course.modules, new Set(byMeaning.keys()), SHOWCASE_SIZE),
-    [course.modules, byMeaning],
-  );
+  const found = useMemo(() => media.data ?? [], [media.data]);
+  const byMeaning = useMemo(() => new Map(found.map((m) => [m.meaning, m])), [found]);
+  const copy = FORMAT_COPY[courseFormat(found.slice(0, SHOWCASE_SIZE))];
+  const samples = useMemo(() => found.slice(0, SHOWCASE_SIZE).map((m) => m.meaning), [found]);
 
   const [picked, setPicked] = useState<{ courseId: string; sign: string } | null>(null);
   const selected =
@@ -97,7 +92,7 @@ export function CoursePreview({ course }: { course: CatalogCourse }) {
         </div>
       </section>
 
-      {signs.length > 0 && media.isPending ? (
+      {candidates.length > 0 && media.isPending ? (
         <p className="text-text-muted text-sm">Cargando las señas del curso…</p>
       ) : samples.length > 0 && current ? (
         <section
