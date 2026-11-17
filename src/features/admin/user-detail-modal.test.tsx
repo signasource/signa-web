@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { UserDetailModal } from "@/features/admin/user-detail-modal";
-import { adminApi, type AdminUser } from "@/lib/api/admin";
+import { adminApi, type AdminUser, type AdminUserDetail } from "@/lib/api/admin";
 
 const auth = vi.hoisted(() => ({ adminId: "admin-1" }));
 
@@ -11,6 +11,7 @@ vi.mock("@/features/admin/admin-auth-context", () => ({
 }));
 vi.mock("@/lib/api/admin", () => ({
   adminApi: {
+    userDetail: vi.fn(),
     updateUser: vi.fn().mockResolvedValue({}),
     deleteUser: vi.fn().mockResolvedValue(undefined),
   },
@@ -32,8 +33,19 @@ const user: AdminUser = {
   avatar: null,
 };
 
+/** What `GET /admin/users/{id}/detail` returns for a plain learner. */
+const detailOf = (target: AdminUser): AdminUserDetail => ({
+  ...target,
+  lastSeenDate: null,
+  overallAccuracyPercent: null,
+  isEmployeeOfOrg: null,
+  enrollments: [],
+  orgAdminDetail: null,
+});
+
 function renderModal(target: AdminUser = user) {
   const onClose = vi.fn();
+  vi.mocked(adminApi.userDetail).mockResolvedValue(detailOf(target));
   render(
     <QueryClientProvider client={new QueryClient()}>
       <UserDetailModal user={target} onClose={onClose} />
@@ -62,7 +74,7 @@ describe("UserDetailModal", () => {
 
   it("offers to re-enable a disabled account", async () => {
     const onClose = renderModal({ ...user, enabled: false });
-    expect(screen.getByText("Deshabilitada")).toBeTruthy();
+    expect(await screen.findByText("Deshabilitada")).toBeTruthy();
     click("Rehabilitar cuenta");
     click("Confirmar");
     await waitFor(() => expect(onClose).toHaveBeenCalled());
