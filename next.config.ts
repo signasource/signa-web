@@ -57,6 +57,10 @@ const nextConfig: NextConfig = {
       })),
       { source: "/", headers: [{ key: "Permissions-Policy", value: permissionsPolicy("self") }] },
       { source: "/api/glb-viewer", headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }] },
+      {
+        source: "/api/glb-viewer/file",
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+      },
     ];
   },
 };

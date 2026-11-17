@@ -15,7 +15,7 @@ import {
 import { MAX_FORMAT_CHECK } from "@/lib/sign-formats";
 import { cn } from "@/lib/utils";
 
-const SHOWCASE_SIZE = 6;
+const SHOWCASE_SIZE = 3;
 
 const FORMAT_COPY: Record<CourseFormat, { label: string; text: string } | null> = {
   video: {
@@ -138,6 +138,7 @@ export function CoursePreview({ course }: { course: CatalogCourse }) {
             format={current.format}
             url={current.url}
             lateralUrl={current.lateralUrl}
+            protectedMedia
           />
         </section>
       ) : null}

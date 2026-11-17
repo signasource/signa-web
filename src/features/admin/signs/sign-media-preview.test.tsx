@@ -15,6 +15,23 @@ describe("SignMediaPreview", () => {
     expect(video.muted).toBe(true);
   });
 
+  it("hides the player controls and download for the public view", () => {
+    render(
+      <SignMediaPreview
+        meaning="hola"
+        format="mp4"
+        url="https://cdn/lsa/hola.mp4"
+        protectedMedia
+      />,
+    );
+
+    const video = screen.getByLabelText("Video de frente de la seña hola") as HTMLVideoElement;
+    expect(video.controls).toBe(false);
+    expect(video.getAttribute("controlslist")).toContain("nodownload");
+    expect(video.hasAttribute("disablepictureinpicture")).toBe(true);
+    expect(fireEvent.contextMenu(video)).toBe(false);
+  });
+
   it("loads a glb in the URL viewer", () => {
     render(<SignMediaPreview meaning="hola" format="glb" url="https://cdn/lsa/hola.glb" />);
 
