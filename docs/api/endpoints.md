@@ -2,7 +2,7 @@
 
 > Responsibility: catalog of `signa-api` endpoints the web calls, via `src/lib/api/`.
 > Update when: an endpoint call is added, changed, or removed, or a stub becomes real.
-> Sources: src/lib/api/auth.ts, src/lib/api/organizations.ts, src/lib/api/invitations.ts, src/lib/api/admin.ts
+> Sources: src/lib/api/auth.ts, src/lib/api/organizations.ts, src/lib/api/invitations.ts, src/lib/api/admin.ts, src/lib/api/signs.ts
 
 Types → [types.md](./types.md). Client behavior → [http-client.md](./http-client.md). The API's own contract is authoritative (`signa-api` controllers / Swagger).
 
@@ -89,6 +89,12 @@ Refresh (`POST /auth/refresh`) is called internally by the client, not exposed a
 
 Telemetry ingestion (`POST /telemetry/events`) is **not** called from `metricsApi` — it is the write
 side used by the client telemetry util (`src/lib/telemetry.ts`) and by `signa-mobile`.
+
+## `signsApi` (`src/lib/api/signs.ts`)
+
+| Method            | Path                | Returns       | Notes                                                                                                                                                                           |
+| ----------------- | ------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `media(meanings)` | `POST /signs/media` | `SignMedia[]` | ≤ 200 meanings per call (`SIGN_MEDIA_BATCH`; callers chunk). Signs without an uploaded file are omitted. Used by the purchase preview to show real signs and tell video from 3D |
 
 ## Available in the API, not wired yet
 
