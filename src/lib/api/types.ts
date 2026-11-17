@@ -166,6 +166,14 @@ export type CatalogCourse = {
 
 export type CatalogModule = { title: string; signs: string[] };
 
+/** One sign's animation as served by `POST /signs/media`. */
+export type SignMedia = {
+  meaning: string;
+  url: string;
+  format: "glb" | "mp4";
+  lateralUrl: string | null;
+};
+
 /** From `minSeats` seats on, the price per seat gets `percent` off. */
 export type VolumeDiscount = { minSeats: number; percent: number };
 

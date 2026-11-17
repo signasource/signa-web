@@ -6,7 +6,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { CourseSigns } from "@/components/dashboard/course-signs";
+import { CoursePreview } from "@/components/dashboard/course-preview";
 import { Icon } from "@/components/dashboard/icons";
 import { PurchaseInvoice } from "@/components/dashboard/purchase-invoice";
 import {
@@ -216,18 +216,7 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
           ) : null}
         </Card>
 
-        {course ? (
-          <Card className="flex flex-col gap-3.5">
-            <div className="flex flex-col gap-1">
-              <CardTitle>Señas que incluye {course.name}</CardTitle>
-              <p className="text-text-muted text-sm text-pretty">
-                {course.description ??
-                  "Revisá que estas señas les sirvan a tus equipos antes de comprar."}
-              </p>
-            </div>
-            <CourseSigns course={course} />
-          </Card>
-        ) : null}
+        {course ? <CoursePreview course={course} /> : null}
 
         <Card className="flex flex-col gap-3.5">
           <div className="flex items-center gap-2.5">

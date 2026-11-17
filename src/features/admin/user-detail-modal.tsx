@@ -4,12 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { AdminAvatar } from "@/components/admin/admin-avatar";
 import { useAdminAuth } from "@/features/admin/admin-auth-context";
-import {
-  adminApi,
-  type AdminUser,
-  type AdminUserDetail,
-  type UserRole,
-} from "@/lib/api/admin";
+import { adminApi, type AdminUser, type AdminUserDetail, type UserRole } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -196,7 +191,7 @@ function OrgAdminDetailPanel({ detail }: { detail: AdminUserDetail }) {
 
       {org && org.purchases.length > 0 && (
         <div>
-          <p className="text-text-muted mb-2 text-xs font-semibold uppercase tracking-wider">
+          <p className="text-text-muted mb-2 text-xs font-semibold tracking-wider uppercase">
             Cursos contratados
           </p>
           <div className="flex flex-col gap-2">
@@ -304,7 +299,7 @@ function UserDetailPanel({ detail }: { detail: AdminUserDetail }) {
 
       {detail.enrollments && detail.enrollments.length > 0 && (
         <div>
-          <p className="text-text-muted mb-2 text-xs font-semibold uppercase tracking-wider">
+          <p className="text-text-muted mb-2 text-xs font-semibold tracking-wider uppercase">
             Cursos en progreso
           </p>
           <div className="flex flex-col gap-2">
@@ -317,9 +312,7 @@ function UserDetailPanel({ detail }: { detail: AdminUserDetail }) {
                   <p className="text-text truncate text-xs font-semibold">{e.courseName}</p>
                   <p className="text-text-muted mt-0.5 text-xs">
                     v{e.version} · {e.enrollmentStatus === "COMPLETED" ? "Completado" : "En curso"}
-                    {!e.grantsAccess && (
-                      <span className="text-warning ml-1">(acceso vencido)</span>
-                    )}
+                    {!e.grantsAccess && <span className="text-warning ml-1">(acceso vencido)</span>}
                   </p>
                 </div>
                 <span
