@@ -18,18 +18,18 @@ vi.mock("@/lib/api/organizations", () => ({
   },
 }));
 
-vi.mock("@/lib/api/signs", () => ({
-  SIGN_MEDIA_BATCH: 200,
-  signsApi: {
-    media: vi.fn(async (meanings: string[]) =>
-      meanings.map((meaning) => ({
+vi.mock("@/lib/api/sign-formats", () => ({
+  fetchSignFormats: vi.fn(async (meanings: string[]) =>
+    // "Fiebre" has no file in the bucket: it must be skipped.
+    meanings
+      .filter((meaning) => meaning !== "Fiebre")
+      .map((meaning) => ({
         meaning,
         url: `https://cdn/lsa/${meaning}.mp4`,
         format: "mp4" as const,
         lateralUrl: null,
       })),
-    ),
-  },
+  ),
 }));
 
 const catalog: PurchaseCatalog = {
@@ -147,6 +147,7 @@ describe("NewPurchasePage", () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Video de frente de la seña Dolor")).toBeInTheDocument();
 
+    expect(screen.queryByRole("button", { name: "Fiebre" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Turno" }));
     expect(screen.getByLabelText("Video de frente de la seña Turno")).toBeInTheDocument();
   });
