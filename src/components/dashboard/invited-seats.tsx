@@ -6,7 +6,7 @@ import { SeatStatusPill } from "@/components/dashboard/purchase-status";
 import { ErrorState, LoadingState } from "@/components/dashboard/ui";
 import { organizationsApi } from "@/lib/api/organizations";
 import { formatDate } from "@/lib/dashboard-format";
-import { hasInvitedSeats, invitedSeatsOf } from "@/lib/purchases";
+import { hasInvitedSeats, invitedSeatsOf, isErasedEmail, seatEmailLabel } from "@/lib/purchases";
 
 /** Seats bought but not accepted yet (they are not members), listed from the purchases. */
 export function InvitedSeats({
@@ -59,7 +59,15 @@ export function InvitedSeats({
             href={`/dashboard/purchases/${purchase.id}`}
             className="border-fill hover:bg-background grid grid-cols-[minmax(220px,2fr)_minmax(160px,1.4fr)_150px_120px] items-center gap-4 border-b py-3"
           >
-            <span className="truncate text-[15px] font-bold">{seat.email}</span>
+            <span
+              className={
+                isErasedEmail(seat.email)
+                  ? "text-text-muted truncate text-[15px] font-bold italic"
+                  : "truncate text-[15px] font-bold"
+              }
+            >
+              {seatEmailLabel(seat.email)}
+            </span>
             <span className="text-text-muted truncate text-sm">{purchase.courseName}</span>
             <span>
               <SeatStatusPill status={seat.status} purchaseStatus={purchase.status} />

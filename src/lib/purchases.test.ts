@@ -8,10 +8,12 @@ import {
   formatMoney,
   hasInvitedSeats,
   invitedSeatsOf,
+  isErasedEmail,
   nextVolumeDiscount,
   paymentMessage,
   paymentReturn,
   purchaseFormSchema,
+  seatEmailLabel,
   seatEmailSchema,
   seatStatusLabel,
   uniqueEmails,
@@ -271,5 +273,18 @@ describe("acceptedSeats", () => {
         revoked: 2,
       }),
     ).toBe(6);
+  });
+});
+
+describe("seatEmailLabel", () => {
+  it("shows friendly copy for an anonymized (erased) account", () => {
+    const email = "erased-3f2a9c1e-0000-4b6a-9d11-aaaaaaaaaaaa@invalid";
+    expect(isErasedEmail(email)).toBe(true);
+    expect(seatEmailLabel(email)).toBe("Cuenta eliminada");
+  });
+
+  it("keeps real emails untouched", () => {
+    expect(isErasedEmail("ana@empresa.com")).toBe(false);
+    expect(seatEmailLabel("ana@empresa.com")).toBe("ana@empresa.com");
   });
 });
