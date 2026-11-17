@@ -41,6 +41,7 @@ import {
   formatMoney,
   paymentMessage,
   paymentReturn,
+  seatEmailLabel,
   seatEmailSchema,
 } from "@/lib/purchases";
 import { cn } from "@/lib/utils";
@@ -666,7 +667,7 @@ export default function PurchaseDetailPage() {
                       <>
                         <span className="truncate font-semibold">
                           {seat.userName ? `${seat.userName} · ` : null}
-                          {seat.email}
+                          {seatEmailLabel(seat.email)}
                         </span>
                         <span className="text-text-muted text-[13px]">
                           {seatDates(seat, purchase.status)}

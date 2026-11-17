@@ -52,6 +52,18 @@ export type InvitedSeat = { seat: Seat; purchase: Purchase };
 const NOT_ACCEPTED: SeatStatus[] = ["PENDING_PAYMENT", "INVITED", "INVITATION_EXPIRED"];
 
 /** Whether the purchase may hold people who have not accepted (so its detail is worth loading). */
+const ERASED_EMAIL = /^erased-[^@]+@invalid$/i;
+
+/** True when the seat's email was anonymized because the person deleted their account. */
+export function isErasedEmail(email: string): boolean {
+  return ERASED_EMAIL.test(email);
+}
+
+/** Seat email for display: anonymized placeholders become friendly copy. */
+export function seatEmailLabel(email: string): string {
+  return isErasedEmail(email) ? "Cuenta eliminada" : email;
+}
+
 export function hasInvitedSeats(purchase: Purchase): boolean {
   if (purchase.status !== "PAID" && purchase.status !== "PENDING_PAYMENT") return false;
   const c = purchase.seatCounts;
