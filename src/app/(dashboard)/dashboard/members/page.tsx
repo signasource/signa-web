@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { CourseSelect } from "@/components/dashboard/course-select";
 import { PeriodFilter } from "@/components/dashboard/period-select";
 import { Icon } from "@/components/dashboard/icons";
+import { InvitedSeats } from "@/components/dashboard/invited-seats";
 import {
   Avatar,
   ErrorState,
@@ -42,6 +43,10 @@ const FILTERS: Filter[] = [
   { key: "completed", label: "Completaron", status: "ACTIVE", activity: "COMPLETED" },
   { key: "removed", label: "Quitados", status: "REMOVED" },
 ];
+
+/** People who got a seat but have not accepted yet: they are not members, so they come from purchases. */
+const INVITED_FILTER: Filter = { key: "invited", label: "Invitados", status: "ACTIVE" };
+const ALL_FILTERS = [...FILTERS.slice(0, 5), INVITED_FILTER, ...FILTERS.slice(5)];
 
 type Direction = "asc" | "desc";
 
@@ -119,6 +124,7 @@ export default function MembersPage() {
     setPaging({ scope, page: typeof next === "function" ? next(page) : next });
   const query = useDebounced(search.trim(), 300);
   const showCourse = !courseId && courses.length > 1;
+  const invitedView = filter.key === INVITED_FILTER.key;
 
   const params = {
     query: query || undefined,
@@ -133,7 +139,7 @@ export default function MembersPage() {
   const { data, isPending, error, isPlaceholderData } = useQuery({
     queryKey: ["organization", orgId, "members", params],
     queryFn: () => organizationsApi.members(orgId!, params),
-    enabled: Boolean(orgId),
+    enabled: Boolean(orgId) && !invitedView,
     placeholderData: keepPreviousData,
   });
 
@@ -182,7 +188,7 @@ export default function MembersPage() {
           />
         </label>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Estado">
-          {FILTERS.map((f) => (
+          {ALL_FILTERS.map((f) => (
             <button
               key={f.key}
               type="button"
@@ -204,10 +210,13 @@ export default function MembersPage() {
         </div>
       </div>
 
-      {isPending ? <LoadingState>Cargando participantes…</LoadingState> : null}
-      {error ? <ErrorState>No pudimos cargar a los participantes.</ErrorState> : null}
+      {invitedView ? <InvitedSeats orgId={orgId} courseId={courseId} query={query} /> : null}
+      {!invitedView && isPending ? <LoadingState>Cargando participantes…</LoadingState> : null}
+      {!invitedView && error ? (
+        <ErrorState>No pudimos cargar a los participantes.</ErrorState>
+      ) : null}
 
-      {data ? (
+      {!invitedView && data ? (
         <>
           <div
             className={cn(

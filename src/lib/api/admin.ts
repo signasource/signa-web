@@ -264,6 +264,52 @@ export type AdminCourseVersionListItem = {
   updatedByName: string | null;
   updatedByAvatar: string | null;
   color: string | null;
+  enrollmentCount: number;
+};
+
+export type AdminUserEnrollmentInfo = {
+  courseVersionId: string;
+  courseName: string;
+  version: string;
+  courseVersionStatus: CourseVersionStatus;
+  enrollmentStatus: "ENROLLED" | "COMPLETED" | "DROPPED";
+  grantsAccess: boolean;
+  startedAt: string;
+  completedAt: string | null;
+};
+
+export type AdminOrgAdminDetail = {
+  orgId: string;
+  orgStatus: string;
+  memberCount: number;
+  purchases: {
+    courseName: string;
+    totalSeats: number;
+    purchaseStatus: string;
+    createdAt: string;
+    paidAt: string | null;
+  }[];
+};
+
+export type AdminUserDetail = {
+  id: string;
+  email: string;
+  username: string;
+  name: string;
+  lastName: string;
+  role: UserRole;
+  enabled: boolean;
+  verified: boolean;
+  organizationName: string | null;
+  authProvider: "GOOGLE" | "EMAIL";
+  currentStreak: number;
+  lastStreakDate: string | null;
+  lastSeenDate: string | null;
+  avatar: string | null;
+  overallAccuracyPercent: number | null;
+  isEmployeeOfOrg: boolean | null;
+  enrollments: AdminUserEnrollmentInfo[] | null;
+  orgAdminDetail: AdminOrgAdminDetail | null;
 };
 
 export type BlockConfig = Record<string, unknown>;
@@ -383,6 +429,8 @@ export const adminApi = {
     }),
 
   user: (id: string) => api<AdminUser>(`/admin/users/${id}`),
+
+  userDetail: (id: string) => api<AdminUserDetail>(`/admin/users/${id}/detail`),
 
   updateUser: (id: string, data: { role?: UserRole; enabled?: boolean }) =>
     api<AdminUser>(`/admin/users/${id}`, { method: "PATCH", body: data }),

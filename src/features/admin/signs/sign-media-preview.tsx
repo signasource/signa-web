@@ -16,6 +16,7 @@ export function SignMediaPreview({
   url,
   lateralUrl = null,
   missing = false,
+  protectedMedia = false,
   className,
 }: {
   meaning: string;
@@ -23,6 +24,8 @@ export function SignMediaPreview({
   url: string | null;
   lateralUrl?: string | null;
   missing?: boolean;
+  /** Public view: video without player controls, download or picture-in-picture, no context menu. */
+  protectedMedia?: boolean;
   className?: string;
 }) {
   const [view, setView] = useState<SignView>("front");
@@ -82,7 +85,12 @@ export function SignMediaPreview({
               loop
               muted
               playsInline
-              controls
+              controls={!protectedMedia}
+              controlsList={
+                protectedMedia ? "nodownload noremoteplayback noplaybackrate" : undefined
+              }
+              disablePictureInPicture={protectedMedia}
+              onContextMenu={protectedMedia ? (e) => e.preventDefault() : undefined}
               aria-label={`Video ${hasLateral && view === "lateral" ? "lateral" : "de frente"} de la seña ${meaning}`}
               className="h-full w-full object-contain"
             />

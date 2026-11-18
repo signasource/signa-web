@@ -2,7 +2,7 @@
 
 > Responsibility: catalog of `signa-api` endpoints the web calls, via `src/lib/api/`.
 > Update when: an endpoint call is added, changed, or removed, or a stub becomes real.
-> Sources: src/lib/api/auth.ts, src/lib/api/organizations.ts, src/lib/api/invitations.ts, src/lib/api/admin.ts
+> Sources: src/lib/api/auth.ts, src/lib/api/organizations.ts, src/lib/api/invitations.ts, src/lib/api/admin.ts, src/lib/api/signs.ts
 
 Types → [types.md](./types.md). Client behavior → [http-client.md](./http-client.md). The API's own contract is authoritative (`signa-api` controllers / Swagger).
 
@@ -89,6 +89,10 @@ Refresh (`POST /auth/refresh`) is called internally by the client, not exposed a
 
 Telemetry ingestion (`POST /telemetry/events`) is **not** called from `metricsApi` — it is the write
 side used by the client telemetry util (`src/lib/telemetry.ts`) and by `signa-mobile`.
+
+## `signsApi.media` (`src/lib/api/signs.ts`) — mirrors `SignController#getSignMedia`
+
+`POST /signs/media` `{meanings}` → `SignMedia[]` (≤ 200 names; the preview sends ≤ 24). The API is the only place that knows which file each sign uses in R2: it matches names ignoring case and accents, applies its file-name aliases (`niño`→`nene`, …) and tells `.glb` from `.mp4` (+ `lateralUrl`). Signs with no file are omitted and the list does **not** keep the request order (the caller reorders). Requires a session. Used by the purchase page's course preview (`course-preview.tsx`). There is no alias map or bucket probing in this repo any more.
 
 ## Available in the API, not wired yet
 

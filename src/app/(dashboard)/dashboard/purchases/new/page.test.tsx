@@ -18,6 +18,22 @@ vi.mock("@/lib/api/organizations", () => ({
   },
 }));
 
+vi.mock("@/lib/api/signs", () => ({
+  signsApi: {
+    media: vi.fn(async (meanings: string[]) =>
+      // "Fiebre" has no file: the API leaves it out, so it must be skipped.
+      meanings
+        .filter((meaning) => meaning !== "Fiebre")
+        .map((meaning) => ({
+          meaning,
+          url: `https://cdn/lsa/${meaning}.mp4`,
+          format: "mp4" as const,
+          lateralUrl: null,
+        })),
+    ),
+  },
+}));
+
 const catalog: PurchaseCatalog = {
   courses: [
     {
@@ -111,15 +127,31 @@ describe("NewPurchasePage", () => {
   it("shows the signs of the chosen course", async () => {
     renderPage();
 
-    const signs = await screen.findByText("Señas que incluye LSA Salud");
-    const card = signs.closest("div")!.parentElement!;
-    expect(within(card).getByRole("region", { name: "Urgencias" })).toHaveTextContent("Dolor");
-    expect(within(card).getByText("Turno")).toBeInTheDocument();
+    const summary = await screen.findByRole("region", { name: "Resumen de LSA Salud" });
+    expect(within(summary).getByText("3 señas")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Urgencias" })).toHaveTextContent("Dolor");
+    expect(screen.getAllByText("Turno").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("radio", { name: /LSA Educación/ }));
-    expect(await screen.findByText("Señas que incluye LSA Educación")).toBeInTheDocument();
-    expect(screen.getByText("Pizarrón")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("region", { name: "Resumen de LSA Educación" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Pizarrón").length).toBeGreaterThan(0);
     expect(screen.queryByText("Dolor")).not.toBeInTheDocument();
+  });
+
+  it("shows how the signs look, with a playable sample of the course", async () => {
+    renderPage();
+
+    expect(await screen.findByText("Señas en video")).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Así se verán las señas en tu curso" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Video de frente de la seña Dolor")).toBeInTheDocument();
+
+    expect(screen.queryByRole("button", { name: "Fiebre" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Turno" }));
+    expect(screen.getByLabelText("Video de frente de la seña Turno")).toBeInTheDocument();
   });
 
   it("suggests the next volume discount", async () => {

@@ -45,14 +45,14 @@ Function` stay blocked) and `https://storage.googleapis.com` in `connect-src` (M
 
 ## GLB viewer routes
 
-### `/api/glb-viewer/file?src=<url>` (admin sign editor)
+### `/api/glb-viewer/file?src=<url>` (admin sign editor, purchase preview)
 
 Same CSP (`buildViewerCsp`), headers and SRI-pinned model-viewer as the route below, but loads one
 model **by URL** to preview an uploaded animation. `src` must pass `isAllowedGlbSource`
 (`src/lib/glb.ts`): a `.glb` on the public R2 origin, or under `<NEXT_PUBLIC_API_URL>/media/` (the
 API's local storage fallback, dev only); anything else is a 400. It is embedded with
 `JSON.stringify`, never raw. `Cache-Control: no-store`. Listed in `PASSTHROUGH_PATHS` (`src/proxy.ts`).
-For that dev fallback, `NEXT_PUBLIC_API_URL` is in the viewer's `connect-src` and in the app CSP's
+It is embedded by same-origin pages, so the app CSP has `frame-src 'self'` and `next.config.ts` overrides the global `X-Frame-Options: DENY` with `SAMEORIGIN` for this path (otherwise the iframe shows "Este contenido está bloqueado"). For that dev fallback, `NEXT_PUBLIC_API_URL` is in the viewer's `connect-src` and in the app CSP's
 `media-src` (the editor's `<video>` preview).
 
 ### `/api/glb-viewer` (landing)
@@ -105,3 +105,5 @@ HSTS (2 years, `includeSubDomains`, `preload`), `X-Content-Type-Options: nosniff
 Production build served with `next start`: CSP present on all routes; no source maps published; model-viewer passes SRI; no CSP violations or Permissions-Policy errors in the console with the camera demo and the 3D viewer running; `/login` hydrates and validates under the strict policy; external `img` and `fetch` are blocked; an inline event-handler payload is blocked (`script-src-attr`). Dev mode (`next dev`, `'unsafe-eval'`) and hosting-level behavior (Vercel) not yet verified — see [status.md](./status.md).
 
 **Session route handlers.** `/api/session/register` joins login/refresh/logout: same same-origin check and cookie handling ([api/session.md](./api/session.md)). `/invitacion` is a dynamic page under `(auth)` and gets the strict nonce CSP; the invitation token travels in the query string and is only sent to signa-api.
+
+**Google Identity Services (`/invitacion`).** The strict CSP allows `https://accounts.google.com/gsi/` in `frame-src`/`connect-src`, `https://accounts.google.com/gsi/style` in `style-src` and `https://*.googleusercontent.com` in `img-src`. The GSI script is injected at runtime by a nonce'd script (covered by `strict-dynamic`). `/api/session/google` has the same same-origin check as the other session routes.

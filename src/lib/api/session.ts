@@ -25,6 +25,8 @@ export const sessionApi = {
   login: (identifier: string, password: string): Promise<void> =>
     startSession("/api/session/login", { identifier, password }),
 
+  google: (idToken: string): Promise<void> => startSession("/api/session/google", { idToken }),
+
   register: (account: {
     email: string;
     username: string;
