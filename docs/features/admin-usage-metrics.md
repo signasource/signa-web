@@ -58,16 +58,7 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   — lessons by abandonment and exercises by error rate / retries (`ExerciseRanking`); vocabulary, sign-report
   resolution + most-reported signs, imports. Timing-per-lesson/exercise and weighted avg progress are not yet
   calculable (no stored timing) and are intentionally omitted.
-- **Infraestructura** (`usage-infra.tsx`) — inner sub-tabs. **Backend** grouped into **API · HTTP**
-  (latency p95/p99, throughput, 4xx/5xx, slowest ops), **Sistema y recursos** (CPU/mem host + containers,
-  JVM heap/GC, DB connections) and **Servicios de Signa** (R2 presign, mail/push failures). **Web / Landing**
-  (web vitals, animation + screen load, client errors). **ML** — recognition accuracy + per-camera-block-type
-  accuracy from real lesson attempts (`VISUAL_RECOGNITION`/`PERFORM_SIGN`/`SPELL_NAME`), plus inference
-  latency p95, model confidence, camera FPS and **inference volume** (`ml_inference_rate` = consumo de IA)
-  from telemetry. Recognition runs **on-device**, so its health is independent of the backend — the sub-tab
-  calls this out: if the API is up but these metrics fall to zero, recognition is down. There is no AI error
-  rate or server cost (on-device). Per-word accuracy is reserved (needs a camera-attempt → sign mapping that
-  isn't modelled).
+- **Infraestructura** (`usage-infra.tsx`) — services strip, then **Backend** directly (no sub-tabs). **Backend** grouped into **API · HTTP** (latency p95/p99, throughput, 4xx/5xx, slowest ops) and **Sistema y recursos** (CPU/mem host + containers, JVM heap/GC — collapsed). The recognition accuracy KPI (camera exercises) is shown in the Backend KPI row. Web / Landing and ML · reconocimiento sub-tabs were removed.
 
 `GoldenTile` (`golden-row.tsx`) is the headline tile that signals a metric's health at a glance, coloured success/warning/danger from the metric's `threshold`; today it is used by the Infraestructura perf tiles (`PerfGoldenTile` in `perf-panel.tsx`), while the other tabs open with `KpiCard`s (v3 layout below). Perf (Prometheus/Grafana)
 panels only populate in production; the Infra tab says so, and shows "sin datos" locally.
@@ -94,8 +85,7 @@ panels only populate in production; the Infra tab says so, and shows "sin datos"
 - **Aprendizaje**: single course picker, funnel flags the biggest drop, "Contenido a revisar" from
   `lessonsToReview` (API: course, abandonment, accuracy, attempts ≥ 30, pending reports per lesson).
 - **Infraestructura**: Backend KPIs are window averages (peak in hint); 4xx+5xx and p95+p99 share a
-  chart; slow ops table with per-endpoint req/s (`endpoint_rate` widget); "Emails y notificaciones"
-  and "Sistema y recursos" collapsed.
+  chart; slow ops table with per-endpoint req/s (`endpoint_rate` widget); "Sistema y recursos" collapsed (CPU, mem, containers, JVM heap — 5 panels).
 - Designer "Notas de diseño" boxes in the mockups are annotations, not UI.
 - Sparklines are omitted where no faithful series exists (refund rate, seat use, conversion,
   sessions, lesson completion).
