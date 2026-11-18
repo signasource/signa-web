@@ -28,7 +28,7 @@ Tokens **mirror `signa-mobile`** (`src/theme/colors.ts`, `typography.ts`; see it
 
 ## Landing-only accent palette
 
-Card backgrounds on the marketing page ("Qué es Signa", "Para quién es"). Not used outside `src/components/landing/`.
+Card backgrounds on the marketing page ("Qué es Signa", the team cards). Not used outside `src/components/landing/`.
 
 | Token           | Hex       |
 | --------------- | --------- |
@@ -81,4 +81,26 @@ Loaded with `next/font/google` in `src/app/layout.tsx`, exposed as `--font-brico
 
 ## UI primitives
 
-None extracted yet — pages use token classes directly. When a pattern repeats (button, card, input), extract it to `src/components/ui/` and list it here.
+No generic `src/components/ui/` yet. The org panel and back-office share `src/components/dashboard/ui.tsx` (`PageHeading`, `Card`, `CardTitle`, `StatCard`, `ProgressBar`, `Avatar`, `StatusPill`, `StatRows`, `LoadingState` / `ErrorState` / `EmptyState`, and the `primaryButton` / `headerChip` / `headerButton` / `pillButton` class strings), plus `kpi-card.tsx` and `delta.tsx` for metrics. When a pattern repeats elsewhere, extract it and list it here.
+
+## Admin / neutral additions
+
+Added when the hardcoded hex values of the back-office pages were replaced by tokens.
+
+| Token                 | Hex       | Use                                               |
+| --------------------- | --------- | ------------------------------------------------- |
+| `border-strong`       | `#D9CFC5` | dashed "add" borders, toggle-off track            |
+| `danger-dark`         | `#C43D18` | hover of destructive buttons                      |
+| `danger-border`       | `#F5C9BB` | hover of soft-danger buttons                      |
+| `warning-strong`      | `#F59E0B` | saturated warning accent (course editor)          |
+| `fill-light`          | `#F0EFEE` | disabled / archived surfaces in the course CMS    |
+| `streak-orange-light` | `#FDA55A` | streak accent in the landing's feature preview    |
+| `streak-orange-dark`  | `#E07020` | streak accent in the landing's feature preview    |
+| `neutral-gray`        | `#86868B` | neutral ring/bar of the landing's feature preview |
+
+Translucent tints use the token with an opacity (`bg-success/12`, or `color-mix(in srgb, var(--color-warning) 12%, transparent)` in inline styles); in inline styles/SVG attributes use `var(--color-…)`.
+
+## Exceptions (cannot read the CSS variables)
+
+- `src/app/api/glb-viewer/route.ts` and `file/route.ts`: standalone HTML documents served in an iframe, with their own inline CSS (a couple of values mirror `text-muted` / `primary`).
+- `src/lib/image-resize.ts`: a canvas `fillStyle` (`#ffffff`) behind resized photos.

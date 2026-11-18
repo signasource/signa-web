@@ -112,7 +112,7 @@ function StreakPhone() {
     <div className="bg-text rounded-[46px] p-2.5 shadow-2xl">
       <div
         className="flex h-[620px] w-[280px] flex-col overflow-hidden rounded-[37px] px-5 pt-10 pb-6"
-        style={{ backgroundColor: "#FDA55A" }}
+        style={{ backgroundColor: "var(--color-streak-orange-light)" }}
       >
         <div className="flex flex-1 items-center justify-center">
           <LottiePlayer src="/animations/streak-fire.json" className="h-[220px] w-[160px]" />
@@ -138,7 +138,10 @@ function StreakPhone() {
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               <span
                 className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                style={{ backgroundColor: "#29b6e81f", color: "#1b84ab" }}
+                style={{
+                  backgroundColor: "color-mix(in srgb, var(--color-gems-blue) 12%, transparent)",
+                  color: "var(--color-gems-blue-dark)",
+                }}
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor">
                   <path d="M12 2a7 7 0 0 0-3.5 13.07V17h7v-1.93A7 7 0 0 0 12 2zm-1 15h2v1h-2zm0 2h2v1h-2z" />
@@ -148,7 +151,10 @@ function StreakPhone() {
               </span>
               <span
                 className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                style={{ backgroundColor: "#29b6e81f", color: "#1b84ab" }}
+                style={{
+                  backgroundColor: "color-mix(in srgb, var(--color-gems-blue) 12%, transparent)",
+                  color: "var(--color-gems-blue-dark)",
+                }}
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor">
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
@@ -161,7 +167,7 @@ function StreakPhone() {
 
         <button
           className="mt-3.5 w-full rounded-2xl py-3 text-[13px] font-extrabold text-white"
-          style={{ backgroundColor: "#e07020" }}
+          style={{ backgroundColor: "var(--color-streak-orange-dark)" }}
           tabIndex={-1}
           aria-hidden="true"
         >
@@ -185,8 +191,8 @@ function SocialPhone() {
       firstName: "Sofia",
       xp: "1.890",
       avatar: "bg-primary-light text-primary-dark",
-      ring: "ring-[#86868B]",
-      bar: "bg-[#86868B]/20",
+      ring: "ring-neutral-gray",
+      bar: "bg-neutral-gray/20",
       barH: "h-[26px]",
       size: "h-9 w-9",
     },
@@ -196,8 +202,8 @@ function SocialPhone() {
       firstName: "Mati",
       xp: "2.340",
       avatar: "bg-avatar-teal-light text-avatar-teal-dark",
-      ring: "ring-[#FBBF24]",
-      bar: "bg-[#FBBF24]/30",
+      ring: "ring-warning",
+      bar: "bg-warning/30",
       barH: "h-[40px]",
       size: "h-10 w-10",
     },
@@ -207,8 +213,8 @@ function SocialPhone() {
       firstName: "Juan",
       xp: "980",
       avatar: "bg-shop-amber-light text-shop-amber-dark",
-      ring: "ring-[#DE7211]",
-      bar: "bg-[#DE7211]/20",
+      ring: "ring-shop-amber",
+      bar: "bg-shop-amber/20",
       barH: "h-[18px]",
       size: "h-9 w-9",
     },
@@ -337,7 +343,7 @@ function SocialPhone() {
       time: "hace 5h",
       pre: "Llegó a",
       highlight: "10 días de racha 🔥",
-      iconBg: "bg-[#FDA55A]/20",
+      iconBg: "bg-streak-orange-light/20",
       iconColor: "",
       iconChar: "🔥",
     },

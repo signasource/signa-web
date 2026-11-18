@@ -3,14 +3,18 @@
 > Responsibility: the SIGNA back-office "Métricas de uso" dashboard — global app usage, organized by
 > apartado (persona), with golden metrics, self-documenting widgets and an interactive time filter.
 > Update when: a tab, widget, golden metric, the datetime picker, or the metrics API changes.
-> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,chart-kind,funnel,usage-business,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.tsx, src/lib/{datetime-range,api/metrics}.ts
+> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,kpi-card,delta,format,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,revenue-by-source-chart,services-status,chart-kind,funnel,usage-queries,usage-math,usage-business,usage-resumen,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.ts(x), src/lib/{datetime-range,course-deep-link,api/metrics}.ts
 
 A single screen for the whole app's usage — every user, with or without an organization — behind the
 SIGNA `AdminAuthProvider` (not the org dashboard). One **datetime range picker** (hour/minute precision,
 `<input type="datetime-local">`, rolling presets + custom) plus a **live** toggle drive every widget,
 across every tab.
 
-## Apartados (sub-tabs)
+## Apartados (tabs)
+
+Five tabs: **Resumen** (default), **Negocio**, **Usuarios**, **Aprendizaje**, **Infraestructura**. Gamification is not a tab: it is a section inside **Usuarios** (`GamificationSection`). The "v3 layout" section below is the current design; the bullets here describe what each tab contains.
+
+- **Resumen** (`usage-resumen.tsx`) — five north-star `KpiCard`s (activos, nuevos, ingresos netos, lecciones, retención 7 d) with deltas and sparklines, two trend charts, **"Requiere atención"** (`buildAlerts`: pending organizations → `/admin/organizations`, unresolved sign reports → `/admin/sign-reports`, low-use contracts → Negocio `#licencias`, the worst lesson abandonment → `/admin/courses?course=&lesson=`, email failures) and the services strip (`services-status.tsx`).
 
 `page.tsx` is a shell holding the shared filter state (`selection`/`range`/`step`/`live`) and the active
 tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their apartado. `MetricsTabs`
@@ -45,7 +49,7 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   (gastadas en el período / gemas que los usuarios tienen hoy en su inventario); visualizaciones: **distribución de XP** por tramos (BreakdownPie) y **ranking de
   logros** más y menos desbloqueados (`AchievementRanking`); más daily XP/achievements/gems-spent.
   Rolling DAU/WAU/MAU + stickiness, current-streak tiles and the weekly-cohort retention table were removed
-  (no reaccionaban al rango desde/hasta).
+  (no reaccionaban al rango desde/hasta); the tab shows `retention7` (retention at 7 days of the window's signups) instead.
 - **Aprendizaje** (`usage-learning.tsx`) — "¿La gente aprende LSA?": lesson flow (iniciadas/completadas +
   tasa de finalización) and exercise flow (realizados, tasa de éxito, intentos promedio); the **embudo de
   aprendizaje** (`funnel.tsx`: registrados → iniciaron lección → hicieron ejercicio → completaron lección →
@@ -65,8 +69,7 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   rate or server cost (on-device). Per-word accuracy is reserved (needs a camera-attempt → sign mapping that
   isn't modelled).
 
-Each tab opens with a **GoldenRow** (`golden-row.tsx`): 3–5 headline tiles that signal the area's health
-at a glance, coloured success/warning/danger from the metric's `threshold`. Perf (Prometheus/Grafana)
+`GoldenTile` (`golden-row.tsx`) is the headline tile that signals a metric's health at a glance, coloured success/warning/danger from the metric's `threshold`; today it is used by the Infraestructura perf tiles (`PerfGoldenTile` in `perf-panel.tsx`), while the other tabs open with `KpiCard`s (v3 layout below). Perf (Prometheus/Grafana)
 panels only populate in production; the Infra tab says so, and shows "sin datos" locally.
 
 ## v3 layout (mockups, nov 2026)
@@ -130,15 +133,15 @@ Gamification series); the y axis is labelled with values.
 - **Growth** → `metricsApi.growth({ from, to })` → signa-api `GET /admin/metrics/growth`, aggregated from
   Postgres: audience (signups + total), engagement (DAU/WAU/MAU + stickiness), waitlist, B2B revenue and
   refunds, the gem economy, seat utilization and organizations by status, with **adaptive-resolution**
-  series (each point's `t` is the bucket's start instant — see Resolution below). Powers the Negocio tab
-  (`usage-growth.tsx`), alongside enrollment state from the business endpoint.
+  series (each point's `t` is the bucket's start instant — see Resolution below). Powers the Resumen, Negocio and Usuarios tabs
+  (`usage-resumen.tsx`, `usage-growth.tsx`, `usage-usuarios.tsx`), alongside enrollment state from the business endpoint.
 - **Learning** → `metricsApi.learning({ from, to })` → signa-api `GET /admin/metrics/learning`, aggregated
   from Postgres: per-course completion, the enrollment funnel, the hardest lessons by accuracy, vocabulary
   growth (daily), sign-report resolution + most-reported signs, and content-import health. Powers the
   Aprendizaje tab (`usage-learning.tsx`), alongside accuracy/report state from the business endpoint.
 - **Gamification** → `metricsApi.gamification({ from, to })` → signa-api `GET /admin/metrics/gamification`,
   aggregated from Postgres: daily XP, streak distribution, achievements unlocked (+ top), challenge claim
-  rates by type, gifts and the shop economy. Powers the Gamificación tab (`usage-gamification.tsx`).
+  rates by type, gifts and the shop economy. Powers the gamification section of Usuarios (`usage-gamification.tsx`).
 - **Performance / infra** → `metricsApi.perf(widget, { from, to, step })` → signa-api
   `GET /admin/metrics/perf/{widget}`, which proxies PromQL `query_range` to Grafana Cloud. Rendered by
   `PerfChart` via `PerfPanel`/`PerfGoldenTile` (`perf-panel.tsx`); value formatters in `perf-format.ts`.

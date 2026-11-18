@@ -53,9 +53,9 @@ function courseVersionStatusLabel(status: string) {
 }
 
 function courseVersionStatusColor(status: string) {
-  if (status === "PUBLISHED") return "bg-[rgba(76,166,92,.12)] text-[#2E7D45]";
-  if (status === "ARCHIVED") return "bg-[#EBE3DB] text-[#8C817A]";
-  return "bg-[#F2ECE6] text-[#8C817A]";
+  if (status === "PUBLISHED") return "bg-success/12 text-success-dark";
+  if (status === "ARCHIVED") return "bg-fill-dark text-text-muted";
+  return "bg-fill text-text-muted";
 }
 
 function purchaseStatusLabel(status: string) {
@@ -67,10 +67,10 @@ function purchaseStatusLabel(status: string) {
 }
 
 function purchaseStatusColor(status: string) {
-  if (status === "PAID") return "bg-[rgba(76,166,92,.12)] text-[#2E7D45]";
-  if (status === "PENDING_PAYMENT") return "bg-[rgba(251,191,36,.18)] text-[#B85806]";
-  if (status === "CANCELLED" || status === "REFUNDED") return "bg-[#FBE0D8] text-[#E14E22]";
-  return "bg-[#F2ECE6] text-[#8C817A]";
+  if (status === "PAID") return "bg-success/12 text-success-dark";
+  if (status === "PENDING_PAYMENT") return "bg-warning/18 text-shop-amber-dark";
+  if (status === "CANCELLED" || status === "REFUNDED") return "bg-danger-light text-danger";
+  return "bg-fill text-text-muted";
 }
 
 // ── Role-specific detail panels ───────────────────────────────────────────────

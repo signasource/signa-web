@@ -1,5 +1,5 @@
 import { api } from "@/lib/api/client";
-import type { Page, Purchase, PurchaseDetail, PurchaseStatus } from "@/lib/api/types";
+import type { Page, Purchase, PurchaseStatus } from "@/lib/api/types";
 
 // ── Unified admin purchases ───────────────────────────────────────────────────
 
