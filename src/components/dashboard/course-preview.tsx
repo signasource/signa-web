@@ -95,8 +95,9 @@ export function CoursePreview({ course }: { course: CatalogCourse }) {
             <Pill>
               {course.modules.length} {course.modules.length === 1 ? "módulo" : "módulos"}
             </Pill>
-            {copy ? <Pill highlight>{copy.label}</Pill> : null}
-            <Pill>Práctica con cámara</Pill>
+            {course.hasAnimations && <Pill highlight>Animaciones 3D</Pill>}
+            {course.hasVideos && <Pill highlight>Señas en video</Pill>}
+            {course.hasCameraRecognition && <Pill>Práctica con cámara</Pill>}
           </ul>
         </div>
       </section>

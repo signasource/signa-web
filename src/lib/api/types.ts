@@ -160,6 +160,9 @@ export type CatalogCourse = {
   description: string | null;
   coverUrl: string | null;
   signCount: number;
+  hasCameraRecognition: boolean;
+  hasAnimations: boolean;
+  hasVideos: boolean;
   /** Modules in learning order with the words of the signs each one introduces. */
   modules: CatalogModule[];
 };
