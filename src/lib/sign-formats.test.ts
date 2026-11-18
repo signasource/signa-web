@@ -28,6 +28,20 @@ describe("resolveSignMedia", () => {
     const media = await resolveSignMedia("mamá", served("/mam%C3%A1.glb"));
     expect(media?.url).toContain("mam%C3%A1.glb");
   });
+
+  it("finds a sign under its file-name alias, keeping the requested meaning", async () => {
+    const media = await resolveSignMedia("niño", served("/nene.mp4", "/nene_lateral.mp4"));
+    expect(media).toMatchObject({ meaning: "niño", format: "mp4" });
+    expect(media?.url).toMatch(/\/lsa\/nene\.mp4$/);
+    expect(media?.lateralUrl).toMatch(/\/lsa\/nene_lateral\.mp4$/);
+  });
+
+  it("matches aliases ignoring case and accents, and prefers the sign's own file", async () => {
+    expect((await resolveSignMedia("NINA", served("/nena.glb")))?.url).toMatch(/nena\.glb$/);
+    expect((await resolveSignMedia("Niña", served("/nena.glb")))?.url).toMatch(/nena\.glb$/);
+    const own = await resolveSignMedia("niño", served("/ni%C3%B1o.mp4", "/nene.glb"));
+    expect(own?.url).toMatch(/ni%C3%B1o\.mp4$/);
+  });
 });
 
 describe("parseSignList", () => {
