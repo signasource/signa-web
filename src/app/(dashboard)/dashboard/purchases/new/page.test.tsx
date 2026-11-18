@@ -18,18 +18,20 @@ vi.mock("@/lib/api/organizations", () => ({
   },
 }));
 
-vi.mock("@/lib/api/sign-formats", () => ({
-  fetchSignFormats: vi.fn(async (meanings: string[]) =>
-    // "Fiebre" has no file in the bucket: it must be skipped.
-    meanings
-      .filter((meaning) => meaning !== "Fiebre")
-      .map((meaning) => ({
-        meaning,
-        url: `https://cdn/lsa/${meaning}.mp4`,
-        format: "mp4" as const,
-        lateralUrl: null,
-      })),
-  ),
+vi.mock("@/lib/api/signs", () => ({
+  signsApi: {
+    media: vi.fn(async (meanings: string[]) =>
+      // "Fiebre" has no file: the API leaves it out, so it must be skipped.
+      meanings
+        .filter((meaning) => meaning !== "Fiebre")
+        .map((meaning) => ({
+          meaning,
+          url: `https://cdn/lsa/${meaning}.mp4`,
+          format: "mp4" as const,
+          lateralUrl: null,
+        })),
+    ),
+  },
 }));
 
 const catalog: PurchaseCatalog = {
