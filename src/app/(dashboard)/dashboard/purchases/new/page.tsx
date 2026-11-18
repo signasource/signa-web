@@ -290,8 +290,8 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
               {...form.register("emails")}
             />
             <span className="text-text-muted text-[13px] font-normal">
-              Separá los emails con comas o saltos de línea. La invitación solo la puede aceptar la
-              cuenta de ese email.
+              Formato: usuario@dominio.com — separalos con comas o saltos de línea. La invitación
+              solo la puede aceptar la cuenta de ese email.
             </span>
           </label>
           {sheetMessage ? <p className="text-text-muted text-[13px]">{sheetMessage}</p> : null}
