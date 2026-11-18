@@ -2,7 +2,7 @@
 
 > Responsibility: HTTP security headers, the two-tier CSP, and how to keep it working.
 > Update when: a header/CSP directive changes, a public static page is added, a third-party script/origin is introduced, or the API origin changes.
-> Sources: next.config.ts, src/proxy.ts, src/lib/security/csp.ts, src/lib/integrity.ts, scripts/strip-sourcemaps.mjs, src/app/api/glb-viewer/route.ts, src/app/api/glb-viewer/file/route.ts, src/app/api/sign-formats/route.ts, src/lib/{glb,sign-formats}.ts, src/app/(auth)/layout.tsx, src/app/(dashboard)/layout.tsx
+> Sources: next.config.ts, src/proxy.ts, src/lib/security/csp.ts, src/lib/integrity.ts, scripts/strip-sourcemaps.mjs, src/app/api/glb-viewer/route.ts, src/app/api/glb-viewer/file/route.ts, src/lib/glb.ts, src/app/(auth)/layout.tsx, src/app/(dashboard)/layout.tsx
 
 ## Why this matters here
 
@@ -54,14 +54,6 @@ API's local storage fallback, dev only); anything else is a 400. It is embedded 
 `JSON.stringify`, never raw. `Cache-Control: no-store`. Listed in `PASSTHROUGH_PATHS` (`src/proxy.ts`).
 It is embedded by same-origin pages, so the app CSP has `frame-src 'self'` and `next.config.ts` overrides the global `X-Frame-Options: DENY` with `SAMEORIGIN` for this path (otherwise the iframe shows "Este contenido está bloqueado"). For that dev fallback, `NEXT_PUBLIC_API_URL` is in the viewer's `connect-src` and in the app CSP's
 `media-src` (the editor's `<video>` preview).
-
-### `/api/sign-formats?signs=a,b` (purchase preview)
-
-JSON route that HEADs the public R2 bucket server-side (`lsa/<sign>.glb`, `.mp4`, `_lateral.mp4`) so
-the page never probes R2 itself (CSP/CORS would block it). Input is the `signs` list only: each name
-must pass `isSafeSign`, at most 24, and URLs are always built on `R2_GLB_BASE`, so it cannot be
-pointed at another host. 4 s timeout per request, `Cache-Control: private, max-age=600`. It reveals
-nothing beyond what the bucket already serves publicly. Goes through the normal `proxy.ts` (nonce CSP header on a JSON response is harmless).
 
 ### `/api/glb-viewer` (landing)
 

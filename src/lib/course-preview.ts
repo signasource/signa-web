@@ -1,5 +1,8 @@
 import type { CatalogModule, SignMedia } from "@/lib/api/types";
 
+/** Most signs the preview asks the API about at once. */
+export const MAX_PREVIEW_CANDIDATES = 24;
+
 export type CourseFormat = "video" | "avatar" | "mixed" | "unknown";
 
 /** How the course shows its signs, from the media of the signs it teaches. */

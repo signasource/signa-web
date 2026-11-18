@@ -4,15 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
 import { CourseSigns } from "@/components/dashboard/course-signs";
 import { SignMediaPreview } from "@/features/admin/signs/sign-media-preview";
-import { fetchSignFormats } from "@/lib/api/sign-formats";
+import { signsApi } from "@/lib/api/signs";
 import type { CatalogCourse } from "@/lib/api/types";
 import {
   courseFormat,
   courseSignList,
   showcaseSigns,
+  MAX_PREVIEW_CANDIDATES,
   type CourseFormat,
 } from "@/lib/course-preview";
-import { MAX_FORMAT_CHECK } from "@/lib/sign-formats";
 import { cn } from "@/lib/utils";
 
 const SHOWCASE_SIZE = 3;
@@ -35,15 +35,24 @@ const FORMAT_COPY: Record<CourseFormat, { label: string; text: string } | null> 
 
 /** The pitch for a course an admin is about to buy: what it is, how signs look, what it covers. */
 export function CoursePreview({ course }: { course: CatalogCourse }) {
-  // Signs are checked in the bucket in an order that spreads over the modules; the ones with no
+  // Signs are looked up in signa-api in an order that spreads over the modules; the ones with no
   // file are skipped, so the sample is the first few that do have an avatar or a video.
   const candidates = useMemo(
-    () => showcaseSigns(course.modules, new Set(courseSignList(course.modules)), MAX_FORMAT_CHECK),
+    () =>
+      showcaseSigns(
+        course.modules,
+        new Set(courseSignList(course.modules)),
+        MAX_PREVIEW_CANDIDATES,
+      ),
     [course.modules],
   );
   const media = useQuery({
     queryKey: ["course-preview-media", course.id],
-    queryFn: () => fetchSignFormats(candidates),
+    queryFn: async () => {
+      const byName = new Map((await signsApi.media(candidates)).map((m) => [m.meaning, m]));
+      // The API does not keep the request order, which decides what the sample shows.
+      return candidates.flatMap((sign) => byName.get(sign) ?? []);
+    },
     enabled: candidates.length > 0,
     staleTime: 10 * 60 * 1000,
   });

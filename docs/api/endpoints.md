@@ -2,7 +2,7 @@
 
 > Responsibility: catalog of `signa-api` endpoints the web calls, via `src/lib/api/`.
 > Update when: an endpoint call is added, changed, or removed, or a stub becomes real.
-> Sources: src/lib/api/auth.ts, src/lib/api/organizations.ts, src/lib/api/invitations.ts, src/lib/api/admin.ts, src/lib/api/sign-formats.ts, src/app/api/sign-formats/route.ts
+> Sources: src/lib/api/auth.ts, src/lib/api/organizations.ts, src/lib/api/invitations.ts, src/lib/api/admin.ts, src/lib/api/signs.ts
 
 Types → [types.md](./types.md). Client behavior → [http-client.md](./http-client.md). The API's own contract is authoritative (`signa-api` controllers / Swagger).
 
@@ -90,9 +90,9 @@ Refresh (`POST /auth/refresh`) is called internally by the client, not exposed a
 Telemetry ingestion (`POST /telemetry/events`) is **not** called from `metricsApi` — it is the write
 side used by the client telemetry util (`src/lib/telemetry.ts`) and by `signa-mobile`.
 
-## `fetchSignFormats` (`src/lib/api/sign-formats.ts`) — same-origin, not `signa-api`
+## `signsApi.media` (`src/lib/api/signs.ts`) — mirrors `SignController#getSignMedia`
 
-`GET /api/sign-formats?signs=a,b,c` (Next route, `src/app/api/sign-formats/route.ts`) → `SignMedia[]`. For each sign (≤ 24, safe names only) it HEADs the public R2 bucket server-side: `lsa/<sign>.glb` → `glb` (3D avatar); else `lsa/<sign>.mp4` → `mp4`, with `lsa/<sign>_lateral.mp4` as `lateralUrl` when it exists; if the sign has neither, the same is tried under its file-name alias (`niño`→`nene`, `niña`→`nena`, `hoy`→`hoy-ahora`, `comisaría`→`policía`, `mañana`, `la mañana`; a mirror of `FILE_NAME_ALIASES` in signa-api's `SignCatalogImporter` — keep in sync, `signa-mobile` has another copy) and the entry still carries the requested `meaning`; signs with nothing are omitted. Server-side because the page's CSP and the bucket's CORS do not allow probing R2 from the browser. Used by the purchase page's course preview.
+`POST /signs/media` `{meanings}` → `SignMedia[]` (≤ 200 names; the preview sends ≤ 24). The API is the only place that knows which file each sign uses in R2: it matches names ignoring case and accents, applies its file-name aliases (`niño`→`nene`, …) and tells `.glb` from `.mp4` (+ `lateralUrl`). Signs with no file are omitted and the list does **not** keep the request order (the caller reorders). Requires a session. Used by the purchase page's course preview (`course-preview.tsx`). There is no alias map or bucket probing in this repo any more.
 
 ## Available in the API, not wired yet
 
