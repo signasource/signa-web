@@ -92,7 +92,7 @@ side used by the client telemetry util (`src/lib/telemetry.ts`) and by `signa-mo
 
 ## `fetchSignFormats` (`src/lib/api/sign-formats.ts`) — same-origin, not `signa-api`
 
-`GET /api/sign-formats?signs=a,b,c` (Next route, `src/app/api/sign-formats/route.ts`) → `SignMedia[]`. For each sign (≤ 24, safe names only) it HEADs the public R2 bucket server-side: `lsa/<sign>.glb` → `glb` (3D avatar); else `lsa/<sign>.mp4` → `mp4`, with `lsa/<sign>_lateral.mp4` as `lateralUrl` when it exists; signs with neither are omitted. Server-side because the page's CSP and the bucket's CORS do not allow probing R2 from the browser. Used by the purchase page's course preview.
+`GET /api/sign-formats?signs=a,b,c` (Next route, `src/app/api/sign-formats/route.ts`) → `SignMedia[]`. For each sign (≤ 24, safe names only) it HEADs the public R2 bucket server-side: `lsa/<sign>.glb` → `glb` (3D avatar); else `lsa/<sign>.mp4` → `mp4`, with `lsa/<sign>_lateral.mp4` as `lateralUrl` when it exists; if the sign has neither, the same is tried under its file-name alias (`niño`→`nene`, `niña`→`nena`, `hoy`→`hoy-ahora`, `comisaría`→`policía`, `mañana`, `la mañana`; a mirror of `FILE_NAME_ALIASES` in signa-api's `SignCatalogImporter` — keep in sync, `signa-mobile` has another copy) and the entry still carries the requested `meaning`; signs with nothing are omitted. Server-side because the page's CSP and the bucket's CORS do not allow probing R2 from the browser. Used by the purchase page's course preview.
 
 ## Available in the API, not wired yet
 
