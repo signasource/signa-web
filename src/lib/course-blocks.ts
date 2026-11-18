@@ -16,7 +16,7 @@ export type BlockTypeDef = {
 export const BLOCK_TYPES: Record<string, BlockTypeDef> = {
   INFO: {
     label: "Información",
-    bg: "bg-[#EBE3DB]",
+    bg: "bg-fill-dark",
     xp: false,
     wide: true,
     fields: [
@@ -26,14 +26,14 @@ export const BLOCK_TYPES: Record<string, BlockTypeDef> = {
   },
   INTRODUCE_SIGN: {
     label: "Presentar seña",
-    bg: "bg-[#EEE8FF]",
+    bg: "bg-primary-light",
     xp: true,
     wide: false,
     fields: [["meaning", "sign", "Seña"]],
   },
   SELECT_MEANING: {
     label: "Elegir significado",
-    bg: "bg-[#E4F1EC]",
+    bg: "bg-course-teal-light",
     xp: true,
     wide: false,
     fields: [
@@ -43,7 +43,7 @@ export const BLOCK_TYPES: Record<string, BlockTypeDef> = {
   },
   SELECT_SIGN: {
     label: "Elegir seña",
-    bg: "bg-[#E4F1FB]",
+    bg: "bg-avatar-blue-light",
     xp: true,
     wide: false,
     fields: [
@@ -53,7 +53,7 @@ export const BLOCK_TYPES: Record<string, BlockTypeDef> = {
   },
   CONTEXT_RESPONSE: {
     label: "Respuesta en contexto",
-    bg: "bg-[#FEF0DE]",
+    bg: "bg-shop-amber-light",
     xp: true,
     wide: false,
     fields: [
@@ -64,14 +64,14 @@ export const BLOCK_TYPES: Record<string, BlockTypeDef> = {
   },
   MATCH: {
     label: "Emparejar",
-    bg: "bg-[#FDE8F1]",
+    bg: "bg-avatar-wine-light",
     xp: true,
     wide: false,
     fields: [["concepts", "signs", "Conceptos"]],
   },
   VISUAL_RECOGNITION: {
     label: "Reconocimiento visual",
-    bg: "bg-[#E9F3EB]",
+    bg: "bg-avatar-green-light",
     xp: true,
     wide: false,
     fields: [
@@ -81,21 +81,21 @@ export const BLOCK_TYPES: Record<string, BlockTypeDef> = {
   },
   PERFORM_SIGN: {
     label: "Hacer la seña",
-    bg: "bg-[#FBE0D8]",
+    bg: "bg-danger-light",
     xp: true,
     wide: false,
     fields: [["signs", "signs", "Seña a realizar"]],
   },
   SPELL_NAME: {
     label: "Deletrear nombre",
-    bg: "bg-[#E0F4F2]",
+    bg: "bg-avatar-teal-light",
     xp: true,
     wide: false,
     fields: [],
   },
   INVISIBLE_SIGNS: {
     label: "Señas invisibles",
-    bg: "bg-[#F2ECE6]",
+    bg: "bg-fill",
     xp: false,
     wide: false,
     fields: [["signs", "signs", "Señas"]],

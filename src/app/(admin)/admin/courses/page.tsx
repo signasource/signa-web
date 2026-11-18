@@ -39,13 +39,13 @@ type DrawerTarget = {
 };
 
 const UNIT_TINTS = [
-  "bg-[#E4F1EC]",
-  "bg-[#FEF0DE]",
-  "bg-[#FDE8F1]",
-  "bg-[#E4F1FB]",
-  "bg-[#E9F3EB]",
-  "bg-[#EEE8FF]",
-  "bg-[#E0F4F2]",
+  "bg-course-teal-light",
+  "bg-shop-amber-light",
+  "bg-avatar-wine-light",
+  "bg-avatar-blue-light",
+  "bg-avatar-green-light",
+  "bg-primary-light",
+  "bg-avatar-teal-light",
 ];
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -100,9 +100,9 @@ function countSigns(topics: AdminTopic[]): number {
 }
 
 function statusColors(status: CourseVersionStatus) {
-  if (status === "DRAFT") return "bg-[rgba(251,191,36,.18)] text-[#B85806]";
-  if (status === "PUBLISHED") return "bg-[rgba(76,166,92,.12)] text-[#2E7D45]";
-  return "bg-[#EBE3DB] text-[#8C817A]";
+  if (status === "DRAFT") return "bg-warning/18 text-shop-amber-dark";
+  if (status === "PUBLISHED") return "bg-success/12 text-success-dark";
+  return "bg-fill-dark text-text-muted";
 }
 
 function statusLabel(status: CourseVersionStatus) {
@@ -142,14 +142,14 @@ function BlockField({
   if (fieldType === "text") {
     return (
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+        <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
           {label}
         </span>
         <input
           readOnly={readOnly}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-md border-0 bg-[rgba(255,255,255,.65)] px-2.5 py-2 text-sm text-[#241A16]"
+          className="bg-surface/65 text-text w-full rounded-md border-0 px-2.5 py-2 text-sm"
         />
       </div>
     );
@@ -158,7 +158,7 @@ function BlockField({
   if (fieldType === "textarea") {
     return (
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+        <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
           {label}
         </span>
         <textarea
@@ -166,7 +166,7 @@ function BlockField({
           value={typeof value === "string" ? value : ""}
           rows={3}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full resize-y rounded-md border-0 bg-[rgba(255,255,255,.65)] px-2.5 py-2 text-sm leading-relaxed text-[#241A16]"
+          className="bg-surface/65 text-text w-full resize-y rounded-md border-0 px-2.5 py-2 text-sm leading-relaxed"
         />
       </div>
     );
@@ -175,7 +175,7 @@ function BlockField({
   if (fieldType === "number") {
     return (
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+        <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
           {label}
         </span>
         <input
@@ -183,7 +183,7 @@ function BlockField({
           inputMode="numeric"
           value={typeof value === "number" ? value : ""}
           onChange={(e) => onChange(Number(e.target.value) || 0)}
-          className="w-20 rounded-md border-0 bg-[rgba(255,255,255,.65)] px-2.5 py-2 text-sm font-semibold text-[#241A16]"
+          className="bg-surface/65 text-text w-20 rounded-md border-0 px-2.5 py-2 text-sm font-semibold"
         />
       </div>
     );
@@ -192,13 +192,13 @@ function BlockField({
   if (fieldType === "toggle") {
     return (
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+        <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
           {label}
         </span>
         <button
           onClick={() => !readOnly && onChange(!value)}
           className="relative h-6 w-10 rounded-full border-0 p-0"
-          style={{ background: value ? "#241A16" : "#D9CFC5" }}
+          style={{ background: value ? "var(--color-text)" : "var(--color-border-strong)" }}
         >
           <span
             className="absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white transition-transform"
@@ -213,26 +213,26 @@ function BlockField({
     const meaning = typeof value === "string" ? value : null;
     return (
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+        <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
           {label}
         </span>
         {meaning ? (
           <button
             onClick={() => onPickSign(meaning)}
-            className="flex cursor-pointer items-center gap-2.5 rounded-md border-0 bg-white p-1.5 text-left hover:shadow-[0_0_0_2px_#241A16]"
+            className="flex cursor-pointer items-center gap-2.5 rounded-md border-0 bg-white p-1.5 text-left hover:shadow-[0_0_0_2px_var(--color-text)]"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded bg-[#1E1714] font-mono text-[10px] font-bold text-white">
+            <span className="bg-ink-900 flex h-11 w-11 items-center justify-center rounded font-mono text-[10px] font-bold text-white">
               GLB
             </span>
             <span className="flex flex-1 flex-col gap-0.5">
-              <span className="text-[15px] font-bold text-[#241A16]">{meaning}</span>
+              <span className="text-text text-[15px] font-bold">{meaning}</span>
             </span>
-            <span className="pr-1.5 text-xs font-semibold text-[#7857FF]">Cambiar</span>
+            <span className="text-primary pr-1.5 text-xs font-semibold">Cambiar</span>
           </button>
         ) : (
           <button
             onClick={() => onPickSign()}
-            className="flex items-center gap-2 rounded-md border border-dashed border-[rgba(36,26,22,.25)] bg-[rgba(255,255,255,.4)] px-3 py-3.5 text-sm font-semibold text-[rgba(36,26,22,.75)] hover:border-[#241A16] hover:text-[#241A16]"
+            className="border-text/25 bg-surface/40 text-text/75 hover:border-text hover:text-text flex items-center gap-2 rounded-md border border-dashed px-3 py-3.5 text-sm font-semibold"
           >
             <svg
               width="16"
@@ -258,17 +258,17 @@ function BlockField({
 
     return (
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+        <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
           {label}
         </span>
         <div className="flex flex-wrap gap-1.5">
           {chips.map((chip, i) => (
             <span
               key={i}
-              className="flex items-center gap-1.5 rounded-md bg-white px-1 py-0.5 text-sm font-semibold text-[#241A16]"
+              className="text-text flex items-center gap-1.5 rounded-md bg-white px-1 py-0.5 text-sm font-semibold"
             >
               {!isWords && (
-                <span className="rounded bg-[#1E1714] px-1 py-0.5 font-mono text-[9px] font-bold text-white">
+                <span className="bg-ink-900 rounded px-1 py-0.5 font-mono text-[9px] font-bold text-white">
                   GLB
                 </span>
               )}
@@ -276,7 +276,7 @@ function BlockField({
               {!readOnly && (
                 <button
                   onClick={() => onChange(chips.filter((_, j) => j !== i))}
-                  className="flex h-5 w-5 items-center justify-center rounded border-0 bg-transparent text-[#8C817A] hover:bg-[#F2ECE6] hover:text-[#241A16]"
+                  className="text-text-muted hover:bg-fill hover:text-text flex h-5 w-5 items-center justify-center rounded border-0 bg-transparent"
                 >
                   ×
                 </button>
@@ -286,7 +286,7 @@ function BlockField({
           {!readOnly && !isWords && (
             <button
               onClick={onPickSigns}
-              className="rounded-md border border-dashed border-[rgba(36,26,22,.25)] bg-transparent px-2.5 py-1 text-sm font-semibold text-[rgba(36,26,22,.75)] hover:border-[#241A16] hover:text-[#241A16]"
+              className="border-text/25 text-text/75 hover:border-text hover:text-text rounded-md border border-dashed bg-transparent px-2.5 py-1 text-sm font-semibold"
             >
               + seña
             </button>
@@ -303,7 +303,7 @@ function BlockField({
                 }
               }}
               placeholder="+ opción ↵"
-              className="w-28 rounded-md border border-dashed border-[rgba(36,26,22,.25)] bg-transparent px-2.5 py-1 text-sm text-[#241A16]"
+              className="border-text/25 text-text w-28 rounded-md border border-dashed bg-transparent px-2.5 py-1 text-sm"
             />
           )}
         </div>
@@ -728,8 +728,8 @@ export default function CoursesPage() {
         {/* header */}
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="font-display mb-2 text-2xl font-bold text-[#241A16]">Cursos</h1>
-            <p className="max-w-xl text-sm text-[#8C817A]">
+            <h1 className="font-display text-text mb-2 text-2xl font-bold">Cursos</h1>
+            <p className="text-text-muted max-w-xl text-sm">
               Borradores, versiones publicadas y archivo de cada curso. Los borradores se guardan
               solos y los ven todos los administradores.
             </p>
@@ -737,7 +737,7 @@ export default function CoursesPage() {
           <button
             onClick={() => createMutation.mutate("Nuevo curso")}
             disabled={createMutation.isPending}
-            className="flex items-center gap-2 rounded-xl border-0 bg-[#241A16] px-4 py-2.5 text-sm font-semibold text-[#FBF6F2] hover:bg-[#3A2F2A] disabled:opacity-50"
+            className="bg-text text-on-dark hover:bg-ink-700 flex items-center gap-2 rounded-xl border-0 px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
           >
             <svg
               width="16"
@@ -756,7 +756,7 @@ export default function CoursesPage() {
 
         {/* tabs + sort */}
         <div className="mb-8 flex flex-wrap items-center gap-3">
-          <div className="flex w-fit gap-1 rounded-xl bg-[#F2ECE6] p-1">
+          <div className="bg-fill flex w-fit gap-1 rounded-xl p-1">
             {(
               [
                 { key: "estado", label: "Por estado" },
@@ -769,8 +769,8 @@ export default function CoursesPage() {
                 className={cn(
                   "rounded-lg border-0 px-4 py-2 text-sm font-semibold transition-colors",
                   homeTab === key
-                    ? "bg-white text-[#241A16] shadow-sm"
-                    : "bg-transparent text-[#8C817A] hover:text-[#241A16]",
+                    ? "text-text bg-white shadow-sm"
+                    : "text-text-muted hover:text-text bg-transparent",
                 )}
               >
                 {label}
@@ -779,7 +779,7 @@ export default function CoursesPage() {
           </div>
           <button
             onClick={() => setSortAsc((v) => !v)}
-            className="flex items-center gap-1.5 rounded-xl border border-[#ECE5DE] bg-white px-3.5 py-2 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6]"
+            className="border-border text-text hover:bg-fill flex items-center gap-1.5 rounded-xl border bg-white px-3.5 py-2 text-sm font-semibold"
           >
             <svg
               width="14"
@@ -810,7 +810,7 @@ export default function CoursesPage() {
         {isLoading && (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-56 animate-pulse rounded-lg bg-[#F2ECE6]" />
+              <div key={i} className="bg-fill h-56 animate-pulse rounded-lg" />
             ))}
           </div>
         )}
@@ -821,11 +821,11 @@ export default function CoursesPage() {
             {drafts.length > 0 && (
               <section>
                 <div className="mb-5 flex items-baseline gap-3">
-                  <h2 className="text-lg font-bold text-[#241A16]">Borradores</h2>
-                  <span className="rounded-full bg-[rgba(251,191,36,.18)] px-2 py-0.5 text-xs font-bold text-[#B85806]">
+                  <h2 className="text-text text-lg font-bold">Borradores</h2>
+                  <span className="bg-warning/18 text-shop-amber-dark rounded-full px-2 py-0.5 text-xs font-bold">
                     {drafts.length}
                   </span>
-                  <span className="text-sm text-[#8C817A]">En edición, todavía sin publicar</span>
+                  <span className="text-text-muted text-sm">En edición, todavía sin publicar</span>
                 </div>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
                   {drafts.map((v) => (
@@ -841,11 +841,11 @@ export default function CoursesPage() {
             {published.length > 0 && (
               <section>
                 <div className="mb-5 flex items-baseline gap-3">
-                  <h2 className="text-lg font-bold text-[#241A16]">Publicados</h2>
-                  <span className="rounded-full bg-[rgba(76,166,92,.12)] px-2 py-0.5 text-xs font-bold text-[#2E7D45]">
+                  <h2 className="text-text text-lg font-bold">Publicados</h2>
+                  <span className="bg-success/12 text-success-dark rounded-full px-2 py-0.5 text-xs font-bold">
                     {published.length}
                   </span>
-                  <span className="text-sm text-[#8C817A]">La versión activa de cada curso</span>
+                  <span className="text-text-muted text-sm">La versión activa de cada curso</span>
                 </div>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
                   {published.map((v) => (
@@ -868,11 +868,11 @@ export default function CoursesPage() {
             {archived.length > 0 && (
               <section>
                 <div className="mb-5 flex items-baseline gap-3">
-                  <h2 className="text-lg font-bold text-[#241A16]">Archivados</h2>
-                  <span className="rounded-full bg-[#EBE3DB] px-2 py-0.5 text-xs font-bold text-[#8C817A]">
+                  <h2 className="text-text text-lg font-bold">Archivados</h2>
+                  <span className="bg-fill-dark text-text-muted rounded-full px-2 py-0.5 text-xs font-bold">
                     {archived.length}
                   </span>
-                  <span className="text-sm text-[#8C817A]">
+                  <span className="text-text-muted text-sm">
                     Por fecha de publicación · más recientes primero
                   </span>
                 </div>
@@ -888,7 +888,7 @@ export default function CoursesPage() {
               </section>
             )}
             {allVersions.length === 0 && (
-              <div className="rounded-lg border border-dashed border-[#EBE3DB] px-5 py-10 text-center text-sm text-[#8C817A]">
+              <div className="border-fill-dark text-text-muted rounded-lg border border-dashed px-5 py-10 text-center text-sm">
                 Todavía no hay cursos. Creá el primero.
               </div>
             )}
@@ -901,8 +901,8 @@ export default function CoursesPage() {
             {byCourse.map(({ courseName, items }) => (
               <section key={courseName}>
                 <div className="mb-5 flex items-baseline gap-3">
-                  <h2 className="text-lg font-bold text-[#241A16]">{courseName}</h2>
-                  <span className="text-sm text-[#8C817A]">
+                  <h2 className="text-text text-lg font-bold">{courseName}</h2>
+                  <span className="text-text-muted text-sm">
                     {items.length} versión{items.length !== 1 ? "es" : ""}
                   </span>
                 </div>
@@ -932,16 +932,14 @@ export default function CoursesPage() {
 
         {/* confirm dialog */}
         {confirmDialog && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center bg-[rgba(30,23,20,.5)] p-6">
+          <div className="bg-ink-900/50 fixed inset-0 z-60 flex items-center justify-center p-6">
             <div className="flex w-[420px] max-w-full flex-col gap-4 rounded-xl bg-white p-6 shadow-[0_24px_60px_rgba(30,23,20,.25)]">
-              <h3 className="font-display text-xl font-bold text-[#241A16]">
-                {confirmDialog.title}
-              </h3>
-              <p className="text-sm leading-relaxed text-[#8C817A]">{confirmDialog.body}</p>
+              <h3 className="font-display text-text text-xl font-bold">{confirmDialog.title}</h3>
+              <p className="text-text-muted text-sm leading-relaxed">{confirmDialog.body}</p>
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setConfirmDialog(null)}
-                  className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6]"
+                  className="border-border text-text hover:bg-fill rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold"
                 >
                   Cancelar
                 </button>
@@ -950,7 +948,7 @@ export default function CoursesPage() {
                     confirmDialog.onConfirm();
                     setConfirmDialog(null);
                   }}
-                  className="rounded-xl border-0 bg-[#E14E22] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c43d18]"
+                  className="bg-danger hover:bg-danger-dark rounded-xl border-0 px-5 py-2.5 text-sm font-semibold text-white"
                 >
                   Confirmar
                 </button>
@@ -961,7 +959,7 @@ export default function CoursesPage() {
 
         {/* toast */}
         {toast && (
-          <div className="fixed right-6 bottom-6 z-70 max-w-[420px] rounded-xl bg-[#241A16] px-4.5 py-3.5 text-sm font-medium text-[#FBF6F2] shadow-[0_12px_32px_rgba(30,23,20,.25)]">
+          <div className="bg-text text-on-dark fixed right-6 bottom-6 z-70 max-w-[420px] rounded-xl px-4.5 py-3.5 text-sm font-medium shadow-[0_12px_32px_rgba(30,23,20,.25)]">
             {toast}
           </div>
         )}
@@ -977,10 +975,10 @@ export default function CoursesPage() {
   return (
     <div className="-m-4 sm:-m-6 lg:-m-8">
       {/* sticky top bar */}
-      <div className="sticky top-0 z-20 flex flex-wrap items-center gap-4 border-b border-[#ECE5DE] bg-[rgba(250,246,242,.94)] px-8 py-3 backdrop-blur-sm">
+      <div className="border-border bg-background/94 sticky top-0 z-20 flex flex-wrap items-center gap-4 border-b px-8 py-3 backdrop-blur-sm">
         <button
           onClick={goHome}
-          className="flex items-center gap-1.5 border-0 bg-transparent px-0 py-1.5 text-sm font-semibold text-[#8C817A] hover:text-[#241A16]"
+          className="text-text-muted hover:text-text flex items-center gap-1.5 border-0 bg-transparent px-0 py-1.5 text-sm font-semibold"
         >
           <svg
             width="18"
@@ -996,14 +994,14 @@ export default function CoursesPage() {
           </svg>
           Cursos
         </button>
-        <span className="h-5 w-px bg-[#ECE5DE]" />
+        <span className="bg-border h-5 w-px" />
         <span className="font-display text-lg font-bold">{ed.name}</span>
         <span
           className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", statusColors(ed.status))}
         >
           {statusLabel(ed.status)}
         </span>
-        <span className="font-mono text-xs text-[#8C817A]">
+        <span className="text-text-muted font-mono text-xs">
           v{ed.version}
           {ed.status === "PUBLISHED" && ed.publishedAt
             ? ` · publicada el ${formatDate(ed.publishedAt)}`
@@ -1014,16 +1012,16 @@ export default function CoursesPage() {
         <div className="ml-auto flex flex-wrap items-center gap-4">
           {canEdit && (
             <>
-              <span className="flex items-center gap-2 text-sm text-[#8C817A]">
+              <span className="text-text-muted flex items-center gap-2 text-sm">
                 <span
                   className="h-2 w-2 rounded-full"
                   style={{
                     background:
                       saveStatus === "saved"
-                        ? "#4CA65C"
+                        ? "var(--color-success)"
                         : saveStatus === "saving"
-                          ? "#F59E0B"
-                          : "#8C817A",
+                          ? "var(--color-warning-strong)"
+                          : "var(--color-text-muted)",
                   }}
                 />
                 {saveStatus === "saved"
@@ -1040,13 +1038,13 @@ export default function CoursesPage() {
                   saveMutation.mutate({ id: ed.id, payload: buildPayload(ed) });
                 }}
                 disabled={saveMutation.isPending}
-                className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6] disabled:opacity-50"
+                className="border-border text-text hover:bg-fill rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
               >
                 Guardar
               </button>
               <button
                 onClick={() => setPublishOpen(true)}
-                className="rounded-xl border-0 bg-[#241A16] px-5 py-2.5 text-sm font-semibold text-[#FBF6F2] hover:bg-[#3A2F2A]"
+                className="bg-text text-on-dark hover:bg-ink-700 rounded-xl border-0 px-5 py-2.5 text-sm font-semibold"
               >
                 Publicar
               </button>
@@ -1058,7 +1056,7 @@ export default function CoursesPage() {
                     onConfirm: () => deleteDraftMutation.mutate(ed.id),
                   })
                 }
-                className="rounded-xl border border-[#FBE0D8] bg-[#FBE0D8] px-4 py-2.5 text-sm font-semibold text-[#E14E22] hover:bg-[#f5c9bb]"
+                className="border-danger-light bg-danger-light text-danger hover:bg-danger-border rounded-xl border px-4 py-2.5 text-sm font-semibold"
               >
                 Eliminar borrador
               </button>
@@ -1066,7 +1064,7 @@ export default function CoursesPage() {
           )}
           {!canEdit && (
             <>
-              <span className="flex items-center gap-1.5 text-sm text-[#8C817A]">
+              <span className="text-text-muted flex items-center gap-1.5 text-sm">
                 <svg
                   width="17"
                   height="17"
@@ -1092,7 +1090,7 @@ export default function CoursesPage() {
                     })
                   }
                   disabled={archiveMutation.isPending}
-                  className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#FBE0D8] hover:text-[#E14E22] disabled:opacity-50"
+                  className="border-border text-text hover:bg-danger-light hover:text-danger rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
                 >
                   Archivar
                 </button>
@@ -1100,7 +1098,7 @@ export default function CoursesPage() {
               <button
                 onClick={() => forkMutation.mutate(ed.id)}
                 disabled={forkMutation.isPending}
-                className="flex items-center gap-2 rounded-xl border-0 bg-[#241A16] px-4 py-2.5 text-sm font-semibold text-[#FBF6F2] hover:bg-[#3A2F2A] disabled:opacity-50"
+                className="bg-text text-on-dark hover:bg-ink-700 flex items-center gap-2 rounded-xl border-0 px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
               >
                 <svg
                   width="16"
@@ -1129,9 +1127,9 @@ export default function CoursesPage() {
         {/* course meta card */}
         <div
           className="flex min-w-0 flex-[999_1_420px] flex-col gap-3.5 self-stretch rounded-lg p-6"
-          style={{ background: ed.color ?? "#E4F1EC" }}
+          style={{ background: ed.color ?? "var(--color-course-teal-light)" }}
         >
-          <span className="text-[11px] font-bold tracking-widest text-[rgba(36,26,22,.7)] uppercase">
+          <span className="text-text/70 text-[11px] font-bold tracking-widest uppercase">
             Curso
           </span>
           <input
@@ -1144,7 +1142,7 @@ export default function CoursesPage() {
               })
             }
             placeholder="Nombre del curso"
-            className="font-display w-full border-0 border-b-2 border-dashed border-[rgba(36,26,22,.15)] bg-transparent pb-1.5 text-4xl font-bold text-[#241A16]"
+            className="font-display border-text/15 text-text w-full border-0 border-b-2 border-dashed bg-transparent pb-1.5 text-4xl font-bold"
           />
           <textarea
             readOnly={!canEdit}
@@ -1157,14 +1155,14 @@ export default function CoursesPage() {
             }
             placeholder="Descripción breve del curso"
             rows={2}
-            className="resize-y rounded-md border-0 bg-[rgba(255,255,255,.55)] px-3 py-2.5 text-[15px] leading-relaxed text-[#241A16]"
+            className="bg-surface/55 text-text resize-y rounded-md border-0 px-3 py-2.5 text-[15px] leading-relaxed"
           />
           <div className="flex flex-wrap items-end gap-2.5">
             <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+              <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
                 Acceso
               </span>
-              <div className="flex gap-0.5 rounded-md bg-[rgba(255,255,255,.55)] p-0.5">
+              <div className="bg-surface/55 flex gap-0.5 rounded-md p-0.5">
                 <button
                   onClick={() =>
                     canEdit &&
@@ -1176,7 +1174,7 @@ export default function CoursesPage() {
                   }
                   className={cn(
                     "rounded px-3 py-1.5 text-sm font-semibold",
-                    ed.isFree ? "bg-white text-[#241A16]" : "bg-transparent text-[#8C817A]",
+                    ed.isFree ? "text-text bg-white" : "text-text-muted bg-transparent",
                   )}
                 >
                   Gratis
@@ -1191,7 +1189,7 @@ export default function CoursesPage() {
                   }
                   className={cn(
                     "rounded px-3 py-1.5 text-sm font-semibold",
-                    !ed.isFree ? "bg-white text-[#241A16]" : "bg-transparent text-[#8C817A]",
+                    !ed.isFree ? "text-text bg-white" : "text-text-muted bg-transparent",
                   )}
                 >
                   Pago
@@ -1200,7 +1198,7 @@ export default function CoursesPage() {
             </div>
             {!ed.isFree && (
               <label className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+                <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
                   Precio ARS
                 </span>
                 <input
@@ -1213,24 +1211,24 @@ export default function CoursesPage() {
                       return d;
                     })
                   }
-                  className="w-32 rounded-md border-0 bg-[rgba(255,255,255,.55)] px-3 py-2 text-sm font-semibold text-[#241A16]"
+                  className="bg-surface/55 text-text w-32 rounded-md border-0 px-3 py-2 text-sm font-semibold"
                 />
               </label>
             )}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+              <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
                 Color
               </span>
               <div className="flex items-center gap-2">
                 {[
-                  "#E4F1EC",
-                  "#FEF0DE",
-                  "#FDE8F1",
-                  "#E4F1FB",
-                  "#EEE8FF",
-                  "#E0F4F2",
-                  "#FBE0D8",
-                  "#EBE3DB",
+                  "var(--color-course-teal-light)",
+                  "var(--color-shop-amber-light)",
+                  "var(--color-avatar-wine-light)",
+                  "var(--color-avatar-blue-light)",
+                  "var(--color-primary-light)",
+                  "var(--color-avatar-teal-light)",
+                  "var(--color-danger-light)",
+                  "var(--color-fill-dark)",
                 ].map((c) => (
                   <button
                     key={c}
@@ -1244,13 +1242,16 @@ export default function CoursesPage() {
                     className="h-7 w-7 rounded-full border-2 transition-transform hover:scale-110"
                     style={{
                       background: c,
-                      borderColor: (ed.color ?? "#E4F1EC") === c ? "#241A16" : "transparent",
+                      borderColor:
+                        (ed.color ?? "var(--color-course-teal-light)") === c
+                          ? "var(--color-text)"
+                          : "transparent",
                     }}
                   />
                 ))}
                 {canEdit && (
                   <label
-                    className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-[rgba(36,26,22,.3)] hover:border-[#241A16]"
+                    className="border-text/30 hover:border-text relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-dashed"
                     title="Color personalizado"
                   >
                     <svg
@@ -1266,7 +1267,7 @@ export default function CoursesPage() {
                     </svg>
                     <input
                       type="color"
-                      value={ed.color ?? "#E4F1EC"}
+                      value={ed.color ?? "var(--color-course-teal-light)"}
                       onChange={(e) =>
                         updateEd((d) => {
                           d.color = e.target.value;
@@ -1283,8 +1284,8 @@ export default function CoursesPage() {
         </div>
 
         {/* stats card */}
-        <div className="flex flex-[1_1_180px] flex-col justify-between gap-2.5 self-stretch rounded-lg bg-[#241A16] p-4.5 text-[#FBF6F2]">
-          <span className="text-[11px] font-bold tracking-widest text-[rgba(251,246,242,.55)] uppercase">
+        <div className="bg-text text-on-dark flex flex-[1_1_180px] flex-col justify-between gap-2.5 self-stretch rounded-lg p-4.5">
+          <span className="text-on-dark/55 text-[11px] font-bold tracking-widest uppercase">
             Resumen
           </span>
           {[
@@ -1300,7 +1301,7 @@ export default function CoursesPage() {
             ["Señas", countSigns(ed.topics)],
           ].map(([label, val]) => (
             <div key={label as string} className="flex items-baseline justify-between gap-2">
-              <span className="text-xs text-[rgba(251,246,242,.65)]">{label}</span>
+              <span className="text-on-dark/65 text-xs">{label}</span>
               <span className="font-display text-[22px] font-bold">{val}</span>
             </div>
           ))}
@@ -1319,17 +1320,17 @@ export default function CoursesPage() {
                 "flex h-auto w-46 shrink-0 flex-col gap-1 rounded-lg px-3.5 py-3.5 text-left",
                 UNIT_TINTS[ti % UNIT_TINTS.length],
                 ti === selectedTopicIdx
-                  ? "outline outline-2 outline-offset-[-2px] outline-[#241A16]"
+                  ? "outline-text outline outline-2 outline-offset-[-2px]"
                   : "opacity-70",
               )}
             >
-              <span className="text-[11px] font-bold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+              <span className="text-text/70 text-[11px] font-bold tracking-wider uppercase">
                 {t.title || `Unidad ${ti}`}
               </span>
-              <span className="font-display text-[17px] leading-tight font-bold text-[#241A16]">
+              <span className="font-display text-text text-[17px] leading-tight font-bold">
                 {t.subtitle || "Sin subtítulo"}
               </span>
-              <span className="mt-1.5 text-xs text-[rgba(36,26,22,.7)]">
+              <span className="text-text/70 mt-1.5 text-xs">
                 {t.lessons.length} {t.lessons.length === 1 ? "lección" : "lecciones"}
               </span>
             </button>
@@ -1337,7 +1338,7 @@ export default function CoursesPage() {
           {canEdit && (
             <button
               onClick={addUnit}
-              className="flex h-auto w-36 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#D9CFC5] bg-transparent text-sm font-semibold text-[#8C817A] hover:border-[#241A16] hover:text-[#241A16]"
+              className="border-border-strong text-text-muted hover:border-text hover:text-text flex h-auto w-36 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-dashed bg-transparent text-sm font-semibold"
             >
               + Unidad
             </button>
@@ -1354,13 +1355,13 @@ export default function CoursesPage() {
               )}
             >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+                <span className="text-text/70 text-[11px] font-bold tracking-wider uppercase">
                   Unidad
                 </span>
                 {canEdit && ed.topics.length > 1 && (
                   <button
                     onClick={deleteUnit}
-                    className="flex items-center gap-1.5 rounded-md border-0 bg-[rgba(255,255,255,.6)] px-2 py-1 text-xs font-semibold text-[#241A16] hover:bg-[#FBE0D8] hover:text-[#E14E22]"
+                    className="bg-surface/60 text-text hover:bg-danger-light hover:text-danger flex items-center gap-1.5 rounded-md border-0 px-2 py-1 text-xs font-semibold"
                   >
                     <svg
                       width="13"
@@ -1384,14 +1385,14 @@ export default function CoursesPage() {
                   value={topic.title}
                   onChange={(e) => setTopicField("title", e.target.value)}
                   placeholder="Título"
-                  className="w-28 rounded-md border-0 bg-[rgba(255,255,255,.6)] px-2.5 py-2 text-sm font-semibold text-[#241A16]"
+                  className="bg-surface/60 text-text w-28 rounded-md border-0 px-2.5 py-2 text-sm font-semibold"
                 />
                 <input
                   readOnly={!canEdit}
                   value={topic.subtitle ?? ""}
                   onChange={(e) => setTopicField("subtitle", e.target.value)}
                   placeholder="Subtítulo"
-                  className="font-display min-w-0 flex-1 rounded-md border-0 bg-[rgba(255,255,255,.6)] px-2.5 py-2 text-base font-bold text-[#241A16]"
+                  className="font-display bg-surface/60 text-text min-w-0 flex-1 rounded-md border-0 px-2.5 py-2 text-base font-bold"
                 />
               </div>
               <textarea
@@ -1400,11 +1401,11 @@ export default function CoursesPage() {
                 rows={2}
                 onChange={(e) => setTopicField("description", e.target.value)}
                 placeholder="Descripción de la unidad"
-                className="resize-y rounded-md border-0 bg-[rgba(255,255,255,.6)] px-2.5 py-2 text-sm leading-snug text-[#241A16]"
+                className="bg-surface/60 text-text resize-y rounded-md border-0 px-2.5 py-2 text-sm leading-snug"
               />
             </div>
 
-            <span className="mt-1.5 text-[11px] font-bold tracking-wider text-[#8C817A] uppercase">
+            <span className="text-text-muted mt-1.5 text-[11px] font-bold tracking-wider uppercase">
               Lecciones
             </span>
             {topic.lessons.map((l, li) => (
@@ -1414,20 +1415,18 @@ export default function CoursesPage() {
                 className={cn(
                   "flex cursor-pointer items-center gap-3 rounded-lg border px-3.5 py-2.5",
                   li === selectedLessonIdx
-                    ? "border-[#241A16] bg-white"
-                    : "border-[#ECE5DE] bg-white hover:bg-[#FAF6F2]",
+                    ? "border-text bg-white"
+                    : "border-border hover:bg-background bg-white",
                 )}
               >
-                <span className="font-mono text-xs text-[#8C817A]">
+                <span className="text-text-muted font-mono text-xs">
                   {String(li + 1).padStart(2, "0")}
                 </span>
-                <span className="flex-1 truncate text-sm font-semibold text-[#241A16]">
-                  {l.name}
-                </span>
+                <span className="text-text flex-1 truncate text-sm font-semibold">{l.name}</span>
                 <span
                   className={cn(
                     "text-xs font-semibold",
-                    l.blocks.length === 0 ? "text-[#E14E22]" : "text-[#8C817A]",
+                    l.blocks.length === 0 ? "text-danger" : "text-text-muted",
                   )}
                 >
                   {l.blocks.length} blq
@@ -1438,7 +1437,7 @@ export default function CoursesPage() {
                       e.stopPropagation();
                       deleteLesson(li);
                     }}
-                    className="flex h-6 w-6 items-center justify-center rounded-md border-0 bg-transparent text-[#8C817A] hover:bg-[#FBE0D8] hover:text-[#E14E22]"
+                    className="text-text-muted hover:bg-danger-light hover:text-danger flex h-6 w-6 items-center justify-center rounded-md border-0 bg-transparent"
                   >
                     <svg
                       width="13"
@@ -1459,7 +1458,7 @@ export default function CoursesPage() {
             {canEdit && (
               <button
                 onClick={addLesson}
-                className="rounded-lg border border-dashed border-[#D9CFC5] bg-transparent px-3 py-3 text-sm font-semibold text-[#8C817A] hover:border-[#241A16] hover:text-[#241A16]"
+                className="border-border-strong text-text-muted hover:border-text hover:text-text rounded-lg border border-dashed bg-transparent px-3 py-3 text-sm font-semibold"
               >
                 + Lección
               </button>
@@ -1470,8 +1469,8 @@ export default function CoursesPage() {
         {/* lesson + blocks editor */}
         {lesson && (
           <div className="flex min-w-0 flex-[999_1_480px] flex-col gap-3">
-            <div className="flex flex-col gap-2 rounded-lg border border-[#ECE5DE] bg-white p-4.5">
-              <span className="text-[11px] font-bold tracking-wider text-[#8C817A] uppercase">
+            <div className="border-border flex flex-col gap-2 rounded-lg border bg-white p-4.5">
+              <span className="text-text-muted text-[11px] font-bold tracking-wider uppercase">
                 Lección {selectedLessonIdx + 1} · {lesson.blocks.length} blq
               </span>
               <input
@@ -1479,19 +1478,19 @@ export default function CoursesPage() {
                 value={lesson.name}
                 onChange={(e) => setLessonField("name", e.target.value)}
                 placeholder="Nombre de la lección"
-                className="font-display border-0 border-b-2 border-dashed border-[#ECE5DE] bg-transparent pb-1.5 text-2xl font-bold text-[#241A16]"
+                className="font-display border-border text-text border-0 border-b-2 border-dashed bg-transparent pb-1.5 text-2xl font-bold"
               />
               <input
                 readOnly={!canEdit}
                 value={lesson.description ?? ""}
                 onChange={(e) => setLessonField("description", e.target.value)}
                 placeholder="Descripción de la lección"
-                className="border-0 bg-transparent py-1 text-sm text-[#241A16]"
+                className="text-text border-0 bg-transparent py-1 text-sm"
               />
             </div>
 
             {lesson.blocks.length === 0 && (
-              <div className="rounded-lg border border-dashed border-[#D9CFC5] px-7 py-7 text-center text-sm text-[#8C817A]">
+              <div className="border-border-strong text-text-muted rounded-lg border border-dashed px-7 py-7 text-center text-sm">
                 Esta lección no tiene bloques aún. Toda lección necesita al menos uno para
                 publicarse.
               </div>
@@ -1505,20 +1504,20 @@ export default function CoursesPage() {
                     key={block.id}
                     className={cn(
                       "flex flex-col gap-3 rounded-lg p-4",
-                      def?.bg ?? "bg-[#F2ECE6]",
+                      def?.bg ?? "bg-fill",
                       def?.wide ? "col-span-full" : "",
                     )}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-[rgba(36,26,22,.6)]">
+                      <span className="text-text/60 font-mono text-xs">
                         {String(bi + 1).padStart(2, "0")}
                       </span>
-                      <span className="text-xs font-bold tracking-wide text-[#241A16] uppercase">
+                      <span className="text-text text-xs font-bold tracking-wide uppercase">
                         {def?.label ?? block.type}
                       </span>
                       <div className="ml-auto flex items-center gap-1">
                         {def?.xp && (
-                          <label className="flex items-center gap-1 rounded-md bg-[rgba(255,255,255,.6)] px-1.5 py-0.5 text-[11px] font-bold text-[rgba(36,26,22,.7)]">
+                          <label className="bg-surface/60 text-text/70 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-bold">
                             XP
                             <input
                               readOnly={!canEdit}
@@ -1531,7 +1530,7 @@ export default function CoursesPage() {
                                   return d;
                                 })
                               }
-                              className="w-8 border-0 bg-transparent text-right text-xs font-bold text-[#241A16]"
+                              className="text-text w-8 border-0 bg-transparent text-right text-xs font-bold"
                             />
                           </label>
                         )}
@@ -1540,7 +1539,7 @@ export default function CoursesPage() {
                             <button
                               onClick={() => moveBlock(bi, -1)}
                               disabled={bi === 0}
-                              className="flex h-6 w-6 items-center justify-center rounded-md border-0 bg-transparent text-[rgba(36,26,22,.6)] hover:bg-[rgba(255,255,255,.7)] hover:text-[#241A16] disabled:opacity-30"
+                              className="text-text/60 hover:bg-surface/70 hover:text-text flex h-6 w-6 items-center justify-center rounded-md border-0 bg-transparent disabled:opacity-30"
                             >
                               <svg
                                 width="13"
@@ -1558,7 +1557,7 @@ export default function CoursesPage() {
                             <button
                               onClick={() => moveBlock(bi, 1)}
                               disabled={bi === lesson.blocks.length - 1}
-                              className="flex h-6 w-6 items-center justify-center rounded-md border-0 bg-transparent text-[rgba(36,26,22,.6)] hover:bg-[rgba(255,255,255,.7)] hover:text-[#241A16] disabled:opacity-30"
+                              className="text-text/60 hover:bg-surface/70 hover:text-text flex h-6 w-6 items-center justify-center rounded-md border-0 bg-transparent disabled:opacity-30"
                             >
                               <svg
                                 width="13"
@@ -1575,7 +1574,7 @@ export default function CoursesPage() {
                             </button>
                             <button
                               onClick={() => deleteBlock(bi)}
-                              className="flex h-6 w-6 items-center justify-center rounded-md border-0 bg-transparent text-[rgba(36,26,22,.6)] hover:bg-[#FBE0D8] hover:text-[#E14E22]"
+                              className="text-text/60 hover:bg-danger-light hover:text-danger flex h-6 w-6 items-center justify-center rounded-md border-0 bg-transparent"
                             >
                               <svg
                                 width="13"
@@ -1631,7 +1630,7 @@ export default function CoursesPage() {
               {canEdit && !adding && (
                 <button
                   onClick={() => setAdding(true)}
-                  className="min-h-[120px] rounded-lg border border-dashed border-[#D9CFC5] bg-transparent text-sm font-semibold text-[#8C817A] hover:border-[#241A16] hover:text-[#241A16]"
+                  className="border-border-strong text-text-muted hover:border-text hover:text-text min-h-[120px] rounded-lg border border-dashed bg-transparent text-sm font-semibold"
                 >
                   + Agregar bloque
                 </button>
@@ -1639,12 +1638,12 @@ export default function CoursesPage() {
             </div>
 
             {adding && (
-              <div className="flex flex-col gap-3 rounded-lg border border-[#ECE5DE] bg-white p-4">
+              <div className="border-border flex flex-col gap-3 rounded-lg border bg-white p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold">Elegí el tipo de bloque</span>
                   <button
                     onClick={() => setAdding(false)}
-                    className="border-0 bg-transparent text-sm font-semibold text-[#8C817A]"
+                    className="text-text-muted border-0 bg-transparent text-sm font-semibold"
                   >
                     Cancelar
                   </button>
@@ -1655,14 +1654,12 @@ export default function CoursesPage() {
                       key={typeKey}
                       onClick={() => addBlock(typeKey)}
                       className={cn(
-                        "flex flex-col gap-1 rounded-md border-0 p-3 text-left hover:shadow-[0_0_0_2px_#241A16]",
+                        "flex flex-col gap-1 rounded-md border-0 p-3 text-left hover:shadow-[0_0_0_2px_var(--color-text)]",
                         def.bg,
                       )}
                     >
-                      <span className="text-sm font-bold text-[#241A16]">{def.label}</span>
-                      <span className="font-mono text-[10px] text-[rgba(36,26,22,.6)]">
-                        {typeKey}
-                      </span>
+                      <span className="text-text text-sm font-bold">{def.label}</span>
+                      <span className="text-text/60 font-mono text-[10px]">{typeKey}</span>
                     </button>
                   ))}
                 </div>
@@ -1675,22 +1672,19 @@ export default function CoursesPage() {
       {/* sign search drawer */}
       {drawerOpen && (
         <>
-          <div
-            onClick={() => setDrawerOpen(false)}
-            className="fixed inset-0 z-40 bg-[rgba(30,23,20,.35)]"
-          />
+          <div onClick={() => setDrawerOpen(false)} className="bg-ink-900/35 fixed inset-0 z-40" />
           <aside className="fixed top-0 right-0 bottom-0 z-50 flex w-[440px] max-w-full flex-col bg-white shadow-[-12px_0_40px_rgba(30,23,20,.15)]">
-            <div className="flex flex-col gap-3 border-b border-[#ECE5DE] px-6 py-5">
+            <div className="border-border flex flex-col gap-3 border-b px-6 py-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="font-display text-xl font-bold">Buscar seña</h3>
-                  <p className="mt-0.5 text-sm text-[#8C817A]">
+                  <p className="text-text-muted mt-0.5 text-sm">
                     {drawerTarget?.multi ? "Seleccioná una o más señas" : "Seleccioná una seña"}
                   </p>
                 </div>
                 <button
                   onClick={() => setDrawerOpen(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border-0 bg-[#F2ECE6] text-[#241A16]"
+                  className="bg-fill text-text flex h-8 w-8 items-center justify-center rounded-lg border-0"
                 >
                   <svg
                     width="13"
@@ -1705,13 +1699,13 @@ export default function CoursesPage() {
                   </svg>
                 </button>
               </div>
-              <label className="flex items-center gap-2 rounded-xl border border-[#ECE5DE] bg-white px-3.5">
+              <label className="border-border flex items-center gap-2 rounded-xl border bg-white px-3.5">
                 <svg
                   width="17"
                   height="17"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#8C817A"
+                  stroke="var(--color-text-muted)"
                   strokeWidth="2"
                   strokeLinecap="round"
                 >
@@ -1723,20 +1717,20 @@ export default function CoursesPage() {
                   value={signQuery}
                   onChange={(e) => setSignQuery(e.target.value)}
                   placeholder="Buscar por significado…"
-                  className="flex-1 border-0 py-2.5 text-sm text-[#241A16] outline-none"
+                  className="text-text flex-1 border-0 py-2.5 text-sm outline-none"
                 />
               </label>
             </div>
 
             {pickedSign && (
-              <div className="flex flex-col gap-2.5 border-b border-[#ECE5DE] px-6 py-4">
+              <div className="border-border flex flex-col gap-2.5 border-b px-6 py-4">
                 {pickedSign.animationFormat === "mp4" ? (
                   <div className="flex gap-2">
                     <div className="flex flex-1 flex-col gap-1">
-                      <span className="text-[10px] font-bold tracking-wider text-[#8C817A] uppercase">
+                      <span className="text-text-muted text-[10px] font-bold tracking-wider uppercase">
                         Frontal
                       </span>
-                      <div className="flex h-44 items-center justify-center overflow-hidden rounded-lg bg-[#1E1714]">
+                      <div className="bg-ink-900 flex h-44 items-center justify-center overflow-hidden rounded-lg">
                         {signAnimationUrl ? (
                           <video
                             key={signAnimationUrl}
@@ -1749,17 +1743,15 @@ export default function CoursesPage() {
                             className="h-full w-full object-contain"
                           />
                         ) : (
-                          <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">
-                            Cargando…
-                          </span>
+                          <span className="text-surface/40 font-mono text-xs">Cargando…</span>
                         )}
                       </div>
                     </div>
                     <div className="flex flex-1 flex-col gap-1">
-                      <span className="text-[10px] font-bold tracking-wider text-[#8C817A] uppercase">
+                      <span className="text-text-muted text-[10px] font-bold tracking-wider uppercase">
                         Lateral
                       </span>
-                      <div className="flex h-44 items-center justify-center overflow-hidden rounded-lg bg-[#1E1714]">
+                      <div className="bg-ink-900 flex h-44 items-center justify-center overflow-hidden rounded-lg">
                         {signLateralUrl ? (
                           <video
                             key={signLateralUrl}
@@ -1772,47 +1764,45 @@ export default function CoursesPage() {
                             className="h-full w-full object-contain"
                           />
                         ) : (
-                          <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">
-                            Sin lateral
-                          </span>
+                          <span className="text-surface/40 font-mono text-xs">Sin lateral</span>
                         )}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex h-44 items-center justify-center overflow-hidden rounded-lg bg-[#1E1714]">
+                  <div className="bg-ink-900 flex h-44 items-center justify-center overflow-hidden rounded-lg">
                     {signAnimationUrl ? (
                       <div className="flex flex-col items-center gap-2 text-center">
-                        <span className="font-mono text-[11px] font-bold text-[#EEE8FF]">GLB</span>
-                        <span className="max-w-[200px] text-xs leading-snug text-[rgba(255,255,255,.6)]">
+                        <span className="text-primary-light font-mono text-[11px] font-bold">
+                          GLB
+                        </span>
+                        <span className="text-surface/60 max-w-[200px] text-xs leading-snug">
                           Animación 3D — se reproduce en la app.
                         </span>
                         <a
                           href={signAnimationUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="rounded-md bg-[rgba(255,255,255,.12)] px-3 py-1.5 text-xs font-semibold text-[#EEE8FF] hover:bg-[rgba(255,255,255,.2)]"
+                          className="bg-surface/12 text-primary-light hover:bg-surface/20 rounded-md px-3 py-1.5 text-xs font-semibold"
                         >
                           Abrir archivo
                         </a>
                       </div>
                     ) : (
-                      <span className="font-mono text-xs text-[rgba(255,255,255,.4)]">
-                        Cargando…
-                      </span>
+                      <span className="text-surface/40 font-mono text-xs">Cargando…</span>
                     )}
                   </div>
                 )}
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-display text-[22px] font-bold">{pickedSign.meaning}</p>
-                    <p className="text-xs text-[#8C817A]">
+                    <p className="text-text-muted text-xs">
                       {pickedSign.handedness === "ONE_HANDED" ? "Una mano" : "Dos manos"}
                     </p>
                   </div>
                   <button
                     onClick={usePicked}
-                    className="rounded-xl border-0 bg-[#241A16] px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-[#FBF6F2] hover:bg-[#3A2F2A]"
+                    className="bg-text text-on-dark hover:bg-ink-700 rounded-xl border-0 px-4 py-2.5 text-sm font-semibold whitespace-nowrap"
                   >
                     Usar en el bloque
                   </button>
@@ -1822,22 +1812,22 @@ export default function CoursesPage() {
 
             <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-3">
               {signQuery.length === 0 && (
-                <p className="mx-2 mt-3 text-sm leading-relaxed text-[#8C817A]">
+                <p className="text-text-muted mx-2 mt-3 text-sm leading-relaxed">
                   Escribí el significado de la seña. Solo se pueden usar señas que ya tienen
                   animación.
                 </p>
               )}
               {signQuery.length > 0 && signSearchQuery.isLoading && (
-                <p className="mx-2 mt-3 text-sm text-[#8C817A]">Buscando…</p>
+                <p className="text-text-muted mx-2 mt-3 text-sm">Buscando…</p>
               )}
               {signQuery.length > 0 &&
                 !signSearchQuery.isLoading &&
                 signSearchQuery.data?.content.filter((s) => s.hasAnimation).length === 0 && (
-                  <div className="mx-2 mt-2 rounded-lg bg-[#FBE0D8] px-4 py-3.5">
-                    <p className="text-sm font-bold text-[#241A16]">
+                  <div className="bg-danger-light mx-2 mt-2 rounded-lg px-4 py-3.5">
+                    <p className="text-text text-sm font-bold">
                       No existe &ldquo;{signQuery}&rdquo; en R2
                     </p>
-                    <p className="mt-1 text-sm leading-snug text-[#241A16]">
+                    <p className="text-text mt-1 text-sm leading-snug">
                       Subí la animación o el video de la seña al bucket y volvé a buscarla.
                     </p>
                   </div>
@@ -1850,17 +1840,15 @@ export default function CoursesPage() {
                     onClick={() => pickSignAndFetchAnimation(s)}
                     className={cn(
                       "flex items-center gap-3 rounded-lg border-0 px-2.5 py-2.5 text-left",
-                      pickedSign?.id === s.id
-                        ? "bg-[#EEE8FF]"
-                        : "bg-transparent hover:bg-[#F2ECE6]",
+                      pickedSign?.id === s.id ? "bg-primary-light" : "hover:bg-fill bg-transparent",
                     )}
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-[#1E1714] font-mono text-[10px] font-bold text-white">
+                    <span className="bg-ink-900 flex h-10 w-10 shrink-0 items-center justify-center rounded font-mono text-[10px] font-bold text-white">
                       {s.animationFormat?.toUpperCase() ?? "GLB"}
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="text-[15px] font-semibold text-[#241A16]">{s.meaning}</span>
-                      <span className="text-xs text-[#8C817A]">
+                      <span className="text-text text-[15px] font-semibold">{s.meaning}</span>
+                      <span className="text-text-muted text-xs">
                         {s.handedness === "ONE_HANDED" ? "Una mano" : "Dos manos"}
                       </span>
                     </span>
@@ -1873,7 +1861,7 @@ export default function CoursesPage() {
 
       {/* publish modal */}
       {publishOpen && ed && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-[rgba(30,23,20,.5)] p-6">
+        <div className="bg-ink-900/50 fixed inset-0 z-60 flex items-center justify-center p-6">
           <div className="flex max-h-[calc(100vh-48px)] w-[540px] max-w-full flex-col gap-4.5 overflow-y-auto rounded-xl bg-white p-7 shadow-[0_24px_60px_rgba(30,23,20,.25)]">
             <div>
               <h3
@@ -1882,7 +1870,7 @@ export default function CoursesPage() {
               >
                 ¿Publicar {ed.name}?
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-[#8C817A]">
+              <p className="text-text-muted mt-1.5 text-sm leading-relaxed">
                 Los alumnos van a ver esta versión desde el momento en que la publiques.
               </p>
             </div>
@@ -1908,7 +1896,7 @@ export default function CoursesPage() {
               ].map(([label, val]) => (
                 <div key={label as string}>
                   <p className="font-display text-[22px] font-bold">{val}</p>
-                  <p className="text-[11px] font-semibold tracking-wider text-[rgba(36,26,22,.7)] uppercase">
+                  <p className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
                     {label}
                   </p>
                 </div>
@@ -1917,24 +1905,22 @@ export default function CoursesPage() {
 
             <div className="flex flex-col gap-2 text-sm leading-snug">
               <div className="flex gap-2.5">
-                <span className="w-28 shrink-0 text-[#8C817A]">Acceso</span>
+                <span className="text-text-muted w-28 shrink-0">Acceso</span>
                 <span>{ed.isFree ? "Gratis" : `$${ed.price?.toLocaleString("es-AR") ?? "—"}`}</span>
               </div>
               <div className="flex gap-2.5">
-                <span className="w-28 shrink-0 text-[#8C817A]">Al publicar</span>
+                <span className="text-text-muted w-28 shrink-0">Al publicar</span>
                 <span>La versión publicada actual pasará a Archivada.</span>
               </div>
             </div>
 
             {issues.length > 0 && (
-              <div className="flex flex-col gap-2 rounded-lg bg-[#FBE0D8] px-4 py-3.5">
-                <span className="text-sm font-bold text-[#241A16]">
-                  Resolvé esto antes de publicar
-                </span>
+              <div className="bg-danger-light flex flex-col gap-2 rounded-lg px-4 py-3.5">
+                <span className="text-text text-sm font-bold">Resolvé esto antes de publicar</span>
                 {issues.map((issue, i) => (
                   <div
                     key={i}
-                    className="flex justify-between gap-3 rounded-md bg-[rgba(255,255,255,.6)] px-2.5 py-2 text-sm text-[#241A16]"
+                    className="bg-surface/60 text-text flex justify-between gap-3 rounded-md px-2.5 py-2 text-sm"
                   >
                     {issue.text}
                   </div>
@@ -1945,14 +1931,14 @@ export default function CoursesPage() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setPublishOpen(false)}
-                className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6]"
+                className="border-border text-text hover:bg-fill rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => publishMutation.mutate(ed.id)}
                 disabled={issues.length > 0 || publishMutation.isPending}
-                className="rounded-xl border-0 bg-[#241A16] px-5 py-2.5 text-sm font-semibold text-[#FBF6F2] hover:bg-[#3A2F2A] disabled:opacity-40"
+                className="bg-text text-on-dark hover:bg-ink-700 rounded-xl border-0 px-5 py-2.5 text-sm font-semibold disabled:opacity-40"
               >
                 {publishMutation.isPending ? "Publicando…" : "Sí, publicar"}
               </button>
@@ -1963,14 +1949,14 @@ export default function CoursesPage() {
 
       {/* confirm dialog */}
       {confirmDialog && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-[rgba(30,23,20,.5)] p-6">
+        <div className="bg-ink-900/50 fixed inset-0 z-60 flex items-center justify-center p-6">
           <div className="flex w-[420px] max-w-full flex-col gap-4 rounded-xl bg-white p-6 shadow-[0_24px_60px_rgba(30,23,20,.25)]">
-            <h3 className="font-display text-xl font-bold text-[#241A16]">{confirmDialog.title}</h3>
-            <p className="text-sm leading-relaxed text-[#8C817A]">{confirmDialog.body}</p>
+            <h3 className="font-display text-text text-xl font-bold">{confirmDialog.title}</h3>
+            <p className="text-text-muted text-sm leading-relaxed">{confirmDialog.body}</p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setConfirmDialog(null)}
-                className="rounded-xl border border-[#ECE5DE] bg-white px-4 py-2.5 text-sm font-semibold text-[#241A16] hover:bg-[#F2ECE6]"
+                className="border-border text-text hover:bg-fill rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold"
               >
                 Cancelar
               </button>
@@ -1979,7 +1965,7 @@ export default function CoursesPage() {
                   confirmDialog.onConfirm();
                   setConfirmDialog(null);
                 }}
-                className="rounded-xl border-0 bg-[#E14E22] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c43d18]"
+                className="bg-danger hover:bg-danger-dark rounded-xl border-0 px-5 py-2.5 text-sm font-semibold text-white"
               >
                 Confirmar
               </button>
@@ -1990,7 +1976,7 @@ export default function CoursesPage() {
 
       {/* toast */}
       {toast && (
-        <div className="fixed right-6 bottom-6 z-70 max-w-[420px] rounded-xl bg-[#241A16] px-4.5 py-3.5 text-sm font-medium text-[#FBF6F2] shadow-[0_12px_32px_rgba(30,23,20,.25)]">
+        <div className="bg-text text-on-dark fixed right-6 bottom-6 z-70 max-w-[420px] rounded-xl px-4.5 py-3.5 text-sm font-medium shadow-[0_12px_32px_rgba(30,23,20,.25)]">
           {toast}
         </div>
       )}
@@ -2017,7 +2003,7 @@ function CourseCard({
     ]!;
   const tintStyle =
     item.status === "ARCHIVED"
-      ? { background: "#F0EFEE" }
+      ? { background: "var(--color-fill-light)" }
       : item.color
         ? { background: item.color }
         : undefined;
@@ -2043,8 +2029,8 @@ function CourseCard({
       className={cn(
         "flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-white transition-all duration-200",
         hovered
-          ? "translate-y-[-2px] border-[#241A16] shadow-[0_8px_28px_rgba(36,26,22,.14)]"
-          : "border-[#ECE5DE] shadow-none",
+          ? "border-text translate-y-[-2px] shadow-[0_8px_28px_rgba(36,26,22,.14)]"
+          : "border-border shadow-none",
       )}
     >
       {/* tinted header */}
@@ -2059,9 +2045,9 @@ function CourseCard({
           >
             {statusLabel(item.status)}
           </span>
-          <span className="font-mono text-xs font-semibold text-[#241A16]">v{item.version}</span>
+          <span className="text-text font-mono text-xs font-semibold">v{item.version}</span>
           {item.basedOnVersion && (
-            <span className="font-mono text-xs text-[rgba(36,26,22,.5)]">
+            <span className="text-text/50 font-mono text-xs">
               · basado en v{item.basedOnVersion}
             </span>
           )}
@@ -2072,8 +2058,8 @@ function CourseCard({
               onOpen();
             }}
             className={cn(
-              "ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[rgba(36,26,22,.1)] transition-colors",
-              hovered ? "bg-[#241A16] text-white" : "bg-white text-[#241A16]",
+              "border-text/10 ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-colors",
+              hovered ? "bg-text text-white" : "text-text bg-white",
             )}
           >
             {item.status === "DRAFT" ? (
@@ -2109,13 +2095,13 @@ function CourseCard({
         </div>
 
         {/* course name */}
-        <h3 className="font-display text-[26px] leading-[1.08] font-bold text-[#241A16]">
+        <h3 className="font-display text-text text-[26px] leading-[1.08] font-bold">
           {item.courseName}
         </h3>
 
         {/* hover CTA */}
         <div
-          className="flex items-center gap-1.5 text-sm font-semibold text-[#241A16]"
+          className="text-text flex items-center gap-1.5 text-sm font-semibold"
           style={{
             opacity: hovered ? 1 : 0,
             transform: hovered ? "translateY(0)" : "translateY(4px)",
@@ -2153,8 +2139,8 @@ function CourseCard({
             [item.signCount, "Señas"],
           ].map(([val, label]) => (
             <div key={label as string}>
-              <p className="font-display text-xl font-bold text-[#241A16]">{val}</p>
-              <p className="mt-0.5 text-[10px] font-semibold tracking-wide text-[#8C817A] uppercase">
+              <p className="font-display text-text text-xl font-bold">{val}</p>
+              <p className="text-text-muted mt-0.5 text-[10px] font-semibold tracking-wide uppercase">
                 {label}
               </p>
             </div>
@@ -2163,13 +2149,13 @@ function CourseCard({
 
         {/* enrollment count */}
         {item.enrollmentCount > 0 && (
-          <div className="flex items-center gap-1.5 rounded-lg bg-[#F2ECE6] px-2.5 py-1.5">
+          <div className="bg-fill flex items-center gap-1.5 rounded-lg px-2.5 py-1.5">
             <svg
               width="14"
               height="14"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#8C817A"
+              stroke="var(--color-text-muted)"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -2179,39 +2165,40 @@ function CourseCard({
               <path d="M23 21v-2a4 4 0 00-3-3.87" />
               <path d="M16 3.13a4 4 0 010 7.75" />
             </svg>
-            <span className="text-xs font-semibold text-[#8C817A]">
+            <span className="text-text-muted text-xs font-semibold">
               {item.enrollmentCount} {item.enrollmentCount === 1 ? "alumno" : "alumnos"}
             </span>
           </div>
         )}
 
         {/* footer */}
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-[#ECE5DE] pt-3">
+        <div className="border-border mt-auto flex items-center justify-between gap-2 border-t pt-3">
           {/* left side */}
           {item.status === "DRAFT" && (
             <div className="flex min-w-0 items-center gap-2">
               {item.updatedByAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element -- a small photo served by the API; next/image cannot optimize it
                 <img
                   src={item.updatedByAvatar}
                   alt=""
                   className="h-7 w-7 shrink-0 rounded-full object-cover"
                 />
               ) : (
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEE8FF] text-[10px] font-bold text-[#5E3ED1]">
+                <span className="bg-primary-light text-primary-dark flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
                   {initials || "?"}
                 </span>
               )}
               {item.updatedByName && (
-                <span className="shrink-0 rounded-full bg-[#EEE8FF] px-2.5 py-0.5 text-[11px] font-semibold text-[#5E3ED1]">
+                <span className="bg-primary-light text-primary-dark shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
                   {item.updatedByName}
                 </span>
               )}
-              <span className="truncate text-xs text-[#8C817A]">{formatAgo(item.updatedAt)}</span>
+              <span className="text-text-muted truncate text-xs">{formatAgo(item.updatedAt)}</span>
             </div>
           )}
           {item.status === "PUBLISHED" && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#8C817A]">
+              <span className="text-text-muted text-xs">
                 Publicada el {formatDate(item.publishedAt)}
               </span>
               {onArchive && (
@@ -2220,7 +2207,7 @@ function CourseCard({
                     e.stopPropagation();
                     onArchive();
                   }}
-                  className="rounded-md border border-[#ECE5DE] bg-white px-2 py-1 text-xs font-semibold text-[#8C817A] hover:border-[#241A16] hover:text-[#241A16]"
+                  className="border-border text-text-muted hover:border-text hover:text-text rounded-md border bg-white px-2 py-1 text-xs font-semibold"
                 >
                   Archivar
                 </button>
@@ -2228,11 +2215,13 @@ function CourseCard({
             </div>
           )}
           {item.status === "ARCHIVED" && (
-            <span className="text-xs text-[#8C817A]">Publicada {formatDate(item.publishedAt)}</span>
+            <span className="text-text-muted text-xs">
+              Publicada {formatDate(item.publishedAt)}
+            </span>
           )}
 
           {/* price */}
-          <span className="font-display shrink-0 text-lg font-bold text-[#241A16]">
+          <span className="font-display text-text shrink-0 text-lg font-bold">
             {priceLabel(item)}
           </span>
         </div>

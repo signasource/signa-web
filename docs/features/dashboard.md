@@ -2,7 +2,7 @@
 
 > Responsibility: state and plan of the organization-admin panel.
 > Update when: a dashboard screen is added/changed, or an endpoint becomes wired.
-> Sources: src/app/(dashboard)/, src/app/(auth)/invitacion/, src/app/(admin)/admin/purchases/, src/components/dashboard/ (incl. course-preview.tsx, course-signs.tsx, purchase-invoice.tsx, profile-photo-card.tsx), src/lib/api/users.ts, src/lib/api/signs.ts, src/lib/course-preview.ts, src/lib/avatar-url.ts, src/features/dashboard/, src/lib/api/organizations.ts, src/lib/api/invitations.ts, src/lib/dashboard-format.ts, src/lib/date-range.ts, src/lib/purchases.ts, src/lib/invitation-account.ts
+> Sources: src/app/(dashboard)/, src/app/(auth)/invitacion/, src/app/(admin)/admin/purchases/, src/features/admin/user-detail-modal.tsx, src/components/dashboard/ (incl. course-preview.tsx, course-signs.tsx, purchase-invoice.tsx, profile-photo-card.tsx), src/lib/api/users.ts, src/lib/api/signs.ts, src/lib/course-preview.ts, src/lib/avatar-url.ts, src/features/dashboard/, src/lib/api/organizations.ts, src/lib/api/invitations.ts, src/lib/dashboard-format.ts, src/lib/date-range.ts, src/lib/purchases.ts, src/lib/invitation-account.ts
 
 Audience: `ADMIN`-role members of an organization (company admins). Scope is enforced by `signa-api` (`requireManage`).
 Design source: Claude Design project "Panel Organizacional" (`Panel Organizacional.dc.html`), implemented with real endpoints rather than the prototype's mock data.
@@ -24,7 +24,7 @@ Navigation (header pills) lives in `(dashboard)/dashboard/layout.tsx`, next to t
 
 **Period filter (Desde / Hasta).** One period drives every figure of the panel, like a global date picker in analytics tools: `PeriodFilter` (`src/components/dashboard/period-select.tsx`) sits in the header of Resumen, Participantes, Contenidos and the participant detail, next to the course filter. Options: Todo el historial (default), últimos 7 / 30 / 90 días, últimos 12 meses, este mes, mes anterior, and a custom range with two date inputs, validated in `src/lib/date-range.ts` (from ≤ to, to ≤ today, at most 366 days — the API's limit). The period lives in the URL (`?desde=YYYY-MM-DD&hasta=YYYY-MM-DD`, `src/features/dashboard/use-period-filter.ts`); no (or invalid) params mean the whole history. `useWithFilters` keeps course and period on every dashboard link, so switching sections keeps them. What each figure means with a period is decided by `signa-api` ([endpoints](../api/endpoints.md#organizationsapi-srclibapiorganizationsts--mirrors-organizationcontroller)): events count inside it (activos, ejercicios, % correctas, lecciones/módulos completados, tiempo, días activos, "necesitan un empujón" = no activity in it); states are as of its end (progreso promedio, embudo, completaron todo, módulo actual, lo completaron / en curso por módulo). Streaks stay current, so their labels say "hoy" / "actual". Labels that name a rolling window ("últimos 7 días", "últimos 30") switch to "en el período" when one is chosen. The "Actividad del período" card shows the period's totals (distinct active people, exercises, correct %, lessons completed) and a bar chart per day, per Monday-started week past 31 days, or per month past 182 days, with a table alternative and a tooltip; for the whole history it starts on the day the organization was created and shows those dates. Learning minutes are not shown there: the API's daily log is not split by course.
 
-**Seat purchases (organizational business rules).** An organization registers for free and SIGNA validates it before it can buy. Each purchase is one course, a number of seats (one email each) and 15–60 days of access; price depends on the course's sign count, the days and the seats (`PurchasePricing` in signa-api: list price `(6000 + 400 × señas) × (días/30)^0,85`, then 10/15/20/25 % off from 10/25/50/100 seats; e.g. 15 cupos × 30 señas × 30 días = $243.000). Purchases are independent. Payment goes through Mercado Pago Checkout Pro (webhook + the panel's sync; the back-office can still confirm by hand), and the confirmation sends a personal invitation per email and opens a 10-day window; the API reminds automatically on day 5. Each employee's days start when they accept on `/invitacion` (log in or register with the invited email). Seat states shown: Esperando el pago, Invitación enviada, Invitación vencida (seat lost), Acceso activo, Acceso vencido (progress kept, lessons locked), Quitado (removing a participant revokes the seat). **Refunds that undo a purchase** (status Reembolsada): the organization's withdrawal within 10 days of paying, or — at any time, since the money is gone — a refund made in Mercado Pago or a chargeback. Pending invitations are cancelled, active accesses end like an expiration (progress kept and readable) and everyone affected, the org admins and Signa are emailed. A partial refund or an open dispute changes nothing and only alerts Signa.
+**Seat purchases (organizational business rules).** An organization registers for free and SIGNA validates it before it can buy. Each purchase is one course, a number of seats (one email each) and 15–60 days of access; price depends on the course's sign count, the days and the seats (`PurchasePricing` in signa-api: list price `(6000 + 400 × señas) × (días/30)^0,85`, then 10/15/20/25 % off from 10/25/50/100 seats; e.g. 15 cupos × 30 señas × 30 días = $243.000). Purchases are independent. Payment goes through Mercado Pago Checkout Pro (webhook + the panel's sync), and the confirmation sends a personal invitation per email and opens a 10-day window; the API reminds automatically on day 5. Each employee's days start when they accept on `/invitacion` (log in or register with the invited email). Seat states shown: Esperando el pago, Invitación enviada, Invitación vencida (seat lost), Acceso activo, Acceso vencido (progress kept, lessons locked), Quitado (removing a participant revokes the seat). **Refunds that undo a purchase** (status Reembolsada): the organization's withdrawal within 10 days of paying, or — at any time, since the money is gone — a refund made in Mercado Pago or a chargeback. Pending invitations are cancelled, active accesses end like an expiration (progress kept and readable) and everyone affected, the org admins and Signa are emailed. A partial refund or an open dispute changes nothing and only alerts Signa.
 
 ## Design vs. API gaps (deliberate deviations from the prototype)
 
@@ -35,7 +35,6 @@ The prototype mocked data the API does not expose. Revisit if `signa-api` adds i
 - **Period filter:** streaks (`participantsWithStreak`, `longestCurrentStreak`, `currentStreak`) are current only; the API stores no streak history.
 - **Member detail:** progress is per course (`MemberCourseProgressResponse`), not per module/lesson; no "recent activity" feed, no per-module accuracy.
 - **Contents:** no signs count, recognition %, or average attempts per module (`ModuleStatsResponse` has lessons, completed/in-progress, accuracy, total attempts).
-- **Invite codes:** the response has no `createdAt`; the card shows uses (`useCount`/`maxUses`) and expiry. "Create code" sends no `expiresAt`/`maxUses` (no expiry, unlimited uses).
 
 ## Planned
 
@@ -44,98 +43,37 @@ The prototype mocked data the API does not expose. Revisit if `signa-api` adds i
 
 ## Admin · Compras (`/admin/purchases`)
 
-Design source: Claude Design "Refactorización apartado compras" (`Compras Admin.dc.html`).
-Back-end: V19 migration + new types + rewritten `AdminPurchaseController` / new `AdminRefundRequestController`.
+Design source: Claude Design "Refactorización apartado compras" (`Compras Admin.dc.html`). Backend: `AdminPurchaseController` (unified list/detail) and `AdminRefundRequestController`; client in [../api/endpoints.md](../api/endpoints.md#adminapi-purchases-and-refund-requests-srclibapiadmints).
 
-### Views
+**Read-only follow-up of payments.** Payments are confirmed by Mercado Pago (webhook) or by the org panel's sync; the back-office **no longer confirms payments by hand** (`confirmPayment` and its panel were removed). It lists, filters and drills into purchases, and handles refund requests.
 
-The page manages view state client-side (`{ kind: "list" | "purchase" | "refund" }`):
+The page keeps its view state client-side (`{ kind: "list" | "purchase" | "refund" }`).
 
 **List view — Compras tab**
 
-- Full-width table of all three purchase types (SEATS · GEMS · COURSE) merged and sorted newest-first.
-- Type segmented control (Todas/Cupos/Gemas/Cursos, with per-type counts on the full dataset).
-- Pill filters: Estado (PENDING_PAYMENT/PAID/CANCELLED/REFUNDED), Fecha (Hoy/7 d/30 d/Personalizado with two date inputs), Orden (date asc/desc, amount asc/desc).
-- Free-text search across buyer name, username, email, product name, MP order ID, purchase ID.
-- Active filter chips with individual remove and "Limpiar todo".
-- Pagination (10 rows/page, only rendered when needed), showing "N–M de total" count.
-- Rows show a coloured type badge, product name + detail, buyer, amount, status pill, and a "pending refund request" note when `pendingRefundRequest` is true.
+- Full-width table of all three purchase types (SEATS · GEMS · COURSE) merged, newest first.
+- Type segmented control (Todas / Cupos / Gemas / Cursos, with counts on the full dataset).
+- Pill filters: Estado (PENDING_PAYMENT / PAID / CANCELLED / REFUNDED), Fecha (Hoy / 7 d / 30 d / Personalizado), Orden (date or amount, asc/desc).
+- Free-text search across buyer name, username, email, product, Mercado Pago order id and purchase id; active filter chips with individual remove and "Limpiar todo".
+- Pagination in the browser (10 rows/page, only when needed). Rows show a type badge, product + detail, buyer, amount, status pill, the payment method ("Mercado Pago" / "Sin pagar") and a note when `pendingRefundRequest`.
 
 **List view — Reembolsos tab**
 
-- Card list of `RefundRequest` records; tab badge shows pending count in orange.
-- Same search + Tipo/Fecha/Orden filters; PENDING/RESOLVED/Todos segmented control.
-- Each card shows reason label, truncated message, requester info, age ("Hace N días") or resolution date.
+- Card list of refund requests; the tab badge counts the pending ones. Same search + Tipo / Fecha / Orden filters; PENDING / RESOLVED / Todos segmented control. Each card shows reason, truncated message, requester and age or resolution date.
 
-**Purchase detail view**
+**Purchase detail**
 
-- Three stat cards (total, buyer, payment date + method); full fact table with keys/values.
-- Refund request banner (amber when pending, grey when resolved) with "Ver pedido" button.
-- Confirmation banner when paid manually (`confirmedByName` set).
-- `ConfirmPaymentPanel` renders only when `status === "PENDING_PAYMENT"`: selects payment method, optional reference and date, and calls `adminApi.confirmPaymentFull()`.
+- Stat cards (total, buyer, payment date + method) and a fact table; a refund-request banner (amber while pending, grey once resolved) with "Ver pedido".
 
-**Refund request detail view**
+**Refund request detail**
 
-- Left column: reason + user message, requester avatar, linked purchase card (clickable → purchase detail).
-- Right column: Resolution panel — internal note textarea, "Marcar como resuelto" (PENDING) or "Guardar nota" + "Reabrir" (RESOLVED). `updateRefundRequest()` with `action: "RESOLVE"/"REOPEN"` or just `note`.
+- Left: reason, the user's message, requester and the linked purchase (clickable). Right: resolution panel — internal note, "Marcar como resuelto" (PENDING) or "Guardar nota" + "Reabrir" (RESOLVED) through `updateRefundRequest` (`action: "RESOLVE" | "REOPEN"`, or just `note`).
 
-### Type / status colours
+## Admin · Other back-office screens
 
-| Type   | Background | Text      |
-| ------ | ---------- | --------- |
-| SEATS  | `#eee8ff`  | `#5e3ed1` |
-| GEMS   | `#e4f1fb`  | `#1b84ab` |
-| COURSE | `#e4f1ec`  | `#1f7e77` |
-
-| Status          | Background | Text      |
-| --------------- | ---------- | --------- |
-| PENDING_PAYMENT | `#fef0de`  | `#b85806` |
-| PAID            | `#e7f5ea`  | `#2e7d45` |
-| CANCELLED       | `#f2ece6`  | `#8c817a` |
-| REFUNDED        | `#fbe0d8`  | `#e14e22` |
-
-### New backend additions (V19 + API changes)
-
-- `refund_requests` table (polymorphic: `purchase_type` + `purchase_id`; `requested_by_id` FK to users).
-- `course_purchases` gains: `payment_method`, `manual_payment_date`, `confirmed_by_name`, `confirmed_at`.
-- `AdminPurchaseController`: `GET /admin/purchases` (unified list), `GET /admin/purchases/{id}?type=` (detail), `POST /admin/purchases/{id}/confirm-payment` (richer body with method/reference/date).
-- `AdminRefundRequestController`: `GET/PATCH /admin/refund-requests[/{id}]`.
-
-## Admin · Métricas de uso (v2)
-
-SIGNA back-office apartado at `/admin/usage-metrics` (`src/app/(admin)/admin/usage-metrics/page.tsx`),
-backed by the `metrics` module of `signa-api`. Design source: Claude Design "Métricas de Uso v2"
-(`Métricas de Uso v2.dc.html`). Five tabs, bookmarkable via `?tab=`: **Resumen** (default), Negocio,
-Usuarios, Aprendizaje, Infraestructura. One global period (`DatetimeRangePicker`, instant precision incl.
-"Últimos 15 minutos") + "En vivo" drive every widget; a "Comparando con <período anterior> · horario UTC"
-caption sits under the tabs.
-
-- **Resumen** (`usage-resumen.tsx`): five north-star `KpiCard`s (activos, nuevos, ingresos netos,
-  lecciones, retención 7 d) with period-over-period deltas (`delta.tsx`: `Delta`/`DeltaPill`,
-  `pct`/`pp` modes) + sparklines; two trend charts; **"Requiere atención"** (orgs pendientes + antigüedad,
-  reportes de señas, imports fallidos → links to `/admin/organizations|sign-reports|content`); services
-  strip (backend/R2 via the perf proxy) with a jump to Infraestructura.
-- **Negocio** (`usage-growth.tsx`): 5-KPI row (ingresos netos · tasa de reembolso · uso de cupos ·
-  ticket promedio org. · **conversión a pago** = payers ÷ total users), stacked ingresos por fuente,
-  side-by-side **Organizaciones** (status pipeline bar + pending strip) and **Usuarios finales**
-  (gem/course money + usuarios que compraron, ingreso por pagador, recompra 2+), and the license table
-  with **Activos 7 d**, **Vence** and an **Estado** badge (risk-ordered server-side). New end-user
-  aggregates from `endUsers.payingUsers`/`repeatBuyerPercent`.
-- **Aprendizaje** (`usage-learning.tsx`): pp deltas on tasa de éxito / finalización; **"Contenido a
-  revisar"** (lecciones ↔ señas toggle, sample-size column, "Abrir" → `/admin/courses|sign-reports`).
-- **Infraestructura** (`usage-infra.tsx`): adds Email/Push panels (enviados + fallos).
-
-Shared helpers: `kpi-card.tsx`, `delta.tsx`, `format.ts` (dates/expiry). New token `warning-dark`
-(readable warning text; see design-system/tokens.md). Contract fields consumed from `metrics.ts`:
-revenue/seats/conversion `previous*`, `OrgUtilization.active7d`/`expiresAt`, `orgs.oldestPendingCreatedAt`,
-lessons/exercises `previous*`.
-
-The stacked **"ingresos por fuente"** chart (`revenue-by-source-chart.tsx`, Negocio: organizaciones +
-gemas + cursos, click-to-filter) and the **cohort-retention table** (`CohortRetentionTable` in
-`usage-usuarios.tsx`, D1/D7/D30 by signup week, "—" while unobservable) are built. **Señas salteadas**
-is live: signa-mobile emits `camera_skip` on "Saltear por ahora" in the camera blocks → `CAMERA_SKIP`
-perf widget (data appears once an app release ships).
-
-**Remaining vs. the prototype:** fine pixel-restyle of the Usuarios/Infra layouts; charts use the
-Recharts-based components rather than the mock's hand-drawn SVG style; **time-per-lesson/exercise**
-stays pending (needs lesson-container timing in signa-mobile + a backend timer).
+- **Resumen (`/admin`)** — counters from `adminApi.stats`, pending organizations (first 5), pending sign reports and course versions by status.
+- **Organizaciones (`/admin/organizations`)** — tabs Pendientes / Activas / Rechazadas / Suspendidas / Todas ("Todas" excludes suspended, i.e. dadas de baja). Approve, reject, suspend (a reason is mandatory and shown on the suspended org), reactivate (`PATCH status: ACTIVE`, clears the reason) and "Dar de baja" for rejected/suspended orgs (`DELETE`, confirmed inline; frees their emails; 409 if the org has purchases).
+- **Reportes de señas (`/admin/sign-reports`)** — individual reports (`adminApi.signReports`) with status tabs (Pendientes by default), reason / sign / date filters; Pending → Revisado → Resuelto / Rechazado with an optional internal note; the API records who resolved it.
+- **Usuarios (`/admin/users`)** — Usuarios (search, role filter, **role-aware detail modal** `user-detail-modal.tsx`: enrollments for learners, organization + purchases for org admins, enable/disable and delete), Administradores (`AdminsPanel`) and Lista de espera (`adminApi.waitlist`).
+- **Cursos (`/admin/courses`)** — course CMS; a course-version card shows the editor's avatar and name and the enrollment count. The editor can edit `PERFORM_SIGN` signs and check blocks before publishing. See [../routing.md](../routing.md).
+- **Señas (`/admin/signs`)** → [admin-signs.md](./admin-signs.md). **Métricas de uso** → [admin-usage-metrics.md](./admin-usage-metrics.md).

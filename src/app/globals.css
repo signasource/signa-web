@@ -46,6 +46,16 @@
   --color-ink-800: #2a211d;
   --color-ink-700: #3a2f2a;
 
+  /* Admin / neutral additions */
+  --color-border-strong: #d9cfc5;
+  --color-danger-dark: #c43d18;
+  --color-danger-border: #f5c9bb;
+  --color-warning-strong: #f59e0b;
+  --color-fill-light: #f0efee;
+  --color-streak-orange-light: #fda55a;
+  --color-streak-orange-dark: #e07020;
+  --color-neutral-gray: #86868b;
+
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
 }

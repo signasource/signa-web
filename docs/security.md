@@ -10,10 +10,10 @@ The refresh token lives in an `HttpOnly` cookie that page scripts cannot read ([
 
 ## Two tiers
 
-| Tier             | Routes                                                                                                                                         | Policy                                                                                                            | Rendering                                       |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| Strict (default) | everything except marketing (`/login`, `/dashboard`, future auth/panel routes)                                                                 | `script-src 'self' 'nonce-…' 'strict-dynamic'`, per-request nonce from `src/proxy.ts`; styles nonce-based in prod | **Dynamic** — layouts call `await connection()` |
-| Relaxed          | `MARKETING_PATHS` in `src/lib/security/csp.ts` (today `/`, `/privacidad`, `/terminos`, `/proximamente`, `/organizaciones`, `/eliminar-cuenta`) | `script-src 'self' 'unsafe-inline'`, set in `next.config.ts`                                                      | Static, CDN-cacheable                           |
+| Tier             | Routes                                                                                                                                        | Policy                                                                                                            | Rendering                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Strict (default) | everything except marketing (`/organizations/login`, `/invitacion`, `/dashboard`, `/admin`, future auth/panel routes)                         | `script-src 'self' 'nonce-…' 'strict-dynamic'`, per-request nonce from `src/proxy.ts`; styles nonce-based in prod | **Dynamic** — layouts call `await connection()` |
+| Relaxed          | `MARKETING_PATHS` in `src/lib/security/csp.ts` (today `/`, `/privacidad`, `/terminos`, `/proximamente`, `/organizations`, `/eliminar-cuenta`) | `script-src 'self' 'unsafe-inline'`, set in `next.config.ts`                                                      | Static, CDN-cacheable                           |
 
 Why not nonces everywhere: nonces force dynamic rendering, losing static generation and CDN caching for the landing. Why not Next's experimental SRI: inline RSC/hydration scripts are not covered by hashes, so `script-src 'self'` breaks hydration (tried and rejected).
 
@@ -31,6 +31,8 @@ Why not nonces everywhere: nonces force dynamic rendering, losing static generat
 - **`blob:` in `connect-src`** — Three.js (used by model-viewer) calls `fetch()` on blob URLs it creates when processing GLB textures. Without this, textures fail to load silently.
 - **`worker-src 'self' blob:`** — model-viewer creates Web Workers from blob URLs for model decoding. Without this, workers fail silently with `TypeError: Failed to fetch`.
 
+- **`connect-src` includes the API origin in both tiers** (`buildCsp()`), so the landing's waitlist form (`POST /waitlist`) and client telemetry (`POST /telemetry/events`, `src/lib/telemetry.ts`) work on the relaxed tier too.
+- **`media-src`** allows the API origin, `https://*.r2.cloudflarestorage.com` and the public R2 origin: the sign editor's and the purchase preview's `<video>` (`.mp4` signs).
 - **Camera demo (relaxed tier only).** The landing's "Tu cámara te corrige" preview runs MediaPipe
   in the browser: `'wasm-unsafe-eval'` in `script-src` (compiles WebAssembly only — JS `eval`/`new
 Function` stay blocked) and `https://storage.googleapis.com` in `connect-src` (MediaPipe's
@@ -91,8 +93,6 @@ HSTS (2 years, `includeSubDomains`, `preload`), `X-Content-Type-Options: nosniff
 - **No source maps in production.** `productionBrowserSourceMaps: false`, and
   `scripts/strip-sourcemaps.mjs` (`postbuild`) deletes any `.map` left under `.next/static`, so the
   original source can't be rebuilt from the browser.
-- **No comments in the code** (TS/TSX/CSS); explanations live in these docs. Production bundles
-  are minified anyway, so this mostly keeps the repo itself lean.
 - The glb-viewer HTML is served compacted (whitespace removed).
 - What remains visible is unavoidable: any browser has to download the minified JS it runs, and
   the classifier weights (`public/reconocedor/`) must reach the visitor's device for on-device
@@ -102,7 +102,7 @@ HSTS (2 years, `includeSubDomains`, `preload`), `X-Content-Type-Options: nosniff
 
 ## Verified
 
-Production build served with `next start`: CSP present on all routes; no source maps published; model-viewer passes SRI; no CSP violations or Permissions-Policy errors in the console with the camera demo and the 3D viewer running; `/login` hydrates and validates under the strict policy; external `img` and `fetch` are blocked; an inline event-handler payload is blocked (`script-src-attr`). Dev mode (`next dev`, `'unsafe-eval'`) and hosting-level behavior (Vercel) not yet verified — see [status.md](./status.md).
+Production build served with `next start`: CSP present on all routes; no source maps published; model-viewer passes SRI; no CSP violations or Permissions-Policy errors in the console with the camera demo and the 3D viewer running; `/organizations/login` hydrates and validates under the strict policy; external `img` and `fetch` are blocked; an inline event-handler payload is blocked (`script-src-attr`). Dev mode (`next dev`, `'unsafe-eval'`) and hosting-level behavior (Vercel) not yet verified — see [status.md](./status.md).
 
 **Session route handlers.** `/api/session/register` joins login/refresh/logout: same same-origin check and cookie handling ([api/session.md](./api/session.md)). `/invitacion` is a dynamic page under `(auth)` and gets the strict nonce CSP; the invitation token travels in the query string and is only sent to signa-api.
 
