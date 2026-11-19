@@ -957,6 +957,7 @@ function PurchaseDetailView({
   onBack: () => void;
   onOpenRefund: (id: string) => void;
 }) {
+  const qc = useQueryClient();
   const {
     data: p,
     isPending,
@@ -964,6 +965,13 @@ function PurchaseDetailView({
   } = useQuery({
     queryKey: ["admin", "purchases", purchaseId],
     queryFn: () => adminApi.purchaseDetail(purchaseId, purchaseType),
+  });
+
+  const confirmMut = useMutation({
+    mutationFn: () => adminApi.confirmPurchase(purchaseId, purchaseType),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "purchases"] });
+    },
   });
 
   if (isPending)
@@ -1047,6 +1055,29 @@ function PurchaseDetailView({
         </div>
         <StatusBadge status={p.status} />
       </div>
+
+      {p.status === "PENDING_PAYMENT" && (
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4"
+          style={{
+            background: "var(--color-shop-amber-light)",
+            color: "var(--color-shop-amber-dark)",
+          }}
+        >
+          <span className="text-sm font-semibold">
+            Esta compra está pendiente de pago. Podés marcarla como pagada manualmente, como si se
+            hubiese procesado por Mercado Pago.
+          </span>
+          <button
+            onClick={() => confirmMut.mutate()}
+            disabled={confirmMut.isPending}
+            className="rounded-full border-none px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+            style={{ background: "var(--color-success)" }}
+          >
+            {confirmMut.isPending ? "Procesando…" : "Confirmar pago"}
+          </button>
+        </div>
+      )}
 
       {refundBanner && (
         <div

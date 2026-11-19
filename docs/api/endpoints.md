@@ -85,13 +85,14 @@ Defined but **not used by any screen yet** (the forgot/reset pages are reserved)
 
 | Method                       | Path                                | Returns                   | Notes                                                                                           |
 | ---------------------------- | ----------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------- |
-| `allPurchases()`             | `GET /admin/purchases`              | `AdminPurchaseListItem[]` | The three types merged (`SEATS` / `GEMS` / `COURSE`); filtered, sorted and paged in the browser |
-| `purchaseDetail(id, type)`   | `GET /admin/purchases/{id}?type=`   | `AdminPurchaseDetail`     | Adds seats / duration / discount / gems and the purchase's refund requests                      |
-| `refundRequests()`           | `GET /admin/refund-requests`        | `AdminRefundRequest[]`    |                                                                                                 |
-| `refundRequest(id)`          | `GET /admin/refund-requests/{id}`   | `AdminRefundRequest`      |                                                                                                 |
-| `updateRefundRequest(id, d)` | `PATCH /admin/refund-requests/{id}` | `AdminRefundRequest`      | `{action?: "RESOLVE" or "REOPEN", note?}`                                                       |
+| `allPurchases()`             | `GET /admin/purchases`                      | `AdminPurchaseListItem[]` | The three types merged (`SEATS` / `GEMS` / `COURSE`); filtered, sorted and paged in the browser |
+| `purchaseDetail(id, type)`   | `GET /admin/purchases/{id}?type=`           | `AdminPurchaseDetail`     | Adds seats / duration / discount / gems and the purchase's refund requests                      |
+| `confirmPurchase(id, type)`  | `POST /admin/purchases/{id}/confirm?type=`  | `void`                    | Manually marks a `PENDING_PAYMENT` / `PENDING` purchase as paid, as if Mercado Pago confirmed it. Available for `SEATS`, `GEMS` and `COURSE`. 400 if already paid/cancelled/refunded |
+| `refundRequests()`           | `GET /admin/refund-requests`                | `AdminRefundRequest[]`    |                                                                                                 |
+| `refundRequest(id)`          | `GET /admin/refund-requests/{id}`           | `AdminRefundRequest`      |                                                                                                 |
+| `updateRefundRequest(id, d)` | `PATCH /admin/refund-requests/{id}`         | `AdminRefundRequest`      | `{action?: "RESOLVE" or "REOPEN", note?}`                                                       |
 
-The manual payment confirmation (`confirmPayment`, `POST /admin/purchases/{id}/confirm-payment`) was **removed from the UI and the client**: payments are confirmed by Mercado Pago (webhook `POST /payments/mercado-pago/webhook` in signa-api) or by the panel's `syncPayment`. `adminApi.purchases(status?)` (`GET /admin/purchases?status=`, the older seats-only list) is still defined but no screen uses it.
+`adminApi.purchases(status?)` (`GET /admin/purchases?status=`, the older seats-only list) is still defined but no screen uses it.
 
 **Period (`from`/`to`).** `overview`, `activity`, `modules`, `members` and `member` take an optional `period` (`src/lib/date-range.ts`), sent as `from`/`to` ISO dates (inclusive, Argentina's calendar, both or neither, at most 366 days; `null` sends neither = the whole history). `signa-api` (`MetricsPeriod`) counts what _happened_ inside the period (attempts, correct %, lessons and modules completed, minutes, active days, who was active) and measures _states_ as of its end (progress %, who finished, current module, in-progress/completed per module, who had joined). Streaks are always current. With no period, "active" keeps the rolling windows (7 days for people, 30 for active days) and `participation.activeWindowDays` says which; with one, it is the period's length.
 

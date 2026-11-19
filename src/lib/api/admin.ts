@@ -528,6 +528,9 @@ export const adminApi = {
   purchaseDetail: (id: string, type: PurchaseType) =>
     api<AdminPurchaseDetail>(`/admin/purchases/${id}`, { query: { type } }),
 
+  confirmPurchase: (id: string, type: PurchaseType) =>
+    api<void>(`/admin/purchases/${id}/confirm`, { method: "POST", query: { type } }),
+
   // ── Refund requests ────────────────────────────────────────────────────────
 
   refundRequests: () => api<AdminRefundRequest[]>("/admin/refund-requests"),
