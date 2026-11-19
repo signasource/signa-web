@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { setOnSessionExpired } from "@/lib/api/client";
 import { sessionApi } from "@/lib/api/session";
 import { tokenStore } from "@/lib/api/token-store";
 import { adminApi, type AdminMe } from "@/lib/api/admin";
@@ -34,6 +35,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    setOnSessionExpired(signOut);
     const restore = tokenStore.hasSession()
       ? adminApi.me().then(signIn)
       : Promise.reject(new Error("no session"));
@@ -41,6 +43,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       tokenStore.clear();
       signOut();
     });
+    return () => setOnSessionExpired(null);
   }, [signIn, signOut]);
 
   const login = useCallback(
