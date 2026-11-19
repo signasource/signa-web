@@ -264,6 +264,8 @@ export type AdminCourseVersionListItem = {
   updatedByName: string | null;
   updatedByAvatar: string | null;
   color: string | null;
+  hasCameraRecognition: boolean;
+  mediaFormat: string | null;
   enrollmentCount: number;
 };
 
@@ -351,6 +353,8 @@ export type AdminCourseVersionDetail = {
   updatedAt: string | null;
   updatedBy: string | null;
   color: string | null;
+  hasCameraRecognition: boolean;
+  mediaFormat: string | null;
   topics: AdminTopic[];
 };
 
@@ -360,6 +364,8 @@ export type SaveCourseVersionPayload = {
   isFree: boolean;
   price: number | null;
   color: string | null;
+  hasCameraRecognition: boolean;
+  mediaFormat: string | null;
   topics: Array<{
     id?: string | null;
     title: string;
