@@ -1502,6 +1502,13 @@ export default function AdminPurchasesPage() {
 
   const pendingRefunds = (refundsQ.data ?? []).filter((r) => r.status === "PENDING").length;
 
+  const resolvedRefundPurchaseIds = new Set(
+    (refundsQ.data ?? []).filter((r) => r.status === "RESOLVED").map((r) => r.purchaseId),
+  );
+  const purchasesForList = (purchasesQ.data ?? []).filter(
+    (p) => !resolvedRefundPurchaseIds.has(p.id),
+  );
+
   if (view.kind === "purchase") {
     return (
       <PurchaseDetailView
@@ -1569,7 +1576,7 @@ export default function AdminPurchasesPage() {
         <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
           {tab === "compras"
             ? purchasesQ.data
-              ? `${purchasesQ.data.length} ${purchasesQ.data.length === 1 ? "compra" : "compras"}`
+              ? `${purchasesForList.length} ${purchasesForList.length === 1 ? "compra" : "compras"}`
               : ""
             : refundsQ.data
               ? `${refundsQ.data.length} ${refundsQ.data.length === 1 ? "pedido" : "pedidos"}`
@@ -1589,7 +1596,7 @@ export default function AdminPurchasesPage() {
             </p>
           ) : (
             <PurchaseList
-              purchases={purchasesQ.data}
+              purchases={purchasesForList}
               onSelect={(id, type) => {
                 setView({ kind: "purchase", id, type });
                 window.scrollTo(0, 0);

@@ -236,6 +236,8 @@ export type Purchase = {
   cancelledAt: string | null;
   refundedAt: string | null;
   seatCounts: SeatCounts;
+  /** True when the organization has a pending refund request for this purchase. */
+  hasRefundRequest: boolean;
 };
 
 export type Seat = {
