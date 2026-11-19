@@ -156,8 +156,8 @@ export type OrgUtilization = {
   seatsSold: number;
   seatsActive: number;
   occupancyPercent: number;
-  /** Members active in the last 7 days of the window. */
-  active7d: number;
+  /** Members active within the selected window. */
+  activeInRange: number;
   /** Next upcoming seat expiry (ISO-8601), or `null` when no active seat has a future expiry. */
   expiresAt: string | null;
   revenue: number;
