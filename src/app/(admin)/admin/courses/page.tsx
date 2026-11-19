@@ -16,6 +16,7 @@ import {
   type CourseVersionStatus,
   type SaveCourseVersionPayload,
 } from "@/lib/api/admin";
+import { signQueryKey } from "@/features/admin/signs/sign-editor";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
@@ -148,7 +149,7 @@ function BlockField({
   });
   const signId = signSearchPage?.content.find((s) => s.meaning === signMeaning)?.id ?? null;
   const { data: signDetail } = useQuery({
-    queryKey: ["admin", "signs", signId],
+    queryKey: signQueryKey(signId ?? ""),
     queryFn: () => adminApi.sign(signId!),
     enabled: !!signId,
     staleTime: 5 * 60_000,
@@ -1338,7 +1339,9 @@ export default function CoursesPage() {
                   }
                   className={cn(
                     "rounded px-3 py-1.5 text-sm font-semibold",
-                    ed.mediaFormat !== "mp4" ? "text-text bg-white" : "text-text-muted bg-transparent",
+                    ed.mediaFormat !== "mp4"
+                      ? "text-text bg-white"
+                      : "text-text-muted bg-transparent",
                   )}
                 >
                   Animaciones
@@ -1353,7 +1356,9 @@ export default function CoursesPage() {
                   }
                   className={cn(
                     "rounded px-3 py-1.5 text-sm font-semibold",
-                    ed.mediaFormat === "mp4" ? "text-text bg-white" : "text-text-muted bg-transparent",
+                    ed.mediaFormat === "mp4"
+                      ? "text-text bg-white"
+                      : "text-text-muted bg-transparent",
                   )}
                 >
                   Videos
@@ -1375,7 +1380,9 @@ export default function CoursesPage() {
                   }
                   className={cn(
                     "rounded px-3 py-1.5 text-sm font-semibold",
-                    !ed.hasCameraRecognition ? "text-text bg-white" : "text-text-muted bg-transparent",
+                    !ed.hasCameraRecognition
+                      ? "text-text bg-white"
+                      : "text-text-muted bg-transparent",
                   )}
                 >
                   Sin cámara
@@ -1390,7 +1397,9 @@ export default function CoursesPage() {
                   }
                   className={cn(
                     "rounded px-3 py-1.5 text-sm font-semibold",
-                    ed.hasCameraRecognition ? "text-text bg-white" : "text-text-muted bg-transparent",
+                    ed.hasCameraRecognition
+                      ? "text-text bg-white"
+                      : "text-text-muted bg-transparent",
                   )}
                 >
                   Con cámara

@@ -105,6 +105,7 @@ function EditorForm({
   function applySaved(saved: AdminSignDetail) {
     queryClient.setQueryData(signQueryKey(saved.id), saved);
     void queryClient.invalidateQueries({ queryKey: ["admin", "signs"] });
+    void queryClient.invalidateQueries({ queryKey: signQueryKey(saved.id) });
   }
 
   const save = useMutation({
