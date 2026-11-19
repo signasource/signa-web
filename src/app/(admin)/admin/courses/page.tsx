@@ -139,6 +139,21 @@ function BlockField({
   const chips = Array.isArray(value) ? (value as string[]) : [];
   const [wordInput, setWordInput] = useState("");
 
+  const signMeaning = fieldType === "sign" && typeof value === "string" ? (value as string) : null;
+  const { data: signSearchPage } = useQuery({
+    queryKey: ["admin", "sign-by-meaning", signMeaning],
+    queryFn: () => adminApi.signs({ query: signMeaning!, size: 10 }),
+    enabled: !!signMeaning,
+    staleTime: 5 * 60_000,
+  });
+  const signId = signSearchPage?.content.find((s) => s.meaning === signMeaning)?.id ?? null;
+  const { data: signDetail } = useQuery({
+    queryKey: ["admin", "signs", signId],
+    queryFn: () => adminApi.sign(signId!),
+    enabled: !!signId,
+    staleTime: 5 * 60_000,
+  });
+
   if (fieldType === "text") {
     return (
       <div className="flex flex-col gap-1.5">
@@ -211,24 +226,50 @@ function BlockField({
 
   if (fieldType === "sign") {
     const meaning = typeof value === "string" ? value : null;
+    const mediaUrl = signDetail?.mediaUrl ?? null;
+    const mediaFormat = signDetail?.animationFormat ?? null;
     return (
       <div className="flex flex-col gap-1.5">
         <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
           {label}
         </span>
         {meaning ? (
-          <button
-            onClick={() => onPickSign(meaning)}
-            className="flex cursor-pointer items-center gap-2.5 rounded-md border-0 bg-white p-1.5 text-left hover:shadow-[0_0_0_2px_var(--color-text)]"
-          >
-            <span className="bg-ink-900 flex h-11 w-11 items-center justify-center rounded font-mono text-[10px] font-bold text-white">
-              GLB
-            </span>
-            <span className="flex flex-1 flex-col gap-0.5">
-              <span className="text-text text-[15px] font-bold">{meaning}</span>
-            </span>
-            <span className="text-primary pr-1.5 text-xs font-semibold">Cambiar</span>
-          </button>
+          <div className="rounded-md bg-white hover:shadow-[0_0_0_2px_var(--color-text)]">
+            {mediaFormat === "glb" && mediaUrl ? (
+              <div className="h-40 overflow-hidden rounded-t-md">
+                <iframe
+                  key={mediaUrl}
+                  src={`/api/glb-viewer/file?src=${encodeURIComponent(mediaUrl)}`}
+                  title={`Animación 3D de ${meaning}`}
+                  className="h-full w-full border-0"
+                />
+              </div>
+            ) : mediaFormat === "mp4" && mediaUrl ? (
+              <video
+                key={mediaUrl}
+                src={mediaUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="bg-ink-900 h-40 w-full rounded-t-md object-contain"
+              />
+            ) : null}
+            <button
+              onClick={() => onPickSign(meaning)}
+              className="flex w-full cursor-pointer items-center gap-2.5 border-0 bg-transparent p-1.5 text-left"
+            >
+              {!mediaUrl && (
+                <span className="bg-ink-900 flex h-11 w-11 shrink-0 items-center justify-center rounded font-mono text-[10px] font-bold text-white">
+                  {mediaFormat?.toUpperCase() ?? "…"}
+                </span>
+              )}
+              <span className="flex flex-1 flex-col gap-0.5">
+                <span className="text-text text-[15px] font-bold">{meaning}</span>
+              </span>
+              <span className="text-primary pr-1.5 text-xs font-semibold">Cambiar</span>
+            </button>
+          </div>
         ) : (
           <button
             onClick={() => onPickSign()}
@@ -1770,26 +1811,18 @@ export default function CoursesPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-ink-900 flex h-44 items-center justify-center overflow-hidden rounded-lg">
+                  <div className="h-44 overflow-hidden rounded-lg">
                     {signAnimationUrl ? (
-                      <div className="flex flex-col items-center gap-2 text-center">
-                        <span className="text-primary-light font-mono text-[11px] font-bold">
-                          GLB
-                        </span>
-                        <span className="text-surface/60 max-w-[200px] text-xs leading-snug">
-                          Animación 3D — se reproduce en la app.
-                        </span>
-                        <a
-                          href={signAnimationUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bg-surface/12 text-primary-light hover:bg-surface/20 rounded-md px-3 py-1.5 text-xs font-semibold"
-                        >
-                          Abrir archivo
-                        </a>
-                      </div>
+                      <iframe
+                        key={signAnimationUrl}
+                        src={`/api/glb-viewer/file?src=${encodeURIComponent(signAnimationUrl)}`}
+                        title={`Animación 3D de ${pickedSign.meaning}`}
+                        className="h-full w-full border-0"
+                      />
                     ) : (
-                      <span className="text-surface/40 font-mono text-xs">Cargando…</span>
+                      <div className="bg-ink-900 flex h-full items-center justify-center">
+                        <span className="text-surface/40 font-mono text-xs">Cargando…</span>
+                      </div>
                     )}
                   </div>
                 )}
