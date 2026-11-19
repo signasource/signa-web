@@ -472,6 +472,8 @@ export default function CoursesPage() {
       isFree: draft.isFree,
       price: draft.price,
       color: draft.color,
+      hasCameraRecognition: draft.hasCameraRecognition,
+      mediaFormat: draft.mediaFormat,
       topics: draft.topics.map((t) => ({
         title: t.title,
         subtitle: t.subtitle,
@@ -1319,6 +1321,80 @@ export default function CoursesPage() {
                     />
                   </label>
                 )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
+                Contenido
+              </span>
+              <div className="bg-surface/55 flex gap-0.5 rounded-md p-0.5">
+                <button
+                  onClick={() =>
+                    canEdit &&
+                    updateEd((d) => {
+                      d.mediaFormat = "glb";
+                      return d;
+                    })
+                  }
+                  className={cn(
+                    "rounded px-3 py-1.5 text-sm font-semibold",
+                    ed.mediaFormat !== "mp4" ? "text-text bg-white" : "text-text-muted bg-transparent",
+                  )}
+                >
+                  Animaciones
+                </button>
+                <button
+                  onClick={() =>
+                    canEdit &&
+                    updateEd((d) => {
+                      d.mediaFormat = "mp4";
+                      return d;
+                    })
+                  }
+                  className={cn(
+                    "rounded px-3 py-1.5 text-sm font-semibold",
+                    ed.mediaFormat === "mp4" ? "text-text bg-white" : "text-text-muted bg-transparent",
+                  )}
+                >
+                  Videos
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-text/70 text-[11px] font-semibold tracking-wider uppercase">
+                Cámara
+              </span>
+              <div className="bg-surface/55 flex gap-0.5 rounded-md p-0.5">
+                <button
+                  onClick={() =>
+                    canEdit &&
+                    updateEd((d) => {
+                      d.hasCameraRecognition = false;
+                      return d;
+                    })
+                  }
+                  className={cn(
+                    "rounded px-3 py-1.5 text-sm font-semibold",
+                    !ed.hasCameraRecognition ? "text-text bg-white" : "text-text-muted bg-transparent",
+                  )}
+                >
+                  Sin cámara
+                </button>
+                <button
+                  onClick={() =>
+                    canEdit &&
+                    updateEd((d) => {
+                      d.hasCameraRecognition = true;
+                      return d;
+                    })
+                  }
+                  className={cn(
+                    "rounded px-3 py-1.5 text-sm font-semibold",
+                    ed.hasCameraRecognition ? "text-text bg-white" : "text-text-muted bg-transparent",
+                  )}
+                >
+                  Con cámara
+                </button>
               </div>
             </div>
           </div>
