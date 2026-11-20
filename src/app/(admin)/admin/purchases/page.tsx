@@ -974,13 +974,6 @@ function PurchaseDetailView({
     },
   });
 
-  const refundMut = useMutation({
-    mutationFn: () => adminApi.refundPurchase(purchaseId, purchaseType),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin", "purchases"] });
-    },
-  });
-
   if (isPending)
     return (
       <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
@@ -1086,28 +1079,6 @@ function PurchaseDetailView({
         </div>
       )}
 
-      {p.status === "PAID" && (
-        <div
-          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4"
-          style={{
-            background: "var(--color-danger-light)",
-            color: "var(--color-danger)",
-          }}
-        >
-          <span className="text-sm font-semibold">
-            Podés marcar esta compra como reembolsada manualmente, como si el dinero ya se devolvió
-            fuera de Mercado Pago.
-          </span>
-          <button
-            onClick={() => refundMut.mutate()}
-            disabled={refundMut.isPending}
-            className="rounded-full border-none px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-            style={{ background: "var(--color-danger)" }}
-          >
-            {refundMut.isPending ? "Procesando…" : "Reembolsar manualmente"}
-          </button>
-        </div>
-      )}
 
       {refundBanner && (
         <div
@@ -1536,7 +1507,7 @@ export default function AdminPurchasesPage() {
     (refundsQ.data ?? []).filter((r) => r.status === "RESOLVED").map((r) => r.purchaseId),
   );
   const purchasesForList = (purchasesQ.data ?? []).filter(
-    (p) => !resolvedRefundPurchaseIds.has(p.id),
+    (p) => p.status === "REFUNDED" || !resolvedRefundPurchaseIds.has(p.id),
   );
 
   if (view.kind === "purchase") {
