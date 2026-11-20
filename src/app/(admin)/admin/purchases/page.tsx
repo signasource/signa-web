@@ -932,8 +932,7 @@ function RefundList({
                   </span>
                 </div>
                 <p className="m-0 mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
-                  {refundReasonLabel(r.reason)} · {r.requesterUsername} ·{" "}
-                  {fdate(r.createdAt)}
+                  {refundReasonLabel(r.reason)} · {r.requesterUsername} · {fdate(r.createdAt)}
                 </p>
                 {r.message && (
                   <p
@@ -1319,7 +1318,9 @@ function RefundDetailView({
               {refundReasonLabel(rf.reason)}
             </h2>
             <p className="m-0 mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
-              {rf.reason ? "Motivo elegido por quien lo pidió" : "Quien lo pidió no eligió un motivo"}
+              {rf.reason
+                ? "Motivo elegido por quien lo pidió"
+                : "Quien lo pidió no eligió un motivo"}
             </p>
             {rf.message ? (
               <p

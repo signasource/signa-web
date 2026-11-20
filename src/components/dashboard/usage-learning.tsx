@@ -115,7 +115,9 @@ function CoursePicker({
         >
           <Icon name="book" className="size-4" />
           <span className="max-w-[280px] truncate">
-            {current && current.courseVersion ? `${current.courseName} · v${current.courseVersion}` : current?.courseName ?? "Todos los cursos"}
+            {current && current.courseVersion
+              ? `${current.courseName} · v${current.courseVersion}`
+              : (current?.courseName ?? "Todos los cursos")}
           </span>
           <Icon
             name="chevronDown"
@@ -131,7 +133,10 @@ function CoursePicker({
           >
             {options.map((o) => {
               const selected = (value ?? null) === o.courseId;
-              const label = o.courseId && o.courseVersion ? `${o.courseName} · v${o.courseVersion}` : o.courseName;
+              const label =
+                o.courseId && o.courseVersion
+                  ? `${o.courseName} · v${o.courseVersion}`
+                  : o.courseName;
               return (
                 <li key={o.courseId ?? "all"} role="option" aria-selected={selected}>
                   <button
