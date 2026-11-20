@@ -36,7 +36,9 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   netos** (org + usuarios finales, neto de reembolsos; compact `fmtMoneyCompact`, with the org/usuario
   split in its hint and an org-side period delta + sparkline), **Tasa de reembolso** (unificada, hint
   desglosa orgs vs usuarios), **Uso de cupos** (pp delta), **Ticket promedio org.** (pct delta from the
-  previous window) and **Conversión a pago** (payers ÷ total users — `endUsers.payingUsers`). Then the
+  previous window) and **Conversión a pago** (end-user payers ÷ end-user accounts — `endUsers.payingAccounts ÷
+endUsers.accounts`; admins, org admins and active org members are left out of both sides, so it is
+  not `payingUsers ÷ users.total`). Then the
   stacked **Ingresos por fuente** chart (`RevenueBySourceChart`: organizaciones + gemas + cursos pagos).
   Below, two side-by-side panels: **Organizaciones** (a segmented status **pipeline** bar + legend —
   Activas/Pendientes/Suspendidas/Rechazadas — the pending-validation amber strip with "Validar", and
