@@ -125,6 +125,7 @@ export default function MembersPage() {
   const query = useDebounced(search.trim(), 300);
   const showCourse = !courseId && courses.length > 1;
   const invitedView = filter.key === INVITED_FILTER.key;
+  const allView = filter.key === "all";
 
   const params = {
     query: query || undefined,
@@ -345,6 +346,10 @@ export default function MembersPage() {
             </div>
           ) : null}
         </>
+      ) : null}
+
+      {allView ? (
+        <InvitedSeats orgId={orgId} courseId={courseId} query={query} hideWhenEmpty />
       ) : null}
     </section>
   );
