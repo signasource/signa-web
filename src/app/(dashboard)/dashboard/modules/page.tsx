@@ -4,12 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Fragment } from "react";
 import { CourseSelect } from "@/components/dashboard/course-select";
 import { PeriodFilter } from "@/components/dashboard/period-select";
-import {
-  EmptyState,
-  ErrorState,
-  LoadingState,
-  PageHeading,
-} from "@/components/dashboard/ui";
+import { EmptyState, ErrorState, LoadingState, PageHeading } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
 import { useCourseFilter } from "@/features/dashboard/use-course-filter";
 import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
