@@ -367,25 +367,23 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
             </thead>
             <tbody>
               {visible.map((o) => {
-                const seatsAvailable = (o.seatsSold ?? 0) - (o.seatsRefunded ?? 0);
-                const occupancyPercent = seatsAvailable > 0 ? Math.round(((o.seatsActive ?? 0) / seatsAvailable) * 100) : 0;
                 return (
                   <tr key={o.orgId} className="border-fill border-t">
                     <td className="py-2.5 font-extrabold">{o.name}</td>
                     <td className="py-2.5 pl-3 text-right">
                       {NUMBER.format(o.seatsActive ?? 0)}/
-                      {NUMBER.format(seatsAvailable)}
+                      {NUMBER.format(o.seatsSold ?? 0)}
                     </td>
                     <td className="py-2.5 pl-3">
                       <div className="flex items-center gap-2">
                         <ProgressBar
-                          percent={occupancyPercent}
-                          tone={occupancyTone(occupancyPercent)}
+                          percent={o.occupancyPercent ?? 0}
+                          tone={occupancyTone(o.occupancyPercent ?? 0)}
                           className="flex-1"
                           label={`Ocupación de ${o.name}`}
                         />
                         <span className="w-10 text-right text-xs font-extrabold">
-                          {occupancyPercent}%
+                          {Math.round(o.occupancyPercent ?? 0)}%
                         </span>
                       </div>
                     </td>
