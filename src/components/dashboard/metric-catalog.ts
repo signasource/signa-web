@@ -172,7 +172,7 @@ export const METRICS = {
     label: "Ingresos de organizaciones",
     description: "Dinero de las compras de cupos de organizaciones dentro del período.",
     howComputed:
-      "Sumamos el total de las compras de cupos de organizaciones con pago confirmado dentro del período.",
+      "Sumamos el total de las compras de cupos de organizaciones con pago confirmado dentro del período, sin las compras que se reembolsaron.",
     goodWhen: "Crece y supera a los reembolsos.",
   },
   refund_rate: {
@@ -203,7 +203,7 @@ export const METRICS = {
     label: "Compras de gemas",
     description: "Dinero de las compras de packs de gemas con dinero real por usuarios finales.",
     howComputed:
-      "Sumamos el dinero de las compras de gemas confirmadas dentro del período; abajo, las gemas entregadas.",
+      "Sumamos el dinero de las compras de gemas confirmadas dentro del período y le restamos lo reembolsado; abajo, las compras que siguen vigentes y las gemas entregadas.",
     goodWhen: "Crece a medida que la economía interna madura.",
   },
   course_sales: {
@@ -211,7 +211,7 @@ export const METRICS = {
     description:
       "Dinero de los cursos pagos que compran directamente los usuarios finales (fuera de una organización).",
     howComputed:
-      "Sumamos el dinero de las compras de cursos pagos confirmadas dentro del período; abajo, la cantidad de cursos vendidos.",
+      "Sumamos el dinero de las compras de cursos pagos confirmadas dentro del período y le restamos lo reembolsado; abajo, la cantidad de cursos vendidos que siguen vigentes.",
     goodWhen: "Crece: refleja interés en el contenido pago.",
   },
   waitlist: {
@@ -257,21 +257,21 @@ export const METRICS = {
     label: "Ingreso promedio por organización",
     description: "Cuánto gastó en promedio cada organización que compró.",
     howComputed:
-      "Dividimos todo el dinero ingresado por organizaciones entre las que hicieron al menos una compra.",
+      "Dividimos el dinero ingresado por organizaciones (sin las compras reembolsadas) entre las que hicieron al menos una compra vigente.",
     goodWhen: "Alto y creciente.",
   },
   average_ticket: {
     label: "Ticket promedio org.",
     description: "Cuánto dinero entra en promedio por cada compra de cupos de organizaciones.",
     howComputed:
-      "Dividimos el dinero ingresado por organizaciones entre la cantidad de compras confirmadas en el período.",
+      "Dividimos el dinero ingresado por organizaciones entre la cantidad de compras confirmadas en el período, sin contar las reembolsadas.",
     goodWhen: "Alto y estable; refleja contratos de mayor tamaño.",
   },
   purchases_count: {
     label: "Compras de organizaciones",
     description: "Compras de cupos confirmadas en el período.",
     howComputed:
-      "Contamos las compras de cupos de organizaciones con pago confirmado en el período.",
+      "Contamos las compras de cupos de organizaciones con pago confirmado en el período, sin las reembolsadas.",
     goodWhen: "Acompaña el crecimiento comercial.",
   },
   free_to_premium: {
@@ -293,7 +293,7 @@ export const METRICS = {
     label: "Usuarios que compraron",
     description: "Personas distintas que pagaron algo (gemas o cursos) dentro del período.",
     howComputed:
-      "Contamos las personas distintas con al menos una compra de gemas o de cursos confirmada en el período.",
+      "Contamos las personas distintas con al menos una compra de gemas o de cursos confirmada en el período; las compras reembolsadas no cuentan.",
     goodWhen: "Crece: más gente que paga.",
   },
   revenue_per_payer: {
