@@ -184,6 +184,7 @@ export type LearningMetrics = {
   courses: {
     courseId: string;
     courseName: string;
+    courseVersion: string;
     enrolled: number;
     completed: number;
     total: number;

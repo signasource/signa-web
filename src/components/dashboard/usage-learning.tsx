@@ -72,7 +72,7 @@ function CoursePicker({
   value,
   onChange,
 }: {
-  courses: { courseId: string; courseName: string }[];
+  courses: { courseId: string; courseName: string; courseVersion: string }[];
   value: string | null;
   onChange: (id: string | null) => void;
 }) {
@@ -114,8 +114,8 @@ function CoursePicker({
           )}
         >
           <Icon name="book" className="size-4" />
-          <span className="max-w-[220px] truncate">
-            {current?.courseName ?? "Todos los cursos"}
+          <span className="max-w-[280px] truncate">
+            {current ? `${current.courseName} · v${current.courseVersion}` : "Todos los cursos"}
           </span>
           <Icon
             name="chevronDown"
@@ -127,10 +127,11 @@ function CoursePicker({
             id={menuId}
             role="listbox"
             aria-label="Curso"
-            className="border-border bg-surface dash-card-enter absolute left-0 z-30 mt-2 flex w-64 flex-col gap-0.5 rounded-2xl border p-1.5 shadow-lg"
+            className="border-border bg-surface dash-card-enter absolute left-0 z-30 mt-2 flex w-72 flex-col gap-0.5 rounded-2xl border p-1.5 shadow-lg"
           >
             {options.map((o) => {
               const selected = (value ?? null) === o.courseId;
+              const label = o.courseId ? `${o.courseName} · v${o.courseVersion}` : o.courseName;
               return (
                 <li key={o.courseId ?? "all"} role="option" aria-selected={selected}>
                   <button
@@ -144,7 +145,7 @@ function CoursePicker({
                       selected ? "bg-primary-light text-primary-dark" : "hover:bg-fill text-text",
                     )}
                   >
-                    <span className="truncate">{o.courseName}</span>
+                    <span className="truncate">{label}</span>
                     {selected ? <Icon name="check" className="size-4" /> : null}
                   </button>
                 </li>
