@@ -3,7 +3,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
-import { Funnel } from "@/components/dashboard/funnel";
 import { Icon } from "@/components/dashboard/icons";
 import { InfoPopover } from "@/components/dashboard/info-popover";
 import { KpiCard, KpiRow } from "@/components/dashboard/kpi-card";
@@ -307,8 +306,9 @@ function ContentToReview({ lessons, signs }: { lessons: LessonReview[]; signs: S
 
 /**
  * Aprendizaje — "¿La gente aprende LSA?". A course selector, four KPIs with period-over-period
- * deltas, the learning funnel (biggest drop flagged) beside the accuracy evolution (previous window
- * dashed), "Contenido a revisar", accuracy by exercise type and the sign-report summary.
+ * deltas, the accuracy evolution (previous window dashed) beside accuracy by exercise type, and
+ * "Contenido a revisar". The learning funnel and sign reports live on the Resumen: the API counts
+ * them over the whole history, so they ignore both the period and the course picker.
  */
 export function LearningTab({
   range,
@@ -393,11 +393,6 @@ export function LearningTab({
       </KpiRow>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Funnel
-          title="Embudo de aprendizaje"
-          metric="learning_funnel"
-          steps={l.onboardingFunnel.map((s) => ({ key: s.key, count: s.count }))}
-        />
         <DailySeriesChart
           title="Respuestas correctas"
           metric="accuracy_evolution"
@@ -411,11 +406,6 @@ export function LearningTab({
           emptyAsNull
           onSelectRange={onSelectRange}
         />
-      </div>
-
-      <ContentToReview lessons={l.lessonsToReview ?? []} signs={l.hardestSigns ?? []} />
-
-      <div className="grid gap-4 lg:grid-cols-2">
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
             <CardTitle>Precisión por tipo de ejercicio</CardTitle>
@@ -445,62 +435,9 @@ export function LearningTab({
             </ul>
           )}
         </Card>
-
-        <Card className="flex min-w-0 flex-col gap-3">
-          <div className="flex items-center gap-1.5">
-            <CardTitle>Reportes de señas</CardTitle>
-            <Link
-              href="/admin/sign-reports"
-              className="text-primary hover:text-primary-dark ml-auto text-[13px] font-extrabold"
-            >
-              Ver reportes
-            </Link>
-            <InfoPopover metric="sign_report_resolution" />
-          </div>
-          <div className="flex flex-wrap gap-x-8 gap-y-3">
-            <div>
-              <p
-                className={cn(
-                  "font-display text-[32px] leading-9 font-extrabold tracking-tight",
-                  b && b.errors.pendingSignReports > 0 ? "text-danger" : "",
-                )}
-              >
-                {b ? NUMBER.format(b.errors.pendingSignReports) : "—"}
-              </p>
-              <p className="text-text-muted text-[13px]">Pendientes</p>
-            </div>
-            <div>
-              <p className="font-display text-[32px] leading-9 font-extrabold tracking-tight">
-                {NUMBER.format(l.reports.resolvedCount)}
-              </p>
-              <p className="text-text-muted text-[13px]">Resueltos</p>
-            </div>
-            <div>
-              <p className="font-display text-[32px] leading-9 font-extrabold tracking-tight">
-                {l.reports.resolvedCount
-                  ? `${Math.round(l.reports.averageResolutionHours).toLocaleString("es-AR")} h`
-                  : "—"}
-              </p>
-              <p className="text-text-muted text-[13px]">Resolución prom.</p>
-            </div>
-          </div>
-          {l.reports.mostReported.length > 0 ? (
-            <dl className="border-fill flex flex-col border-t">
-              {l.reports.mostReported.slice(0, 3).map((m) => (
-                <div
-                  key={m.meaning}
-                  className="border-fill flex justify-between gap-3 border-b py-2.5 text-sm last:border-b-0"
-                >
-                  <dt className="font-extrabold">{m.meaning}</dt>
-                  <dd className="text-text-muted shrink-0">
-                    {NUMBER.format(m.count)} {m.count === 1 ? "reporte" : "reportes"}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
-        </Card>
       </div>
+
+      <ContentToReview lessons={l.lessonsToReview ?? []} signs={l.hardestSigns ?? []} />
     </div>
   );
 }

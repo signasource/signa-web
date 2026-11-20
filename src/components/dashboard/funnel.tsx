@@ -8,6 +8,17 @@ import { cn } from "@/lib/utils";
 
 export type FunnelStep = { key: string; count: number };
 
+/**
+ * Keeps only the steps that form a path: a step reached by fewer people than a later one is not a
+ * stage everyone goes through (e.g. reading-only lessons complete without any exercise), and
+ * leaving it in would print a "108% sigue". The first step is always kept.
+ */
+export function funnelPath(steps: FunnelStep[]): FunnelStep[] {
+  return steps.filter(
+    (step, i) => i === 0 || steps.slice(i + 1).every((s) => s.count <= step.count),
+  );
+}
+
 /** Share (0–100, whole) of each step that reaches the next one; `null` when a step is empty. */
 export function funnelTransitions(steps: FunnelStep[]): (number | null)[] {
   return steps.slice(0, -1).map((step, i) => {
@@ -28,47 +39,50 @@ export function biggestDrop(transitions: (number | null)[]): number {
 }
 
 /**
- * A horizontal funnel: each step's bar is sized relative to the first step, and between steps a
- * pill says what share continues. The transition with the biggest drop is called out in red
- * ("mayor caída"), so the place where users are lost reads at a glance.
+ * A horizontal funnel: each step's bar is sized relative to the first step, and every transition
+ * reads the same way ("N% sigue"); the one with the biggest drop is called out in red, so the place
+ * where users are lost reads at a glance.
  */
 export function Funnel({
   title,
   metric,
   subtitle,
-  steps,
+  steps: rawSteps,
+  className,
 }: {
   title: string;
   metric: MetricId;
   subtitle?: string;
   steps: FunnelStep[];
+  className?: string;
 }) {
+  const steps = funnelPath(rawSteps);
   const top = steps[0]?.count ?? 0;
   const transitions = funnelTransitions(steps);
   const worst = biggestDrop(transitions);
   return (
-    <Card className="flex min-w-0 flex-col gap-3">
+    <Card className={cn("flex min-w-0 flex-col gap-3", className)}>
       <div className="flex items-center gap-1.5">
         <CardTitle>{title}</CardTitle>
         <InfoPopover metric={metric} className="ml-auto" />
       </div>
       {subtitle ? <p className="text-text-muted -mt-1.5 text-[13px]">{subtitle}</p> : null}
       {steps.length === 0 || top === 0 ? (
-        <p className="text-text-muted text-sm">Sin datos en este período.</p>
+        <p className="text-text-muted text-sm">Sin datos todavía.</p>
       ) : (
-        <ol className="flex flex-col gap-1.5">
+        <ol className="flex flex-col">
           {steps.map((step, i) => {
             const width = Math.max(1, (step.count / top) * 100);
             const continues = transitions[i];
             return (
-              <li key={step.key} className="flex flex-col gap-1">
+              <li key={step.key} className="flex flex-col gap-1.5">
                 <div className="flex items-baseline justify-between gap-2 text-[13px]">
                   <span className="truncate font-bold">{step.key}</span>
                   <span className="shrink-0 font-extrabold">{NUMBER.format(step.count)}</span>
                 </div>
-                <div className="bg-fill h-5 overflow-hidden rounded-md">
+                <div className="bg-fill h-2.5 overflow-hidden rounded-full">
                   <div
-                    className="bg-primary h-full rounded-md"
+                    className="bg-primary h-full rounded-full"
                     style={{ width: `${width}%` }}
                     aria-hidden="true"
                   />
@@ -76,13 +90,11 @@ export function Funnel({
                 {continues != null ? (
                   <span
                     className={cn(
-                      "mt-0.5 mb-1 self-start rounded-full px-2 py-0.5 text-[11px] font-extrabold",
-                      i === worst ? "bg-danger-light text-danger" : "bg-fill text-text-muted",
+                      "my-1.5 self-start text-[12px] font-bold",
+                      i === worst ? "text-danger" : "text-text-muted",
                     )}
                   >
-                    {i === worst
-                      ? `▼ ${100 - continues}% no sigue · mayor caída`
-                      : `${continues}% sigue`}
+                    ↓ {continues}% sigue{i === worst ? " · mayor caída" : ""}
                   </span>
                 ) : null}
               </li>
