@@ -210,8 +210,9 @@ export function DailySeriesChart({
     const prevByEpoch = new Map<number, number>();
     for (const d of prevValid) prevByEpoch.set(Math.floor(d.epoch / bucketMs) * bucketMs, d.value);
     const start = Math.floor(fromMs / bucketMs) * bucketMs;
+    const end = Math.floor(toMs / bucketMs) * bucketMs;
     data = [];
-    for (let epoch = start; epoch < toMs; epoch += bucketMs) {
+    for (let epoch = start; epoch <= end; epoch += bucketMs) {
       const has = valueByEpoch.has(epoch);
       const datum: Datum = {
         epoch,
