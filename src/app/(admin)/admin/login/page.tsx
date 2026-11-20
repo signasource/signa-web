@@ -7,7 +7,7 @@ import { ApiError } from "@/lib/api/client";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { status, login } = useAdminAuth();
+  const { status, login, sessionExpired } = useAdminAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +74,11 @@ export default function AdminLoginPage() {
               placeholder="••••••••"
             />
           </label>
+          {sessionExpired && !error && (
+            <p role="status" className="rounded-lg bg-white/5 px-3 py-2 text-sm text-white/70">
+              Tu sesión expiró. Volvé a iniciar sesión para continuar.
+            </p>
+          )}
           {error && (
             <p className="bg-danger/10 text-danger rounded-lg px-3 py-2 text-sm">{error}</p>
           )}

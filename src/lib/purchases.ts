@@ -182,13 +182,11 @@ export function uniqueEmails(raw: string): string[] {
 }
 
 export function emailsFromSheet(rows: unknown[][]): string[] {
-  const [header, ...data] = rows;
-  if (!header) return [];
-  const names = header.map((cell) => String(cell ?? "").toLowerCase());
-  const mailColumn = names.findIndex((name) => name.includes("mail") || name.includes("correo"));
-  const column = mailColumn === -1 ? 0 : mailColumn;
-  const source = mailColumn === -1 && isEmail(String(header[0] ?? "").trim()) ? rows : data;
-  return source.map((row) => String(row[column] ?? "").trim()).filter((value) => isEmail(value));
+  // Any cell holding a valid email counts, wherever it is (no header row or column required).
+  return rows
+    .flatMap((row) => (Array.isArray(row) ? row : []))
+    .map((cell) => String(cell ?? "").trim())
+    .filter((value) => isEmail(value));
 }
 
 /**
