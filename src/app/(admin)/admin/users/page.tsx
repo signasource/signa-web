@@ -10,7 +10,7 @@ import {
   ROLE_LABELS,
   UserDetailModal,
 } from "@/features/admin/user-detail-modal";
-import { adminApi, type AdminUser, type AdminWaitlistEntry, type UserRole } from "@/lib/api/admin";
+import { adminApi, type AdminUser, type UserRole } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 
 function UsersTab() {
@@ -204,83 +204,8 @@ function UsersTab() {
   );
 }
 
-function WaitlistTab() {
-  const [page, setPage] = useState(0);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin", "waitlist", page],
-    queryFn: () => adminApi.waitlist({ page, size: 50 }),
-  });
-
-  return (
-    <div>
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="bg-fill h-12 animate-pulse rounded-xl" />
-          ))}
-        </div>
-      ) : (
-        <>
-          {data && (
-            <p className="text-text-muted mb-3 text-xs">
-              {data.totalElements.toLocaleString("es-AR")} emails registrados
-            </p>
-          )}
-          <div className="border-border bg-surface overflow-hidden rounded-2xl border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-border bg-fill text-text-muted border-b">
-                  <th className="px-5 py-3 text-left font-semibold">Email</th>
-                  <th className="px-5 py-3 text-left font-semibold">Fecha de registro</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data?.content.map((entry: AdminWaitlistEntry) => (
-                  <tr key={entry.id} className="border-border border-b last:border-0">
-                    <td className="text-text px-5 py-3">{entry.email}</td>
-                    <td className="text-text-muted px-5 py-3 text-xs">
-                      {new Date(entry.createdAt).toLocaleDateString("es-AR", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {data && data.totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between">
-              <button
-                disabled={page === 0}
-                onClick={() => setPage((p) => p - 1)}
-                className="border-border text-text-muted hover:bg-fill rounded-xl border px-4 py-2 text-sm font-medium disabled:opacity-40"
-              >
-                Anterior
-              </button>
-              <span className="text-text-muted text-sm">
-                Página {page + 1} de {data.totalPages}
-              </span>
-              <button
-                disabled={page >= data.totalPages - 1}
-                onClick={() => setPage((p) => p + 1)}
-                className="border-border text-text-muted hover:bg-fill rounded-xl border px-4 py-2 text-sm font-medium disabled:opacity-40"
-              >
-                Siguiente
-              </button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
 export default function UsersPage() {
-  const [tab, setTab] = useState<"users" | "admins" | "waitlist">("users");
+  const [tab, setTab] = useState<"users" | "admins">("users");
 
   return (
     <div>
@@ -314,20 +239,9 @@ export default function UsersPage() {
         >
           Administradores
         </button>
-        <button
-          onClick={() => setTab("waitlist")}
-          className={cn(
-            "px-4 py-2 text-sm font-semibold transition-colors",
-            tab === "waitlist"
-              ? "border-primary text-primary border-b-2"
-              : "text-text-muted hover:text-text",
-          )}
-        >
-          Lista de espera
-        </button>
       </div>
 
-      {tab === "users" ? <UsersTab /> : tab === "admins" ? <AdminsPanel /> : <WaitlistTab />}
+      {tab === "users" ? <UsersTab /> : <AdminsPanel />}
     </div>
   );
 }
