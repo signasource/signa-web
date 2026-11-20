@@ -5,7 +5,7 @@ import { DatetimeRangePicker } from "@/components/dashboard/datetime-range-picke
 import { MetricsTabs, type TabItem } from "@/components/dashboard/metrics-tabs";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { metricTone } from "@/components/dashboard/kpi-card";
-import { useServiceStatus, worstTone } from "@/components/dashboard/services-status";
+import { worstTone } from "@/components/dashboard/services-status";
 import { REFRESH_MS, useLearningQuery } from "@/components/dashboard/usage-queries";
 import { PageHeading } from "@/components/dashboard/ui";
 import { GrowthTab } from "@/components/dashboard/usage-growth";
@@ -121,9 +121,8 @@ export default function AdminMetricasPage() {
 
   const perf = { range, step, live };
 
-  // Health dots on the tabs: learning from its two headline rates, infra from the services strip.
+  // Health dot on the aprendizaje tab from its two headline rates.
   const learning = useLearningQuery(range, live);
-  const services = useServiceStatus(range, step, live);
   const l = learning.data;
   const learningTone = l
     ? worstTone([
@@ -135,13 +134,7 @@ export default function AdminMetricasPage() {
           : "neutral",
       ])
     : "neutral";
-  const tabs = BASE_TABS.map((t) =>
-    t.key === "aprendizaje"
-      ? { ...t, dot: learningTone }
-      : t.key === "infraestructura"
-        ? { ...t, dot: services.tone }
-        : t,
-  );
+  const tabs = BASE_TABS.map((t) => (t.key === "aprendizaje" ? { ...t, dot: learningTone } : t));
 
   return (
     <section className="flex flex-col gap-6">
@@ -180,7 +173,6 @@ export default function AdminMetricasPage() {
           <ResumenTab
             range={range}
             live={live}
-            step={step}
             onSelectRange={onSelectRange}
             onSelectTab={(t: ResumenTarget, anchor?: string) => {
               changeTab(t);

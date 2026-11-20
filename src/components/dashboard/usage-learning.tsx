@@ -15,10 +15,7 @@ import {
 } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import { pct0, pct1, rate1, rateOrNull } from "@/components/dashboard/usage-math";
-import {
-  useBusinessQuery,
-  useLearningQuery,
-} from "@/components/dashboard/usage-queries";
+import { useBusinessQuery, useLearningQuery } from "@/components/dashboard/usage-queries";
 import type { LearningMetrics, LessonReview, SignDifficulty } from "@/lib/api/metrics";
 import { courseLessonHref } from "@/lib/course-deep-link";
 import { previousRange, type DateTimeRange } from "@/lib/datetime-range";
@@ -148,9 +145,7 @@ function CoursePicker({
                 }}
                 className={cn(
                   "flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors",
-                  value === null
-                    ? "bg-primary-light text-primary-dark"
-                    : "hover:bg-fill text-text",
+                  value === null ? "bg-primary-light text-primary-dark" : "hover:bg-fill text-text",
                 )}
               >
                 <span className="truncate">Todos los cursos</span>

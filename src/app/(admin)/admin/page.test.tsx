@@ -6,10 +6,6 @@ vi.mock("@/components/dashboard/usage-queries", () => ({
   useLearningQuery: () => ({ isPending: true, data: undefined }),
   REFRESH_MS: 30_000,
 }));
-vi.mock("@/components/dashboard/services-status", () => ({
-  useServiceStatus: () => ({ tone: "neutral" }),
-  worstTone: (tones: string[]) => tones[0] ?? "neutral",
-}));
 vi.mock("@/components/dashboard/kpi-card", () => ({
   metricTone: () => "neutral",
 }));
