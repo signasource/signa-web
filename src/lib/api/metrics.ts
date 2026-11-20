@@ -354,10 +354,15 @@ export type MlMetrics = {
 export type RangeParams = { from: string; to: string };
 
 export const metricsApi = {
-  business: (params: RangeParams) =>
-    api<BusinessMetrics>("/admin/metrics/business", { query: params }),
+  business: (params: RangeParams & { courseIds?: string[] }) =>
+    api<BusinessMetrics>("/admin/metrics/business", {
+      query: { from: params.from, to: params.to, courseIds: params.courseIds },
+    }),
 
-  growth: (params: RangeParams) => api<GrowthMetrics>("/admin/metrics/growth", { query: params }),
+  growth: (params: RangeParams & { courseIds?: string[] }) =>
+    api<GrowthMetrics>("/admin/metrics/growth", {
+      query: { from: params.from, to: params.to, courseIds: params.courseIds },
+    }),
 
   learning: (params: RangeParams & { courseIds?: string[] }) =>
     api<LearningMetrics>("/admin/metrics/learning", {

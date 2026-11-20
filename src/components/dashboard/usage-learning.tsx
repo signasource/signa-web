@@ -327,8 +327,8 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
   const prev = previousRange(range);
   const learning = useLearningQuery(range, live, courseIds);
   const previous = useLearningQuery(prev, live, courseIds);
-  const business = useBusinessQuery(range, live);
-  const growth = useGrowthQuery(range, live);
+  const business = useBusinessQuery(range, live, courseIds);
+  const growth = useGrowthQuery(range, live, courseIds);
 
   if (learning.isPending) return <LoadingState>Cargando métricas de aprendizaje…</LoadingState>;
   if (!learning.data)
@@ -409,7 +409,7 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
           ) : (
             <ul className="flex flex-col gap-3">
               {[...b.accuracy.byBlockType]
-                .filter((bt) => bt.type !== "SPELL_NAME")
+                .filter((bt) => bt.type !== "SPELL_NAME" && bt.type !== "INVISIBLE_SIGNS")
                 .sort((x, y) => x.accuracyPercent - y.accuracyPercent)
                 .map((bt) => (
                   <li key={bt.type} className="flex flex-col gap-1.5">

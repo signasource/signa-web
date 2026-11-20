@@ -21,6 +21,7 @@ import type { MetricId } from "@/components/dashboard/metric-catalog";
 import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
 import type { PerfMetrics, PerfSeries } from "@/lib/api/metrics";
 import { cn } from "@/lib/utils";
+import { ARGENTINA_TIMEZONE } from "@/lib/timezone";
 
 /** A time range picked by dragging across a chart (instant seconds). */
 export type RangeSelect = (fromSeconds: number, toSeconds: number) => void;
@@ -35,12 +36,17 @@ export const COLORS = [
   "var(--color-danger)",
 ];
 
-const TIME_FMT = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit" });
+const TIME_FMT = new Intl.DateTimeFormat("es-AR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: ARGENTINA_TIMEZONE,
+});
 const DATE_TIME_FMT = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",
   month: "short",
   hour: "2-digit",
   minute: "2-digit",
+  timeZone: ARGENTINA_TIMEZONE,
 });
 
 export type ValueFormat = (value: number) => string;

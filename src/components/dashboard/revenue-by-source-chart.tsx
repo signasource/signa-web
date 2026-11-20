@@ -16,17 +16,18 @@ import type { MetricId } from "@/components/dashboard/metric-catalog";
 import type { RangeSelect, ValueFormat } from "@/components/dashboard/perf-chart";
 import { Card, CardTitle } from "@/components/dashboard/ui";
 import type { DateTimeRange } from "@/lib/datetime-range";
+import { ARGENTINA_TIMEZONE } from "@/lib/timezone";
 
 const DAY_SECONDS = 86400;
 const DAY_FMT = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",
   month: "short",
-  timeZone: "UTC",
+  timeZone: ARGENTINA_TIMEZONE,
 });
 const TIME_FMT = new Intl.DateTimeFormat("es-AR", {
   hour: "2-digit",
   minute: "2-digit",
-  timeZone: "UTC",
+  timeZone: ARGENTINA_TIMEZONE,
 });
 
 function bucketSecondsFor(fromMs: number, toMs: number): number {

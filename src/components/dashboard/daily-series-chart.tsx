@@ -19,25 +19,24 @@ import type { MetricId } from "@/components/dashboard/metric-catalog";
 import type { RangeSelect, ValueFormat } from "@/components/dashboard/perf-chart";
 import { Card, CardTitle } from "@/components/dashboard/ui";
 import type { DateTimeRange } from "@/lib/datetime-range";
+import { ARGENTINA_TIMEZONE } from "@/lib/timezone";
 
-// Buckets are UTC-aligned (epoch floor) and day strings parse as UTC midnight, so format in UTC to
-// keep labels on the bucket boundary (no off-by-one from the local offset).
 const TIME_FMT = new Intl.DateTimeFormat("es-AR", {
   hour: "2-digit",
   minute: "2-digit",
-  timeZone: "UTC",
+  timeZone: ARGENTINA_TIMEZONE,
 });
 const DAY_FMT = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",
   month: "short",
-  timeZone: "UTC",
+  timeZone: ARGENTINA_TIMEZONE,
 });
 const FULL_FMT = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",
   month: "short",
   hour: "2-digit",
   minute: "2-digit",
-  timeZone: "UTC",
+  timeZone: ARGENTINA_TIMEZONE,
 });
 
 const HOUR_SECONDS = 3600;

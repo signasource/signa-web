@@ -21,18 +21,36 @@ function options(range: DateTimeRange | null, live: boolean) {
   };
 }
 
-export function useGrowthQuery(range: DateTimeRange | null, live: boolean) {
+export function useGrowthQuery(
+  range: DateTimeRange | null,
+  live: boolean,
+  courseIds: string[] = [],
+) {
   return useQuery({
-    queryKey: ["admin", "metrics", "growth", range?.from, range?.to],
-    queryFn: () => metricsApi.growth({ from: range!.from, to: range!.to }),
+    queryKey: ["admin", "metrics", "growth", range?.from, range?.to, ...courseIds],
+    queryFn: () =>
+      metricsApi.growth({
+        from: range!.from,
+        to: range!.to,
+        courseIds: courseIds.length > 0 ? courseIds : undefined,
+      }),
     ...options(range, live),
   });
 }
 
-export function useBusinessQuery(range: DateTimeRange | null, live: boolean) {
+export function useBusinessQuery(
+  range: DateTimeRange | null,
+  live: boolean,
+  courseIds: string[] = [],
+) {
   return useQuery({
-    queryKey: ["admin", "metrics", "business", range?.from, range?.to],
-    queryFn: () => metricsApi.business({ from: range!.from, to: range!.to }),
+    queryKey: ["admin", "metrics", "business", range?.from, range?.to, ...courseIds],
+    queryFn: () =>
+      metricsApi.business({
+        from: range!.from,
+        to: range!.to,
+        courseIds: courseIds.length > 0 ? courseIds : undefined,
+      }),
     ...options(range, live),
   });
 }

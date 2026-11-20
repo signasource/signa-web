@@ -1,13 +1,15 @@
 /** Shared formatters for the usage dashboard (dates, relative ages, license expiry tones). */
 
+import { ARGENTINA_TIMEZONE } from "@/lib/timezone";
+
 const SHORT_DATE = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",
   month: "short",
   year: "numeric",
-  timeZone: "UTC",
+  timeZone: ARGENTINA_TIMEZONE,
 });
 
-/** A short UTC date ("12 dic 2026") from an ISO-8601 instant; "—" when absent/unparseable. */
+/** A short date ("12 dic 2026") from an ISO-8601 instant in Argentina timezone; "—" when absent/unparseable. */
 export function fmtShortDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -17,12 +19,12 @@ export function fmtShortDate(iso: string | null | undefined): string {
 const DAY_MONTH = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",
   month: "short",
-  timeZone: "UTC",
+  timeZone: ARGENTINA_TIMEZONE,
 });
 
 /**
- * A compact UTC date for tables: "18 nov" when it's within ~10 months of now (unambiguous), else
- * with the year ("5 feb 2028"); "—" when absent/unparseable.
+ * A compact date for tables: "18 nov" when it's within ~10 months of now (unambiguous), else
+ * with the year ("5 feb 2028"); "—" when absent/unparseable. Uses Argentina timezone.
  */
 export function fmtDayMonth(iso: string | null | undefined, now: Date = new Date()): string {
   if (!iso) return "—";
