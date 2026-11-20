@@ -27,11 +27,7 @@ import {
   seriesValues,
 } from "@/components/dashboard/usage-math";
 import { useBusinessQuery, usePerfWidget } from "@/components/dashboard/usage-queries";
-import {
-  type BusinessMetrics,
-  type PerfMetrics,
-  type PerfSeries,
-} from "@/lib/api/metrics";
+import { type BusinessMetrics, type PerfMetrics, type PerfSeries } from "@/lib/api/metrics";
 import { previousRange, spanSeconds } from "@/lib/datetime-range";
 import { cn } from "@/lib/utils";
 
@@ -456,4 +452,3 @@ function SlowOpsTable(perf: PerfProps) {
     </Card>
   );
 }
-
