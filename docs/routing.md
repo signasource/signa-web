@@ -1,4 +1,4 @@
-# Routing
+﻿# Routing
 
 > Responsibility: catalog of routes, route groups, and access rules.
 > Update when: a route, page, layout, or guard is added, renamed, or removed.
@@ -39,7 +39,7 @@ strict CSP ([security.md](./security.md)).
 | `/dashboard/purchases`           | `(dashboard)/dashboard/purchases/page.tsx`              | org    | Seat purchases with their state counts                                                                                                                                                                                                                                                                                |
 | `/dashboard/purchases/new`       | `(dashboard)/dashboard/purchases/new/page.tsx`          | org    | Buy seats: course preview, 5–60 days, one email per seat (paste or Excel), live quote → summary → Mercado Pago                                                                                                                                                                                                        |
 | `/dashboard/purchases/[id]`      | `(dashboard)/dashboard/purchases/[purchaseId]/page.tsx` | org    | Purchase detail: pay, return URL (`?pago=…`), seats by state, emails, reminders, cancel, withdraw, refund request                                                                                                                                                                                                     |
-| `/admin`                         | `(admin)/admin/page.tsx`                                | SIGNA  | Back-office "Resumen": counters (`adminApi.stats`, plus **usuarios registrados** from the learning funnel), pending organizations, pending sign reports, the historical **learning funnel** and **sign reports** card (`metricsApi.learning` over the whole history), course versions                                 |
+| `/admin`                         | `(admin)/admin/page.tsx`                                | SIGNA  | Back-office "Métricas": usage dashboard in tabs (`?tab=`), one datetime range picker + live. See [features/admin-usage-metrics.md](./features/admin-usage-metrics.md)                                                                                                                                                 |
 | `/admin/login`                   | `(admin)/admin/login/page.tsx`                          | public | Back-office login (`AdminAuthProvider.login`)                                                                                                                                                                                                                                                                         |
 | `/admin/organizations`           | `(admin)/admin/organizations/page.tsx`                  | SIGNA  | Organization review: tabs Pendientes / Activas / Rechazadas / Suspendidas / Todas (excludes suspended), approve / reject / suspend (mandatory reason) / reactivate / "Dar de baja" (delete)                                                                                                                           |
 | `/admin/courses`                 | `(admin)/admin/courses/page.tsx`                        | SIGNA  | Course CMS: course versions (Borradores / Publicadas / Archivadas, editor avatar + name chip, enrollment count), create, fork, full editor (units → lessons → blocks incl. `PERFORM_SIGN` signs and check blocks), publish with confirmation. Deep link `?course=&lesson=[&version=]` (`src/lib/course-deep-link.ts`) |
@@ -48,7 +48,7 @@ strict CSP ([security.md](./security.md)).
 | `/admin/purchases`               | `(admin)/admin/purchases/page.tsx`                      | SIGNA  | Back-office purchases (SEATS / GEMS / COURSE) + **Reembolsos** tab (refund requests). Read-only: no manual payment confirmation any more. See [features/dashboard.md](./features/dashboard.md#admin--compras-adminpurchases)                                                                                          |
 | `/admin/users`                   | `(admin)/admin/users/page.tsx`                          | SIGNA  | Tabs **Usuarios** (search, role filter, role-aware detail modal), **Administradores** (`AdminsPanel`) and **Lista de espera**                                                                                                                                                                                         |
 | `/admin/profile`                 | `(admin)/admin/profile/page.tsx`                        | SIGNA  | The signed-in admin's profile (click their name/photo in the sidebar); "Editar" opens `EditAdminForm`                                                                                                                                                                                                                 |
-| `/admin/usage-metrics`           | `(admin)/admin/usage-metrics/page.tsx`                  | SIGNA  | Usage dashboard in tabs (`?tab=`), one datetime range picker + live. See [features/admin-usage-metrics.md](./features/admin-usage-metrics.md)                                                                                                                                                                         |
+| `/admin/usage-metrics`           | `(admin)/admin/usage-metrics/page.tsx`                  | —      | Redirects to `/admin`                                                                                                                                                                                                                                                                                                 |
 
 There is **no** standalone `/login`, `/organizaciones*`, `/admin/content` or `/accept-invite` page.
 
@@ -73,8 +73,8 @@ There is **no** standalone `/login`, `/organizaciones*`, `/admin/content` or `/a
   `/organizations/me` every 30 s and on window focus, so the banner and the "Comprar cupos" button update
   without logging in again.
 - **Back-office** — `(admin)/admin/layout.tsx` redirects to `/admin/login` when `AdminAuthProvider` is
-  unauthenticated (unless already there). Sidebar: Resumen, Organizaciones, Compras, Reportes de señas, Cursos,
-  Señas, Usuarios, Métricas de uso; the profile link sits at the bottom.
+  unauthenticated (unless already there). Sidebar: Métricas, Organizaciones, Compras, Reportes de señas, Cursos,
+  Señas, Usuarios; the profile link sits at the bottom.
 
 Both are UX only — the API enforces real authorization. Details → [api/session.md](./api/session.md).
 
