@@ -413,7 +413,8 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
                   (bt) =>
                     bt.type !== "SPELL_NAME" &&
                     bt.type !== "INVISIBLE_SIGNS" &&
-                    bt.type !== "PERFORM_SIGN",
+                    bt.type !== "PERFORM_SIGN" &&
+                    bt.type !== "INTRODUCE_SIGN",
                 )
                 .sort((x, y) => x.accuracyPercent - y.accuracyPercent)
                 .map((bt) => (
