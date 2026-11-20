@@ -11,8 +11,9 @@ import {
   rate1,
   rateOrNull,
   retention7,
+  revenueTotals,
 } from "@/components/dashboard/usage-math";
-import type { PerfMetrics } from "@/lib/api/metrics";
+import type { GrowthMetrics, PerfMetrics } from "@/lib/api/metrics";
 
 const perf = (values: (number | null)[], step = 60): PerfMetrics => ({
   widget: "w",
@@ -85,5 +86,45 @@ describe("retention7", () => {
     });
     expect(retention7([cohort(100, 40), cohort(300, 110), cohort(50, null)])).toBe(37.5);
     expect(retention7([cohort(50, null)])).toBeNull();
+  });
+});
+
+describe("revenueTotals", () => {
+  // Paid in the window (gross, refunded ones included) vs. net (not refunded), per source.
+  const growth = (over: {
+    org: [number, number, number];
+    gems: [number, number, number];
+    courses: [number, number, number];
+  }) =>
+    ({
+      revenue: { paidAmount: over.org[0], netAmount: over.org[1], refundedAmount: over.org[2] },
+      gems: { paidAmount: over.gems[0], netAmount: over.gems[1], refundedAmount: over.gems[2] },
+      courseSales: {
+        paidAmount: over.courses[0],
+        netAmount: over.courses[1],
+        refundedAmount: over.courses[2],
+      },
+    }) as unknown as GrowthMetrics;
+
+  it("nets out the refunded purchases of the window, like the revenue chart", () => {
+    const m = revenueTotals(
+      growth({ org: [0, 0, 0], gems: [20_500, 20_500, 0], courses: [11_000, 5_500, 5_500] }),
+    );
+    expect(m.net).toBe(26_000);
+    expect(m.gross).toBe(31_500);
+    expect(m.refunded).toBe(5_500);
+    expect(m.usersNet).toBe(26_000);
+    expect(m.refundRate).toBe(17.5);
+  });
+
+  it("ignores refunds made in the window for purchases paid before it", () => {
+    // Nothing sold to organizations this window, but an older purchase was refunded in it.
+    const m = revenueTotals(
+      growth({ org: [0, 0, 17_600], gems: [10_500, 10_500, 1_500], courses: [0, 0, 0] }),
+    );
+    expect(m.net).toBe(10_500);
+    expect(m.orgNet).toBe(0);
+    expect(m.refunded).toBe(0);
+    expect(m.refundRate).toBe(0);
   });
 });

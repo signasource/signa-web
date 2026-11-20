@@ -19,7 +19,7 @@ import type { MetricId } from "@/components/dashboard/metric-catalog";
 import type { RangeSelect, ValueFormat } from "@/components/dashboard/perf-chart";
 import { Card, CardTitle } from "@/components/dashboard/ui";
 import type { DateTimeRange } from "@/lib/datetime-range";
-import { ARGENTINA_TIMEZONE } from "@/lib/timezone";
+import { ARGENTINA_TIMEZONE, argentinaBucketStart, seriesPointMs } from "@/lib/timezone";
 
 const TIME_FMT = new Intl.DateTimeFormat("es-AR", {
   hour: "2-digit",
@@ -178,7 +178,7 @@ export function DailySeriesChart({
   // Drop points with an unparseable `t`: a single bad timestamp would otherwise make `Intl.format`
   // throw ("Invalid time value") and take down the whole dashboard page, not just this widget.
   const valid = points
-    .map((p) => ({ epoch: new Date(p.t).getTime(), value: p.value }))
+    .map((p) => ({ epoch: seriesPointMs(p.t), value: p.value }))
     .filter((d) => Number.isFinite(d.epoch));
 
   const fromMs = range ? new Date(range.from).getTime() : NaN;
@@ -196,7 +196,7 @@ export function DailySeriesChart({
   // The previous window's points, moved forward by the span so they line up with this window.
   const spanMs = haveRange ? toMs - fromMs : 0;
   const prevValid = (previous ?? [])
-    .map((p) => ({ epoch: new Date(p.t).getTime() + spanMs, value: p.value }))
+    .map((p) => ({ epoch: seriesPointMs(p.t) + spanMs, value: p.value }))
     .filter((d) => Number.isFinite(d.epoch));
   const withPrevious = previous !== undefined && haveRange;
 
@@ -205,12 +205,14 @@ export function DailySeriesChart({
   const bucketCount = haveRange ? Math.ceil((toMs - fromMs) / bucketMs) : 0;
   if (haveRange && bucketCount > 0 && bucketCount <= MAX_FILLED_POINTS) {
     // Lay out every bucket of the window, filling the ones without data with 0.
+    // Buckets start at Argentine midnight, like the API's (a day bucket is an Argentine day).
     const valueByEpoch = new Map<number, number>();
-    for (const d of valid) valueByEpoch.set(Math.floor(d.epoch / bucketMs) * bucketMs, d.value);
+    for (const d of valid) valueByEpoch.set(argentinaBucketStart(d.epoch, bucketMs), d.value);
     const prevByEpoch = new Map<number, number>();
-    for (const d of prevValid) prevByEpoch.set(Math.floor(d.epoch / bucketMs) * bucketMs, d.value);
-    const start = Math.floor(fromMs / bucketMs) * bucketMs;
-    const end = Math.floor(toMs / bucketMs) * bucketMs;
+    for (const d of prevValid) prevByEpoch.set(argentinaBucketStart(d.epoch, bucketMs), d.value);
+    const start = argentinaBucketStart(fromMs, bucketMs);
+    // `to` is exclusive: a window ending exactly on a bucket boundary does not open a new bucket.
+    const end = argentinaBucketStart(toMs - 1, bucketMs);
     data = [];
     for (let epoch = start; epoch <= end; epoch += bucketMs) {
       const has = valueByEpoch.has(epoch);

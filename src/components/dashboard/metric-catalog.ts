@@ -157,7 +157,7 @@ export const METRICS = {
     description:
       "Todo el dinero que entra, descontados los reembolsos: por un lado las organizaciones (compra de cupos) y por otro los usuarios finales (gemas y cursos).",
     howComputed:
-      "Sumamos el dinero de las compras con pago confirmado dentro del período y le restamos lo reembolsado en el mismo período. La variación compara contra el período anterior de igual duración.",
+      "Sumamos el dinero de las compras pagadas dentro del período que no se reembolsaron (una compra cuenta en el día en que se pagó, igual que en «Ingresos por fuente»). La variación compara contra el período anterior de igual duración.",
     goodWhen: "Crece y supera a los reembolsos.",
   },
   refunds: {
@@ -178,7 +178,8 @@ export const METRICS = {
   refund_rate: {
     label: "Tasa de reembolso",
     description: "Qué parte de los ingresos se termina devolviendo.",
-    howComputed: "Dividimos el dinero devuelto por lo que ingresó, como porcentaje.",
+    howComputed:
+      "De las compras pagadas dentro del período, dividimos el dinero de las que se reembolsaron por el total, como porcentaje.",
     goodWhen: "Lo más baja posible.",
     threshold: { dir: "down", warn: 5, danger: 10 },
   },
