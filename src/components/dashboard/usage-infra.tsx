@@ -16,7 +16,6 @@ import {
   fmtReqsShort,
 } from "@/components/dashboard/perf-format";
 import { PerfPanel, type PerfProps } from "@/components/dashboard/perf-panel";
-import { ServicesStrip, useServiceStatus } from "@/components/dashboard/services-status";
 import { Card, CardTitle, LoadingState } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import {
@@ -46,19 +45,10 @@ export function cameraAccuracy(b: BusinessMetrics | undefined): {
   return { evaluated, percent: rateOrNull(correct, evaluated) };
 }
 
-/** Infraestructura: services strip + backend metrics. */
+/** Infraestructura: backend metrics. */
 export function InfraTab(props: InfraProps) {
-  const { range, step, live } = props;
-  const services = useServiceStatus(range, step, live);
   return (
     <div className="flex flex-col gap-5">
-      <ServicesStrip items={services.items} unavailable={services.unavailable} />
-      {services.unavailable ? (
-        <p className="text-text-muted text-[13px]">
-          Las métricas de performance vienen de Prometheus vía Grafana Cloud. Sin el token de
-          lectura de Grafana los paneles muestran «sin datos».
-        </p>
-      ) : null}
       <BackendInfra {...props} />
     </div>
   );

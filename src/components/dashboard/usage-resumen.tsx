@@ -6,7 +6,6 @@ import { daysSince } from "@/components/dashboard/format";
 import { KpiCard, KpiRow } from "@/components/dashboard/kpi-card";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount, fmtMoneyCompact } from "@/components/dashboard/perf-format";
-import { ServicesStrip, useServiceStatus } from "@/components/dashboard/services-status";
 import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import {
@@ -56,12 +55,10 @@ export function buildAlerts({
   growth: g,
   business: b,
   learning: l,
-  emailFailures,
 }: {
   growth: GrowthMetrics;
   business: BusinessMetrics;
   learning: LearningMetrics | undefined;
-  emailFailures: number | null;
 }): Alert[] {
   const alerts: Alert[] = [];
   if (g.orgs.pending > 0) {
@@ -123,17 +120,6 @@ export function buildAlerts({
       tone: "warning",
     });
   }
-  if (emailFailures != null && emailFailures > 0) {
-    alerts.push({
-      key: "emails",
-      badge: NUMBER.format(emailFailures),
-      title: "Emails que no se enviaron",
-      sub: "Verificaciones, invitaciones o recuperos de contraseña",
-      cta: "Ver detalle",
-      tab: "infraestructura",
-      tone: "danger",
-    });
-  }
   if (b.errors.failedImports > 0) {
     alerts.push({
       key: "imports",
@@ -157,13 +143,11 @@ export function buildAlerts({
 export function ResumenTab({
   range,
   live,
-  step,
   onSelectRange,
   onSelectTab,
 }: {
   range: DateTimeRange;
   live: boolean;
-  step: number;
   onSelectRange: RangeSelect;
   onSelectTab: (tab: ResumenTarget, anchor?: string) => void;
 }) {
@@ -172,7 +156,6 @@ export function ResumenTab({
   const prevGrowth = useGrowthQuery(prev, live);
   const business = useBusinessQuery(range, live);
   const learning = useLearningQuery(range, live);
-  const services = useServiceStatus(range, step, live);
 
   if (growth.isPending || business.isPending) return <LoadingState>Cargando resumen…</LoadingState>;
   if (!growth.data || !business.data) return <ErrorState>No pudimos cargar el resumen.</ErrorState>;
@@ -191,7 +174,6 @@ export function ResumenTab({
     growth: g,
     business: b,
     learning: l,
-    emailFailures: services.emailFailures,
   });
 
   return (
@@ -253,12 +235,6 @@ export function ResumenTab({
         />
         <AttentionList alerts={alerts} onSelectTab={onSelectTab} />
       </div>
-
-      <ServicesStrip
-        items={services.items}
-        unavailable={services.unavailable}
-        action={{ label: "Ver infraestructura", onClick: () => onSelectTab("infraestructura") }}
-      />
     </div>
   );
 }

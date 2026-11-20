@@ -3,6 +3,7 @@ import {
   fmtBytes,
   fmtLatency,
   fmtMoney,
+  fmtMoneyCompact,
   fmtPercent,
   fmtPercentRatio,
   fmtReqs,
@@ -37,5 +38,19 @@ describe("perf formatters", () => {
 
   it("formats pesos with no decimals", () => {
     expect(fmtMoney(12000)).toContain("12.000");
+  });
+});
+
+describe("fmtMoneyCompact", () => {
+  it("keeps a decimal under $100 k so side-by-side amounts add up", () => {
+    expect(fmtMoneyCompact(20_500)).toBe("$20,5 k");
+    expect(fmtMoneyCompact(5_500)).toBe("$5,5 k");
+    expect(fmtMoneyCompact(26_000)).toBe("$26 k");
+    expect(fmtMoneyCompact(2_500)).toBe("$2,5 k");
+  });
+
+  it("rounds to whole thousands from $100 k and to two decimals in millions", () => {
+    expect(fmtMoneyCompact(181_400)).toBe("$181 k");
+    expect(fmtMoneyCompact(13_770_000)).toBe("$13,77 M");
   });
 });

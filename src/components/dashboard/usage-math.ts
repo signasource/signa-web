@@ -122,12 +122,22 @@ export function retention7(cohorts: CohortRetention[]): number | null {
   return users > 0 ? rate1(retained, users) : null;
 }
 
-/** Money in and out over the window, split between organizations and end users (gems + courses). */
+/**
+ * Money from the purchases paid in the window, split between organizations and end users (gems +
+ * courses). One rule for every figure, the same as "Ingresos por fuente" and the "Usuarios
+ * finales" tiles: a purchase counts in the period it was paid, and the net leaves out the ones
+ * that were later refunded. So the net equals the sum of the chart's bars, `refunded` is what was
+ * refunded of this period's sales, and the refund rate can never pass 100%. (Subtracting the
+ * refunds *made* in the window instead mixed periods: a refund of an older purchase pushed a
+ * window's net down — even below zero — and blew up the period-over-period delta.)
+ */
 export function revenueTotals(g: GrowthMetrics) {
   const orgPaid = g.revenue.paidAmount;
-  const orgRefunded = g.revenue.refundedAmount;
+  const orgNet = g.revenue.netAmount;
   const usersPaid = g.gems.paidAmount + g.courseSales.paidAmount;
-  const usersRefunded = g.gems.refundedAmount + g.courseSales.refundedAmount;
+  const usersNet = g.gems.netAmount + g.courseSales.netAmount;
+  const orgRefunded = Math.max(0, orgPaid - orgNet);
+  const usersRefunded = Math.max(0, usersPaid - usersNet);
   const gross = orgPaid + usersPaid;
   const refunded = orgRefunded + usersRefunded;
   return {
@@ -135,11 +145,11 @@ export function revenueTotals(g: GrowthMetrics) {
     orgRefunded,
     usersPaid,
     usersRefunded,
-    orgNet: orgPaid - orgRefunded,
-    usersNet: usersPaid - usersRefunded,
+    orgNet,
+    usersNet,
     gross,
     refunded,
-    net: gross - refunded,
+    net: orgNet + usersNet,
     refundRate: rate1(refunded, gross),
   };
 }

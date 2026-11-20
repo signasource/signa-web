@@ -5,7 +5,7 @@ import { DatetimeRangePicker } from "@/components/dashboard/datetime-range-picke
 import { MetricsTabs, type TabItem } from "@/components/dashboard/metrics-tabs";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { metricTone } from "@/components/dashboard/kpi-card";
-import { useServiceStatus, worstTone } from "@/components/dashboard/services-status";
+import { worstTone } from "@/components/dashboard/services-status";
 import { REFRESH_MS, useLearningQuery } from "@/components/dashboard/usage-queries";
 import { PageHeading } from "@/components/dashboard/ui";
 import { GrowthTab } from "@/components/dashboard/usage-growth";
@@ -19,6 +19,7 @@ import {
   resolveRange,
   type RangeSelection,
 } from "@/lib/datetime-range";
+import { ARGENTINA_TIMEZONE } from "@/lib/timezone";
 import { cn } from "@/lib/utils";
 
 type TabKey = "resumen" | "negocio" | "usuarios" | "aprendizaje" | "infraestructura";
@@ -41,10 +42,13 @@ function isTabKey(value: string | null): value is TabKey {
 const WINDOW_DATE = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",
   month: "short",
-  timeZone: "UTC",
+  timeZone: ARGENTINA_TIMEZONE,
 });
 
-/** "10 sep – 9 oct": the equal-length window immediately before the selected one, in UTC. */
+/**
+ * "10 sep – 9 oct": the equal-length window immediately before the selected one, in Argentina time
+ * (the charts and the API's day buckets use Argentine days too).
+ */
 function previousWindowLabel(range: { from: string; to: string }): string {
   const from = new Date(range.from).getTime();
   const to = new Date(range.to).getTime();
@@ -121,9 +125,8 @@ export default function AdminMetricasPage() {
 
   const perf = { range, step, live };
 
-  // Health dots on the tabs: learning from its two headline rates, infra from the services strip.
+  // Health dot on the aprendizaje tab from its two headline rates.
   const learning = useLearningQuery(range, live);
-  const services = useServiceStatus(range, step, live);
   const l = learning.data;
   const learningTone = l
     ? worstTone([
@@ -135,13 +138,7 @@ export default function AdminMetricasPage() {
           : "neutral",
       ])
     : "neutral";
-  const tabs = BASE_TABS.map((t) =>
-    t.key === "aprendizaje"
-      ? { ...t, dot: learningTone }
-      : t.key === "infraestructura"
-        ? { ...t, dot: services.tone }
-        : t,
-  );
+  const tabs = BASE_TABS.map((t) => (t.key === "aprendizaje" ? { ...t, dot: learningTone } : t));
 
   return (
     <section className="flex flex-col gap-6">
@@ -170,7 +167,7 @@ export default function AdminMetricasPage() {
         idBase="metrics"
         trailing={
           <p className="text-text-muted text-xs">
-            Comparando con {previousWindowLabel(range)} · horario UTC
+            Comparando con {previousWindowLabel(range)} · hora de Argentina
           </p>
         }
       />
@@ -180,7 +177,6 @@ export default function AdminMetricasPage() {
           <ResumenTab
             range={range}
             live={live}
-            step={step}
             onSelectRange={onSelectRange}
             onSelectTab={(t: ResumenTarget, anchor?: string) => {
               changeTab(t);
