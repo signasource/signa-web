@@ -3,9 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, type ReactNode } from "react";
 import { CourseSigns } from "@/components/dashboard/course-signs";
+import { SectionIcon } from "@/components/dashboard/ui";
 import { SignMediaPreview } from "@/features/admin/signs/sign-media-preview";
 import { signsApi } from "@/lib/api/signs";
 import type { CatalogCourse } from "@/lib/api/types";
+import { DAILY_STUDY_MINUTES, daysToComplete } from "@/lib/purchases";
 import {
   courseFormat,
   courseSignList,
@@ -33,8 +35,56 @@ const FORMAT_COPY: Record<CourseFormat, { label: string; text: string } | null> 
   unknown: null,
 };
 
-/** The pitch for a course an admin is about to buy: what it is, how signs look, what it covers. */
-export function CoursePreview({ course }: { course: CatalogCourse }) {
+/** The course an admin is about to buy, at a glance: name, description and what it includes. */
+export function CourseHero({ course, className }: { course: CatalogCourse; className?: string }) {
+  return (
+    <section
+      aria-label={`Resumen de ${course.name}`}
+      className={cn(
+        "bg-ink-900 text-on-dark relative flex flex-col justify-center overflow-hidden rounded-2xl p-5 sm:p-6",
+        className,
+      )}
+    >
+      <div
+        aria-hidden
+        className="bg-primary/30 absolute -top-24 -right-16 size-72 rounded-full blur-3xl"
+      />
+      <div className="relative flex flex-col gap-4">
+        <span className="text-primary-medallion text-[11px] font-bold tracking-widest uppercase">
+          Curso de lengua de señas argentina
+        </span>
+        <h2 className="font-display text-3xl leading-tight font-bold text-balance sm:text-4xl">
+          {course.name}
+        </h2>
+        <p className="text-on-dark/80 max-w-2xl text-[15px] text-pretty">
+          {course.description ??
+            "Tu equipo aprende señas reales de la comunidad sorda, a su ritmo y desde el celular."}
+        </p>
+        <ul className="flex flex-wrap gap-2">
+          <Pill>
+            {course.signCount} {course.signCount === 1 ? "seña" : "señas"}
+          </Pill>
+          <Pill>
+            {course.modules.length} {course.modules.length === 1 ? "módulo" : "módulos"}
+          </Pill>
+          {course.signCount > 0 ? (
+            <Pill>
+              ≈ {daysToComplete(course.signCount)}{" "}
+              {daysToComplete(course.signCount) === 1 ? "día" : "días"} a {DAILY_STUDY_MINUTES} min
+              por día
+            </Pill>
+          ) : null}
+          {course.hasAnimations && <Pill highlight>Animaciones 3D</Pill>}
+          {course.hasVideos && <Pill highlight>Señas en video</Pill>}
+          {course.hasCameraRecognition && <Pill>Práctica con cámara</Pill>}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+/** A playable sample of the course's signs, so the admin sees how they look in the app. */
+export function CourseShowcase({ course }: { course: CatalogCourse }) {
   // Signs are looked up in signa-api in an order that spreads over the modules; the ones with no
   // file are skipped, so the sample is the first few that do have an avatar or a video.
   const candidates = useMemo(
@@ -68,46 +118,13 @@ export function CoursePreview({ course }: { course: CatalogCourse }) {
   const current = selected ? byMeaning.get(selected) : undefined;
 
   return (
-    <div className="flex flex-col gap-4">
-      <section
-        aria-label={`Resumen de ${course.name}`}
-        className="bg-ink-900 text-on-dark relative overflow-hidden rounded-3xl p-6 sm:p-8"
-      >
-        <div
-          aria-hidden
-          className="bg-primary/30 absolute -top-24 -right-16 size-72 rounded-full blur-3xl"
-        />
-        <div className="relative flex flex-col gap-4">
-          <span className="text-primary-medallion text-[11px] font-bold tracking-widest uppercase">
-            Curso de lengua de señas argentina
-          </span>
-          <h2 className="font-display text-3xl leading-tight font-bold text-balance sm:text-4xl">
-            {course.name}
-          </h2>
-          <p className="text-on-dark/80 max-w-2xl text-[15px] text-pretty">
-            {course.description ??
-              "Tu equipo aprende señas reales de la comunidad sorda, a su ritmo y desde el celular."}
-          </p>
-          <ul className="flex flex-wrap gap-2">
-            <Pill>
-              {course.signCount} {course.signCount === 1 ? "seña" : "señas"}
-            </Pill>
-            <Pill>
-              {course.modules.length} {course.modules.length === 1 ? "módulo" : "módulos"}
-            </Pill>
-            {course.hasAnimations && <Pill highlight>Animaciones 3D</Pill>}
-            {course.hasVideos && <Pill highlight>Señas en video</Pill>}
-            {course.hasCameraRecognition && <Pill>Práctica con cámara</Pill>}
-          </ul>
-        </div>
-      </section>
-
+    <>
       {candidates.length > 0 && media.isPending ? (
         <p className="text-text-muted text-sm">Cargando las señas del curso…</p>
       ) : samples.length > 0 && current ? (
         <section
           aria-label="Así se verán las señas en tu curso"
-          className="border-border bg-surface grid items-center gap-6 rounded-3xl border p-5 sm:grid-cols-[1fr_auto] sm:p-8"
+          className="border-border bg-surface grid items-center gap-6 rounded-2xl border p-5 sm:grid-cols-[1fr_auto] sm:p-6"
         >
           <div className="flex flex-col gap-4">
             <span className="text-primary-dark text-[11px] font-bold tracking-widest uppercase">
@@ -152,14 +169,36 @@ export function CoursePreview({ course }: { course: CatalogCourse }) {
           />
         </section>
       ) : null}
+    </>
+  );
+}
 
-      <section className="border-border bg-surface flex flex-col gap-3 rounded-3xl border p-5 sm:p-6">
-        <h3 className="font-display text-lg font-bold tracking-tight">
-          Todo lo que van a aprender
-        </h3>
+/** Every sign of the course by module, folded until the admin asks for it. */
+export function CourseContents({ course }: { course: CatalogCourse }) {
+  return (
+    <details className="group border-border bg-surface rounded-2xl border">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-5 sm:p-6 [&::-webkit-details-marker]:hidden">
+        <span className="flex items-center gap-2.5">
+          <SectionIcon name="hand" className="bg-avatar-blue-light text-gems-blue-dark" />
+          <span className="flex flex-col">
+            <span className="font-display text-lg font-bold tracking-tight">
+              Todo lo que van a aprender
+            </span>
+            <span className="text-text-muted text-[13px]">
+              {course.signCount} {course.signCount === 1 ? "seña" : "señas"} en{" "}
+              {course.modules.length} {course.modules.length === 1 ? "módulo" : "módulos"}
+            </span>
+          </span>
+        </span>
+        <span className="text-primary-dark text-sm font-bold">
+          <span className="group-open:hidden">Ver las señas</span>
+          <span className="hidden group-open:inline">Ocultar</span>
+        </span>
+      </summary>
+      <div className="px-5 pb-5 sm:px-6 sm:pb-6">
         <CourseSigns course={course} />
-      </section>
-    </div>
+      </div>
+    </details>
   );
 }
 
