@@ -23,7 +23,7 @@ import {
   volumeDiscountFor,
 } from "@/lib/purchases";
 
-const schema = purchaseFormSchema({ minDays: 15, maxDays: 60, maxSeats: 3 });
+const schema = purchaseFormSchema({ minDays: 5, maxDays: 60, maxSeats: 3 });
 
 const message = (values: Partial<{ courseId: string; durationDays: number; emails: string }>) => {
   const result = schema.safeParse({
@@ -45,7 +45,7 @@ describe("purchaseFormSchema", () => {
   });
 
   it("keeps the duration inside the range", () => {
-    expect(message({ durationDays: 14 })).toBe("El mínimo es 15 días.");
+    expect(message({ durationDays: 4 })).toBe("El mínimo es 5 días.");
     expect(message({ durationDays: 61 })).toBe("El máximo es 60 días.");
     expect(message({ durationDays: 20.5 })).toBe("Ingresá un número entero de días.");
   });
