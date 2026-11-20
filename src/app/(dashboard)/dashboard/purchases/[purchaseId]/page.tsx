@@ -533,7 +533,7 @@ export default function PurchaseDetailPage() {
             email.
           </p>
         </Card>
-      ) : purchase.status === "PAID" && counts.active === 0 && orgId ? (
+      ) : purchase.status === "PAID" && acceptedSeats(counts) === 0 && orgId ? (
         <RefundRequestSection orgId={orgId} purchaseId={purchaseId} />
       ) : null}
 

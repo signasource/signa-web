@@ -409,6 +409,43 @@ describe("PurchaseDetailPage", () => {
     expect(await screen.findByText("Guardamos el nuevo email.")).toBeInTheDocument();
   });
 
+  it("hides the refund request form when at least one seat was used (accessExpired)", async () => {
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(
+      detail({
+        seatCounts: {
+          pendingPayment: 0,
+          invited: 0,
+          invitationExpired: 0,
+          active: 0,
+          accessExpired: 1,
+          revoked: 0,
+        },
+      }),
+    );
+    renderPage();
+
+    await screen.findByText("LSA Salud");
+    expect(screen.queryByText("Pedir reembolso")).not.toBeInTheDocument();
+  });
+
+  it("shows the refund request form when no seat was ever accepted", async () => {
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(
+      detail({
+        seatCounts: {
+          pendingPayment: 0,
+          invited: 2,
+          invitationExpired: 0,
+          active: 0,
+          accessExpired: 0,
+          revoked: 0,
+        },
+      }),
+    );
+    renderPage();
+
+    expect(await screen.findByText("Pedir reembolso")).toBeInTheDocument();
+  });
+
   it("shows an error state", async () => {
     vi.mocked(organizationsApi.purchase).mockImplementation(async () => {
       throw new ApiError(500, "boom");
