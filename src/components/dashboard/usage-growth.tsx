@@ -17,13 +17,7 @@ import {
   StatRows,
 } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
-import {
-  dailyRevenue,
-  pct0,
-  pct1,
-  rate1,
-  revenueTotals,
-} from "@/components/dashboard/usage-math";
+import { dailyRevenue, pct0, pct1, rate1, revenueTotals } from "@/components/dashboard/usage-math";
 import { useGrowthQuery } from "@/components/dashboard/usage-queries";
 import type { GrowthMetrics, OrgUtilization } from "@/lib/api/metrics";
 import { previousRange, type DateTimeRange } from "@/lib/datetime-range";
@@ -377,7 +371,8 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
                   <tr key={o.orgId} className="border-fill border-t">
                     <td className="py-2.5 font-extrabold">{o.name}</td>
                     <td className="py-2.5 pl-3 text-right">
-                      {NUMBER.format(o.seatsActive ?? 0)}/{NUMBER.format((o.seatsSold ?? 0) - (o.seatsRefunded ?? 0))}
+                      {NUMBER.format(o.seatsActive ?? 0)}/
+                      {NUMBER.format((o.seatsSold ?? 0) - (o.seatsRefunded ?? 0))}
                     </td>
                     <td className="py-2.5 pl-3">
                       <div className="flex items-center gap-2">
@@ -392,7 +387,9 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
                         </span>
                       </div>
                     </td>
-                    <td className="py-2.5 pl-3 text-right font-extrabold">{fmtMoney(o.revenue ?? 0)}</td>
+                    <td className="py-2.5 pl-3 text-right font-extrabold">
+                      {fmtMoney(o.revenue ?? 0)}
+                    </td>
                   </tr>
                 );
               })}

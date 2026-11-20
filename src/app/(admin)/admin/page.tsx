@@ -194,9 +194,7 @@ export default function AdminMetricasPage() {
         {tab === "usuarios" ? (
           <UsersTab range={range} live={live} onSelectRange={onSelectRange} />
         ) : null}
-        {tab === "aprendizaje" ? (
-          <LearningTab range={range} live={live} onSelectRange={onSelectRange} />
-        ) : null}
+        {tab === "aprendizaje" ? <LearningTab range={range} live={live} /> : null}
         {tab === "infraestructura" ? <InfraTab {...perf} onSelectRange={onSelectRange} /> : null}
       </div>
     </section>
