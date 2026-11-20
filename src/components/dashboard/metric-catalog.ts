@@ -177,9 +177,8 @@ export const METRICS = {
   },
   refund_rate: {
     label: "Tasa de reembolso",
-    description: "Qué parte de los ingresos de organizaciones se termina devolviendo.",
-    howComputed:
-      "Dividimos el dinero devuelto a organizaciones por lo que ingresaron, como porcentaje.",
+    description: "Qué parte de los ingresos se termina devolviendo.",
+    howComputed: "Dividimos el dinero devuelto por lo que ingresó, como porcentaje.",
     goodWhen: "Lo más baja posible.",
     threshold: { dir: "down", warn: 5, danger: 10 },
   },
