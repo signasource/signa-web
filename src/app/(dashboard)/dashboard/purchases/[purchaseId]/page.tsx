@@ -43,6 +43,7 @@ import {
   SEAT_STATUS_LABEL,
   acceptedSeats,
   canWithdraw,
+  REFUND_RULE,
   daysLeft,
   formatMoney,
   paymentMessage,
@@ -141,8 +142,8 @@ function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId
     <Card className="flex flex-col gap-3">
       <CardTitle>Pedir reembolso</CardTitle>
       <p className="text-text-muted text-sm text-pretty">
-        Si ningún participante aceptó la invitación, podés pedir que revisemos el reembolso. Nuestro
-        equipo lo analizará y te responderá por email. No se devuelve dinero automáticamente.
+        {REFUND_RULE} Nuestro equipo analizará el pedido y te responderá por email. No se devuelve
+        dinero automáticamente.
       </p>
       <form
         noValidate
@@ -226,7 +227,11 @@ export default function PurchaseDetailPage() {
       returned.result !== "rechazado" &&
       query.state.data?.purchase.status === "PENDING_PAYMENT"
         ? 5000
-        : false,
+        : // While a refund is still possible, an invitee may accept at any moment and close it.
+          query.state.data?.purchase.status === "PAID" &&
+            !query.state.data.purchase.hasAcceptedSeats
+          ? 15000
+          : false,
   });
 
   const store = async (detail: PurchaseDetail) => {
@@ -486,8 +491,16 @@ export default function PurchaseDetailPage() {
             email.
           </p>
         </Card>
-      ) : purchase.status === "PAID" && counts.active === 0 && orgId ? (
+      ) : purchase.status === "PAID" && !purchase.hasAcceptedSeats && orgId ? (
         <RefundRequestSection orgId={orgId} purchaseId={purchaseId} />
+      ) : purchase.status === "PAID" && purchase.hasAcceptedSeats ? (
+        <Card className="flex flex-col gap-2">
+          <CardTitle>Reembolso no disponible</CardTitle>
+          <p className="text-text-muted text-sm text-pretty">
+            Al menos una persona invitada ya aceptó su invitación, por eso esta compra ya no se
+            puede reembolsar. {REFUND_RULE}
+          </p>
+        </Card>
       ) : null}
 
       {data.refunds.length > 0 ? (

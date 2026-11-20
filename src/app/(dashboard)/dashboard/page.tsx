@@ -17,7 +17,6 @@ import {
   SectionIcon,
   StatCard,
   StatRows,
-  headerChip,
   primaryButton,
 } from "@/components/dashboard/ui";
 import { PeriodActivity } from "@/components/dashboard/period-activity";
@@ -26,7 +25,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { useCourseFilter, useWithFilters } from "@/features/dashboard/use-course-filter";
 import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
-import { cn } from "@/lib/utils";
 import {
   ACTIVE_WINDOW_DAYS,
   daysSince,

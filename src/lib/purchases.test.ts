@@ -207,14 +207,21 @@ describe("seatStatusLabel", () => {
 
 describe("canWithdraw", () => {
   const now = new Date("2026-10-25T12:00:00Z");
-  const purchase = (status: Purchase["status"], refundableUntil: string | null) =>
-    ({ status, refundableUntil }) as Purchase;
+  const purchase = (
+    status: Purchase["status"],
+    refundableUntil: string | null,
+    hasAcceptedSeats = false,
+  ) => ({ status, refundableUntil, hasAcceptedSeats }) as Purchase;
 
   it("is open only for a paid purchase before the deadline", () => {
     expect(canWithdraw(purchase("PAID", "2026-10-26T00:00:00Z"), now)).toBe(true);
     expect(canWithdraw(purchase("PAID", "2026-10-25T12:00:00Z"), now)).toBe(false);
     expect(canWithdraw(purchase("PAID", null), now)).toBe(false);
     expect(canWithdraw(purchase("REFUNDED", "2026-10-26T00:00:00Z"), now)).toBe(false);
+  });
+
+  it("closes as soon as an invitee accepted, even inside the period", () => {
+    expect(canWithdraw(purchase("PAID", "2026-10-26T00:00:00Z", true), now)).toBe(false);
   });
 });
 
