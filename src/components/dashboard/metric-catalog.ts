@@ -379,7 +379,7 @@ export const METRICS = {
     description:
       "Dónde se pierde la gente en el recorrido: registro, primera lección, primer ejercicio y completar lecciones.",
     howComputed:
-      "Contamos cuántas personas distintas llegaron a cada paso: registrarse, empezar una lección, hacer un ejercicio, completar una lección y completar dos o más.",
+      "Contamos cuántas personas distintas llegaron a cada paso en todo el historial (no depende del período elegido): registrarse, empezar una lección, hacer un ejercicio, completar una lección y completar dos o más. Si un paso lo alcanza menos gente que uno posterior (por ejemplo, lecciones de lectura que se completan sin ejercicios), no se muestra, porque no es un paso por el que pasen todos.",
     goodWhen: "Las caídas entre pasos son chicas; pocos se pierden al principio.",
   },
   lesson_abandonment: {
@@ -441,7 +441,8 @@ export const METRICS = {
   sign_report_resolution: {
     label: "Tiempo de resolución de reportes",
     description: "Cuánto tarda en promedio en resolverse un reporte de seña.",
-    howComputed: "Promediamos el tiempo entre que se abre un reporte y se resuelve, en el período.",
+    howComputed:
+      "Promediamos el tiempo entre que se abre un reporte y se resuelve, sobre todos los reportes resueltos (no depende del período elegido).",
     goodWhen: "Lo más bajo posible.",
   },
   imports_failed: {

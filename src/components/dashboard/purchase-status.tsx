@@ -25,6 +25,14 @@ export function PurchaseStatusPill({ status }: { status: PurchaseStatus }) {
   return <span className={cn(PILL, PURCHASE_TONE[status])}>{PURCHASE_STATUS_LABEL[status]}</span>;
 }
 
+export function RefundRequestPill() {
+  return (
+    <span className={cn(PILL, "bg-shop-amber-light text-shop-amber-dark")}>
+      Reembolso en revisión
+    </span>
+  );
+}
+
 export function SeatStatusPill({
   status,
   purchaseStatus = "PAID",

@@ -1,4 +1,4 @@
-export default {
+const config = {
   branches: ["master"],
 
   plugins: [
@@ -7,3 +7,5 @@ export default {
     "@semantic-release/github",
   ],
 };
+
+export default config;

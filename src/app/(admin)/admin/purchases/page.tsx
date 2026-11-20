@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useState } from "react";
 import {
   adminApi,
-  type AdminPurchaseDetail,
   type AdminPurchaseListItem,
   type AdminRefundRequest,
   type PurchaseType,
@@ -15,21 +14,37 @@ import {
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const TYPE_META: Record<PurchaseType, { label: string; bg: string; fg: string }> = {
-  SEATS: { label: "Cupos", bg: "#eee8ff", fg: "#5e3ed1" },
-  GEMS: { label: "Gemas", bg: "#e4f1fb", fg: "#1b84ab" },
-  COURSE: { label: "Curso", bg: "#e4f1ec", fg: "#1f7e77" },
+  SEATS: { label: "Cupos", bg: "var(--color-primary-light)", fg: "var(--color-primary-dark)" },
+  GEMS: { label: "Gemas", bg: "var(--color-avatar-blue-light)", fg: "var(--color-gems-blue-dark)" },
+  COURSE: {
+    label: "Curso",
+    bg: "var(--color-course-teal-light)",
+    fg: "var(--color-avatar-teal-dark)",
+  },
 };
 
 const STATUS_META: Record<UnifiedPurchaseStatus, { label: string; bg: string; fg: string }> = {
-  PENDING_PAYMENT: { label: "Pendiente de pago", bg: "#fef0de", fg: "#b85806" },
-  PAID: { label: "Pagada", bg: "#e7f5ea", fg: "#2e7d45" },
-  CANCELLED: { label: "Cancelada", bg: "#f2ece6", fg: "#8c817a" },
-  REFUNDED: { label: "Reembolsada", bg: "#fbe0d8", fg: "#e14e22" },
+  PENDING_PAYMENT: {
+    label: "Pendiente de pago",
+    bg: "var(--color-shop-amber-light)",
+    fg: "var(--color-shop-amber-dark)",
+  },
+  PAID: { label: "Pagada", bg: "var(--color-success-light)", fg: "var(--color-success-dark)" },
+  CANCELLED: { label: "Cancelada", bg: "var(--color-fill)", fg: "var(--color-text-muted)" },
+  REFUNDED: { label: "Reembolsada", bg: "var(--color-danger-light)", fg: "var(--color-danger)" },
 };
 
 const REFUND_STATUS_META: Record<RefundRequestStatus, { label: string; bg: string; fg: string }> = {
-  PENDING: { label: "Pendiente", bg: "rgba(251,191,36,0.12)", fg: "#b45309" },
-  RESOLVED: { label: "Resuelto", bg: "rgba(76,166,92,0.12)", fg: "#2e7d45" },
+  PENDING: {
+    label: "Pendiente",
+    bg: "color-mix(in srgb, var(--color-warning) 12%, transparent)",
+    fg: "var(--color-warning-dark)",
+  },
+  RESOLVED: {
+    label: "Resuelto",
+    bg: "color-mix(in srgb, var(--color-success) 12%, transparent)",
+    fg: "var(--color-success-dark)",
+  },
 };
 
 const REFUND_REASON_LABEL: Record<string, string> = {
@@ -147,12 +162,19 @@ function PillSelect({
     <label
       className="relative inline-flex h-[38px] cursor-pointer items-center gap-1.5 rounded-full border px-3 pl-3.5 text-[13px] font-semibold whitespace-nowrap"
       style={{
-        borderColor: active ? "#e0d5ff" : "#ece5de",
-        background: active ? "#eee8ff" : "#fff",
-        color: active ? "#5e3ed1" : "#241a16",
+        borderColor: active ? "var(--color-primary-medallion)" : "var(--color-border)",
+        background: active ? "var(--color-primary-light)" : "var(--color-surface)",
+        color: active ? "var(--color-primary-dark)" : "var(--color-text)",
       }}
     >
-      <span style={{ color: active ? "#7857ff" : "#8c817a", fontWeight: 500 }}>{label}</span>
+      <span
+        style={{
+          color: active ? "var(--color-primary)" : "var(--color-text-muted)",
+          fontWeight: 500,
+        }}
+      >
+        {label}
+      </span>
       <span>{value}</span>
       <svg
         width="14"
@@ -186,7 +208,11 @@ function PillSelect({
 // ── Badge ──────────────────────────────────────────────────────────────────────
 
 function TypeBadge({ type }: { type: PurchaseType }) {
-  const m = TYPE_META[type] ?? { label: type, bg: "#f2ece6", fg: "#8c817a" };
+  const m = TYPE_META[type] ?? {
+    label: type,
+    bg: "var(--color-fill)",
+    fg: "var(--color-text-muted)",
+  };
   return (
     <span
       className="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-extrabold whitespace-nowrap"
@@ -198,7 +224,11 @@ function TypeBadge({ type }: { type: PurchaseType }) {
 }
 
 function StatusBadge({ status }: { status: UnifiedPurchaseStatus }) {
-  const m = STATUS_META[status] ?? { label: status, bg: "#f2ece6", fg: "#8c817a" };
+  const m = STATUS_META[status] ?? {
+    label: status,
+    bg: "var(--color-fill)",
+    fg: "var(--color-text-muted)",
+  };
   return (
     <span
       className="inline-block rounded-full px-2.5 py-1 text-xs font-extrabold whitespace-nowrap"
@@ -233,7 +263,7 @@ function Segment({
   onChange: (k: string) => void;
 }) {
   return (
-    <div className="flex gap-0.5 rounded-full p-0.5" style={{ background: "#f2ece6" }}>
+    <div className="flex gap-0.5 rounded-full p-0.5" style={{ background: "var(--color-fill)" }}>
       {segments.map((s) => {
         const active = value === s.key;
         return (
@@ -242,15 +272,18 @@ function Segment({
             onClick={() => onChange(s.key)}
             className="flex h-8 items-center gap-1.5 rounded-full border-none px-3.5 text-[13px] font-bold transition-all"
             style={{
-              background: active ? "#fff" : "transparent",
-              color: active ? "#241a16" : "#8c817a",
+              background: active ? "var(--color-surface)" : "transparent",
+              color: active ? "var(--color-text)" : "var(--color-text-muted)",
               boxShadow: active
                 ? "0 1px 2px rgba(36,26,22,0.08), 0 1px 1px rgba(36,26,22,0.04)"
                 : "none",
             }}
           >
             {s.label}
-            <span className="text-[11px] font-bold tabular-nums" style={{ color: "#8c817a" }}>
+            <span
+              className="text-[11px] font-bold tabular-nums"
+              style={{ color: "var(--color-text-muted)" }}
+            >
               {s.count}
             </span>
           </button>
@@ -277,7 +310,7 @@ function ActiveChips({
           key={i}
           onClick={c.onRemove}
           className="inline-flex h-7 items-center gap-1.5 rounded-full border-none px-3 pl-3 text-xs font-bold"
-          style={{ background: "#eee8ff", color: "#5e3ed1" }}
+          style={{ background: "var(--color-primary-light)", color: "var(--color-primary-dark)" }}
         >
           {c.label}
           <span className="flex size-4 items-center justify-center rounded-full text-[11px]">
@@ -288,7 +321,7 @@ function ActiveChips({
       <button
         onClick={onClearAll}
         className="h-7 border-none bg-transparent px-2 text-xs font-semibold"
-        style={{ color: "#8c817a" }}
+        style={{ color: "var(--color-text-muted)" }}
       >
         Limpiar todo
       </button>
@@ -400,7 +433,7 @@ function PurchaseList({
             height="16"
             fill="none"
             viewBox="0 0 24 24"
-            stroke="#8c817a"
+            stroke="var(--color-text-muted)"
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -418,7 +451,11 @@ function PurchaseList({
             }}
             placeholder="Buscar comprador, email o referencia"
             className="h-[38px] w-full rounded-full border py-0 pr-3.5 pl-10 text-sm transition-shadow outline-none"
-            style={{ borderColor: "#ece5de", background: "#fff", color: "#241a16" }}
+            style={{
+              borderColor: "var(--color-border)",
+              background: "var(--color-surface)",
+              color: "var(--color-text)",
+            }}
           />
         </div>
         <Segment
@@ -464,7 +501,10 @@ function PurchaseList({
       </div>
 
       {period === "custom" && (
-        <div className="flex flex-wrap items-center gap-2 text-[13px]" style={{ color: "#8c817a" }}>
+        <div
+          className="flex flex-wrap items-center gap-2 text-[13px]"
+          style={{ color: "var(--color-text-muted)" }}
+        >
           <span className="font-semibold">Entre</span>
           <input
             type="date"
@@ -474,7 +514,11 @@ function PurchaseList({
               setPage(0);
             }}
             className="h-[34px] rounded-full border px-3 text-[13px] outline-none"
-            style={{ borderColor: "#ece5de", background: "#fff", color: "#241a16" }}
+            style={{
+              borderColor: "var(--color-border)",
+              background: "var(--color-surface)",
+              color: "var(--color-text)",
+            }}
           />
           <span>y</span>
           <input
@@ -485,7 +529,11 @@ function PurchaseList({
               setPage(0);
             }}
             className="h-[34px] rounded-full border px-3 text-[13px] outline-none"
-            style={{ borderColor: "#ece5de", background: "#fff", color: "#241a16" }}
+            style={{
+              borderColor: "var(--color-border)",
+              background: "var(--color-surface)",
+              color: "var(--color-text)",
+            }}
           />
         </div>
       )}
@@ -504,12 +552,16 @@ function PurchaseList({
 
       <div
         className="overflow-x-auto rounded-2xl border"
-        style={{ borderColor: "#ece5de", background: "#fff" }}
+        style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
       >
         <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr
-              style={{ borderBottom: "1px solid #ece5de", background: "#f2ece6", color: "#8c817a" }}
+              style={{
+                borderBottom: "1px solid var(--color-border)",
+                background: "var(--color-fill)",
+                color: "var(--color-text-muted)",
+              }}
             >
               <th
                 onClick={() => setSort(sort === "date_desc" ? "date_asc" : "date_desc")}
@@ -535,7 +587,7 @@ function PurchaseList({
                 <td
                   colSpan={6}
                   className="px-5 py-10 text-center text-sm"
-                  style={{ color: "#8c817a" }}
+                  style={{ color: "var(--color-text-muted)" }}
                 >
                   No hay compras con estos filtros.
                 </td>
@@ -545,36 +597,42 @@ function PurchaseList({
               <tr
                 key={p.id ?? i}
                 onClick={() => onSelect(p.id, p.type)}
-                className="cursor-pointer transition-colors hover:bg-[#faf6f2]"
-                style={{ borderBottom: "1px solid #ece5de" }}
+                className="hover:bg-background cursor-pointer transition-colors"
+                style={{ borderBottom: "1px solid var(--color-border)" }}
               >
-                <td className="px-5 py-4 text-sm whitespace-nowrap" style={{ color: "#8c817a" }}>
+                <td
+                  className="px-5 py-4 text-sm whitespace-nowrap"
+                  style={{ color: "var(--color-text-muted)" }}
+                >
                   {fdate(p.createdAt)}
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-2.5">
                     <TypeBadge type={p.type} />
                     <div className="min-w-0">
-                      <p className="m-0 font-semibold" style={{ color: "#241a16" }}>
+                      <p className="m-0 font-semibold" style={{ color: "var(--color-text)" }}>
                         {p.productName}
                       </p>
-                      <p className="m-0 mt-0.5 text-xs" style={{ color: "#8c817a" }}>
+                      <p
+                        className="m-0 mt-0.5 text-xs"
+                        style={{ color: "var(--color-text-muted)" }}
+                      >
                         {p.productDetail}
                       </p>
                     </div>
                   </div>
                 </td>
                 <td className="px-5 py-4">
-                  <p className="m-0 font-semibold" style={{ color: "#241a16" }}>
+                  <p className="m-0 font-semibold" style={{ color: "var(--color-text)" }}>
                     {p.buyerName}
                   </p>
-                  <p className="m-0 mt-0.5 text-xs" style={{ color: "#8c817a" }}>
+                  <p className="m-0 mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
                     {p.buyerSub}
                   </p>
                 </td>
                 <td
                   className="px-5 py-4 font-semibold whitespace-nowrap"
-                  style={{ color: "#241a16" }}
+                  style={{ color: "var(--color-text)" }}
                 >
                   {money(p.amount, p.currency)}
                 </td>
@@ -582,13 +640,16 @@ function PurchaseList({
                   <div className="flex flex-col items-start gap-1">
                     <StatusBadge status={p.status} />
                     {p.pendingRefundRequest && (
-                      <span className="text-[11px] font-bold" style={{ color: "#b85806" }}>
+                      <span
+                        className="text-[11px] font-bold"
+                        style={{ color: "var(--color-shop-amber-dark)" }}
+                      >
                         Pedido de reembolso
                       </span>
                     )}
                   </div>
                 </td>
-                <td className="px-5 py-4" style={{ color: "#8c817a" }}>
+                <td className="px-5 py-4" style={{ color: "var(--color-text-muted)" }}>
                   <svg
                     width="16"
                     height="16"
@@ -611,7 +672,7 @@ function PurchaseList({
       {filtered.length > PAGE_SIZE && (
         <div
           className="flex items-center justify-between gap-3 text-[13px]"
-          style={{ color: "#8c817a" }}
+          style={{ color: "var(--color-text-muted)" }}
         >
           <span>
             {filtered.length > 0
@@ -623,7 +684,11 @@ function PurchaseList({
               onClick={() => setPage(Math.max(0, pg - 1))}
               disabled={pg === 0}
               className="rounded-xl border px-3 py-1.5 text-[13px] font-semibold disabled:opacity-40"
-              style={{ borderColor: "#ece5de", background: "#fff", color: "#241a16" }}
+              style={{
+                borderColor: "var(--color-border)",
+                background: "var(--color-surface)",
+                color: "var(--color-text)",
+              }}
             >
               Anterior
             </button>
@@ -631,7 +696,11 @@ function PurchaseList({
               onClick={() => setPage(Math.min(pages - 1, pg + 1))}
               disabled={pg >= pages - 1}
               className="rounded-xl border px-3 py-1.5 text-[13px] font-semibold disabled:opacity-40"
-              style={{ borderColor: "#ece5de", background: "#fff", color: "#241a16" }}
+              style={{
+                borderColor: "var(--color-border)",
+                background: "var(--color-surface)",
+                color: "var(--color-text)",
+              }}
             >
               Siguiente
             </button>
@@ -718,7 +787,7 @@ function RefundList({
             height="16"
             fill="none"
             viewBox="0 0 24 24"
-            stroke="#8c817a"
+            stroke="var(--color-text-muted)"
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -733,7 +802,11 @@ function RefundList({
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar quién lo pidió o qué compró"
             className="h-[38px] w-full rounded-full border py-0 pr-3.5 pl-10 text-sm outline-none"
-            style={{ borderColor: "#ece5de", background: "#fff", color: "#241a16" }}
+            style={{
+              borderColor: "var(--color-border)",
+              background: "var(--color-surface)",
+              color: "var(--color-text)",
+            }}
           />
         </div>
         <Segment
@@ -770,14 +843,17 @@ function RefundList({
       </div>
 
       {rPeriod === "custom" && (
-        <div className="flex flex-wrap items-center gap-2 text-[13px]" style={{ color: "#8c817a" }}>
+        <div
+          className="flex flex-wrap items-center gap-2 text-[13px]"
+          style={{ color: "var(--color-text-muted)" }}
+        >
           <span className="font-semibold">Entre</span>
           <input
             type="date"
             value={rFrom}
             onChange={(e) => setRFrom(e.target.value)}
             className="h-[34px] rounded-full border px-3 text-[13px] outline-none"
-            style={{ borderColor: "#ece5de", background: "#fff" }}
+            style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
           />
           <span>y</span>
           <input
@@ -785,7 +861,7 @@ function RefundList({
             value={rTo}
             onChange={(e) => setRTo(e.target.value)}
             className="h-[34px] rounded-full border px-3 text-[13px] outline-none"
-            style={{ borderColor: "#ece5de", background: "#fff" }}
+            style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
           />
         </div>
       )}
@@ -805,7 +881,11 @@ function RefundList({
         {filtered.length === 0 && (
           <p
             className="rounded-2xl border p-10 text-center text-sm"
-            style={{ borderColor: "#ece5de", background: "#fff", color: "#8c817a" }}
+            style={{
+              borderColor: "var(--color-border)",
+              background: "var(--color-surface)",
+              color: "var(--color-text-muted)",
+            }}
           >
             No hay pedidos de reembolso con estos filtros.
           </p>
@@ -827,32 +907,32 @@ function RefundList({
               key={r.id}
               onClick={() => onSelect(r.id)}
               className="flex cursor-pointer items-start justify-between gap-4 rounded-2xl border p-5 transition-shadow hover:shadow-sm"
-              style={{ borderColor: "#ece5de", background: "#fff" }}
+              style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold" style={{ color: "#241a16" }}>
+                  <span className="font-semibold" style={{ color: "var(--color-text)" }}>
                     {r.requesterName}
                   </span>
                   <TypeBadge type={r.purchaseType} />
-                  <span className="text-xs" style={{ color: "#8c817a" }}>
+                  <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                     {r.productName} · {money(r.amount, r.currency)}
                   </span>
                 </div>
-                <p className="m-0 mt-0.5 text-xs" style={{ color: "#8c817a" }}>
+                <p className="m-0 mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
                   {REFUND_REASON_LABEL[r.reason] ?? r.reason} · {r.requesterUsername} ·{" "}
                   {fdate(r.createdAt)}
                 </p>
                 <p
                   className="m-0 mt-1 overflow-hidden text-xs text-ellipsis whitespace-nowrap italic"
-                  style={{ color: "#8c817a" }}
+                  style={{ color: "var(--color-text-muted)" }}
                 >
                   &ldquo;{r.message}&rdquo;
                 </p>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
                 <RefundStatusBadge status={r.status} />
-                <span className="text-[11px]" style={{ color: "#8c817a" }}>
+                <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
                   {ageLabel}
                 </span>
               </div>
@@ -877,6 +957,7 @@ function PurchaseDetailView({
   onBack: () => void;
   onOpenRefund: (id: string) => void;
 }) {
+  const qc = useQueryClient();
   const {
     data: p,
     isPending,
@@ -886,15 +967,29 @@ function PurchaseDetailView({
     queryFn: () => adminApi.purchaseDetail(purchaseId, purchaseType),
   });
 
+  const confirmMut = useMutation({
+    mutationFn: () => adminApi.confirmPurchase(purchaseId, purchaseType),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "purchases"] });
+    },
+  });
+
+  const refundMut = useMutation({
+    mutationFn: () => adminApi.refundPurchase(purchaseId, purchaseType),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "purchases"] });
+    },
+  });
+
   if (isPending)
     return (
-      <p className="text-sm" style={{ color: "#8c817a" }}>
+      <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
         Cargando…
       </p>
     );
   if (error || !p)
     return (
-      <p className="text-sm" style={{ color: "#e14e22" }}>
+      <p className="text-sm" style={{ color: "var(--color-danger)" }}>
         No pudimos cargar los datos.
       </p>
     );
@@ -903,8 +998,8 @@ function PurchaseDetailView({
   const resolvedRefund = !pendingRefund && p.refundRequests?.find((r) => r.status === "RESOLVED");
 
   const refundBanner = pendingRefund ?? resolvedRefund;
-  const bannerBg = pendingRefund ? "#fef0de" : "#f2ece6";
-  const bannerFg = pendingRefund ? "#b85806" : "#8c817a";
+  const bannerBg = pendingRefund ? "var(--color-shop-amber-light)" : "var(--color-fill)";
+  const bannerFg = pendingRefund ? "var(--color-shop-amber-dark)" : "var(--color-text-muted)";
 
   const facts: { k: string; v: string }[] = [
     { k: "Tipo", v: TYPE_META[p.type].label },
@@ -933,7 +1028,7 @@ function PurchaseDetailView({
       <button
         onClick={onBack}
         className="inline-flex items-center gap-1 self-start border-none bg-transparent p-0 text-sm font-bold"
-        style={{ color: "#8c817a" }}
+        style={{ color: "var(--color-text-muted)" }}
       >
         <svg
           width="16"
@@ -958,12 +1053,61 @@ function PurchaseDetailView({
           <h1 className="font-display m-0 text-3xl font-bold" style={{ lineHeight: "36px" }}>
             {p.productName}
           </h1>
-          <p className="m-0 mt-1 max-w-2xl text-[15px]" style={{ color: "#8c817a" }}>
+          <p
+            className="m-0 mt-1 max-w-2xl text-[15px]"
+            style={{ color: "var(--color-text-muted)" }}
+          >
             Compra del {fdate(p.createdAt)} · {p.productDetail}
           </p>
         </div>
         <StatusBadge status={p.status} />
       </div>
+
+      {p.status === "PENDING_PAYMENT" && (
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4"
+          style={{
+            background: "var(--color-shop-amber-light)",
+            color: "var(--color-shop-amber-dark)",
+          }}
+        >
+          <span className="text-sm font-semibold">
+            Esta compra está pendiente de pago. Podés marcarla como pagada manualmente, como si se
+            hubiese procesado por Mercado Pago.
+          </span>
+          <button
+            onClick={() => confirmMut.mutate()}
+            disabled={confirmMut.isPending}
+            className="rounded-full border-none px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+            style={{ background: "var(--color-success)" }}
+          >
+            {confirmMut.isPending ? "Procesando…" : "Confirmar pago"}
+          </button>
+        </div>
+      )}
+
+      {p.status === "PAID" && (
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4"
+          style={{
+            background: "var(--color-danger-light)",
+            color: "var(--color-danger)",
+          }}
+        >
+          <span className="text-sm font-semibold">
+            Podés marcar esta compra como reembolsada manualmente, como si el dinero ya se devolvió
+            fuera de Mercado Pago.
+          </span>
+          <button
+            onClick={() => refundMut.mutate()}
+            disabled={refundMut.isPending}
+            className="rounded-full border-none px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+            style={{ background: "var(--color-danger)" }}
+          >
+            {refundMut.isPending ? "Procesando…" : "Reembolsar manualmente"}
+          </button>
+        </div>
+      )}
 
       {refundBanner && (
         <div
@@ -980,7 +1124,7 @@ function PurchaseDetailView({
           <button
             onClick={() => onOpenRefund(refundBanner.id)}
             className="rounded-full border-none px-4 py-2 text-sm font-bold"
-            style={{ background: "#fff", color: "#241a16" }}
+            style={{ background: "var(--color-surface)", color: "var(--color-text)" }}
           >
             Ver pedido
           </button>
@@ -993,9 +1137,9 @@ function PurchaseDetailView({
       >
         <div
           className="rounded-2xl border p-[18px]"
-          style={{ borderColor: "#ece5de", background: "#fff" }}
+          style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
         >
-          <p className="m-0 text-[13px] font-bold" style={{ color: "#8c817a" }}>
+          <p className="m-0 text-[13px] font-bold" style={{ color: "var(--color-text-muted)" }}>
             Total
           </p>
           <p
@@ -1004,7 +1148,7 @@ function PurchaseDetailView({
           >
             {money(p.amount, p.currency)}
           </p>
-          <p className="m-0 mt-1.5 text-[13px]" style={{ color: "#8c817a" }}>
+          <p className="m-0 mt-1.5 text-[13px]" style={{ color: "var(--color-text-muted)" }}>
             {p.type === "SEATS" && p.seats
               ? `${money(Math.round(p.amount / p.seats), p.currency)} por cupo`
               : "Pago único"}
@@ -1012,9 +1156,9 @@ function PurchaseDetailView({
         </div>
         <div
           className="rounded-2xl border p-[18px]"
-          style={{ borderColor: "#ece5de", background: "#fff" }}
+          style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
         >
-          <p className="m-0 text-[13px] font-bold" style={{ color: "#8c817a" }}>
+          <p className="m-0 text-[13px] font-bold" style={{ color: "var(--color-text-muted)" }}>
             {p.type === "SEATS" ? "Organización" : "Usuario"}
           </p>
           <p
@@ -1023,15 +1167,15 @@ function PurchaseDetailView({
           >
             {p.buyerName}
           </p>
-          <p className="m-0 mt-1.5 text-[13px]" style={{ color: "#8c817a" }}>
+          <p className="m-0 mt-1.5 text-[13px]" style={{ color: "var(--color-text-muted)" }}>
             {p.buyerSub}
           </p>
         </div>
         <div
           className="rounded-2xl border p-[18px]"
-          style={{ borderColor: "#ece5de", background: "#fff" }}
+          style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
         >
-          <p className="m-0 text-[13px] font-bold" style={{ color: "#8c817a" }}>
+          <p className="m-0 text-[13px] font-bold" style={{ color: "var(--color-text-muted)" }}>
             Pago
           </p>
           <p
@@ -1040,7 +1184,7 @@ function PurchaseDetailView({
           >
             {p.paidAt ? fdate(p.paidAt) : "Pendiente"}
           </p>
-          <p className="m-0 mt-1.5 text-[13px]" style={{ color: "#8c817a" }}>
+          <p className="m-0 mt-1.5 text-[13px]" style={{ color: "var(--color-text-muted)" }}>
             {p.paymentMethod ? PAYMENT_METHOD_LABEL[p.paymentMethod] : "Sin pagar"}
           </p>
         </div>
@@ -1048,7 +1192,7 @@ function PurchaseDetailView({
 
       <div
         className="rounded-2xl border p-5"
-        style={{ borderColor: "#ece5de", background: "#fff" }}
+        style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
       >
         <h2
           className="font-display m-0 mb-3 text-lg font-bold"
@@ -1064,15 +1208,15 @@ function PurchaseDetailView({
             <Fragment key={i}>
               <dt
                 className="border-t py-3 text-sm"
-                style={{ borderColor: "#ece5de", color: "#8c817a" }}
+                style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}
               >
                 {kv.k}
               </dt>
               <dd
                 className="border-t py-3 text-sm font-semibold"
                 style={{
-                  borderColor: "#ece5de",
-                  color: "#241a16",
+                  borderColor: "var(--color-border)",
+                  color: "var(--color-text)",
                   margin: 0,
                   wordBreak: "break-all",
                 }}
@@ -1123,13 +1267,13 @@ function RefundDetailView({
 
   if (isPending)
     return (
-      <p className="text-sm" style={{ color: "#8c817a" }}>
+      <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
         Cargando…
       </p>
     );
   if (error || !rf)
     return (
-      <p className="text-sm" style={{ color: "#e14e22" }}>
+      <p className="text-sm" style={{ color: "var(--color-danger)" }}>
         No pudimos cargar los datos.
       </p>
     );
@@ -1141,7 +1285,7 @@ function RefundDetailView({
       <button
         onClick={onBack}
         className="inline-flex items-center gap-1 self-start border-none bg-transparent p-0 text-sm font-bold"
-        style={{ color: "#8c817a" }}
+        style={{ color: "var(--color-text-muted)" }}
       >
         <svg
           width="16"
@@ -1163,7 +1307,10 @@ function RefundDetailView({
           <h1 className="font-display m-0 text-3xl font-bold" style={{ lineHeight: "36px" }}>
             Pedido de reembolso
           </h1>
-          <p className="m-0 mt-1 max-w-2xl text-[15px]" style={{ color: "#8c817a" }}>
+          <p
+            className="m-0 mt-1 max-w-2xl text-[15px]"
+            style={{ color: "var(--color-text-muted)" }}
+          >
             Enviado por {rf.requesterName} el {fdate(rf.createdAt)} desde {rf.channel}
           </p>
         </div>
@@ -1179,7 +1326,7 @@ function RefundDetailView({
           {/* Reason + message */}
           <div
             className="rounded-2xl border p-5"
-            style={{ borderColor: "#ece5de", background: "#fff" }}
+            style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
           >
             <h2
               className="font-display m-0 text-lg font-bold"
@@ -1187,30 +1334,30 @@ function RefundDetailView({
             >
               {REFUND_REASON_LABEL[rf.reason] ?? rf.reason}
             </h2>
-            <p className="m-0 mt-0.5 text-xs" style={{ color: "#8c817a" }}>
+            <p className="m-0 mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
               Motivo elegido por quien lo pidió
             </p>
             <p
               className="m-0 mt-4 text-[15px] text-pretty"
-              style={{ color: "#241a16", lineHeight: 1.55 }}
+              style={{ color: "var(--color-text)", lineHeight: 1.55 }}
             >
               &ldquo;{rf.message}&rdquo;
             </p>
             <div
               className="mt-4 flex items-center gap-2.5 border-t pt-4"
-              style={{ borderColor: "#ece5de" }}
+              style={{ borderColor: "var(--color-border)" }}
             >
               <div
                 className="flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase"
-                style={{ background: "#f2ece6", color: "#8c817a" }}
+                style={{ background: "var(--color-fill)", color: "var(--color-text-muted)" }}
               >
                 {rf.requesterName.charAt(0)}
               </div>
               <div className="min-w-0">
-                <p className="m-0 text-[13px] font-semibold" style={{ color: "#241a16" }}>
+                <p className="m-0 text-[13px] font-semibold" style={{ color: "var(--color-text)" }}>
                   {rf.requesterName}
                 </p>
-                <p className="m-0 text-xs" style={{ color: "#8c817a" }}>
+                <p className="m-0 text-xs" style={{ color: "var(--color-text-muted)" }}>
                   {rf.requesterUsername} · {rf.requesterEmail}
                 </p>
               </div>
@@ -1221,7 +1368,7 @@ function RefundDetailView({
           <div
             onClick={() => onOpenPurchase(rf.purchaseId, rf.purchaseType)}
             className="cursor-pointer rounded-2xl border p-5 transition-shadow hover:shadow-sm"
-            style={{ borderColor: "#ece5de", background: "#fff" }}
+            style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
           >
             <div className="mb-3 flex items-center justify-between gap-3">
               <h2
@@ -1232,7 +1379,7 @@ function RefundDetailView({
               </h2>
               <span
                 className="inline-flex items-center gap-0.5 text-[13px] font-bold"
-                style={{ color: "#5e3ed1" }}
+                style={{ color: "var(--color-primary-dark)" }}
               >
                 Ver compra
                 <svg
@@ -1251,7 +1398,7 @@ function RefundDetailView({
             </div>
             <div className="flex flex-wrap items-center gap-2.5">
               <TypeBadge type={rf.purchaseType} />
-              <span className="text-[15px] font-semibold" style={{ color: "#241a16" }}>
+              <span className="text-[15px] font-semibold" style={{ color: "var(--color-text)" }}>
                 {rf.productName}
               </span>
               <span
@@ -1264,7 +1411,7 @@ function RefundDetailView({
                 {STATUS_META[rf.purchaseStatus].label}
               </span>
             </div>
-            <p className="m-0 mt-2 text-[13px]" style={{ color: "#8c817a" }}>
+            <p className="m-0 mt-2 text-[13px]" style={{ color: "var(--color-text-muted)" }}>
               {rf.productDetail} · {money(rf.amount, rf.currency)} ·{" "}
               {rf.purchasePaidAt ? `pagada el ${fdate(rf.purchasePaidAt)}` : "sin pagar"}
             </p>
@@ -1274,7 +1421,7 @@ function RefundDetailView({
         {/* Right column: Resolution panel */}
         <div
           className="overflow-hidden rounded-2xl border"
-          style={{ borderColor: "#ece5de", background: "#fff" }}
+          style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
         >
           <div className="flex flex-col gap-3 p-5">
             <h2
@@ -1284,23 +1431,26 @@ function RefundDetailView({
               Resolución
             </h2>
             {resolved && (
-              <p className="m-0 text-[13px]" style={{ color: "#8c817a" }}>
+              <p className="m-0 text-[13px]" style={{ color: "var(--color-text-muted)" }}>
                 Resuelto por{" "}
-                <span className="font-semibold" style={{ color: "#241a16" }}>
+                <span className="font-semibold" style={{ color: "var(--color-text)" }}>
                   {rf.resolvedByName}
                 </span>{" "}
                 · {rf.resolvedAt ? fdate(rf.resolvedAt) : ""}
               </p>
             )}
             {!resolved && (
-              <p className="m-0 text-[13px]" style={{ color: "#8c817a", lineHeight: 1.5 }}>
+              <p
+                className="m-0 text-[13px]"
+                style={{ color: "var(--color-text-muted)", lineHeight: 1.5 }}
+              >
                 Marcarlo como resuelto no devuelve el dinero. Si corresponde, hacé el reembolso
                 desde Mercado Pago y dejá registrado acá qué se decidió.
               </p>
             )}
             <label
               className="flex flex-col gap-1.5 text-xs font-semibold"
-              style={{ color: "#241a16" }}
+              style={{ color: "var(--color-text)" }}
             >
               Nota interna
               <textarea
@@ -1309,17 +1459,21 @@ function RefundDetailView({
                 rows={4}
                 placeholder="Qué se revisó y qué se decidió (solo lo ve el equipo)."
                 className="resize-none rounded-xl border p-2 text-sm font-normal outline-none"
-                style={{ borderColor: "#ece5de", background: "#f2ece6", color: "#241a16" }}
+                style={{
+                  borderColor: "var(--color-border)",
+                  background: "var(--color-fill)",
+                  color: "var(--color-text)",
+                }}
               />
             </label>
           </div>
-          <div className="flex gap-2 border-t p-4" style={{ borderColor: "#ece5de" }}>
+          <div className="flex gap-2 border-t p-4" style={{ borderColor: "var(--color-border)" }}>
             {!resolved && (
               <button
                 onClick={() => update.mutate({ action: "RESOLVE", note: noteValue })}
                 disabled={update.isPending}
                 className="flex-1 rounded-xl border-none py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
-                style={{ background: "#4ca65c" }}
+                style={{ background: "var(--color-success)" }}
               >
                 {update.isPending ? "Guardando…" : "Marcar como resuelto"}
               </button>
@@ -1330,7 +1484,7 @@ function RefundDetailView({
                   onClick={() => update.mutate({ note: noteValue })}
                   disabled={update.isPending}
                   className="flex-1 rounded-xl border-none py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
-                  style={{ background: "#7857ff" }}
+                  style={{ background: "var(--color-primary)" }}
                 >
                   {update.isPending ? "Guardando…" : "Guardar nota"}
                 </button>
@@ -1338,7 +1492,11 @@ function RefundDetailView({
                   onClick={() => update.mutate({ action: "REOPEN" })}
                   disabled={update.isPending}
                   className="rounded-xl border px-3 py-2.5 text-[13px] font-semibold disabled:opacity-50"
-                  style={{ borderColor: "#ece5de", background: "#fff", color: "#8c817a" }}
+                  style={{
+                    borderColor: "var(--color-border)",
+                    background: "var(--color-surface)",
+                    color: "var(--color-text-muted)",
+                  }}
                 >
                   Reabrir
                 </button>
@@ -1374,6 +1532,13 @@ export default function AdminPurchasesPage() {
 
   const pendingRefunds = (refundsQ.data ?? []).filter((r) => r.status === "PENDING").length;
 
+  const resolvedRefundPurchaseIds = new Set(
+    (refundsQ.data ?? []).filter((r) => r.status === "RESOLVED").map((r) => r.purchaseId),
+  );
+  const purchasesForList = (purchasesQ.data ?? []).filter(
+    (p) => !resolvedRefundPurchaseIds.has(p.id),
+  );
+
   if (view.kind === "purchase") {
     return (
       <PurchaseDetailView
@@ -1400,7 +1565,7 @@ export default function AdminPurchasesPage() {
     <div className="min-w-0">
       <div className="mb-6">
         <h1 className="font-display m-0 text-2xl font-bold">Compras</h1>
-        <p className="m-0 mt-0.5 text-sm" style={{ color: "#8c817a" }}>
+        <p className="m-0 mt-0.5 text-sm" style={{ color: "var(--color-text-muted)" }}>
           Cupos, gemas y cursos comprados con dinero real, y los pedidos de reembolso que envían
           usuarios y organizaciones.
         </p>
@@ -1409,7 +1574,7 @@ export default function AdminPurchasesPage() {
       {/* Tabs */}
       <div
         className="mb-4 flex items-center justify-between gap-3 border-b"
-        style={{ borderColor: "#ece5de" }}
+        style={{ borderColor: "var(--color-border)" }}
       >
         <div className="flex gap-1">
           {(["compras", "reembolsos"] as const).map((t) => {
@@ -1421,15 +1586,15 @@ export default function AdminPurchasesPage() {
                 onClick={() => setTab(t)}
                 className="mb-[-1px] flex items-center gap-2 border-b-2 bg-transparent px-4 py-2 text-sm font-semibold capitalize"
                 style={{
-                  borderBottomColor: active ? "#7857ff" : "transparent",
-                  color: active ? "#7857ff" : "#8c817a",
+                  borderBottomColor: active ? "var(--color-primary)" : "transparent",
+                  color: active ? "var(--color-primary)" : "var(--color-text-muted)",
                 }}
               >
                 {t === "compras" ? "Compras" : "Reembolsos"}
                 {badge > 0 && (
                   <span
                     className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
-                    style={{ background: "#e14e22" }}
+                    style={{ background: "var(--color-danger)" }}
                   >
                     {badge}
                   </span>
@@ -1438,10 +1603,10 @@ export default function AdminPurchasesPage() {
             );
           })}
         </div>
-        <span className="text-xs" style={{ color: "#8c817a" }}>
+        <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
           {tab === "compras"
             ? purchasesQ.data
-              ? `${purchasesQ.data.length} ${purchasesQ.data.length === 1 ? "compra" : "compras"}`
+              ? `${purchasesForList.length} ${purchasesForList.length === 1 ? "compra" : "compras"}`
               : ""
             : refundsQ.data
               ? `${refundsQ.data.length} ${refundsQ.data.length === 1 ? "pedido" : "pedidos"}`
@@ -1452,16 +1617,16 @@ export default function AdminPurchasesPage() {
       {tab === "compras" && (
         <>
           {purchasesQ.isPending ? (
-            <p className="text-sm" style={{ color: "#8c817a" }}>
+            <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
               Cargando…
             </p>
           ) : purchasesQ.error ? (
-            <p className="text-sm" style={{ color: "#e14e22" }}>
+            <p className="text-sm" style={{ color: "var(--color-danger)" }}>
               No pudimos cargar los datos.
             </p>
           ) : (
             <PurchaseList
-              purchases={purchasesQ.data}
+              purchases={purchasesForList}
               onSelect={(id, type) => {
                 setView({ kind: "purchase", id, type });
                 window.scrollTo(0, 0);
@@ -1474,11 +1639,11 @@ export default function AdminPurchasesPage() {
       {tab === "reembolsos" && (
         <>
           {refundsQ.isPending ? (
-            <p className="text-sm" style={{ color: "#8c817a" }}>
+            <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
               Cargando…
             </p>
           ) : refundsQ.error ? (
-            <p className="text-sm" style={{ color: "#e14e22" }}>
+            <p className="text-sm" style={{ color: "var(--color-danger)" }}>
               No pudimos cargar los datos.
             </p>
           ) : (

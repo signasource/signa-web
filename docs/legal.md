@@ -4,7 +4,7 @@
 > Update when: the text of either page changes, or ANY code in web/api/mobile changes what personal data is collected, shown, shared, or deleted.
 > Sources: src/app/(marketing)/privacidad/page.tsx, src/app/(marketing)/terminos/page.tsx, src/components/legal/legal-page.tsx, src/lib/legal.ts
 
-**Status: draft, not legally reviewed.** Written by the team for a UTN FRC final-year project (Ingeniería en Sistemas de Información); not legal advice. Both pages show a visible «Borrador» banner and are `noindex` until published.
+**Status: published text, not legally reviewed.** Written by the team for a UTN FRC final-year project (Ingeniería en Sistemas de Información); not legal advice. The pages deliberately show no «Borrador» banner and are indexable; `LegalPage` renders no `<Todo>` marks (the helper still exists in `legal-page.tsx`). The legal review (open decision 10) is still pending.
 
 ## Pages
 
@@ -32,7 +32,16 @@ The policy makes factual claims. When the code changes, re-verify the claim (**c
 
 Adding a new third-party SDK, analytics, a new personal-data field, or a new thing admins can see **requires updating both pages and `lastUpdated` in the same PR**.
 
-## Open decisions (search the pages for `COMPLETAR` / `REVISAR`)
+## Gaps between the text and the system (found in the 2026-11-18 review)
+
+Neither page mentions these; decide whether to add them (editing the text means bumping `lastUpdated`):
+
+- **Waitlist emails** — `/proximamente` stores an email in signa-api (`POST /waitlist`, shown in `/admin/users` → Lista de espera). The policy lists no purpose or retention for it.
+- **Anonymous web telemetry** — `src/lib/telemetry.ts` sends web vitals and error counters (event type, name, duration, status; no user id, no payload) to `POST /telemetry/events`.
+- **Google sign-in on `/invitacion`** (Google Identity Services script and ID token) — Google is already named for the mobile login; the web page is a second place it applies.
+- **Org admin photo and participants' photos in the web panel** — covered by privacy §2/§5 (photo shown to org admins); re-verify if the sizes or visibility change.
+
+## Open decisions
 
 1. **Team names** (both pages). The contact email is set in `src/lib/legal.ts`.
 2. **Backups and retention of purchase records.** Account deletion now erases personal and activity data and anonymizes the `users` row (`signa-api` PR #92); purchase, gem-purchase and gift records are kept without identity. Decide whether to state a retention period for backups and for those records. Organizations now load their employees' emails when they buy seats (`purchase_seats`), before those people have an account or accepted anything; those emails stay with the purchase for traceability. The policy must say so and set a retention rule, and what happens to the progress the organization sees when the employment ends (business rules §12, still undefined).
@@ -43,6 +52,6 @@ Adding a new third-party SDK, analytics, a new personal-data field, or a new thi
 7. **Jurisdiction** clause (consumers may sue at their domicile).
 8. **Licenses** for code and content, third-party credits.
 9. **Mail and hosting providers**, and server region (international transfer).
-10. **Legal review** by the faculty's advisor or a lawyer before publishing; then remove the banner and the `noindex`.
+10. **Legal review** by the faculty's advisor or a lawyer before publishing; (the banner and `noindex` are already removed on purpose).
 
 Also not yet done: linking these pages from the mobile app (store listings and Play Console require a public privacy-policy URL) and consent capture at registration.

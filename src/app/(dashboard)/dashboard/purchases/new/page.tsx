@@ -6,7 +6,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { CoursePreview } from "@/components/dashboard/course-preview";
+import { CourseContents, CourseHero, CourseShowcase } from "@/components/dashboard/course-preview";
 import { Icon } from "@/components/dashboard/icons";
 import { PurchaseInvoice } from "@/components/dashboard/purchase-invoice";
 import {
@@ -25,10 +25,13 @@ import { organizationsApi } from "@/lib/api/organizations";
 import type { PurchaseCatalog } from "@/lib/api/types";
 import { isEmail } from "@/lib/dashboard-format";
 import {
+  DAILY_STUDY_MINUTES,
+  daysToComplete,
   emailsFromSheet,
   formatMoney,
   nextVolumeDiscount,
   purchaseFormSchema,
+  signsWithin,
   uniqueEmails,
   type PurchaseForm,
 } from "@/lib/purchases";
@@ -174,20 +177,21 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
     <form
       noValidate
       onSubmit={form.handleSubmit((values) => setReview(values))}
-      className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-4"
+      className="flex flex-col gap-4"
     >
-      <div className="flex flex-col gap-4">
-        <Card className="flex flex-col gap-3.5">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="flex flex-col gap-3.5 sm:p-6">
           <div className="flex items-center gap-2.5">
             <SectionIcon name="book" className="bg-primary-light text-primary-dark" />
             <CardTitle>Curso</CardTitle>
           </div>
-          <div className="flex flex-col gap-2" role="radiogroup" aria-label="Curso">
+          <div className="grid flex-1 auto-rows-fr gap-2" role="radiogroup" aria-label="Curso">
             {catalog.courses.map((option) => (
               <label
                 key={option.id}
                 className={cn(
-                  "border-border flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4",
+                  "border-border hover:bg-fill/60 flex cursor-pointer items-center justify-between gap-3 rounded-2xl border p-4 transition-colors",
+                  courseId === option.id && "hover:bg-primary-light/40",
                   courseId === option.id && "border-primary bg-primary-light/40",
                 )}
               >
@@ -203,6 +207,9 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
                     <span className="text-text-muted text-[13px]">
                       {option.signCount} señas · {option.modules.length}{" "}
                       {option.modules.length === 1 ? "módulo" : "módulos"}
+                      {option.signCount > 0
+                        ? ` · ≈ ${daysLabel(daysToComplete(option.signCount))} a ${DAILY_STUDY_MINUTES} min por día`
+                        : null}
                     </span>
                   </span>
                 </span>
@@ -215,10 +222,76 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
             </span>
           ) : null}
         </Card>
+        <div className="flex flex-col gap-4">
+          {course ? <CourseHero course={course} className="flex-1" /> : null}
+          <Card className="flex flex-col gap-3 sm:p-6">
+            <div className="flex items-center gap-2.5">
+              <SectionIcon name="tag" className="bg-success-light text-success-dark" />
+              <CardTitle>Precio</CardTitle>
+            </div>
+            {quote.data ? (
+              <dl className="flex flex-col text-sm">
+                <div className="border-fill flex justify-between border-b py-2">
+                  <dt className="text-text-muted">Precio por cupo</dt>
+                  <dd className="font-extrabold">
+                    {quote.data.discountPercent > 0 ? (
+                      <span className="text-text-muted mr-2 font-semibold line-through">
+                        {formatMoney(quote.data.listPricePerSeat, quote.data.currency)}
+                      </span>
+                    ) : null}
+                    {formatMoney(quote.data.pricePerSeat, quote.data.currency)}
+                  </dd>
+                </div>
+                <div className="border-fill flex justify-between border-b py-2">
+                  <dt className="text-text-muted">Cupos</dt>
+                  <dd className="font-extrabold">{seats}</dd>
+                </div>
+                {quote.data.discountPercent > 0 ? (
+                  <div className="border-fill text-success-dark flex justify-between border-b py-2">
+                    <dt>Descuento por volumen</dt>
+                    <dd className="font-extrabold">{quote.data.discountPercent}%</dd>
+                  </div>
+                ) : null}
+                <div className="flex items-baseline justify-between py-2">
+                  <dt className="text-text-muted">Total</dt>
+                  <dd className="font-display text-2xl font-extrabold">
+                    {formatMoney(quote.data.pricePerSeat * seats, quote.data.currency)}
+                  </dd>
+                </div>
+              </dl>
+            ) : quote.isFetching ? (
+              <LoadingState />
+            ) : (
+              <p className="text-text-muted text-sm">
+                Elegí el curso y la duración para ver el precio.
+              </p>
+            )}
+            {nextDiscount ? (
+              <p className="bg-success-light text-success-dark rounded-xl px-3 py-2 text-[13px] font-semibold">
+                Sumá {nextDiscount.missing} {nextDiscount.missing === 1 ? "cupo" : "cupos"} más y
+                tenés {nextDiscount.percent}% de descuento en cada cupo.
+              </p>
+            ) : null}
+            <p className="text-text-muted text-[13px] text-pretty">
+              El precio depende de las señas del curso, los días de acceso y la cantidad de cupos.
+              Antes de pagar vas a ver el resumen de la compra.
+            </p>
+            <button type="submit" disabled={seats === 0} className={primaryButton}>
+              Revisar la compra
+            </button>
+            {seats === 0 ? (
+              <p className="text-text-muted text-center text-[13px]">
+                Cargá los emails de las personas más abajo para revisar la compra.
+              </p>
+            ) : null}
+          </Card>
+        </div>
+      </div>
 
-        {course ? <CoursePreview course={course} /> : null}
+      {course ? <CourseShowcase course={course} /> : null}
 
-        <Card className="flex flex-col gap-3.5">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="flex flex-col gap-3.5 sm:p-6">
           <div className="flex items-center gap-2.5">
             <SectionIcon name="calendar" className="bg-course-teal-light text-avatar-teal-dark" />
             <CardTitle>Duración del acceso</CardTitle>
@@ -258,11 +331,18 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
               {form.formState.errors.durationDays.message}
             </span>
           ) : null}
+          {course ? (
+            <div className="mt-auto">
+              <CompletionEstimate
+                signCount={course.signCount}
+                durationDays={validDuration ? durationDays : null}
+                maxDays={catalog.maxDays}
+                onPick={(days) => form.setValue("durationDays", days, { shouldValidate: true })}
+              />
+            </div>
+          ) : null}
         </Card>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <Card className="flex flex-col gap-3.5">
+        <Card className="flex flex-col gap-3.5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5">
               <SectionIcon name="mail" className="bg-shop-amber-light text-shop-amber-dark" />
@@ -280,18 +360,18 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
               onChange={importSheet}
             />
           </div>
-          <label className="flex flex-col gap-1 text-sm font-medium">
+          <label className="flex flex-1 flex-col gap-1 text-sm font-medium">
             Un email por cupo
             <textarea
-              rows={7}
+              rows={5}
               placeholder={"nombre@empresa.com\notra@empresa.com"}
               aria-invalid={Boolean(form.formState.errors.emails)}
-              className="border-border bg-surface resize-y rounded-lg border px-3 py-2 text-[15px]"
+              className="border-border bg-surface min-h-36 flex-1 resize-none rounded-lg border px-3 py-2 text-[15px]"
               {...form.register("emails")}
             />
             <span className="text-text-muted text-[13px] font-normal">
-              Separá los emails con comas o saltos de línea. La invitación solo la puede aceptar la
-              cuenta de ese email.
+              Formato: usuario@dominio.com — separalos con comas o saltos de línea. La invitación
+              solo la puede aceptar la cuenta de ese email.
             </span>
           </label>
           {sheetMessage ? <p className="text-text-muted text-[13px]">{sheetMessage}</p> : null}
@@ -301,62 +381,64 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
             </span>
           ) : null}
         </Card>
-
-        <Card className="flex flex-col gap-3">
-          <CardTitle>Precio</CardTitle>
-          {quote.data ? (
-            <dl className="flex flex-col text-sm">
-              <div className="border-fill flex justify-between border-b py-2">
-                <dt className="text-text-muted">Precio por cupo</dt>
-                <dd className="font-extrabold">
-                  {quote.data.discountPercent > 0 ? (
-                    <span className="text-text-muted mr-2 font-semibold line-through">
-                      {formatMoney(quote.data.listPricePerSeat, quote.data.currency)}
-                    </span>
-                  ) : null}
-                  {formatMoney(quote.data.pricePerSeat, quote.data.currency)}
-                </dd>
-              </div>
-              <div className="border-fill flex justify-between border-b py-2">
-                <dt className="text-text-muted">Cupos</dt>
-                <dd className="font-extrabold">{seats}</dd>
-              </div>
-              {quote.data.discountPercent > 0 ? (
-                <div className="border-fill text-success-dark flex justify-between border-b py-2">
-                  <dt>Descuento por volumen</dt>
-                  <dd className="font-extrabold">{quote.data.discountPercent}%</dd>
-                </div>
-              ) : null}
-              <div className="flex items-baseline justify-between py-2">
-                <dt className="text-text-muted">Total</dt>
-                <dd className="font-display text-2xl font-extrabold">
-                  {formatMoney(quote.data.pricePerSeat * seats, quote.data.currency)}
-                </dd>
-              </div>
-            </dl>
-          ) : quote.isFetching ? (
-            <LoadingState />
-          ) : (
-            <p className="text-text-muted text-sm">
-              Elegí el curso y la duración para ver el precio.
-            </p>
-          )}
-          {nextDiscount ? (
-            <p className="bg-success-light text-success-dark rounded-xl px-3 py-2 text-[13px] font-semibold">
-              Sumá {nextDiscount.missing} {nextDiscount.missing === 1 ? "cupo" : "cupos"} más y
-              tenés {nextDiscount.percent}% de descuento en cada cupo.
-            </p>
-          ) : null}
-          <p className="text-text-muted text-[13px] text-pretty">
-            El precio depende de las señas del curso, los días de acceso y la cantidad de cupos.
-            Antes de pagar vas a ver el resumen de la compra.
-          </p>
-          <button type="submit" disabled={seats === 0} className={primaryButton}>
-            Revisar la compra
-          </button>
-        </Card>
       </div>
+
+      {course ? <CourseContents course={course} /> : null}
     </form>
+  );
+}
+
+function daysLabel(days: number): string {
+  return `${days} ${days === 1 ? "día" : "días"}`;
+}
+
+/** How long one person takes to finish the course at the reference daily pace. */
+function CompletionEstimate({
+  signCount,
+  durationDays,
+  maxDays,
+  onPick,
+}: {
+  signCount: number;
+  durationDays: number | null;
+  maxDays: number;
+  onPick: (days: number) => void;
+}) {
+  const needed = daysToComplete(signCount);
+  if (needed === 0) return null;
+  const short = durationDays !== null && durationDays < needed;
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-1.5 rounded-xl px-3.5 py-3 text-[13px] text-pretty",
+        short ? "bg-shop-amber-light text-shop-amber-dark" : "bg-primary-light/60 text-text",
+      )}
+    >
+      <p>
+        <span className="font-bold">
+          Dedicándole {DAILY_STUDY_MINUTES} minutos por día, una persona termina el curso en unos{" "}
+          {needed} {needed === 1 ? "día" : "días"}.
+        </span>{" "}
+        Calculamos un promedio por seña entre aprenderla y practicarla.
+      </p>
+      {short && durationDays !== null ? (
+        <p>
+          Con {durationDays} días, a ese ritmo llega a ver unas{" "}
+          {signsWithin(durationDays, signCount)} de las {signCount} señas.{" "}
+          {needed <= maxDays ? (
+            <button
+              type="button"
+              onClick={() => onPick(needed)}
+              className="font-bold underline underline-offset-2"
+            >
+              Elegir {needed} días
+            </button>
+          ) : (
+            `Para terminarlo en ${maxDays} días hace falta dedicarle un poco más por día.`
+          )}
+        </p>
+      ) : null}
+    </div>
   );
 }
 

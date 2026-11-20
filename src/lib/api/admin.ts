@@ -1,5 +1,5 @@
 import { api } from "@/lib/api/client";
-import type { Page, Purchase, PurchaseDetail, PurchaseStatus } from "@/lib/api/types";
+import type { Page, Purchase, PurchaseStatus } from "@/lib/api/types";
 
 // ── Unified admin purchases ───────────────────────────────────────────────────
 
@@ -264,6 +264,8 @@ export type AdminCourseVersionListItem = {
   updatedByName: string | null;
   updatedByAvatar: string | null;
   color: string | null;
+  hasCameraRecognition: boolean;
+  mediaFormat: string | null;
   enrollmentCount: number;
 };
 
@@ -351,6 +353,8 @@ export type AdminCourseVersionDetail = {
   updatedAt: string | null;
   updatedBy: string | null;
   color: string | null;
+  hasCameraRecognition: boolean;
+  mediaFormat: string | null;
   topics: AdminTopic[];
 };
 
@@ -360,6 +364,8 @@ export type SaveCourseVersionPayload = {
   isFree: boolean;
   price: number | null;
   color: string | null;
+  hasCameraRecognition: boolean;
+  mediaFormat: string | null;
   topics: Array<{
     id?: string | null;
     title: string;
@@ -527,6 +533,12 @@ export const adminApi = {
 
   purchaseDetail: (id: string, type: PurchaseType) =>
     api<AdminPurchaseDetail>(`/admin/purchases/${id}`, { query: { type } }),
+
+  confirmPurchase: (id: string, type: PurchaseType) =>
+    api<void>(`/admin/purchases/${id}/confirm`, { method: "POST", query: { type } }),
+
+  refundPurchase: (id: string, type: PurchaseType) =>
+    api<void>(`/admin/purchases/${id}/refund`, { method: "POST", query: { type } }),
 
   // ── Refund requests ────────────────────────────────────────────────────────
 

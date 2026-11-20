@@ -3,14 +3,29 @@
 > Responsibility: the SIGNA back-office "Métricas de uso" dashboard — global app usage, organized by
 > apartado (persona), with golden metrics, self-documenting widgets and an interactive time filter.
 > Update when: a tab, widget, golden metric, the datetime picker, or the metrics API changes.
-> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,chart-kind,funnel,usage-business,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.tsx, src/lib/{datetime-range,api/metrics}.ts
+> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,kpi-card,delta,format,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,revenue-by-source-chart,services-status,chart-kind,funnel,sign-reports-card,usage-queries,usage-math,usage-business,usage-resumen,usage-growth,usage-usuarios,usage-learning,usage-gamification,usage-infra}.ts(x), src/lib/{datetime-range,course-deep-link,api/metrics}.ts
 
 A single screen for the whole app's usage — every user, with or without an organization — behind the
 SIGNA `AdminAuthProvider` (not the org dashboard). One **datetime range picker** (hour/minute precision,
 `<input type="datetime-local">`, rolling presets + custom) plus a **live** toggle drive every widget,
 across every tab.
 
-## Apartados (sub-tabs)
+## Apartados (tabs)
+
+Five tabs: **Resumen** (default), **Negocio**, **Usuarios**, **Aprendizaje**, **Infraestructura**. Gamification is not a tab: it is a section inside **Usuarios** (`GamificationSection`). The "v3 layout" section below is the current design; the bullets here describe what each tab contains.
+
+- **Resumen** (`usage-resumen.tsx`) — two bands, so nothing reads as filtered when it isn't.
+  **En el período:** four north-star `KpiCard`s (activos, nuevos, finalización de lecciones, ingresos
+  netos) with deltas and sparklines; the daily active users chart (2/3 width) beside **"Requiere
+  atención"** (`buildAlerts`: pending organizations → `/admin/organizations`, low-use contracts → Negocio
+  `#licencias`, the worst lesson abandonment → `/admin/courses?course=&lesson=`, email failures, failed
+  imports; the sign-reports alert is filtered out here because its card is on the same screen).
+  **Panorama general** ("Todo el historial · no cambia con el período elegido"): the learning
+  **funnel** (`funnel.tsx`) and **Reportes de señas** (`sign-reports-card.tsx`: pendientes, resueltos,
+  resolución promedio, and the pending signs to review first — or the most reported overall when none
+  is pending). The API computes both over the whole history (funnel up to the window's end), which is
+  why they moved here from Aprendizaje. Then the services strip (`services-status.tsx`; its "Ver infraestructura ›" action stays on the strip's line, only the service list wraps). Exercise success
+  rate and the lessons-per-day chart were dropped from Resumen (they live in Aprendizaje).
 
 `page.tsx` is a shell holding the shared filter state (`selection`/`range`/`step`/`live`) and the active
 tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their apartado. `MetricsTabs`
@@ -45,28 +60,18 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   (gastadas en el período / gemas que los usuarios tienen hoy en su inventario); visualizaciones: **distribución de XP** por tramos (BreakdownPie) y **ranking de
   logros** más y menos desbloqueados (`AchievementRanking`); más daily XP/achievements/gems-spent.
   Rolling DAU/WAU/MAU + stickiness, current-streak tiles and the weekly-cohort retention table were removed
-  (no reaccionaban al rango desde/hasta).
+  (no reaccionaban al rango desde/hasta); the tab shows `retention7` (retention at 7 days of the window's signups) instead.
 - **Aprendizaje** (`usage-learning.tsx`) — "¿La gente aprende LSA?": lesson flow (iniciadas/completadas +
-  tasa de finalización) and exercise flow (realizados, tasa de éxito, intentos promedio); the **embudo de
-  aprendizaje** (`funnel.tsx`: registrados → iniciaron lección → hicieron ejercicio → completaron lección →
-  2+) and the **evolución de aciertos** daily chart; completion (per course, worst-first), enrollment-status
+  tasa de finalización) and exercise flow (realizados, tasa de éxito, intentos promedio); the **evolución
+  de aciertos** daily chart beside precision by exercise type, then "Contenido a revisar". The funnel and
+  sign reports moved to Resumen (historical, and they ignore the course picker); completion (per course, worst-first), enrollment-status
   donut, accuracy (global + per block type, worst-first), hardest lessons; a **dificultad y calidad** section
   — lessons by abandonment and exercises by error rate / retries (`ExerciseRanking`); vocabulary, sign-report
   resolution + most-reported signs, imports. Timing-per-lesson/exercise and weighted avg progress are not yet
   calculable (no stored timing) and are intentionally omitted.
-- **Infraestructura** (`usage-infra.tsx`) — inner sub-tabs. **Backend** grouped into **API · HTTP**
-  (latency p95/p99, throughput, 4xx/5xx, slowest ops), **Sistema y recursos** (CPU/mem host + containers,
-  JVM heap/GC, DB connections) and **Servicios de Signa** (R2 presign, mail/push failures). **Web / Landing**
-  (web vitals, animation + screen load, client errors). **ML** — recognition accuracy + per-camera-block-type
-  accuracy from real lesson attempts (`VISUAL_RECOGNITION`/`PERFORM_SIGN`/`SPELL_NAME`), plus inference
-  latency p95, model confidence, camera FPS and **inference volume** (`ml_inference_rate` = consumo de IA)
-  from telemetry. Recognition runs **on-device**, so its health is independent of the backend — the sub-tab
-  calls this out: if the API is up but these metrics fall to zero, recognition is down. There is no AI error
-  rate or server cost (on-device). Per-word accuracy is reserved (needs a camera-attempt → sign mapping that
-  isn't modelled).
+- **Infraestructura** (`usage-infra.tsx`) — services strip, then **Backend** directly (no sub-tabs). **Backend** grouped into **API · HTTP** (latency p95/p99, throughput, 4xx/5xx, slowest ops) and **Sistema y recursos** (CPU/mem host + containers, JVM heap/GC — collapsed). The recognition accuracy KPI (camera exercises) is shown in the Backend KPI row. Web / Landing and ML · reconocimiento sub-tabs were removed.
 
-Each tab opens with a **GoldenRow** (`golden-row.tsx`): 3–5 headline tiles that signal the area's health
-at a glance, coloured success/warning/danger from the metric's `threshold`. Perf (Prometheus/Grafana)
+`GoldenTile` (`golden-row.tsx`) is the headline tile that signals a metric's health at a glance, coloured success/warning/danger from the metric's `threshold`; today it is used by the Infraestructura perf tiles (`PerfGoldenTile` in `perf-panel.tsx`), while the other tabs open with `KpiCard`s (v3 layout below). Perf (Prometheus/Grafana)
 panels only populate in production; the Infra tab says so, and shows "sin datos" locally.
 
 ## v3 layout (mockups, nov 2026)
@@ -80,7 +85,7 @@ panels only populate in production; the Infra tab says so, and shows "sin datos"
   (`previous` + `previousShiftSeconds`).
 - **Tabs** carry health dots (Aprendizaje: completion/success; Infraestructura: services) and the
   "Comparando con … · horario UTC" caption on the same row.
-- **Resumen**: "Requiere atención" (`buildAlerts`): pending orgs, pending reports (top sign), low-use
+- **Resumen** (v4, nov 2026 — see the tab bullet above for the current layout): "Requiere atención" (`buildAlerts`): pending orgs, pending reports (top sign; hidden on Resumen), low-use
   contracts (→ Negocio `#licencias`), worst lesson abandonment ≥ 40 % (deep link
   `/admin/courses?course=&lesson=`, `lib/course-deep-link.ts`), email failures, failed imports.
   `ServicesStrip` (`services-status.tsx`): API/R2 availability (avg of `avg_over_time(up)`),
@@ -88,11 +93,13 @@ panels only populate in production; the Infra tab says so, and shows "sin datos"
 - **Usuarios**: retention at 7 days of the window's signups (`retention7`), cohort table removed;
   gamification is one stat strip + XP histogram (XP earned in the window, API tiers 0–100 … 2k+),
   challenge claims, achievements Más/Menos (share of `eligibleUsers`).
-- **Aprendizaje**: single course picker, funnel flags the biggest drop, "Contenido a revisar" from
+- **Funnel** (`funnel.tsx`): `funnelPath` drops a step fewer people reach than a later one (reading-only
+  lessons complete without exercises, which used to print "108% sigue"); every transition reads
+  "↓ N% sigue" and the biggest drop is red ("· mayor caída").
+- **Aprendizaje**: single course picker, "Contenido a revisar" from
   `lessonsToReview` (API: course, abandonment, accuracy, attempts ≥ 30, pending reports per lesson).
 - **Infraestructura**: Backend KPIs are window averages (peak in hint); 4xx+5xx and p95+p99 share a
-  chart; slow ops table with per-endpoint req/s (`endpoint_rate` widget); "Emails y notificaciones"
-  and "Sistema y recursos" collapsed.
+  chart; slow ops table with per-endpoint req/s (`endpoint_rate` widget); "Sistema y recursos" collapsed (CPU, mem, containers, JVM heap — 5 panels).
 - Designer "Notas de diseño" boxes in the mockups are annotations, not UI.
 - Sparklines are omitted where no faithful series exists (refund rate, seat use, conversion,
   sessions, lesson completion).
@@ -130,15 +137,15 @@ Gamification series); the y axis is labelled with values.
 - **Growth** → `metricsApi.growth({ from, to })` → signa-api `GET /admin/metrics/growth`, aggregated from
   Postgres: audience (signups + total), engagement (DAU/WAU/MAU + stickiness), waitlist, B2B revenue and
   refunds, the gem economy, seat utilization and organizations by status, with **adaptive-resolution**
-  series (each point's `t` is the bucket's start instant — see Resolution below). Powers the Negocio tab
-  (`usage-growth.tsx`), alongside enrollment state from the business endpoint.
+  series (each point's `t` is the bucket's start instant — see Resolution below). Powers the Resumen, Negocio and Usuarios tabs
+  (`usage-resumen.tsx`, `usage-growth.tsx`, `usage-usuarios.tsx`), alongside enrollment state from the business endpoint.
 - **Learning** → `metricsApi.learning({ from, to })` → signa-api `GET /admin/metrics/learning`, aggregated
   from Postgres: per-course completion, the enrollment funnel, the hardest lessons by accuracy, vocabulary
   growth (daily), sign-report resolution + most-reported signs, and content-import health. Powers the
   Aprendizaje tab (`usage-learning.tsx`), alongside accuracy/report state from the business endpoint.
 - **Gamification** → `metricsApi.gamification({ from, to })` → signa-api `GET /admin/metrics/gamification`,
   aggregated from Postgres: daily XP, streak distribution, achievements unlocked (+ top), challenge claim
-  rates by type, gifts and the shop economy. Powers the Gamificación tab (`usage-gamification.tsx`).
+  rates by type, gifts and the shop economy. Powers the gamification section of Usuarios (`usage-gamification.tsx`).
 - **Performance / infra** → `metricsApi.perf(widget, { from, to, step })` → signa-api
   `GET /admin/metrics/perf/{widget}`, which proxies PromQL `query_range` to Grafana Cloud. Rendered by
   `PerfChart` via `PerfPanel`/`PerfGoldenTile` (`perf-panel.tsx`); value formatters in `perf-format.ts`.

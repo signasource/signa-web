@@ -160,6 +160,9 @@ export type CatalogCourse = {
   description: string | null;
   coverUrl: string | null;
   signCount: number;
+  hasCameraRecognition: boolean;
+  hasAnimations: boolean;
+  hasVideos: boolean;
   /** Modules in learning order with the words of the signs each one introduces. */
   modules: CatalogModule[];
 };
@@ -233,6 +236,8 @@ export type Purchase = {
   cancelledAt: string | null;
   refundedAt: string | null;
   seatCounts: SeatCounts;
+  /** True when the organization has a pending refund request for this purchase. */
+  hasRefundRequest: boolean;
 };
 
 export type Seat = {

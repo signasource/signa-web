@@ -2,7 +2,7 @@
 
 > Responsibility: token storage, login, route guard, and logout.
 > Update when: token storage, `AuthProvider`, the dashboard guard, or the refresh/logout flow changes.
-> Sources: src/lib/api/token-store.ts, src/lib/api/session.ts, src/lib/session-server.ts, src/app/api/session/, src/features/auth/auth-context.tsx, src/app/(dashboard)/dashboard/layout.tsx, src/app/(auth)/login/page.tsx, src/app/(auth)/invitacion/page.tsx, src/features/admin/admin-auth-context.tsx
+> Sources: src/lib/api/token-store.ts, src/lib/api/session.ts, src/lib/session-server.ts, src/app/api/session/, src/features/auth/auth-context.tsx, src/app/(dashboard)/dashboard/layout.tsx, src/app/(marketing)/organizations/login/page.tsx, src/app/(auth)/invitacion/page.tsx, src/components/auth/google-sign-in-button.tsx, src/features/admin/admin-auth-context.tsx
 
 ## Storage
 
@@ -43,7 +43,7 @@ The provider is mounted for the whole app but does nothing on `/admin/*`: the SI
 - **Boot:** no session hint → `unauthenticated`. Otherwise call `GET /organizations/me`; the first call 401s (no access token), the client refreshes, retries, and `status` becomes `authenticated`. Any failure signs out.
 - **Login:** `POST /api/session/login` → keep the access token → `GET /organizations/me`. The account must have `role === "ADMIN"` in its org; otherwise the session is dropped and an error is shown (learners cannot use the panel).
 - **Logout / expiry:** clears the access token, calls `/api/session/logout` (clears the cookie) and the org; `setOnSessionExpired` routes forced logouts (failed refresh) through the same path.
-- **Guard:** dashboard layout redirects to `/login` when unauthenticated. UX only — the API enforces authorization.
+- **Guard:** dashboard layout redirects to `/organizations/login` when unauthenticated (the login page sends authenticated users on to `/dashboard`). UX only — the API enforces authorization.
 
 Not covered yet: users with the SIGNA-level `ADMIN` role who manage many orgs (the panel assumes one org via `/organizations/me`).
 

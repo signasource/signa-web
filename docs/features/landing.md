@@ -5,25 +5,25 @@
 > Sources: src/app/(marketing)/, src/components/landing/, src/app/layout.tsx (`metadata`)
 
 **Status: built.** `/` (`src/app/(marketing)/page.tsx`) renders the full one-page landing: nav,
-hero (with a playable lesson), "Qué es Signa", feature marquee, "Conocé a Lisa", "Cursos", the
-team, and a final CTA. Section order: Hero → QueEs → Marquesina → LisaIntro → Cursos → Equipo →
-CtaFinal → Footer. "Para quién es" was removed.
+hero (with a playable lesson), feature marquee, "Qué es Signa", "Conocé a Lisa", "Cursos", the team,
+and a final CTA. Section order: Hero → Marquesina → QueEs → LisaIntro → Cursos → Equipo → CtaFinal →
+Footer. "Para quién es" was removed (`para-quien.tsx` is still in the folder but nothing renders it).
 
 `/proximamente` (`src/app/(marketing)/proximamente/page.tsx`) is the coming-soon page reached by
 all "Empezá gratis" CTAs. It explains the app is ready and being submitted to Google Play, shows
-a waitlist email form (calls `POST /waitlist` on `signa-api`), and links to `/organizaciones`.
+a waitlist email form (`waitlist-form.tsx` → `subscribeToWaitlist`, `POST /waitlist` on `signa-api`),
+and links to `/organizations`.
 
-`/organizaciones` (`src/app/(marketing)/organizaciones/page.tsx`) is the organizations marketing
+`/organizations` (`src/app/(marketing)/organizations/page.tsx`) is the organizations marketing
 page: hero, four-step flow, an example org dashboard preview, and CTAs to login or register. It
 replaces the former `organizations-modal.tsx` overlay that was embedded inside the landing.
 
-`/organizaciones/ingresar` is the org auth page: login tab (uses existing `useAuth().login()`,
-redirects to `/organizaciones/panel`) and register tab (CUIT + org name + email + password, with
-CUIT validation via `src/lib/cuit.ts`; registration API not yet available — submission shows a
-"te avisamos" confirmation).
+`/organizations/login` is the org auth page (dynamic, strict CSP): a login tab (`useAuth().login()`,
+redirects to `/dashboard`) and a register tab (organization + CUIT validated with `src/lib/cuit.ts` +
+contact + admin name/email/password, `organizationsApi.register`; the organization is created `PENDING`
+until SIGNA validates it).
 
-`/organizaciones/panel` is the post-login holding page shown when the org module is not yet
-complete; it redirects unauthenticated users to `/organizaciones/ingresar`.
+`/organizations/panel` is a legacy entry point: it redirects to `/dashboard`.
 
 Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client-side data fetching,
 `metadata` per page, Spanish copy.
@@ -38,11 +38,11 @@ Rules ([../../CLAUDE.md](../../CLAUDE.md)): static rendering, no client-side dat
 | `marquesina.tsx`      | Two word rows looping forever in opposite directions (pure CSS keyframes, pause on hover, decorative)                                                                                                               |
 | `lisa-intro.tsx`      | "Conocé a Lisa" (`#lisa`): chat bubbles that pop in one by one, next to the app's home screen and Lisa with arms crossed                                                                                            |
 | `que-es.tsx`          | Value prop (text fills in with color as it scrolls) + 3 clickable feature cards, each opening a `FeaturePreview` overlay                                                                                            |
-| `cursos.tsx`          | Free basic course ("Probá una lección" → `/proximamente`) + thematic (paid) courses (Salud, Atención al cliente); org call-out at the bottom opens the organizations overlay                                        |
-| `equipo.tsx`          | Single team photo (`/images/equipo.jpg`) — one image instead of 6 individual cards                                                                                                                                  |
+| `cursos.tsx`          | Free basic course ("Probá una lección" → `/proximamente`) + thematic (paid) courses (Salud, Atención al cliente); the org call-out at the bottom is an `OrgTrigger` link to `/organizations`                        |
+| `equipo.tsx`          | The team: six cards with a photo each (`/images/equipo/<name>-v2.png`)                                                                                                                                              |
 | `cta-final.tsx`       | Closing CTA + Lisa                                                                                                                                                                                                  |
 | `landing-footer.tsx`  | Footer links (`/privacidad`, `/terminos`, `/eliminar-cuenta`, organizations, legal)                                                                                                                                 |
-| `org-trigger.tsx`     | Link to `/organizaciones`. Replaces the former modal-open button.                                                                                                                                                   |
+| `org-trigger.tsx`     | Link to `/organizations`. Replaces the former modal-open button.                                                                                                                                                    |
 | `feature-preview.tsx` | Per-feature overlay opened from a "Qué es Signa" card, showing a phone mockup for that feature. Two are live, in a wider modal with a larger phone: the 3D one (`LessonDemo`) and the camera one (`CameraNameDemo`) |
 
 ## Interactivity (client boundary)
@@ -321,13 +321,13 @@ unmounting; with `prefers-reduced-motion` it closes at once.
 and doing it while the modal opens froze the whole opening animation. Measured: 0 dropped frames
 during the opening now; the boot happens once the card is in place.
 
-## Full pages (Próximamente, Organizaciones, Ingresar, Panel, legal)
+## Full pages (Próximamente, Organizations, Login, legal)
 
 Each one enters with `page-enter` (`globals.css`: 0.5 s fade + 8 px rise; off with
 `prefers-reduced-motion`) on its content — the nav stays put, so moving from the landing feels
 continuous. Going back is a single round arrow button (`src/components/back-button.tsx`) at the
-top-left corner of the content, under the top bar: to `/` from Próximamente, Organizaciones and
-the legal pages, to `/organizaciones` from Ingresar and Panel. There are no "Volver a…" text
+top-left corner of the content, under the top bar: to `/` from Próximamente, Organizations and
+the legal pages, to `/organizations` from the org login. There are no "Volver a…" text
 links.
 
 ## 3D memory, Lisa's thumbnail and the progress bar
@@ -379,6 +379,5 @@ the certificate warning once.
 
 ## Known placeholders
 
-Pricing (the thematic courses card shows no price until it is decided), the organizations contact email, and the contact form's submit handler
-(currently a no-op button) are unresolved — see [../status.md](../status.md). No `sitemap.ts` /
+Pricing (the thematic courses card shows no price until it is decided) is unresolved — see [../status.md](../status.md). No `sitemap.ts` /
 `robots.ts` / OG image yet.

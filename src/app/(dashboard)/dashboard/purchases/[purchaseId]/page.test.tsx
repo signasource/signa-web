@@ -75,6 +75,7 @@ function detail(overrides: Partial<PurchaseDetail["purchase"]> = {}, seats: Seat
         accessExpired: 0,
         revoked: 0,
       },
+      hasRefundRequest: false,
       ...overrides,
     },
     seats,

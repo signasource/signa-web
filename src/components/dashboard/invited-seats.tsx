@@ -13,10 +13,12 @@ export function InvitedSeats({
   orgId,
   courseId,
   query,
+  hideWhenEmpty = false,
 }: {
   orgId: string | undefined;
   courseId: string | undefined;
   query: string;
+  hideWhenEmpty?: boolean;
 }) {
   const purchases = useQuery({
     queryKey: ["organization", orgId, "purchases"],
@@ -43,6 +45,8 @@ export function InvitedSeats({
   }
 
   const rows = details.flatMap((d) => (d.data ? invitedSeatsOf(d.data, query) : []));
+
+  if (hideWhenEmpty && rows.length === 0) return null;
 
   return (
     <div className="border-border bg-surface overflow-x-auto rounded-2xl border">

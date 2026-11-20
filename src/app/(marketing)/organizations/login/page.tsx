@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { BackButton } from "@/components/back-button";
 import { useAuth } from "@/features/auth/auth-context";
-import { ApiError } from "@/lib/api/client";
+import { mapAuthError } from "@/lib/auth-errors";
 import { organizationsApi } from "@/lib/api/organizations";
 import { formatCuit, validateCuit } from "@/lib/cuit";
 
@@ -61,9 +61,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       await login(values.identifier, values.password);
       onSuccess();
     } catch (err) {
-      setServerError(
-        err instanceof ApiError ? err.message : "No pudimos iniciar sesión con esa cuenta.",
-      );
+      setServerError(mapAuthError(err, "No pudimos iniciar sesión con esa cuenta."));
     }
   }
 
@@ -91,6 +89,13 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         />
         {errors.password && <span className={ERROR}>{errors.password.message}</span>}
       </label>
+
+      <Link
+        href="/organizations/forgot-password"
+        className="text-primary self-end text-[13px] font-bold"
+      >
+        ¿Olvidaste tu contraseña?
+      </Link>
 
       {serverError && <p className={ERROR}>{serverError}</p>}
 
@@ -137,9 +142,7 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
       onSuccess();
     } catch (err) {
       setServerError(
-        err instanceof ApiError
-          ? err.message
-          : "No pudimos registrar la organización. Intentalo de nuevo.",
+        mapAuthError(err, "No pudimos registrar la organización. Intentalo de nuevo."),
       );
     }
   }

@@ -8,7 +8,11 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Icon } from "@/components/dashboard/icons";
-import { PurchaseStatusPill, SeatStatusPill } from "@/components/dashboard/purchase-status";
+import {
+  PurchaseStatusPill,
+  RefundRequestPill,
+  SeatStatusPill,
+} from "@/components/dashboard/purchase-status";
 import { WithdrawPurchase } from "@/components/dashboard/withdraw-purchase";
 import {
   Card,
@@ -376,7 +380,11 @@ export default function PurchaseDetailPage() {
         title={purchase.courseName}
         subtitle={`Compra del ${formatDate(purchase.createdAt)} · ${purchase.seats} ${purchase.seats === 1 ? "cupo" : "cupos"} de ${purchase.durationDays} días`}
       >
-        <PurchaseStatusPill status={purchase.status} />
+        {purchase.hasRefundRequest ? (
+          <RefundRequestPill />
+        ) : (
+          <PurchaseStatusPill status={purchase.status} />
+        )}
       </PageHeading>
 
       {payment ? (
@@ -517,6 +525,14 @@ export default function PurchaseDetailPage() {
           error={withdrawError}
           onConfirm={(reason) => withdraw.mutate(reason)}
         />
+      ) : purchase.hasRefundRequest ? (
+        <Card className="flex flex-col gap-2">
+          <CardTitle>Reembolso en revisión</CardTitle>
+          <p className="text-text-muted text-sm text-pretty">
+            Recibimos tu pedido de reembolso. Nuestro equipo lo analizará y te va a responder por
+            email.
+          </p>
+        </Card>
       ) : purchase.status === "PAID" && counts.active === 0 && orgId ? (
         <RefundRequestSection orgId={orgId} purchaseId={purchaseId} />
       ) : null}

@@ -87,28 +87,34 @@ export function ServicesStrip({
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <Card className="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-3.5">
-      <p className="text-sm font-extrabold">Estado de servicios</p>
-      {unavailable ? (
-        <p className="text-text-muted text-[13px]">
-          Sin datos: falta configurar el acceso de lectura a Grafana Cloud.
-        </p>
-      ) : (
-        items.map((item) => (
-          <span key={item.key} className="inline-flex items-center gap-1.5 text-[13px]">
-            <span className={cn("size-2 rounded-full", DOT[item.tone])} aria-hidden />
-            <span className="font-extrabold">{item.label}</span>
-            <span className="text-text-muted">{item.detail}</span>
-          </span>
-        ))
-      )}
+    <Card className="flex items-center gap-x-5 gap-y-2 px-5 py-3.5">
+      {/* Title and the action stay on the strip's one line; only the service list wraps. */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-5 gap-y-2">
+        <p className="text-sm font-extrabold">Estado de servicios</p>
+        {unavailable ? (
+          <p className="text-text-muted text-[13px]">
+            Sin datos: falta configurar el acceso de lectura a Grafana Cloud.
+          </p>
+        ) : (
+          items.map((item) => (
+            <span
+              key={item.key}
+              className="inline-flex items-center gap-1.5 text-[13px] whitespace-nowrap"
+            >
+              <span className={cn("size-2 rounded-full", DOT[item.tone])} aria-hidden />
+              <span className="font-extrabold">{item.label}</span>
+              <span className="text-text-muted">{item.detail}</span>
+            </span>
+          ))
+        )}
+      </div>
       {action ? (
         <button
           type="button"
           onClick={action.onClick}
-          className="text-primary hover:text-primary-dark ml-auto cursor-pointer text-[13px] font-extrabold"
+          className="text-primary hover:text-primary-dark shrink-0 cursor-pointer text-[13px] font-extrabold whitespace-nowrap"
         >
-          {action.label}
+          {action.label} ›
         </button>
       ) : null}
     </Card>

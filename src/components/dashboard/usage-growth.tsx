@@ -396,7 +396,7 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
                 <th className="pb-2 font-bold">Organización</th>
                 <th className="pb-2 pl-3 text-right font-bold">Cupos</th>
                 <th className="w-44 pb-2 pl-3 font-bold">Ocupación</th>
-                <th className="pb-2 pl-3 text-right font-bold">Activos 7 d</th>
+                <th className="pb-2 pl-3 text-right font-bold">Activos</th>
                 <th className="pb-2 pl-3 font-bold">Vence</th>
                 <th className="pb-2 pl-3 text-right font-bold">Ingresos</th>
                 <th className="pb-2 pl-3 font-bold">Estado</th>
@@ -425,7 +425,7 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
                         </span>
                       </div>
                     </td>
-                    <td className="py-2.5 pl-3 text-right">{NUMBER.format(o.active7d)}</td>
+                    <td className="py-2.5 pl-3 text-right">{NUMBER.format(o.activeInRange)}</td>
                     <td
                       className={cn(
                         "py-2.5 pl-3 whitespace-nowrap",

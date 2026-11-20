@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Icon } from "@/components/dashboard/icons";
-import { PurchaseStatusPill } from "@/components/dashboard/purchase-status";
+import { PurchaseStatusPill, RefundRequestPill } from "@/components/dashboard/purchase-status";
 import {
   Card,
   EmptyState,
@@ -26,6 +26,7 @@ function windowLabel(purchase: Purchase): string {
       ? `Anulada y reembolsada el ${formatDate(purchase.refundedAt)}`
       : "Anulada y reembolsada";
   }
+  if (purchase.hasRefundRequest) return "Reembolso en revisión";
   const left = daysLeft(purchase.invitationDeadline);
   if (left === null) return "";
   return left === 0
@@ -53,7 +54,11 @@ function PurchaseRow({ purchase }: { purchase: Purchase }) {
             días de acceso · {formatMoney(purchase.totalAmount, purchase.currency)}
           </p>
         </div>
-        <PurchaseStatusPill status={purchase.status} />
+        {purchase.hasRefundRequest ? (
+          <RefundRequestPill />
+        ) : (
+          <PurchaseStatusPill status={purchase.status} />
+        )}
       </div>
       {purchase.status === "PAID" ? (
         <dl className="grid grid-cols-3 gap-3">

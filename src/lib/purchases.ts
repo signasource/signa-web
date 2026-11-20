@@ -254,3 +254,29 @@ export type PurchaseForm = z.infer<ReturnType<typeof purchaseFormSchema>>;
 export const seatEmailSchema = z.object({
   email: z.string().trim().refine(isEmail, "Ingresá un email válido."),
 });
+
+/** Assumed study time per sign, learning it plus practicing it (an average, not measured). */
+export const MINUTES_PER_SIGN = 6;
+/** The daily pace the purchase form estimates with. */
+export const DAILY_STUDY_MINUTES = 15;
+
+/** Days one person needs to finish a course studying `minutesPerDay` every day (0 when empty). */
+export function daysToComplete(
+  signCount: number,
+  minutesPerDay: number = DAILY_STUDY_MINUTES,
+  minutesPerSign: number = MINUTES_PER_SIGN,
+): number {
+  if (signCount <= 0 || minutesPerDay <= 0) return 0;
+  return Math.ceil((signCount * minutesPerSign) / minutesPerDay);
+}
+
+/** Signs one person gets through in `days` at that pace (capped at the course's total). */
+export function signsWithin(
+  days: number,
+  signCount: number,
+  minutesPerDay: number = DAILY_STUDY_MINUTES,
+  minutesPerSign: number = MINUTES_PER_SIGN,
+): number {
+  if (days <= 0) return 0;
+  return Math.min(signCount, Math.floor((days * minutesPerDay) / minutesPerSign));
+}
