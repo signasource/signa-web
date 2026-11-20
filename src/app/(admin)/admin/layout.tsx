@@ -26,7 +26,7 @@ type NavItem = {
 };
 
 const NAV: NavItem[] = [
-  { href: "/admin", label: "Resumen", icon: GridIcon },
+  { href: "/admin", label: "Métricas", icon: MetricsIcon },
   {
     href: "/admin/organizations",
     label: "Organizaciones",
@@ -43,7 +43,6 @@ const NAV: NavItem[] = [
   { href: "/admin/courses", label: "Cursos", icon: CoursesIcon },
   { href: "/admin/signs", label: "Señas", icon: HandIcon },
   { href: "/admin/users", label: "Usuarios", icon: UsersIcon },
-  { href: "/admin/usage-metrics", label: "Métricas de uso", icon: MetricsIcon },
 ];
 
 function isActive(pathname: string, href: string) {

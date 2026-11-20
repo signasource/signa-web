@@ -129,6 +129,10 @@ export type GrowthMetrics = {
   endUsers: {
     payingUsers: number;
     repeatBuyerPercent: number;
+    /** End-user accounts at the window's close (no admins, org admins or active org members). */
+    accounts: number;
+    /** The payers among `accounts` — the numerator of "conversión a pago". */
+    payingAccounts: number;
   };
   seats: {
     sold: number;

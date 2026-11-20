@@ -1,295 +1,204 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Funnel } from "@/components/dashboard/funnel";
-import { SignReportsCard } from "@/components/dashboard/sign-reports-card";
-import { ErrorState, LoadingState } from "@/components/dashboard/ui";
-import { useLearningQuery } from "@/components/dashboard/usage-queries";
-import { adminApi, type ReportReason } from "@/lib/api/admin";
-import { useAdminAuth } from "@/features/admin/admin-auth-context";
+import { useEffect, useMemo, useState } from "react";
+import { DatetimeRangePicker } from "@/components/dashboard/datetime-range-picker";
+import { MetricsTabs, type TabItem } from "@/components/dashboard/metrics-tabs";
+import type { RangeSelect } from "@/components/dashboard/perf-chart";
+import { metricTone } from "@/components/dashboard/kpi-card";
+import { useServiceStatus, worstTone } from "@/components/dashboard/services-status";
+import { REFRESH_MS, useLearningQuery } from "@/components/dashboard/usage-queries";
+import { PageHeading } from "@/components/dashboard/ui";
+import { GrowthTab } from "@/components/dashboard/usage-growth";
+import { InfraTab } from "@/components/dashboard/usage-infra";
+import { LearningTab } from "@/components/dashboard/usage-learning";
+import { ResumenTab, type ResumenTarget } from "@/components/dashboard/usage-resumen";
+import { UsersTab } from "@/components/dashboard/usage-usuarios";
+import {
+  DEFAULT_SELECTION,
+  deriveStepSeconds,
+  resolveRange,
+  type RangeSelection,
+} from "@/lib/datetime-range";
+import { cn } from "@/lib/utils";
 
-/** From before Signa existed: the funnel and sign reports read the whole history. */
-const HISTORY_START = "2020-01-01T00:00:00.000Z";
+type TabKey = "resumen" | "negocio" | "usuarios" | "aprendizaje" | "infraestructura";
 
-const REASON_LABELS: Record<ReportReason, string> = {
-  INCORRECT_SIGN: "Seña incorrecta",
-  UNCLEAR_ANIMATION: "Animación poco clara",
-  WRONG_MEANING: "Significado erróneo",
-  REGIONAL_VARIANT: "Variante regional",
-  MISSING_CONTEXT: "Falta contexto",
-  TECHNICAL_PROBLEM: "Problema técnico",
-  OTHER: "Otros",
-};
+const BASE_TABS: TabItem<TabKey>[] = [
+  { key: "resumen", label: "Resumen" },
+  { key: "negocio", label: "Negocio" },
+  { key: "usuarios", label: "Usuarios" },
+  { key: "aprendizaje", label: "Aprendizaje" },
+  { key: "infraestructura", label: "Infraestructura" },
+];
 
-const VERSION_STATUS_LABELS: Record<string, string> = {
-  PUBLISHED: "Publicada",
-  DRAFT: "Borrador",
-  ARCHIVED: "Archivada",
-};
+/** Below this, a brushed window has too few Prometheus points (60 s scrape) and reads as empty. */
+const MIN_SPAN_SECONDS = 300;
 
-const VERSION_STATUS_COLORS: Record<string, string> = {
-  PUBLISHED: "bg-success/10 text-success-dark",
-  DRAFT: "bg-warning/10 text-warning",
-  ARCHIVED: "bg-fill-dark text-text-muted",
-};
-
-function StatCard({
-  label,
-  value,
-  sub,
-  color = "default",
-}: {
-  label: string;
-  value: string | number | undefined;
-  sub?: string;
-  color?: "default" | "warning" | "danger" | "success";
-}) {
-  const colorMap = {
-    default: "text-text",
-    warning: "text-warning",
-    danger: "text-danger",
-    success: "text-success-dark",
-  };
-  return (
-    <div className="border-border bg-surface rounded-2xl border p-5">
-      <p className="text-text-muted text-xs font-medium tracking-wide uppercase">{label}</p>
-      <p className={`font-display mt-2 text-3xl font-bold ${colorMap[color]}`}>
-        {value !== undefined
-          ? typeof value === "number"
-            ? value.toLocaleString("es-AR")
-            : value
-          : "—"}
-      </p>
-      {sub && <p className="text-text-muted mt-1 text-xs">{sub}</p>}
-    </div>
-  );
+function isTabKey(value: string | null): value is TabKey {
+  return BASE_TABS.some((t) => t.key === value);
 }
 
-export default function AdminResumenPage() {
-  const { admin } = useAdminAuth();
+const WINDOW_DATE = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
 
-  const { data: stats } = useQuery({
-    queryKey: ["admin", "stats"],
-    queryFn: adminApi.stats,
-    staleTime: 60_000,
+/** "10 sep – 9 oct": the equal-length window immediately before the selected one, in UTC. */
+function previousWindowLabel(range: { from: string; to: string }): string {
+  const from = new Date(range.from).getTime();
+  const to = new Date(range.to).getTime();
+  if (Number.isNaN(from) || Number.isNaN(to)) return "el período anterior";
+  const prevFrom = new Date(from - (to - from));
+  const prevTo = new Date(from - 1);
+  return `${WINDOW_DATE.format(prevFrom)} – ${WINDOW_DATE.format(prevTo)}`;
+}
+
+/** Scrolls to an element of the newly shown tab once it renders (its data may still be loading). */
+function scrollToWhenReady(id: string, attempts = 40) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  if (attempts > 0) window.setTimeout(() => scrollToWhenReady(id, attempts - 1), 100);
+}
+
+export default function AdminMetricasPage() {
+  const [selection, setSelection] = useState<RangeSelection>(DEFAULT_SELECTION);
+  const [live, setLive] = useState(true);
+  const [now, setNow] = useState(() => new Date());
+  // Seed the apartado from the URL (bookmarkable) without useSearchParams. Safe as a lazy initializer:
+  // the admin page only mounts client-side, after the auth gate in the layout resolves.
+  const [tab, setTab] = useState<TabKey>(() => {
+    if (typeof window === "undefined") return "resumen";
+    const t = new URLSearchParams(window.location.search).get("tab");
+    return isTabKey(t) ? t : "resumen";
   });
+  const changeTab = (next: TabKey) => {
+    setTab(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", next);
+    window.history.replaceState(null, "", url);
+  };
 
-  const { data: pendingOrgs } = useQuery({
-    queryKey: ["admin", "organizations", "PENDING", 0],
-    queryFn: () => adminApi.organizations({ status: ["PENDING"], page: 0, size: 5 }),
-  });
+  // Re-anchor rolling presets while "live": the window (and the query keys) move with wall-clock.
+  useEffect(() => {
+    if (!live) return;
+    const id = setInterval(() => setNow(new Date()), REFRESH_MS);
+    return () => clearInterval(id);
+  }, [live]);
 
-  const { data: reports } = useQuery({
-    queryKey: ["admin", "sign-reports", { status: "PENDING" }],
-    queryFn: () => adminApi.signReports({ status: "PENDING" }),
-  });
+  const changeSelection = (next: RangeSelection) => {
+    setSelection(next);
+    setNow(new Date());
+  };
 
-  const { data: courses } = useQuery({
-    queryKey: ["admin", "courses"],
-    queryFn: adminApi.courses,
-  });
+  const range = useMemo(() => resolveRange(selection, now), [selection, now]);
+  const step = useMemo(() => deriveStepSeconds(range), [range]);
 
-  // The learning funnel and sign reports are historical (the API ignores the window for them), so
-  // they are asked for the whole history up to when the page opened.
-  const [history] = useState(() => ({ from: HISTORY_START, to: new Date().toISOString() }));
-  const learning = useLearningQuery(history, false);
-  const registered = learning.data?.onboardingFunnel[0]?.count;
+  // A time window picked by dragging a chart (or clicking a day bar) becomes the global filter.
+  // Tiny selections are widened to a minimum span so focusing on a spike never reads as "sin datos".
+  const onSelectRange: RangeSelect = (fromSeconds, toSeconds) => {
+    let from = Math.min(fromSeconds, toSeconds);
+    let to = Math.max(fromSeconds, toSeconds);
+    if (to - from < MIN_SPAN_SECONDS) {
+      const mid = (from + to) / 2;
+      from = Math.round(mid - MIN_SPAN_SECONDS / 2);
+      to = Math.round(mid + MIN_SPAN_SECONDS / 2);
+    }
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (to > nowSec) {
+      from -= to - nowSec;
+      to = nowSec;
+    }
+    changeSelection({
+      kind: "custom",
+      from: new Date(from * 1000).toISOString(),
+      to: new Date(to * 1000).toISOString(),
+    });
+  };
 
-  const reportsByReason = reports?.reduce(
-    (acc, report) => {
-      acc[report.reason] = (acc[report.reason] ?? 0) + 1;
-      return acc;
-    },
-    {} as Record<ReportReason, number>,
+  const perf = { range, step, live };
+
+  // Health dots on the tabs: learning from its two headline rates, infra from the services strip.
+  const learning = useLearningQuery(range, live);
+  const services = useServiceStatus(range, step, live);
+  const l = learning.data;
+  const learningTone = l
+    ? worstTone([
+        l.lessons.started
+          ? metricTone("lesson_completion_rate", l.lessons.completionPercent)
+          : "neutral",
+        l.exercises.attempted
+          ? metricTone("exercise_success_rate", l.exercises.successPercent)
+          : "neutral",
+      ])
+    : "neutral";
+  const tabs = BASE_TABS.map((t) =>
+    t.key === "aprendizaje"
+      ? { ...t, dot: learningTone }
+      : t.key === "infraestructura"
+        ? { ...t, dot: services.tone }
+        : t,
   );
 
-  const reasonOrder: ReportReason[] = [
-    "INCORRECT_SIGN",
-    "WRONG_MEANING",
-    "REGIONAL_VARIANT",
-    "UNCLEAR_ANIMATION",
-    "MISSING_CONTEXT",
-    "OTHER",
-  ];
-
-  const maxReasonCount = reportsByReason ? Math.max(1, ...Object.values(reportsByReason)) : 1;
-
-  const subtitle = (() => {
-    const pending = stats?.pendingOrganizations ?? 0;
-    const open = stats?.openSignReports ?? 0;
-    if (pending > 0 && open > 0)
-      return `Tenés ${pending} organización${pending > 1 ? "es" : ""} esperando aprobación y ${open} reporte${open > 1 ? "s" : ""} de señas sin revisar.`;
-    if (pending > 0)
-      return `Tenés ${pending} organización${pending > 1 ? "es" : ""} esperando aprobación.`;
-    if (open > 0) return `Tenés ${open} reporte${open > 1 ? "s" : ""} de señas sin revisar.`;
-    return "Todo al día. No hay tareas pendientes.";
-  })();
-
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-text text-2xl font-bold">
-          Hola, {admin?.name ?? "Admin"}
-        </h1>
-        <p className="text-text-muted mt-1 text-sm">{subtitle}</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <StatCard
-          label="Usuarios registrados"
-          value={registered}
-          sub="Sin contar al equipo de SIGNA"
-        />
-        <StatCard
-          label="Organizaciones activas"
-          value={stats?.activeOrganizations}
-          color="success"
-        />
-        <StatCard
-          label="Solicitudes pendientes"
-          value={stats?.pendingOrganizations}
-          color={stats?.pendingOrganizations ? "warning" : "default"}
-        />
-        <StatCard
-          label="Reportes abiertos"
-          value={stats?.openSignReports}
-          color={stats?.openSignReports ? "danger" : "default"}
-        />
-        <StatCard
-          label="Señas registradas"
-          value={stats?.totalSigns}
-          sub={stats ? `${stats.totalUsers.toLocaleString("es-AR")} usuarios activos` : undefined}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="border-border bg-surface rounded-2xl border">
-          <div className="flex items-center justify-between border-b border-inherit px-5 py-4">
-            <h2 className="text-text text-sm font-semibold">Requiere tu atención</h2>
-            <a
-              href="/admin/organizations"
-              className="text-primary text-xs font-semibold hover:underline"
-            >
-              Ver todas
-            </a>
-          </div>
-          <div className="divide-border divide-y">
-            {!pendingOrgs || pendingOrgs.content.length === 0 ? (
-              <p className="text-text-muted px-5 py-8 text-center text-sm">
-                No hay organizaciones pendientes.
-              </p>
-            ) : (
-              pendingOrgs.content.map((org) => (
-                <div key={org.id} className="flex items-center justify-between px-5 py-4">
-                  <div className="min-w-0">
-                    <p className="text-text truncate text-sm font-semibold">{org.name}</p>
-                    <p className="text-text-muted mt-0.5 text-xs">
-                      {org.contactEmail}
-                      {org.adminName && ` · ${org.adminName}`}
-                    </p>
-                  </div>
-                  <span className="text-text-muted ml-4 shrink-0 text-xs">
-                    {new Date(org.createdAt).toLocaleDateString("es-AR")}
-                  </span>
-                </div>
-              ))
+    <section className="flex flex-col gap-6">
+      <PageHeading title="Métricas">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setLive((v) => !v)}
+            aria-pressed={live}
+            className={cn(
+              "inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full px-3.5 text-[13px] font-extrabold transition-colors",
+              live ? "bg-success-light text-success-dark" : "border-border text-text-muted border",
             )}
-          </div>
+          >
+            <span className={cn("size-2 rounded-full", live ? "bg-success" : "bg-text-muted")} />
+            {live ? "En vivo" : "Pausado"}
+          </button>
+          <DatetimeRangePicker value={selection} onChange={changeSelection} />
         </div>
+      </PageHeading>
 
-        <div className="border-border bg-surface rounded-2xl border">
-          <div className="flex items-center justify-between border-b border-inherit px-5 py-4">
-            <h2 className="text-text text-sm font-semibold">Reportes abiertos por motivo</h2>
-            <span className="text-text-muted text-xs">Pendientes</span>
-          </div>
-          <div className="space-y-3 px-5 py-4">
-            {reasonOrder.map((reason) => {
-              const count = reportsByReason?.[reason] ?? 0;
-              return (
-                <div key={reason} className="flex items-center gap-3">
-                  <span className="text-text-muted w-36 shrink-0 text-xs">
-                    {REASON_LABELS[reason]}
-                  </span>
-                  <div className="bg-fill flex-1 overflow-hidden rounded-full">
-                    <div
-                      className="bg-primary/60 h-2 rounded-full transition-all"
-                      style={{ width: `${(count / maxReasonCount) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-text w-4 shrink-0 text-right text-xs font-semibold">
-                    {count}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      <MetricsTabs
+        tabs={tabs}
+        active={tab}
+        onChange={changeTab}
+        idBase="metrics"
+        trailing={
+          <p className="text-text-muted text-xs">
+            Comparando con {previousWindowLabel(range)} · horario UTC
+          </p>
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {learning.isPending ? (
-          <LoadingState>Cargando embudo y reportes…</LoadingState>
-        ) : !learning.data ? (
-          <ErrorState>No pudimos cargar el embudo ni los reportes.</ErrorState>
-        ) : (
-          <>
-            <Funnel
-              title="Embudo de aprendizaje"
-              metric="learning_funnel"
-              subtitle="Todo el historial"
-              steps={learning.data.onboardingFunnel.map((s) => ({ key: s.key, count: s.count }))}
-            />
-            <SignReportsCard pending={stats?.openSignReports} reports={learning.data.reports} />
-          </>
-        )}
+      <div role="tabpanel" id={`metrics-panel-${tab}`} aria-labelledby={`metrics-tab-${tab}`}>
+        {tab === "resumen" ? (
+          <ResumenTab
+            range={range}
+            live={live}
+            step={step}
+            onSelectRange={onSelectRange}
+            onSelectTab={(t: ResumenTarget, anchor?: string) => {
+              changeTab(t);
+              if (anchor) scrollToWhenReady(anchor);
+            }}
+          />
+        ) : null}
+        {tab === "negocio" ? (
+          <GrowthTab range={range} live={live} onSelectRange={onSelectRange} />
+        ) : null}
+        {tab === "usuarios" ? (
+          <UsersTab range={range} live={live} onSelectRange={onSelectRange} />
+        ) : null}
+        {tab === "aprendizaje" ? (
+          <LearningTab range={range} live={live} onSelectRange={onSelectRange} />
+        ) : null}
+        {tab === "infraestructura" ? <InfraTab {...perf} onSelectRange={onSelectRange} /> : null}
       </div>
-
-      <div className="border-border bg-surface rounded-2xl border">
-        <div className="border-b border-inherit px-5 py-4">
-          <h2 className="text-text text-sm font-semibold">Estado del contenido</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-border bg-fill text-text-muted border-b">
-                <th className="px-5 py-3 text-left font-semibold">Curso</th>
-                <th className="px-5 py-3 text-left font-semibold">Versión</th>
-                <th className="px-5 py-3 text-left font-semibold">Estado</th>
-                <th className="px-5 py-3 text-right font-semibold">Inscriptos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!courses || courses.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-text-muted px-5 py-8 text-center">
-                    No hay cursos.
-                  </td>
-                </tr>
-              ) : (
-                courses.flatMap((course) =>
-                  course.versions.map((v) => (
-                    <tr key={v.id} className="border-border border-b last:border-0">
-                      <td className="text-text px-5 py-3 font-medium">{course.name}</td>
-                      <td className="text-text-muted px-5 py-3">v{v.version}</td>
-                      <td className="px-5 py-3">
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${VERSION_STATUS_COLORS[v.status] ?? "bg-fill text-text-muted"}`}
-                        >
-                          {VERSION_STATUS_LABELS[v.status] ?? v.status}
-                        </span>
-                      </td>
-                      <td className="text-text-muted px-5 py-3 text-right">
-                        {course.enrollmentCount.toLocaleString("es-AR")}
-                      </td>
-                    </tr>
-                  )),
-                )
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    </section>
   );
 }

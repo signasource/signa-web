@@ -283,9 +283,10 @@ export const METRICS = {
   },
   payment_conversion: {
     label: "Conversión a pago",
-    description: "Qué parte de todos los usuarios pagó algo (gemas o cursos) dentro del período.",
+    description:
+      "Qué parte de los usuarios finales pagó algo (gemas o cursos) dentro del período. No cuenta a los usuarios de organizaciones.",
     howComputed:
-      "Dividimos las personas distintas que hicieron al menos una compra pagada en el período por el total de usuarios.",
+      "Dividimos los usuarios finales distintos que hicieron al menos una compra pagada en el período por el total de usuarios finales (sin administradores ni miembros o administradores de organizaciones).",
     goodWhen: "Cuanto más alta, más gente llega a pagar algo.",
     threshold: { dir: "up", warn: 5, danger: 2 },
   },
