@@ -232,14 +232,18 @@ export default function DashboardOverviewPage() {
                 rows={[
                   { label: "Módulos completados", value: progress.modulesCompleted },
                   { label: "Lecciones pendientes", value: NUMBER.format(progress.pendingLessons) },
-                  {
-                    label: "Tiempo total de aprendizaje",
-                    value: formatMinutes(progress.totalLearningMinutes),
-                  },
-                  {
-                    label: "Tiempo promedio por persona",
-                    value: formatMinutes(progress.averageLearningMinutes),
-                  },
+                  ...(!courseId
+                    ? ([
+                        {
+                          label: "Tiempo total de aprendizaje",
+                          value: formatMinutes(progress.totalLearningMinutes),
+                        },
+                        {
+                          label: "Tiempo promedio por persona",
+                          value: formatMinutes(progress.averageLearningMinutes),
+                        },
+                      ] as const)
+                    : []),
                 ]}
               />
             </Card>

@@ -35,6 +35,7 @@ The prototype mocked data the API does not expose. Revisit if `signa-api` adds i
 - **Period filter:** streaks (`participantsWithStreak`, `longestCurrentStreak`, `currentStreak`) are current only; the API stores no streak history.
 - **Member detail:** progress is per course (`MemberCourseProgressResponse`), not per module/lesson; no "recent activity" feed, no per-module accuracy.
 - **Contents:** no signs count, recognition %, or average attempts per module (`ModuleStatsResponse` has lessons, completed/in-progress, accuracy, total attempts).
+- **Learning minutes (Progreso card):** `UserDailyActivity` has no course reference, so `totalLearningMinutes` / `averageLearningMinutes` cannot be filtered by course. These rows are hidden in the Progreso card when a course filter is active, and are only shown for the whole-organization view.
 
 ## Planned
 
