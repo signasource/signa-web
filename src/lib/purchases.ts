@@ -3,7 +3,6 @@ import type {
   Purchase,
   PurchaseStatus,
   RefundReason,
-  Seat,
   SeatCounts,
   SeatStatus,
   VolumeDiscount,
@@ -55,14 +54,6 @@ export function isErasedEmail(email: string): boolean {
 /** Seat email for display: anonymized placeholders become friendly copy. */
 export function seatEmailLabel(email: string): string {
   return isErasedEmail(email) ? "Cuenta eliminada" : email;
-}
-
-/** Whether a reminder can go out now: only to sent invitations, once the cooldown has passed. */
-export function canRemindSeat(seat: Seat, now: number = Date.now()): boolean {
-  return (
-    seat.status === "INVITED" &&
-    (!seat.nextReminderAvailableAt || new Date(seat.nextReminderAvailableAt).getTime() <= now)
-  );
 }
 
 /** Whether the organization can still cancel this purchase for a full refund. */

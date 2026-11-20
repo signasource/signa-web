@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Purchase, Seat } from "@/lib/api/types";
+import type { Purchase } from "@/lib/api/types";
 import {
   daysToComplete,
   signsWithin,
@@ -8,7 +8,6 @@ import {
   daysLeft,
   emailsFromSheet,
   formatMoney,
-  canRemindSeat,
   isErasedEmail,
   nextVolumeDiscount,
   paymentMessage,
@@ -194,18 +193,6 @@ describe("paymentMessage", () => {
     expect(paymentMessage("expired").tone).toBe("danger");
     expect(paymentMessage("action_required").tone).toBe("warning");
     expect(paymentMessage("processing").tone).toBe("warning");
-  });
-});
-
-describe("canRemindSeat", () => {
-  it("only allows a reminder for sent invitations whose cooldown has passed", () => {
-    const now = Date.parse("2026-11-20T12:00:00Z");
-    const sent = (next: string | null) =>
-      ({ status: "INVITED", nextReminderAvailableAt: next }) as Seat;
-    expect(canRemindSeat(sent(null), now)).toBe(true);
-    expect(canRemindSeat(sent("2026-11-20T11:00:00Z"), now)).toBe(true);
-    expect(canRemindSeat(sent("2026-11-21T11:00:00Z"), now)).toBe(false);
-    expect(canRemindSeat({ ...sent(null), status: "INVITATION_EXPIRED" }, now)).toBe(false);
   });
 });
 
