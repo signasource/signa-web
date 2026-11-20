@@ -19,7 +19,6 @@ import {
 import { NUMBER } from "@/components/dashboard/usage-business";
 import {
   dailyRevenue,
-  paymentConversion,
   pct0,
   pct1,
   rate1,
@@ -83,7 +82,6 @@ export function GrowthTab({
   const pg = previous.data;
   const money = revenueTotals(g);
   const prevMoney = pg ? revenueTotals(pg) : null;
-  const conversion = paymentConversion(g);
   const payingUsers = g.endUsers.payingUsers;
   const revenuePerPayer =
     payingUsers > 0 ? (g.gems.netAmount + g.courseSales.netAmount) / payingUsers : 0;
@@ -142,16 +140,6 @@ export function GrowthTab({
           }
           spark={dailyTicket(g)}
           hint={`${NUMBER.format(g.orgs.purchasesInRange)} ${g.orgs.purchasesInRange === 1 ? "compra de organizaciones" : "compras de organizaciones"}`}
-        />
-        <KpiCard
-          metric="payment_conversion"
-          value={pct1(conversion)}
-          delta={{
-            current: conversion,
-            previous: pg ? paymentConversion(pg) : null,
-            mode: "pp",
-          }}
-          hint={`${NUMBER.format(g.endUsers.payingAccounts)} de ${NUMBER.format(g.endUsers.accounts)} ${g.endUsers.accounts === 1 ? "usuario final pagó algo" : "usuarios finales pagaron algo"}`}
         />
       </KpiRow>
 
