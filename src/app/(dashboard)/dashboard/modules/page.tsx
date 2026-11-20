@@ -9,7 +9,6 @@ import {
   ErrorState,
   LoadingState,
   PageHeading,
-  ProgressBar,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
 import { useCourseFilter } from "@/features/dashboard/use-course-filter";
@@ -26,20 +25,12 @@ export default function ModulesPage() {
   const { period } = usePeriodFilter();
   const filters = { courseId, period };
 
-  const overview = useQuery({
-    queryKey: ["organization", orgId, "overview", filters],
-    queryFn: () => organizationsApi.overview(orgId!, filters),
-    enabled: Boolean(orgId),
-    placeholderData: keepPreviousData,
-  });
   const { data, isPending, error } = useQuery({
     queryKey: ["organization", orgId, "modules", filters],
     queryFn: () => organizationsApi.modules(orgId!, filters),
     enabled: Boolean(orgId),
     placeholderData: keepPreviousData,
   });
-  const total = overview.data?.participation.totalParticipants ?? 0;
-
   return (
     <section className="flex flex-col gap-5">
       <PageHeading
@@ -81,28 +72,7 @@ export default function ModulesPage() {
                   </p>
                 </div>
               </div>
-              <div className="grid flex-[2_1_520px] grid-cols-[repeat(auto-fit,minmax(130px,1fr))] items-center gap-5">
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-text-muted text-[13px] font-bold">Lo completaron</span>
-                  <span className="flex items-center gap-2">
-                    <ProgressBar
-                      percent={m.completionPercentage}
-                      tone="success"
-                      className="flex-1"
-                      label={`Completaron ${m.title}`}
-                    />
-                    <span className="text-sm font-extrabold whitespace-nowrap">
-                      {m.participantsCompleted}
-                      {total ? `/${total}` : ""}
-                    </span>
-                  </span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-text-muted text-[13px] font-bold">En curso</span>
-                  <span className="font-display text-2xl font-extrabold">
-                    {m.participantsInProgress}
-                  </span>
-                </div>
+              <div className="grid flex-[2_1_320px] grid-cols-[repeat(auto-fit,minmax(130px,1fr))] items-center gap-5">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-text-muted text-[13px] font-bold">
                     Respuestas correctas
