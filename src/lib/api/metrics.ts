@@ -154,6 +154,7 @@ export type OrgUtilization = {
   name: string;
   members: number;
   seatsSold: number;
+  seatsRefunded: number;
   seatsActive: number;
   occupancyPercent: number;
   /** Members active within the selected window. */

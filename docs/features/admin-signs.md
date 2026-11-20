@@ -30,6 +30,11 @@ is linkable and the browser's back button works:
 them in the same transaction (every course version, published included). The editor asks for
 confirmation whenever the sign is used, saying how many lessons (and how many published) change.
 
+**YouTube link.** The app reads the link from each `INTRODUCE_SIGN` block's config (`video_url`), not
+from the catalog. Saving a new link makes signa-api copy it (or remove it, when cleared) into every
+block that presents that sign, in all course versions (published included), in the same transaction.
+Only done when the request carries `youtubeUrl`; blocks already holding the value are untouched.
+
 **Formats.** `SignAnimationPanel` (`sign-animation-panel.tsx`) has a format switch. A `.glb` sign is one
 file. An `.mp4` sign has a front video and an optional **lateral** one (`view=lateral`, enabled once
 the front is an `.mp4`; it can be removed). Uploading a `.glb` front drops the lateral video (the

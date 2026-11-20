@@ -373,6 +373,10 @@ function PurchaseFormView({ catalog }: { catalog: PurchaseCatalog }) {
               Formato: usuario@dominio.com — separalos con comas o saltos de línea. La invitación
               solo la puede aceptar la cuenta de ese email.
             </span>
+            <span className="text-text-muted text-[13px] font-normal">
+              Excel o CSV: tomamos todas las celdas que tengan un email, en cualquier fila o
+              columna. No hace falta encabezado.
+            </span>
           </label>
           {sheetMessage ? <p className="text-text-muted text-[13px]">{sheetMessage}</p> : null}
           {form.formState.errors.emails ? (

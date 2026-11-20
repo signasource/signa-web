@@ -3,12 +3,10 @@
 import Link from "next/link";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { daysSince } from "@/components/dashboard/format";
-import { Funnel } from "@/components/dashboard/funnel";
 import { KpiCard, KpiRow } from "@/components/dashboard/kpi-card";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount, fmtMoneyCompact } from "@/components/dashboard/perf-format";
 import { ServicesStrip, useServiceStatus } from "@/components/dashboard/services-status";
-import { SignReportsCard } from "@/components/dashboard/sign-reports-card";
 import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import {
@@ -151,10 +149,10 @@ export function buildAlerts({
 }
 
 /**
- * Resumen — "¿cómo viene Signa?" in seconds. Two bands, so nothing reads as filtered when it isn't:
- * **En el período** — four north-star KPIs with period-over-period deltas, daily active users
- * (previous window dashed) and "Requiere atención"; **Panorama general** — the learning funnel and
- * sign reports, which the API counts over the whole history. The services strip closes the page.
+ * Resumen — "¿cómo viene Signa?" in seconds: four north-star KPIs with period-over-period deltas,
+ * daily active users (previous window dashed) beside "Requiere atención", and the services strip.
+ * The learning funnel and sign reports are not here: the API counts them over the whole history, so
+ * they live on the admin home (`/admin`), where no period is picked.
  */
 export function ResumenTab({
   range,
@@ -189,13 +187,12 @@ export function ResumenTab({
   const activeShare = rate1(g.engagement.activeInRange, g.users.total);
   const prevCompletion = rateOrNull(l?.lessons.previousCompleted, l?.lessons.previousStarted);
 
-  // Pending sign reports have their own card below, so they don't repeat as an alert.
   const alerts = buildAlerts({
     growth: g,
     business: b,
     learning: l,
     emailFailures: services.emailFailures,
-  }).filter((a) => a.key !== "reports");
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -257,41 +254,11 @@ export function ResumenTab({
         <AttentionList alerts={alerts} onSelectTab={onSelectTab} />
       </div>
 
-      <SectionHeading
-        title="Panorama general"
-        caption="Todo el historial · no cambia con el período elegido"
-      />
-      <div className="grid gap-4 lg:grid-cols-2">
-        {l ? (
-          <>
-            <Funnel
-              title="Embudo de aprendizaje"
-              metric="learning_funnel"
-              steps={l.onboardingFunnel.map((s) => ({ key: s.key, count: s.count }))}
-            />
-            <SignReportsCard pending={b.errors.pendingSignReports} reports={l.reports} />
-          </>
-        ) : learning.isPending ? (
-          <LoadingState>Cargando panorama…</LoadingState>
-        ) : (
-          <ErrorState>No pudimos cargar el embudo ni los reportes.</ErrorState>
-        )}
-      </div>
-
       <ServicesStrip
         items={services.items}
         unavailable={services.unavailable}
         action={{ label: "Ver infraestructura", onClick: () => onSelectTab("infraestructura") }}
       />
-    </div>
-  );
-}
-
-function SectionHeading({ title, caption }: { title: string; caption: string }) {
-  return (
-    <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <h2 className="font-display text-xl font-bold tracking-tight">{title}</h2>
-      <span className="text-text-muted text-[13px]">{caption}</span>
     </div>
   );
 }
