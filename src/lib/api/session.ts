@@ -1,6 +1,8 @@
 import { ApiError } from "@/lib/api/client";
 import { tokenStore } from "@/lib/api/token-store";
 
+export type RefreshResult = "ok" | "expired" | "unavailable";
+
 async function post(path: string, body?: unknown): Promise<Response> {
   return fetch(path, {
     method: "POST",
@@ -35,16 +37,18 @@ export const sessionApi = {
     lastName: string;
   }): Promise<void> => startSession("/api/session/register", account),
 
-  async refresh(): Promise<boolean> {
+  /** "expired": the server rejected the session. "unavailable": network/5xx, the session may be fine. */
+  async refresh(): Promise<RefreshResult> {
     try {
       const res = await post("/api/session/refresh");
-      if (!res.ok) return false;
+      if (res.status >= 500) return "unavailable";
+      if (!res.ok) return "expired";
       const data = (await res.json()) as { access_token?: string };
-      if (!data.access_token) return false;
+      if (!data.access_token) return "expired";
       tokenStore.set(data.access_token);
-      return true;
+      return "ok";
     } catch {
-      return false;
+      return "unavailable";
     }
   },
 

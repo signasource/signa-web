@@ -66,7 +66,7 @@ const catalog: PurchaseCatalog = {
   ],
   currency: "ARS",
   volumeDiscounts: [{ minSeats: 3, percent: 10 }],
-  minDays: 15,
+  minDays: 5,
   maxDays: 60,
   invitationDays: 10,
   maxSeats: 500,
@@ -96,6 +96,7 @@ function quoteFor({
     discountAmount: (10000 - pricePerSeat) * seats,
     totalAmount: pricePerSeat * seats,
     currency: "ARS",
+    refundRule: "Solo podés pedir el reembolso mientras ninguna persona invitada haya aceptado.",
   };
 }
 

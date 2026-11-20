@@ -1,9 +1,9 @@
 # Admin sign editor (`/admin/signs`)
 
 > Responsibility: the SIGNA back-office "Señas" screen — the sign catalog and its editor (name,
-> handedness, YouTube link, animation upload, where each sign is used).
-> Update when: the catalog, the editor, the upload rules, or the sign API contract change.
-> Sources: src/app/(admin)/admin/signs/page.tsx, src/features/admin/signs/{sign-card,sign-editor,sign-animation-panel,sign-media-preview,confirm-dialog,errors}.ts(x), src/lib/sign-editor.ts, src/lib/glb.ts, src/app/api/glb-viewer/file/route.ts, src/lib/api/admin.ts
+> handedness, YouTube link, where each sign is used).
+> Update when: the catalog, the editor, or the sign API contract change.
+> Sources: src/app/(admin)/admin/signs/page.tsx, src/features/admin/signs/{sign-card,sign-editor,sign-media-preview,confirm-dialog,errors}.ts(x), src/lib/sign-editor.ts, src/lib/api/admin.ts
 
 Mirrors the look of `/admin/courses` (tinted cards, sticky editor bar, dark summary card) with
 design tokens instead of hex. Two views on one route, chosen by the `?id=` search param so the editor
@@ -19,12 +19,11 @@ is linkable and the browser's back button works:
 
 ## What can be changed
 
-| Field     | Rules (client = API)                                                                                                           |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Name      | 1–40 letters (accents ok), digits, spaces, `-`, `_`; unique ignoring case. **Renaming cascades** (below)                       |
-| Manos     | `ONE_HANDED` / `TWO_HANDED`                                                                                                    |
-| YouTube   | optional `youtube.com` / `youtu.be` link; empty clears it                                                                      |
-| Animation | Choose **Avatar 3D** (one `.glb`) or **Video** (front `.mp4` + optional lateral `.mp4`); type detected from the bytes, ≤ 50 MB |
+| Field   | Rules (client = API)                                                                                     |
+| ------- | -------------------------------------------------------------------------------------------------------- |
+| Name    | 1–40 letters (accents ok), digits, spaces, `-`, `_`; unique ignoring case. **Renaming cascades** (below) |
+| Manos   | `ONE_HANDED` / `TWO_HANDED`                                                                              |
+| YouTube | optional `youtube.com` / `youtu.be` link; empty clears it                                                |
 
 **Rename.** Lessons and learners' learned-sign rows point at a sign by its text, so signa-api rewrites
 them in the same transaction (every course version, published included). The editor asks for
@@ -34,27 +33,6 @@ confirmation whenever the sign is used, saying how many lessons (and how many pu
 from the catalog. Saving a new link makes signa-api copy it (or remove it, when cleared) into every
 block that presents that sign, in all course versions (published included), in the same transaction.
 Only done when the request carries `youtubeUrl`; blocks already holding the value are untouched.
-
-**Formats.** `SignAnimationPanel` (`sign-animation-panel.tsx`) has a format switch. A `.glb` sign is one
-file. An `.mp4` sign has a front video and an optional **lateral** one (`view=lateral`, enabled once
-the front is an `.mp4`; it can be removed). Uploading a `.glb` front drops the lateral video (the
-avatar can be rotated instead). Each slot rejects the wrong file type with its own message.
-
-**Missing files.** Imported signs point at `lsa/<meaning>.glb` even when that file was never uploaded
-(e.g. "ayer"). The API checks it (`mediaAvailable`) and the editor shows "Falta el archivo" instead of
-a failing 3D viewer.
-
-**Upload.** Picking or dropping a file validates it client-side, asks to confirm when it replaces an
-existing animation, and uploads it (`adminApi.uploadSignAnimation`, multipart). The app shows it right
-away: it asks signa-api which file to load per sign (`POST /signs/media`) instead of deriving the
-`.glb` URL from the name. The previous file is kept by the API under `<lang>/_history/`.
-
-## Preview
-
-`SignMediaPreview` frames the animation like the app's "Presentar seña" block: an `.mp4` plays as a
-looping muted `<video>`; a `.glb` loads in `/api/glb-viewer/file?src=<url>` — a single-model
-model-viewer page whose `src` must pass `isAllowedGlbSource` (the public R2 bucket, or the API's
-`/media/` fallback used locally). See [security.md](../security.md#glb-viewer-routes).
 
 ## Where it is used
 

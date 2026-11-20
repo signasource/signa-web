@@ -2,7 +2,7 @@
 
 > Responsibility: token storage, login, route guard, and logout.
 > Update when: token storage, `AuthProvider`, the dashboard guard, or the refresh/logout flow changes.
-> Sources: src/lib/api/token-store.ts, src/lib/api/session.ts, src/lib/session-server.ts, src/app/api/session/, src/features/auth/auth-context.tsx, src/app/(dashboard)/dashboard/layout.tsx, src/app/(marketing)/organizations/login/page.tsx, src/app/(auth)/invitacion/page.tsx, src/components/auth/google-sign-in-button.tsx, src/features/admin/admin-auth-context.tsx
+> Sources: src/lib/api/token-store.ts, src/lib/api/session.ts, src/lib/session-server.ts, src/lib/api/restore.ts, src/app/api/session/, src/features/auth/auth-context.tsx, src/app/(dashboard)/dashboard/layout.tsx, src/app/(marketing)/organizations/login/page.tsx, src/app/(auth)/invitacion/page.tsx, src/components/auth/google-sign-in-button.tsx, src/features/admin/admin-auth-context.tsx
 
 ## Storage
 
@@ -20,6 +20,8 @@ The browser never sees the refresh token. Route Handlers act as a small backend-
   returns `{access_token}`. No cookie or a rejected refresh → 401 and the cookie is cleared.
 - `POST /api/session/register` `{email, username, password, name, lastName}` → calls signa-api `/auth/register` (an employee creating their account from `/invitacion`), sets the cookie, returns `{access_token}`.
 - `POST /api/session/logout` → clears the cookie.
+
+**Staying signed in (like Jira/Slack).** The session ends only when `signa-api` definitively rejects the refresh token (4xx) or the user logs out. Network errors and 5xx never clear the cookie or log out: `sessionApi.refresh()` returns `"ok" | "expired" | "unavailable"`, and the client only drops the session on `"expired"`. Refresh tokens rotate, so `/api/session/refresh` shares one upstream call between requests carrying the same token within 30 s (two tabs, remounts, HMR) instead of letting the loser be rejected and logged out. Boot restore (`restoreWithRetry`, `src/lib/api/restore.ts`) retries transient failures with backoff before showing the login, without clearing the cookie. Both providers (org panel and back-office) refresh every 10 minutes and when the tab becomes visible.
 
 All of them reject requests whose `Origin` is not this site (403), on top of `SameSite=Strict`.
 `localStorage` only keeps a non-secret hint (`signa.session = "1"`) so pages without a session

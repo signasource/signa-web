@@ -37,15 +37,29 @@ export type AdminPurchaseDetail = AdminPurchaseListItem & {
 
 export type RefundRequestStatus = "PENDING" | "RESOLVED";
 export type RefundRequestReason =
-  "NOT_RECEIVED" | "MISTAKE" | "DUPLICATE" | "TECHNICAL" | "NOT_AS_EXPECTED" | "OTHER";
+  | "NOT_RECEIVED"
+  | "MISTAKE"
+  | "DUPLICATE"
+  | "TECHNICAL"
+  | "NOT_AS_EXPECTED"
+  | "OTHER"
+  // Seat refunds without a customer request (informational rows)
+  | "PURCHASE_CANCELLED"
+  | "ALREADY_PAID"
+  | "AMOUNT_MISMATCH"
+  | "BUYER_REQUESTED"
+  | "EXTERNAL_REFUND"
+  | "CHARGEBACK";
 
 export type AdminRefundRequest = {
   id: string;
   purchaseType: PurchaseType;
   purchaseId: string;
-  reason: RefundRequestReason;
+  /** Null when the buyer did not pick a reason. */
+  reason: RefundRequestReason | null;
   channel: string;
-  message: string;
+  /** Empty or null when the buyer left no comment. */
+  message: string | null;
   note: string | null;
   status: RefundRequestStatus;
   resolvedByName: string | null;
@@ -60,6 +74,8 @@ export type AdminRefundRequest = {
   currency: string;
   purchaseStatus: UnifiedPurchaseStatus;
   purchasePaidAt: string | null;
+  /** True for refunds with no customer request; opens the purchase, not a request. */
+  informational: boolean;
 };
 
 export type AdminMe = {

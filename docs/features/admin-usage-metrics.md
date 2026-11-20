@@ -36,11 +36,13 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   netos** (org + usuarios finales, neto de reembolsos; compact `fmtMoneyCompact`, with the org/usuario
   split in its hint and an org-side period delta + sparkline), **Tasa de reembolso** (unificada, hint
   desglosa orgs vs usuarios), **Uso de cupos** (pp delta), **Ticket promedio org.** (pct delta from the
-  previous window) and **Conversión a pago** (payers ÷ total users — `endUsers.payingUsers`). Then the
+  previous window) and **Conversión a pago** (end-user payers ÷ end-user accounts — `endUsers.payingAccounts ÷
+endUsers.accounts`; admins, org admins and active org members are left out of both sides, so it is
+  not `payingUsers ÷ users.total`). Then the
   stacked **Ingresos por fuente** chart (`RevenueBySourceChart`: organizaciones + gemas + cursos pagos).
   Below, two side-by-side panels: **Organizaciones** (a segmented status **pipeline** bar + legend —
   Activas/Pendientes/Suspendidas/Rechazadas — the pending-validation amber strip with "Validar", and
-  usuarios/ingreso promedio por org + compras) and **Usuarios finales** (gem & paid-course money tiles,
+  usuarios/ingreso promedio por org + compras) and **Usuarios finales** (gem & paid-course money tiles, **net of refunds** via `endUserSalesNet` — the API's `paidAmount`/`purchases` are gross —
   usuarios que compraron, ingreso por usuario pagador, and recompra 2+ from `endUsers.repeatBuyerPercent`).
   The `/admin/organizations` list has tabs Pendientes/Activas/Rechazadas/Suspendidas/Todas; "Todas"
   excludes suspended (dadas de baja) orgs, and a suspended org's detail panel offers "Reactivar
@@ -157,6 +159,13 @@ suggested `step` (`deriveStepSeconds`). While **live**, rolling presets re-ancho
 all TanStack queries (`refetchInterval`) refresh. Query keys: `["admin","metrics",<kind>,…,from,to,step]`.
 
 ## Notes & limits
+
+- **Money net of refunds:** the API keeps gross fields (`paidAmount`, `purchases`, `daily`) and adds
+  `netAmount` + `netCount`/`netPurchases` + `dailyNet` (purchases that were **not** refunded, attributed to
+  the period they were paid in). Ingresos netos / Tasa de reembolso use the gross-minus-refunds flow
+  (`revenueTotals`); every other money figure uses the net fields: gem & paid-course tiles, ingresos por
+  fuente chart and income sparkline, ticket promedio, compras / ingreso por organización, ingresos in the
+  license table, payers and ingreso por usuario pagador.
 
 - **Universe:** every Usuarios metric (new, total, activation, active, sessions) counts accounts that are not
   `Role.ADMIN` (SIGNA staff). The "% de usuarios totales" under active users uses the same growth `users.total`.

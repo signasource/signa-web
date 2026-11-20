@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { Card, CardTitle, ErrorState, pillButton, primaryButton } from "@/components/dashboard/ui";
 import type { Purchase } from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
-import { formatMoney, withdrawalSchema, type WithdrawalForm } from "@/lib/purchases";
+import { formatMoney, REFUND_RULE, withdrawalSchema, type WithdrawalForm } from "@/lib/purchases";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -38,7 +38,7 @@ export function WithdrawPurchase({ purchase, onConfirm, pending, error }: Props)
           <CardTitle>Anular la compra</CardTitle>
           <p className="text-text-muted text-sm text-pretty">
             Tenés tiempo hasta el {until} para anularla. Te devolvemos {total} completos a través de
-            Mercado Pago.
+            Mercado Pago. {REFUND_RULE}
           </p>
         </div>
         {confirming ? null : (

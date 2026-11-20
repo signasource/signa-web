@@ -206,6 +206,8 @@ export type PurchaseQuote = {
   discountAmount: number;
   totalAmount: number;
   currency: string;
+  /** Business rule about refunds, to show before paying. */
+  refundRule: string;
 };
 
 export type SeatCounts = {
@@ -240,6 +242,8 @@ export type Purchase = {
   seatCounts: SeatCounts;
   /** True when the organization has a pending refund request for this purchase. */
   hasRefundRequest: boolean;
+  /** True once any invitee accepted their seat: the purchase can no longer be refunded. */
+  hasAcceptedSeats: boolean;
 };
 
 export type Seat = {
@@ -256,6 +260,15 @@ export type Seat = {
   userName: string | null;
   canEditEmail: boolean;
   nextReminderAvailableAt: string | null;
+};
+
+/** `GET /organizations/{id}/invitations`: an invitation not yet accepted, with its purchase. */
+export type OrganizationInvitation = {
+  purchaseId: string;
+  courseId: string;
+  courseName: string;
+  purchaseStatus: PurchaseStatus;
+  seat: Seat;
 };
 
 export type RefundReason =
@@ -311,8 +324,8 @@ export type UserRefundRequestResponse = {
   id: string;
   purchaseType: string;
   purchaseId: string;
-  reason: RefundRequestReason;
-  message: string;
+  reason: RefundRequestReason | null;
+  message: string | null;
   status: string;
   createdAt: string;
   productName: string | null;

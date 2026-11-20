@@ -19,7 +19,6 @@ import {
 import { NUMBER } from "@/components/dashboard/usage-business";
 import {
   dailyRevenue,
-  paymentConversion,
   pct0,
   pct1,
   rate1,
@@ -54,7 +53,7 @@ function share(part: number, whole: number): number {
 /** Average org ticket per bucket (org income ÷ org purchases), for the KPI sparkline. */
 function dailyTicket(g: GrowthMetrics): number[] {
   const purchases = new Map(g.orgs.dailyPurchases.map((d) => [d.t, d.count]));
-  return g.revenue.daily
+  return g.revenue.dailyNet
     .filter((d) => (purchases.get(d.t) ?? 0) > 0)
     .map((d) => d.amount / purchases.get(d.t)!);
 }
@@ -83,9 +82,9 @@ export function GrowthTab({
   const pg = previous.data;
   const money = revenueTotals(g);
   const prevMoney = pg ? revenueTotals(pg) : null;
-  const conversion = paymentConversion(g);
   const payingUsers = g.endUsers.payingUsers;
-  const revenuePerPayer = payingUsers > 0 ? money.usersPaid / payingUsers : 0;
+  const revenuePerPayer =
+    payingUsers > 0 ? (g.gems.netAmount + g.courseSales.netAmount) / payingUsers : 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -130,33 +129,23 @@ export function GrowthTab({
         />
         <KpiCard
           metric="average_ticket"
-          value={g.revenue.paidCount ? fmtMoney(g.revenue.averageTicket) : "—"}
+          value={g.revenue.netCount ? fmtMoney(g.revenue.averageTicket) : "—"}
           delta={
-            g.revenue.paidCount
+            g.revenue.netCount
               ? {
                   current: g.revenue.averageTicket,
-                  previous: pg && pg.revenue.paidCount ? pg.revenue.averageTicket : null,
+                  previous: pg && pg.revenue.netCount ? pg.revenue.averageTicket : null,
                 }
               : undefined
           }
           spark={dailyTicket(g)}
           hint={`${NUMBER.format(g.orgs.purchasesInRange)} ${g.orgs.purchasesInRange === 1 ? "compra de organizaciones" : "compras de organizaciones"}`}
         />
-        <KpiCard
-          metric="payment_conversion"
-          value={pct1(conversion)}
-          delta={{
-            current: conversion,
-            previous: pg ? paymentConversion(pg) : null,
-            mode: "pp",
-          }}
-          hint={`${NUMBER.format(payingUsers)} ${payingUsers === 1 ? "usuario pagó algo" : "usuarios pagaron algo"}`}
-        />
       </KpiRow>
 
       <RevenueBySourceChart
         title="Ingresos por fuente"
-        subtitle="Ingresos brutos por día. Hacé clic en una barra para ver ese día."
+        subtitle="Ingresos por día, sin las compras reembolsadas. Hacé clic en una barra para ver ese día."
         metric="income"
         range={range}
         format={fmtMoneyCompact}
@@ -166,19 +155,19 @@ export function GrowthTab({
             key: "orgs",
             label: "Organizaciones",
             color: "var(--color-primary)",
-            points: g.revenue.daily,
+            points: g.revenue.dailyNet,
           },
           {
             key: "gems",
             label: "Gemas",
             color: "var(--color-gems-blue)",
-            points: g.gems.daily,
+            points: g.gems.dailyNet,
           },
           {
             key: "courses",
             label: "Cursos pagos",
             color: "var(--color-course-teal)",
-            points: g.courseSales.daily,
+            points: g.courseSales.dailyNet,
           },
         ]}
       />
@@ -186,11 +175,11 @@ export function GrowthTab({
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <OrganizationsPanel g={g} />
         <EndUsersPanel
-          gemsAmount={g.gems.paidAmount}
-          gemsPurchases={g.gems.purchases}
+          gemsAmount={g.gems.netAmount}
+          gemsPurchases={g.gems.netPurchases}
           gemsGranted={g.gems.gemsGranted}
-          coursesAmount={g.courseSales.paidAmount}
-          coursesPurchases={g.courseSales.purchases}
+          coursesAmount={g.courseSales.netAmount}
+          coursesPurchases={g.courseSales.netPurchases}
           payingUsers={payingUsers}
           revenuePerPayer={revenuePerPayer}
           repeatBuyerPercent={g.endUsers.repeatBuyerPercent}
@@ -388,22 +377,22 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
                   <tr key={o.orgId} className="border-fill border-t">
                     <td className="py-2.5 font-extrabold">{o.name}</td>
                     <td className="py-2.5 pl-3 text-right">
-                      {NUMBER.format(o.seatsActive)}/{NUMBER.format(o.seatsSold - o.seatsRefunded)}
+                      {NUMBER.format(o.seatsActive ?? 0)}/{NUMBER.format((o.seatsSold ?? 0) - (o.seatsRefunded ?? 0))}
                     </td>
                     <td className="py-2.5 pl-3">
                       <div className="flex items-center gap-2">
                         <ProgressBar
-                          percent={o.occupancyPercent}
-                          tone={occupancyTone(o.occupancyPercent)}
+                          percent={o.occupancyPercent ?? 0}
+                          tone={occupancyTone(o.occupancyPercent ?? 0)}
                           className="flex-1"
                           label={`Ocupación de ${o.name}`}
                         />
                         <span className="w-10 text-right text-xs font-extrabold">
-                          {Math.round(o.occupancyPercent)}%
+                          {Math.round(o.occupancyPercent ?? 0)}%
                         </span>
                       </div>
                     </td>
-                    <td className="py-2.5 pl-3 text-right font-extrabold">{fmtMoney(o.revenue)}</td>
+                    <td className="py-2.5 pl-3 text-right font-extrabold">{fmtMoney(o.revenue ?? 0)}</td>
                   </tr>
                 );
               })}

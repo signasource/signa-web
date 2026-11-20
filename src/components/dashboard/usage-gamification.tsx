@@ -53,7 +53,7 @@ export function GamificationSection({ range, live }: { range: DateTimeRange; liv
 
   return (
     <div className="flex flex-col gap-4">
-      <Card className="grid grid-cols-2 p-0 sm:grid-cols-3 lg:grid-cols-5">
+      <Card className="grid grid-cols-2 p-0 sm:grid-cols-2 lg:grid-cols-4">
         <StripStat
           label="XP por usuario activo"
           value={g.xp.activeUsers ? NUMBER.format(g.xp.perActiveUser) : "—"}
@@ -77,11 +77,6 @@ export function GamificationSection({ range, live }: { range: DateTimeRange; liv
               />
             )
           }
-        />
-        <StripStat
-          label="Canje de gemas"
-          value={g.shop.gemsInInventory ? pct0(g.shop.redemptionRatePercent) : "—"}
-          sub={`${NUMBER.format(g.shop.totalGemsSpent)} de ${NUMBER.format(g.shop.gemsInInventory)}`}
         />
         <StripStat
           label="Regalos enviados"

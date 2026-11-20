@@ -72,7 +72,7 @@ function CoursePicker({
   value,
   onChange,
 }: {
-  courses: { courseId: string; courseName: string }[];
+  courses: { courseId: string; courseName: string; courseVersion: string }[];
   value: string | null;
   onChange: (id: string | null) => void;
 }) {
@@ -97,7 +97,8 @@ function CoursePicker({
   }, [open]);
 
   const current = courses.find((c) => c.courseId === value);
-  const options = [{ courseId: null, courseName: "Todos los cursos" }, ...courses];
+  const withUsers = courses.filter((c) => c.enrolled > 0 || c.completed > 0);
+  const options = [{ courseId: null, courseName: "Todos los cursos" }, ...withUsers];
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div ref={ref} className="relative">
@@ -113,8 +114,8 @@ function CoursePicker({
           )}
         >
           <Icon name="book" className="size-4" />
-          <span className="max-w-[220px] truncate">
-            {current?.courseName ?? "Todos los cursos"}
+          <span className="max-w-[280px] truncate">
+            {current && current.courseVersion ? `${current.courseName} · v${current.courseVersion}` : current?.courseName ?? "Todos los cursos"}
           </span>
           <Icon
             name="chevronDown"
@@ -126,10 +127,11 @@ function CoursePicker({
             id={menuId}
             role="listbox"
             aria-label="Curso"
-            className="border-border bg-surface dash-card-enter absolute left-0 z-30 mt-2 flex w-64 flex-col gap-0.5 rounded-2xl border p-1.5 shadow-lg"
+            className="border-border bg-surface dash-card-enter absolute left-0 z-30 mt-2 flex w-72 flex-col gap-0.5 rounded-2xl border p-1.5 shadow-lg"
           >
             {options.map((o) => {
               const selected = (value ?? null) === o.courseId;
+              const label = o.courseId && o.courseVersion ? `${o.courseName} · v${o.courseVersion}` : o.courseName;
               return (
                 <li key={o.courseId ?? "all"} role="option" aria-selected={selected}>
                   <button
@@ -143,7 +145,7 @@ function CoursePicker({
                       selected ? "bg-primary-light text-primary-dark" : "hover:bg-fill text-text",
                     )}
                   >
-                    <span className="truncate">{o.courseName}</span>
+                    <span className="truncate">{label}</span>
                     {selected ? <Icon name="check" className="size-4" /> : null}
                   </button>
                 </li>
@@ -153,8 +155,8 @@ function CoursePicker({
         ) : null}
       </div>
       <span className="text-text-muted text-[13px]">
-        {NUMBER.format(courses.length)}{" "}
-        {courses.length === 1 ? "curso publicado" : "cursos publicados"}
+        {NUMBER.format(withUsers.length)}{" "}
+        {withUsers.length === 1 ? "curso con usuarios" : "cursos con usuarios"}
       </span>
     </div>
   );
@@ -393,19 +395,7 @@ export function LearningTab({
       </KpiRow>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <DailySeriesChart
-          title="Respuestas correctas"
-          metric="accuracy_evolution"
-          seriesLabel="Precisión diaria"
-          showKindToggle={false}
-          points={l.dailyAccuracy.map((d) => ({ t: d.day, value: d.accuracyPercent }))}
-          previous={pl?.dailyAccuracy.map((d) => ({ t: d.day, value: d.accuracyPercent }))}
-          format={(v) => `${Math.round(v)}%`}
-          range={range}
-          dayResolution
-          emptyAsNull
-          onSelectRange={onSelectRange}
-        />
+        <ContentToReview lessons={l.lessonsToReview ?? []} signs={l.hardestSigns ?? []} />
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
             <CardTitle>Precisión por tipo de ejercicio</CardTitle>
@@ -418,6 +408,7 @@ export function LearningTab({
           ) : (
             <ul className="flex flex-col gap-3">
               {[...b.accuracy.byBlockType]
+                .filter((bt) => bt.type !== "SPELL_NAME")
                 .sort((x, y) => x.accuracyPercent - y.accuracyPercent)
                 .map((bt) => (
                   <li key={bt.type} className="flex flex-col gap-1.5">
@@ -436,8 +427,6 @@ export function LearningTab({
           )}
         </Card>
       </div>
-
-      <ContentToReview lessons={l.lessonsToReview ?? []} signs={l.hardestSigns ?? []} />
     </div>
   );
 }

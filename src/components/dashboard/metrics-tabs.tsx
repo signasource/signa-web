@@ -29,12 +29,15 @@ export function MetricsTabs<K extends string>({
   active,
   onChange,
   idBase,
+  label = "Apartados de métricas",
   trailing,
 }: {
   tabs: TabItem<K>[];
   active: K;
   onChange: (key: K) => void;
   idBase: string;
+  /** Accessible name of the tablist. */
+  label?: string;
   /** Content aligned to the right of the tab row (e.g. the comparison caption). */
   trailing?: ReactNode;
 }) {
@@ -53,7 +56,7 @@ export function MetricsTabs<K extends string>({
 
   return (
     <div className="border-border flex flex-wrap items-center gap-x-4 gap-y-1 border-b">
-      <div role="tablist" aria-label="Apartados de métricas" className="flex flex-wrap gap-1">
+      <div role="tablist" aria-label={label} className="flex flex-wrap gap-1">
         {tabs.map((tab, i) => {
           const selected = tab.key === active;
           return (

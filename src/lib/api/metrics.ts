@@ -96,6 +96,10 @@ export type GrowthMetrics = {
     previousPaidCount: number | null;
     previousRefundedAmount: number | null;
     daily: SeriesAmount[];
+    /** Purchases not refunded, attributed to the period they were paid in (gross fields keep them). */
+    netAmount: number;
+    netCount: number;
+    dailyNet: SeriesAmount[];
   };
   /** Real-money gem economy (end users, no org): money in/out plus gems granted. */
   gems: {
@@ -105,6 +109,10 @@ export type GrowthMetrics = {
     refundedAmount: number;
     refundedCount: number;
     daily: SeriesAmount[];
+    /** Orders not refunded, attributed to the period they were paid in. */
+    netAmount: number;
+    netPurchases: number;
+    dailyNet: SeriesAmount[];
   };
   /** Individual paid-course purchases bought directly by end users (no organization). */
   courseSales: {
@@ -113,11 +121,18 @@ export type GrowthMetrics = {
     refundedAmount: number;
     refundedCount: number;
     daily: SeriesAmount[];
+    netAmount: number;
+    netPurchases: number;
+    dailyNet: SeriesAmount[];
   };
   /** End users (no org) who paid for anything: distinct payers and the repeat-buyer share. */
   endUsers: {
     payingUsers: number;
     repeatBuyerPercent: number;
+    /** End-user accounts at the window's close (no admins, org admins or active org members). */
+    accounts: number;
+    /** The payers among `accounts` — the numerator of "conversión a pago". */
+    payingAccounts: number;
   };
   seats: {
     sold: number;
@@ -169,6 +184,7 @@ export type LearningMetrics = {
   courses: {
     courseId: string;
     courseName: string;
+    courseVersion: string;
     enrolled: number;
     completed: number;
     total: number;

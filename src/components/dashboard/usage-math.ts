@@ -144,19 +144,15 @@ export function revenueTotals(g: GrowthMetrics) {
   };
 }
 
-/** Gross income per bucket across every source (organizations, gems, paid courses), in time order. */
+/** Income per bucket, net of refunded purchases, across every source (organizations, gems, paid courses), in time order. */
 export function dailyRevenue(g: GrowthMetrics): number[] {
   const byT = new Map<string, number>();
   const add = (series: SeriesAmount[]) => {
     for (const p of series) byT.set(p.t, (byT.get(p.t) ?? 0) + p.amount);
   };
-  add(g.revenue.daily);
-  add(g.gems.daily);
-  add(g.courseSales.daily);
+  add(g.revenue.dailyNet);
+  add(g.gems.dailyNet);
+  add(g.courseSales.dailyNet);
   return [...byT.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v);
 }
 
-/** Paying end users over all accounts, as a percentage (one decimal). */
-export function paymentConversion(g: GrowthMetrics): number {
-  return rate1(g.endUsers.payingUsers, g.users.total);
-}

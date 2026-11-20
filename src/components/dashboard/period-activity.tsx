@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
+  YAxis,
   type TooltipContentProps,
   type TooltipValueType,
 } from "recharts";
@@ -236,7 +237,7 @@ export function PeriodActivity({
               ) : (
                 <div role="img" aria-label={summary} className="h-[210px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={points} margin={{ top: 20, right: 4, left: 4, bottom: 0 }}>
+                    <BarChart data={points} margin={{ top: 20, right: 4, left: 0, bottom: 0 }}>
                       <XAxis
                         dataKey="label"
                         axisLine={false}
@@ -244,6 +245,15 @@ export function PeriodActivity({
                         interval="preserveStartEnd"
                         minTickGap={16}
                         tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
+                        tickFormatter={(v: number) =>
+                          metric === "correct" ? `${v}%` : NUMBER.format(v)
+                        }
+                        width={metric === "correct" ? 36 : 48}
                       />
                       <Tooltip
                         content={ChartTooltip}

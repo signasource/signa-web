@@ -13,6 +13,7 @@ import {
   RefundRequestPill,
   SeatStatusPill,
 } from "@/components/dashboard/purchase-status";
+import { SeatEmailEditor } from "@/components/dashboard/seat-email-editor";
 import { WithdrawPurchase } from "@/components/dashboard/withdraw-purchase";
 import {
   Card,
@@ -25,6 +26,7 @@ import {
   primaryButton,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
+import { invitationsKey } from "@/features/dashboard/use-invited-seats";
 import { ApiError } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
 import type {
@@ -41,12 +43,12 @@ import {
   SEAT_STATUS_LABEL,
   acceptedSeats,
   canWithdraw,
+  REFUND_RULE,
   daysLeft,
   formatMoney,
   paymentMessage,
   paymentReturn,
   seatEmailLabel,
-  seatEmailSchema,
 } from "@/lib/purchases";
 import { cn } from "@/lib/utils";
 
@@ -82,57 +84,6 @@ function seatDates(seat: Seat, purchaseStatus: PurchaseStatus): string {
   return "";
 }
 
-function EmailEditor({
-  seat,
-  onSave,
-  onCancel,
-  saving,
-  error,
-}: {
-  seat: Seat;
-  onSave: (email: string) => void;
-  onCancel: () => void;
-  saving: boolean;
-  error: string | null;
-}) {
-  const form = useForm<{ email: string }>({
-    resolver: zodResolver(seatEmailSchema),
-    defaultValues: { email: seat.email },
-  });
-  return (
-    <form
-      noValidate
-      onSubmit={form.handleSubmit((values) => onSave(values.email.trim()))}
-      className="flex flex-col gap-1.5"
-    >
-      <div className="flex flex-wrap gap-2">
-        <input
-          type="email"
-          autoFocus
-          aria-label="Nuevo email"
-          className="border-border bg-surface min-w-0 flex-1 rounded-lg border px-3 py-1.5 text-sm"
-          {...form.register("email")}
-        />
-        <button type="submit" disabled={saving} className={pillButton}>
-          {saving ? "Guardando…" : "Guardar"}
-        </button>
-        <button type="button" disabled={saving} onClick={onCancel} className={pillButton}>
-          Cancelar
-        </button>
-      </div>
-      {form.formState.errors.email ? (
-        <span className="text-danger text-xs">{form.formState.errors.email.message}</span>
-      ) : null}
-      {error ? <span className="text-danger text-xs">{error}</span> : null}
-      {seat.status === "INVITED" ? (
-        <span className="text-text-muted text-xs">
-          El link anterior deja de funcionar y mandamos uno nuevo. El plazo no se reinicia.
-        </span>
-      ) : null}
-    </form>
-  );
-}
-
 const REFUND_REASON_OPTIONS: { value: RefundRequestReason; label: string }[] = [
   { value: "MISTAKE", label: "Me equivoqué al comprar" },
   { value: "DUPLICATE", label: "Compra duplicada" },
@@ -142,27 +93,26 @@ const REFUND_REASON_OPTIONS: { value: RefundRequestReason; label: string }[] = [
   { value: "OTHER", label: "Otro motivo" },
 ];
 
+/** Both fields are optional: an empty select or comment is simply not sent. */
 const refundSchema = z.object({
   reason: z
-    .enum([
-      "NOT_RECEIVED",
-      "MISTAKE",
-      "DUPLICATE",
-      "TECHNICAL",
-      "NOT_AS_EXPECTED",
-      "OTHER",
-    ] as const)
-    .refine((v) => v !== undefined, { message: "Seleccioná un motivo" }),
+    .enum(["", "NOT_RECEIVED", "MISTAKE", "DUPLICATE", "TECHNICAL", "NOT_AS_EXPECTED", "OTHER"])
+    .transform((v) => v || undefined),
   message: z
     .string()
-    .min(10, "Escribí al menos 10 caracteres")
-    .max(2000, "El mensaje no puede superar los 2000 caracteres"),
+    .trim()
+    .max(2000, "El mensaje no puede superar los 2000 caracteres")
+    .transform((v) => v || undefined),
 });
-type RefundFormValues = z.infer<typeof refundSchema>;
+type RefundFormInput = z.input<typeof refundSchema>;
+type RefundFormValues = z.output<typeof refundSchema>;
 
 function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId: string }) {
   const [sent, setSent] = useState(false);
-  const form = useForm<RefundFormValues>({ resolver: zodResolver(refundSchema) });
+  const form = useForm<RefundFormInput, unknown, RefundFormValues>({
+    resolver: zodResolver(refundSchema),
+    defaultValues: { reason: "", message: "" },
+  });
   const mutation = useMutation({
     mutationFn: (values: RefundFormValues) =>
       organizationsApi.createPurchaseRefundRequest(orgId, purchaseId, values),
@@ -191,8 +141,8 @@ function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId
     <Card className="flex flex-col gap-3">
       <CardTitle>Pedir reembolso</CardTitle>
       <p className="text-text-muted text-sm text-pretty">
-        Si ningún participante aceptó la invitación, podés pedir que revisemos el reembolso. Nuestro
-        equipo lo analizará y te responderá por email. No se devuelve dinero automáticamente.
+        {REFUND_RULE} Nuestro equipo analizará el pedido y te responderá por email. No se devuelve
+        dinero automáticamente.
       </p>
       <form
         noValidate
@@ -201,14 +151,14 @@ function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId
       >
         <div className="flex flex-col gap-1">
           <label htmlFor="refund-reason" className="text-sm font-semibold">
-            Motivo
+            Motivo <span className="text-text-muted font-normal">(opcional)</span>
           </label>
           <select
             id="refund-reason"
             className="border-border bg-surface rounded-lg border px-3 py-2 text-sm"
             {...form.register("reason")}
           >
-            <option value="">Seleccioná un motivo…</option>
+            <option value="">Sin especificar</option>
             {REFUND_REASON_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
@@ -221,7 +171,7 @@ function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="refund-message" className="text-sm font-semibold">
-            Comentario
+            Comentario <span className="text-text-muted font-normal">(opcional)</span>
           </label>
           <textarea
             id="refund-message"
@@ -276,12 +226,19 @@ export default function PurchaseDetailPage() {
       returned.result !== "rechazado" &&
       query.state.data?.purchase.status === "PENDING_PAYMENT"
         ? 5000
-        : false,
+        : // While a refund is still possible, an invitee may accept at any moment and close it.
+          query.state.data?.purchase.status === "PAID" &&
+            !query.state.data.purchase.hasAcceptedSeats
+          ? 15000
+          : false,
   });
 
   const store = async (detail: PurchaseDetail) => {
     queryClient.setQueryData(key, detail);
-    await queryClient.invalidateQueries({ queryKey: ["organization", orgId, "purchases"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "purchases"] }),
+      queryClient.invalidateQueries({ queryKey: invitationsKey(orgId) }),
+    ]);
   };
 
   const updateEmail = useMutation({
@@ -533,8 +490,16 @@ export default function PurchaseDetailPage() {
             email.
           </p>
         </Card>
-      ) : purchase.status === "PAID" && counts.active === 0 && orgId ? (
+      ) : purchase.status === "PAID" && !purchase.hasAcceptedSeats && orgId ? (
         <RefundRequestSection orgId={orgId} purchaseId={purchaseId} />
+      ) : purchase.status === "PAID" && purchase.hasAcceptedSeats ? (
+        <Card className="flex flex-col gap-2">
+          <CardTitle>Reembolso no disponible</CardTitle>
+          <p className="text-text-muted text-sm text-pretty">
+            Al menos una persona invitada ya aceptó su invitación, por eso esta compra ya no se
+            puede reembolsar. {REFUND_RULE}
+          </p>
+        </Card>
       ) : null}
 
       {data.refunds.length > 0 ? (
@@ -669,7 +634,7 @@ export default function PurchaseDetailPage() {
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     {editing === seat.id ? (
-                      <EmailEditor
+                      <SeatEmailEditor
                         seat={seat}
                         saving={updateEmail.isPending}
                         error={updateError}

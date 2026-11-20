@@ -54,7 +54,19 @@ const REFUND_REASON_LABEL: Record<string, string> = {
   TECHNICAL: "Problema técnico",
   NOT_AS_EXPECTED: "No era lo que esperaba",
   OTHER: "Otro",
+  PURCHASE_CANCELLED: "Pago de una compra cancelada",
+  ALREADY_PAID: "Pago duplicado",
+  AMOUNT_MISMATCH: "Monto distinto al de la compra",
+  BUYER_REQUESTED: "Arrepentimiento de la organización",
+  EXTERNAL_REFUND: "Reembolsado desde Mercado Pago",
+  CHARGEBACK: "Contracargo",
 };
+
+/** The buyer may skip the reason, so a request can arrive without one. */
+function refundReasonLabel(reason: string | null): string {
+  if (!reason) return "Sin motivo";
+  return REFUND_REASON_LABEL[reason] ?? reason;
+}
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
   MERCADO_PAGO: "Mercado Pago",
@@ -718,7 +730,7 @@ function RefundList({
   onSelect,
 }: {
   refunds: AdminRefundRequest[];
-  onSelect: (id: string) => void;
+  onSelect: (refund: AdminRefundRequest) => void;
 }) {
   const [q, setQ] = useState("");
   const [rStatus, setRStatus] = useState<RefundRequestStatus | "ALL">("PENDING");
@@ -905,7 +917,7 @@ function RefundList({
           return (
             <div
               key={r.id}
-              onClick={() => onSelect(r.id)}
+              onClick={() => onSelect(r)}
               className="flex cursor-pointer items-start justify-between gap-4 rounded-2xl border p-5 transition-shadow hover:shadow-sm"
               style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}
             >
@@ -920,15 +932,17 @@ function RefundList({
                   </span>
                 </div>
                 <p className="m-0 mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
-                  {REFUND_REASON_LABEL[r.reason] ?? r.reason} · {r.requesterUsername} ·{" "}
+                  {refundReasonLabel(r.reason)} · {r.requesterUsername} ·{" "}
                   {fdate(r.createdAt)}
                 </p>
-                <p
-                  className="m-0 mt-1 overflow-hidden text-xs text-ellipsis whitespace-nowrap italic"
-                  style={{ color: "var(--color-text-muted)" }}
-                >
-                  &ldquo;{r.message}&rdquo;
-                </p>
+                {r.message && (
+                  <p
+                    className="m-0 mt-1 overflow-hidden text-xs text-ellipsis whitespace-nowrap italic"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    &ldquo;{r.message}&rdquo;
+                  </p>
+                )}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
                 <RefundStatusBadge status={r.status} />
@@ -1079,7 +1093,6 @@ function PurchaseDetailView({
         </div>
       )}
 
-
       {refundBanner && (
         <div
           className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4 text-sm font-semibold"
@@ -1087,7 +1100,7 @@ function PurchaseDetailView({
         >
           <span className="min-w-0 flex-1">
             {pendingRefund
-              ? `Hay un pedido de reembolso pendiente desde el ${fdate(pendingRefund.createdAt)}: "${REFUND_REASON_LABEL[pendingRefund.reason]!}".`
+              ? `Hay un pedido de reembolso pendiente desde el ${fdate(pendingRefund.createdAt)}: "${refundReasonLabel(pendingRefund.reason)}".`
               : resolvedRefund
                 ? `Tuvo un pedido de reembolso, resuelto${resolvedRefund.resolvedAt ? ` el ${fdate(resolvedRefund.resolvedAt)}` : ""}.`
                 : ""}
@@ -1303,17 +1316,19 @@ function RefundDetailView({
               className="font-display m-0 text-lg font-bold"
               style={{ letterSpacing: "-0.015em" }}
             >
-              {REFUND_REASON_LABEL[rf.reason] ?? rf.reason}
+              {refundReasonLabel(rf.reason)}
             </h2>
             <p className="m-0 mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
-              Motivo elegido por quien lo pidió
+              {rf.reason ? "Motivo elegido por quien lo pidió" : "Quien lo pidió no eligió un motivo"}
             </p>
-            <p
-              className="m-0 mt-4 text-[15px] text-pretty"
-              style={{ color: "var(--color-text)", lineHeight: 1.55 }}
-            >
-              &ldquo;{rf.message}&rdquo;
-            </p>
+            {rf.message ? (
+              <p
+                className="m-0 mt-4 text-[15px] text-pretty"
+                style={{ color: "var(--color-text)", lineHeight: 1.55 }}
+              >
+                &ldquo;{rf.message}&rdquo;
+              </p>
+            ) : null}
             <div
               className="mt-4 flex items-center gap-2.5 border-t pt-4"
               style={{ borderColor: "var(--color-border)" }}
@@ -1620,8 +1635,12 @@ export default function AdminPurchasesPage() {
           ) : (
             <RefundList
               refunds={refundsQ.data}
-              onSelect={(id) => {
-                setView({ kind: "refund", id });
+              onSelect={(r) => {
+                setView(
+                  r.informational
+                    ? { kind: "purchase", id: r.purchaseId, type: r.purchaseType }
+                    : { kind: "refund", id: r.id },
+                );
                 window.scrollTo(0, 0);
               }}
             />

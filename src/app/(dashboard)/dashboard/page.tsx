@@ -17,7 +17,6 @@ import {
   SectionIcon,
   StatCard,
   StatRows,
-  headerChip,
   primaryButton,
 } from "@/components/dashboard/ui";
 import { PeriodActivity } from "@/components/dashboard/period-activity";
@@ -26,7 +25,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { useCourseFilter, useWithFilters } from "@/features/dashboard/use-course-filter";
 import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
-import { cn } from "@/lib/utils";
 import {
   ACTIVE_WINDOW_DAYS,
   daysSince,
@@ -242,16 +240,20 @@ export default function DashboardOverviewPage() {
                     value: progress.averagePendingLessons,
                     hint: "Promedio de lecciones sin completar por persona, calculado sobre todos los participantes.",
                   },
-                  {
-                    label: "Tiempo total de aprendizaje",
-                    value: formatMinutes(progress.totalLearningMinutes),
-                    hint: "Suma de los minutos de uso de la app de todos los participantes, contados desde que cada uno se incorporó a la organización.",
-                  },
-                  {
-                    label: "Tiempo promedio por persona",
-                    value: formatMinutes(progress.averageLearningMinutes),
-                    hint: "Promedio de minutos de aprendizaje por participante, calculado desde la incorporación de cada uno a la organización.",
-                  },
+                  ...(!courseId
+                    ? ([
+                        {
+                          label: "Tiempo total de aprendizaje",
+                          value: formatMinutes(progress.totalLearningMinutes),
+                          hint: "Suma de los minutos de uso de la app de todos los participantes, contados desde que cada uno se incorporó a la organización.",
+                        },
+                        {
+                          label: "Tiempo promedio por persona",
+                          value: formatMinutes(progress.averageLearningMinutes),
+                          hint: "Promedio de minutos de aprendizaje por participante, calculado desde la incorporación de cada uno a la organización.",
+                        },
+                      ] as const)
+                    : []),
                 ]}
               />
             </Card>
