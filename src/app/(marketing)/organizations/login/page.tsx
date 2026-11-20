@@ -90,6 +90,13 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         {errors.password && <span className={ERROR}>{errors.password.message}</span>}
       </label>
 
+      <Link
+        href="/organizations/forgot-password"
+        className="text-primary self-end text-[13px] font-bold"
+      >
+        ¿Olvidaste tu contraseña?
+      </Link>
+
       {serverError && <p className={ERROR}>{serverError}</p>}
 
       <button

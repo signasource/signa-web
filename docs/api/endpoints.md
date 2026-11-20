@@ -12,12 +12,12 @@ Login, Google, register, refresh and logout do **not** hit `signa-api` from the 
 
 ## `authApi` (`src/lib/api/auth.ts`) — mirrors `AuthController`
 
-| Method                              | Path                               | Returns | Notes                                                           |
-| ----------------------------------- | ---------------------------------- | ------- | --------------------------------------------------------------- |
-| `forgotPassword(email)`             | `POST /auth/forgot-password`       | `void`  | Anonymous; API answers the same whether or not the email exists |
-| `resetPassword(token, newPassword)` | `POST /auth/reset-password?token=` | `void`  | `token` is a **query param**. Anonymous                         |
+| Method                                    | Path                         | Returns | Notes                                                                                           |
+| ----------------------------------------- | ---------------------------- | ------- | ----------------------------------------------------------------------------------------------- |
+| `forgotPassword(email)`                   | `POST /auth/forgot-password` | `void`  | Anonymous; emails a 6-digit code (15 min). Same answer whether or not the email exists          |
+| `resetPassword(email, code, newPassword)` | `POST /auth/reset-password`  | `void`  | Anonymous; all three in the body (`ResetPasswordRequest`). `Invalid or expired code` on failure |
 
-Defined but **not used by any screen yet** (the forgot/reset pages are reserved). The client's own silent refresh goes through `/api/session/refresh` ([http-client.md](./http-client.md)).
+Used by `/organizations/forgot-password` (same code flow as `signa-mobile`). The client's own silent refresh goes through `/api/session/refresh` ([http-client.md](./http-client.md)).
 
 ## `usersApi` (`src/lib/api/users.ts`) — mirrors `UserController`
 

@@ -8,7 +8,7 @@ Argentine Sign Language (LSA): the public **landing page** (plus legal and organ
 **organization admin dashboard** (the panel where company admins track progress and buy seats) and the SIGNA
 **back-office** (`/admin`: organizations, purchases, courses, signs, users, usage metrics). Backend: `signa-api`
 (Spring Boot, stateless JWT bearer). Sibling repo: `signa-mobile` (the learner app; shares the brand).
-What is real vs reserved (accept-invite, forgot/reset password, …) → [docs/status.md](./docs/status.md).
+What is real vs reserved (accept-invite, …) → [docs/status.md](./docs/status.md).
 
 ## Docs are code
 
