@@ -59,14 +59,16 @@ export function useLearningQuery(
   range: DateTimeRange | null,
   live: boolean,
   courseIds: string[] = [],
+  courseVersions: string[] = [],
 ) {
   return useQuery({
-    queryKey: ["admin", "metrics", "learning", range?.from, range?.to, ...courseIds],
+    queryKey: ["admin", "metrics", "learning", range?.from, range?.to, ...courseIds, ...courseVersions],
     queryFn: () =>
       metricsApi.learning({
         from: range!.from,
         to: range!.to,
         courseIds: courseIds.length > 0 ? courseIds : undefined,
+        courseVersions: courseVersions.length > 0 ? courseVersions : undefined,
       }),
     ...options(range, live),
   });

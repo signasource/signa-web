@@ -364,9 +364,9 @@ export const metricsApi = {
       query: { from: params.from, to: params.to, courseIds: params.courseIds },
     }),
 
-  learning: (params: RangeParams & { courseIds?: string[] }) =>
+  learning: (params: RangeParams & { courseIds?: string[]; courseVersions?: string[] }) =>
     api<LearningMetrics>("/admin/metrics/learning", {
-      query: { from: params.from, to: params.to, courseIds: params.courseIds },
+      query: { from: params.from, to: params.to, courseIds: params.courseIds, courseVersions: params.courseVersions },
     }),
 
   gamification: (params: RangeParams) =>

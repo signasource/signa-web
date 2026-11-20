@@ -100,9 +100,9 @@ function CoursePicker({
     };
   }, [open]);
 
-  const current = courses.find((c) => c.courseId === value);
   const withUsers = courses.filter((c) => c.enrolled > 0 || c.completed > 0);
-  const options = [{ courseId: null, courseName: "Todos los cursos" }, ...withUsers];
+  const current = withUsers.find((c) => `${c.courseId}|${c.courseVersion}` === value);
+  const options = [{ courseId: null, courseName: "Todos los cursos", courseVersion: "" }, ...withUsers];
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div ref={ref} className="relative">
@@ -136,17 +136,18 @@ function CoursePicker({
             className="border-border bg-surface dash-card-enter absolute left-0 z-30 mt-2 flex w-72 flex-col gap-0.5 rounded-2xl border p-1.5 shadow-lg"
           >
             {options.map((o) => {
-              const selected = (value ?? null) === o.courseId;
+              const optionKey = o.courseId ? `${o.courseId}|${o.courseVersion}` : null;
+              const selected = value === optionKey;
               const label =
                 o.courseId && o.courseVersion
                   ? `${o.courseName} · v${o.courseVersion}`
                   : o.courseName;
               return (
-                <li key={o.courseId ?? "all"} role="option" aria-selected={selected}>
+                <li key={optionKey ?? "all"} role="option" aria-selected={selected}>
                   <button
                     type="button"
                     onClick={() => {
-                      onChange(o.courseId);
+                      onChange(optionKey);
                       setOpen(false);
                     }}
                     className={cn(
@@ -165,7 +166,7 @@ function CoursePicker({
       </div>
       <span className="text-text-muted text-[13px]">
         {NUMBER.format(withUsers.length)}{" "}
-        {withUsers.length === 1 ? "curso con usuarios" : "cursos con usuarios"}
+        {withUsers.length === 1 ? "versión de curso con usuarios" : "versiones de cursos con usuarios"}
       </span>
     </div>
   );
@@ -322,11 +323,14 @@ function ContentToReview({ lessons, signs }: { lessons: LessonReview[]; signs: S
  * them over the whole history, so they ignore both the period and the course picker.
  */
 export function LearningTab({ range, live }: { range: DateTimeRange; live: boolean }) {
-  const [courseId, setCourseId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<string | null>(null);
+  const courseId = selection ? selection.split("|")[0] : null;
+  const courseVersion = selection ? selection.split("|")[1] : null;
   const courseIds = courseId ? [courseId] : [];
+  const courseVersions = courseVersion ? [courseVersion] : [];
   const prev = previousRange(range);
-  const learning = useLearningQuery(range, live, courseIds);
-  const previous = useLearningQuery(prev, live, courseIds);
+  const learning = useLearningQuery(range, live, courseIds, courseVersions);
+  const previous = useLearningQuery(prev, live, courseIds, courseVersions);
   const business = useBusinessQuery(range, live, courseIds);
   const growth = useGrowthQuery(range, live, courseIds);
 
@@ -346,7 +350,7 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
 
   return (
     <div className="flex flex-col gap-5">
-      <CoursePicker courses={l.courses} value={courseId} onChange={setCourseId} />
+      <CoursePicker courses={l.courses} value={selection} onChange={setSelection} />
 
       <KpiRow>
         <KpiCard
