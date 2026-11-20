@@ -56,10 +56,15 @@ export function seatEmailLabel(email: string): string {
   return isErasedEmail(email) ? "Cuenta eliminada" : email;
 }
 
+/** Refund rule shown on the refund screen; the API sends the same text with every quote. */
+export const REFUND_RULE =
+  "Solo podés pedir el reembolso mientras ninguna persona invitada haya aceptado su invitación. Cuando alguien acepta, el reembolso deja de estar disponible.";
+
 /** Whether the organization can still cancel this purchase for a full refund. */
 export function canWithdraw(purchase: Purchase, now: Date = new Date()): boolean {
   return (
     purchase.status === "PAID" &&
+    !purchase.hasAcceptedSeats &&
     purchase.refundableUntil !== null &&
     new Date(purchase.refundableUntil).getTime() > now.getTime()
   );

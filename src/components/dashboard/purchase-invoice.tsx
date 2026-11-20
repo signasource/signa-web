@@ -122,6 +122,12 @@ export function PurchaseInvoice({
           {invitationDays} días para aceptarla y los {quote.durationDays} días de acceso de cada
           persona empiezan cuando la acepta.
         </p>
+        <p
+          role="note"
+          className="border-warning bg-warning/15 rounded-xl border px-3 py-2 text-[13px] text-pretty"
+        >
+          <strong>Política de reembolso:</strong> {quote.refundRule}
+        </p>
         {error ? <ErrorState>{error}</ErrorState> : null}
         <button type="button" disabled={confirming} onClick={onConfirm} className={primaryButton}>
           {confirming ? "Yendo a Mercado Pago…" : `Pagar ${money(quote.totalAmount)}`}

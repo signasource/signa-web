@@ -96,6 +96,7 @@ function quoteFor({
     discountAmount: (10000 - pricePerSeat) * seats,
     totalAmount: pricePerSeat * seats,
     currency: "ARS",
+    refundRule: "Solo podés pedir el reembolso mientras ninguna persona invitada haya aceptado.",
   };
 }
 
