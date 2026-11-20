@@ -197,16 +197,24 @@ export function SectionIcon({ name, className }: { name: IconName; className: st
   );
 }
 
-export function StatRows({ rows }: { rows: { label: string; value: ReactNode }[] }) {
+export function StatRows({ rows }: { rows: { label: string; value: ReactNode; hint?: string }[] }) {
   return (
     <dl className="flex flex-col">
       {rows.map((row) => (
-        <div
-          key={row.label}
-          className="border-fill flex justify-between gap-3 border-b py-2.5 text-sm last:border-b-0"
-        >
-          <dt className="text-text-muted">{row.label}</dt>
-          <dd className="flex items-center gap-1 font-extrabold">{row.value}</dd>
+        <div key={row.label} className="border-fill border-b last:border-b-0">
+          <div className="flex justify-between gap-3 py-2.5 text-sm">
+            <dt className="text-text-muted">{row.label}</dt>
+            <dd className="flex items-center gap-1 font-extrabold">{row.value}</dd>
+          </div>
+          {row.hint ? (
+            <details className="-mt-1 pb-2">
+              <summary className="text-text-muted/70 hover:text-text-muted inline-flex cursor-pointer list-none items-center gap-1 text-xs">
+                <Icon name="info" className="size-3" />
+                <span>¿Qué es esto?</span>
+              </summary>
+              <p className="text-text-muted mt-1 text-xs leading-relaxed">{row.hint}</p>
+            </details>
+          ) : null}
         </div>
       ))}
     </dl>

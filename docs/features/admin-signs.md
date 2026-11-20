@@ -19,11 +19,11 @@ is linkable and the browser's back button works:
 
 ## What can be changed
 
-| Field   | Rules (client = API)                                                                      |
-| ------- | ----------------------------------------------------------------------------------------- |
+| Field   | Rules (client = API)                                                                                     |
+| ------- | -------------------------------------------------------------------------------------------------------- |
 | Name    | 1–40 letters (accents ok), digits, spaces, `-`, `_`; unique ignoring case. **Renaming cascades** (below) |
-| Manos   | `ONE_HANDED` / `TWO_HANDED`                                                               |
-| YouTube | optional `youtube.com` / `youtu.be` link; empty clears it                                 |
+| Manos   | `ONE_HANDED` / `TWO_HANDED`                                                                              |
+| YouTube | optional `youtube.com` / `youtu.be` link; empty clears it                                                |
 
 **Rename.** Lessons and learners' learned-sign rows point at a sign by its text, so signa-api rewrites
 them in the same transaction (every course version, published included). The editor asks for

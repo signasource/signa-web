@@ -17,7 +17,6 @@ import {
   SectionIcon,
   StatCard,
   StatRows,
-  headerChip,
   primaryButton,
 } from "@/components/dashboard/ui";
 import { PeriodActivity } from "@/components/dashboard/period-activity";
@@ -26,7 +25,6 @@ import { useAuth } from "@/features/auth/auth-context";
 import { useCourseFilter, useWithFilters } from "@/features/dashboard/use-course-filter";
 import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
-import { cn } from "@/lib/utils";
 import {
   ACTIVE_WINDOW_DAYS,
   daysSince,
@@ -205,8 +203,13 @@ export default function DashboardOverviewPage() {
                   {
                     label: period ? "Días activos promedio" : "Días activos promedio (últimos 30)",
                     value: formatDecimal(participation.averageActiveDaysLast30),
+                    hint: "Cantidad de días distintos en que cada participante tuvo actividad en la app, en promedio, en los últimos 30 días.",
                   },
-                  { label: "Con racha activa hoy", value: participation.participantsWithStreak },
+                  {
+                    label: "Con racha activa hoy",
+                    value: participation.participantsWithStreak,
+                    hint: "Participantes con al menos un día de actividad consecutivo hasta hoy.",
+                  },
                   {
                     label: "Racha actual más larga",
                     value: (
@@ -215,10 +218,12 @@ export default function DashboardOverviewPage() {
                         {participation.longestCurrentStreak} días
                       </>
                     ),
+                    hint: "La racha de días consecutivos más larga entre todos los participantes.",
                   },
                   {
                     label: "Sin iniciar",
                     value: participation.totalParticipants - participation.participantsStarted,
+                    hint: "Participantes que todavía no completaron ninguna lección.",
                   },
                 ]}
               />
@@ -230,17 +235,22 @@ export default function DashboardOverviewPage() {
               </div>
               <StatRows
                 rows={[
-                  { label: "Módulos completados", value: progress.modulesCompleted },
-                  { label: "Lecciones pendientes", value: NUMBER.format(progress.pendingLessons) },
+                  {
+                    label: "Lecciones pendientes en promedio",
+                    value: progress.averagePendingLessons,
+                    hint: "Promedio de lecciones sin completar por persona, calculado sobre todos los participantes.",
+                  },
                   ...(!courseId
                     ? ([
                         {
                           label: "Tiempo total de aprendizaje",
                           value: formatMinutes(progress.totalLearningMinutes),
+                          hint: "Suma de los minutos de uso de la app de todos los participantes, contados desde que cada uno se incorporó a la organización.",
                         },
                         {
                           label: "Tiempo promedio por persona",
                           value: formatMinutes(progress.averageLearningMinutes),
+                          hint: "Promedio de minutos de aprendizaje por participante, calculado desde la incorporación de cada uno a la organización.",
                         },
                       ] as const)
                     : []),
@@ -257,16 +267,27 @@ export default function DashboardOverviewPage() {
                   {
                     label: "Ejercicios realizados",
                     value: NUMBER.format(performance.exerciseAttempts),
-                  },
-                  { label: "Respuestas correctas", value: `${performance.correctPercentage}%` },
-                  {
-                    label: "Intentos de reconocimiento de señas",
-                    value: NUMBER.format(performance.signRecognitionAttempts),
+                    hint: "Total de intentos de ejercicios de todos los participantes en el período.",
                   },
                   {
-                    label: "Señas reconocidas correctamente",
-                    value: `${performance.signRecognitionCorrectPercentage}%`,
+                    label: "Respuestas correctas",
+                    value: `${performance.correctPercentage}%`,
+                    hint: "Porcentaje de respuestas correctas sobre el total de intentos de ejercicios.",
                   },
+                  ...(performance.hasCameraExercises
+                    ? [
+                        {
+                          label: "Intentos de reconocimiento de señas",
+                          value: NUMBER.format(performance.signRecognitionAttempts),
+                          hint: "Total de intentos en ejercicios de reconocimiento por cámara.",
+                        },
+                        {
+                          label: "Señas reconocidas correctamente",
+                          value: `${performance.signRecognitionCorrectPercentage}%`,
+                          hint: "Porcentaje de reconocimientos correctos en los ejercicios de cámara.",
+                        },
+                      ]
+                    : []),
                 ]}
               />
             </Card>
