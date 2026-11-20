@@ -52,7 +52,7 @@ The page keeps its view state client-side (`{ kind: "list" | "purchase" | "refun
 
 **List view — Compras tab**
 
-- Full-width table of all three purchase types (SEATS · GEMS · COURSE) merged, newest first. Purchases that have a RESOLVED refund request are excluded — they appear only in the Reembolsos tab.
+- Full-width table of all three purchase types (SEATS · GEMS · COURSE) merged, newest first. Purchases that have a RESOLVED refund request are excluded unless they are REFUNDED — otherwise they appear only in the Reembolsos tab.
 - Type segmented control (Todas / Cupos / Gemas / Cursos, with counts on the full dataset).
 - Pill filters: Estado (PENDING_PAYMENT / PAID / CANCELLED / REFUNDED), Fecha (Hoy / 7 d / 30 d / Personalizado), Orden (date or amount, asc/desc).
 - Free-text search across buyer name, username, email, product, Mercado Pago order id and purchase id; active filter chips with individual remove and "Limpiar todo".
@@ -60,7 +60,7 @@ The page keeps its view state client-side (`{ kind: "list" | "purchase" | "refun
 
 **List view — Reembolsos tab**
 
-- Card list of refund requests; the tab badge counts the pending ones. Same search + Tipo / Fecha / Orden filters; PENDING / RESOLVED / Todos segmented control. Each card shows reason, truncated message, requester and age or resolution date.
+- Card list of refund requests; the tab badge counts the pending ones. Every refunded purchase without a request (seats, gems or courses: withdrawal, direct refund, Mercado Pago, chargeback) is listed too, as a read-only RESOLVED card (`informational: true`) that opens the purchase detail; a purchase with a request appears only through it. Same search + Tipo / Fecha / Orden filters; PENDING / RESOLVED / Todos segmented control. Each card shows reason, truncated message, requester and age or resolution date.
 
 **Purchase detail**
 
