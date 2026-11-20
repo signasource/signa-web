@@ -63,6 +63,11 @@ function accuracyClass(p: number): string {
   return "font-bold";
 }
 
+/** Stable key that uniquely identifies a course+version combination. */
+function courseKey(courseId: string, courseVersion: string) {
+  return `${courseId}:${courseVersion}`;
+}
+
 /** Course picker: a single select like the organizations panel's (all courses or one). */
 function CoursePicker({
   courses,
@@ -76,8 +81,9 @@ function CoursePicker({
     enrolled: number;
     completed: number;
   }[];
+  /** Composite "courseId:version" key, or null for "all courses". */
   value: string | null;
-  onChange: (id: string | null) => void;
+  onChange: (key: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -99,9 +105,8 @@ function CoursePicker({
     };
   }, [open]);
 
-  const current = courses.find((c) => c.courseId === value);
+  const current = courses.find((c) => courseKey(c.courseId, c.courseVersion) === value);
   const withUsers = courses.filter((c) => c.enrolled > 0 || c.completed > 0);
-  const options = [{ courseId: null, courseName: "Todos los cursos" }, ...withUsers];
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div ref={ref} className="relative">
@@ -134,18 +139,36 @@ function CoursePicker({
             aria-label="Curso"
             className="border-border bg-surface dash-card-enter absolute left-0 z-30 mt-2 flex w-72 flex-col gap-0.5 rounded-2xl border p-1.5 shadow-lg"
           >
-            {options.map((o) => {
-              const selected = (value ?? null) === o.courseId;
-              const label =
-                o.courseId && o.courseVersion
-                  ? `${o.courseName} · v${o.courseVersion}`
-                  : o.courseName;
+            <li role="option" aria-selected={value === null}>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(null);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors",
+                  value === null
+                    ? "bg-primary-light text-primary-dark"
+                    : "hover:bg-fill text-text",
+                )}
+              >
+                <span className="truncate">Todos los cursos</span>
+                {value === null ? <Icon name="check" className="size-4" /> : null}
+              </button>
+            </li>
+            {withUsers.map((o) => {
+              const key = courseKey(o.courseId, o.courseVersion);
+              const selected = value === key;
+              const label = o.courseVersion
+                ? `${o.courseName} · v${o.courseVersion}`
+                : o.courseName;
               return (
-                <li key={o.courseId ?? "all"} role="option" aria-selected={selected}>
+                <li key={key} role="option" aria-selected={selected}>
                   <button
                     type="button"
                     onClick={() => {
-                      onChange(o.courseId);
+                      onChange(key);
                       setOpen(false);
                     }}
                     className={cn(
@@ -321,8 +344,9 @@ function ContentToReview({ lessons, signs }: { lessons: LessonReview[]; signs: S
  * them over the whole history, so they ignore both the period and the course picker.
  */
 export function LearningTab({ range, live }: { range: DateTimeRange; live: boolean }) {
-  const [courseId, setCourseId] = useState<string | null>(null);
-  const courseIds = courseId ? [courseId] : [];
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  // courseKey format is "courseId:version"; queries only need the courseId part
+  const courseIds = selectedKey ? [selectedKey.split(":")[0]!] : [];
   const prev = previousRange(range);
   const learning = useLearningQuery(range, live, courseIds);
   const previous = useLearningQuery(prev, live, courseIds);
@@ -343,7 +367,7 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
 
   return (
     <div className="flex flex-col gap-5">
-      <CoursePicker courses={l.courses} value={courseId} onChange={setCourseId} />
+      <CoursePicker courses={l.courses} value={selectedKey} onChange={setSelectedKey} />
 
       <KpiRow>
         <KpiCard
