@@ -324,8 +324,8 @@ export type UserRefundRequestResponse = {
   id: string;
   purchaseType: string;
   purchaseId: string;
-  reason: RefundRequestReason;
-  message: string;
+  reason: RefundRequestReason | null;
+  message: string | null;
   status: string;
   createdAt: string;
   productName: string | null;
