@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { setOnSessionExpired } from "@/lib/api/client";
+import { isTransientError, restoreWithRetry } from "@/lib/api/restore";
 import { sessionApi } from "@/lib/api/session";
 import { tokenStore } from "@/lib/api/token-store";
 import { adminApi, type AdminMe } from "@/lib/api/admin";
@@ -46,8 +47,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (status !== "authenticated") return;
     const keepAlive = () => {
-      void sessionApi.refresh().then((ok) => {
-        if (!ok) void adminApi.me().catch(() => {});
+      void sessionApi.refresh().then((outcome) => {
+        if (outcome === "expired") void adminApi.me().catch(() => {});
       });
     };
     const onVisible = () => {
@@ -66,14 +67,26 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       setSessionExpired(true);
       signOut();
     });
+    let cancelled = false;
     const restore = tokenStore.hasSession()
-      ? adminApi.me().then(signIn)
+      ? restoreWithRetry(() => adminApi.me()).then((me) => {
+          if (!cancelled) signIn(me);
+        })
       : Promise.reject(new Error("no session"));
-    restore.catch(() => {
+    restore.catch((err) => {
+      if (cancelled) return;
+      if (isTransientError(err)) {
+        // Still unreachable after retrying: show the login but keep the cookie for the next load.
+        setStatus("unauthenticated");
+        return;
+      }
       tokenStore.clear();
       signOut();
     });
-    return () => setOnSessionExpired(null);
+    return () => {
+      cancelled = true;
+      setOnSessionExpired(null);
+    };
   }, [signIn, signOut]);
 
   const login = useCallback(

@@ -63,6 +63,24 @@ describe("api client", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it("keeps the session when the refresh endpoint is unavailable (5xx)", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ message: "expired" }, 401))
+      .mockResolvedValueOnce(json({ message: "down" }, 502));
+
+    await expect(api("/x")).rejects.toMatchObject({ status: 401 });
+    expect(tokenStore.getAccess()).toBe("old");
+  });
+
+  it("drops the session when the refresh is rejected", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ message: "expired" }, 401))
+      .mockResolvedValueOnce(json({ message: "no" }, 401));
+
+    await expect(api("/x")).rejects.toMatchObject({ status: 401 });
+    expect(tokenStore.getAccess()).toBeNull();
+  });
+
   it("throws ApiError with the API message on failure", async () => {
     fetchMock.mockResolvedValueOnce(json({ message: "Nope" }, 403));
 
