@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { daysSince } from "@/components/dashboard/format";
+import { Funnel } from "@/components/dashboard/funnel";
 import { KpiCard, KpiRow } from "@/components/dashboard/kpi-card";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtCount, fmtMoneyCompact } from "@/components/dashboard/perf-format";
 import { ServicesStrip, useServiceStatus } from "@/components/dashboard/services-status";
+import { SignReportsCard } from "@/components/dashboard/sign-reports-card";
 import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import {
@@ -149,9 +151,10 @@ export function buildAlerts({
 }
 
 /**
- * Resumen — "¿está todo bien?" in seconds: five north-star KPIs with period-over-period deltas, the
- * actionable exceptions next to the two trend charts (with the previous window dashed), and the
- * services status strip.
+ * Resumen — "¿cómo viene Signa?" in seconds. Two bands, so nothing reads as filtered when it isn't:
+ * **En el período** — four north-star KPIs with period-over-period deltas, daily active users
+ * (previous window dashed) and "Requiere atención"; **Panorama general** — the learning funnel and
+ * sign reports, which the API counts over the whole history. The services strip closes the page.
  */
 export function ResumenTab({
   range,
@@ -170,7 +173,6 @@ export function ResumenTab({
   const growth = useGrowthQuery(range, live);
   const prevGrowth = useGrowthQuery(prev, live);
   const business = useBusinessQuery(range, live);
-  const prevBusiness = useBusinessQuery(prev, live);
   const learning = useLearningQuery(range, live);
   const services = useServiceStatus(range, step, live);
 
@@ -186,25 +188,18 @@ export function ResumenTab({
   const prevMoney = pg ? revenueTotals(pg) : null;
   const activeShare = rate1(g.engagement.activeInRange, g.users.total);
   const prevCompletion = rateOrNull(l?.lessons.previousCompleted, l?.lessons.previousStarted);
-  const prevSuccess = rateOrNull(l?.exercises.previousCorrect, l?.exercises.previousAttempted);
 
+  // Pending sign reports have their own card below, so they don't repeat as an alert.
   const alerts = buildAlerts({
     growth: g,
     business: b,
     learning: l,
     emailFailures: services.emailFailures,
-  });
+  }).filter((a) => a.key !== "reports");
 
   return (
     <div className="flex flex-col gap-4">
       <KpiRow>
-        <KpiCard
-          metric="income"
-          value={fmtMoneyCompact(money.net)}
-          delta={{ current: money.net, previous: prevMoney?.net }}
-          hint={`Bruto ${fmtMoneyCompact(money.gross)} · reembolsos ${fmtMoneyCompact(money.refunded)}`}
-          spark={dailyRevenue(g)}
-        />
         <KpiCard
           metric="users_active"
           value={NUMBER.format(g.engagement.activeInRange)}
@@ -238,53 +233,49 @@ export function ResumenTab({
           }
         />
         <KpiCard
-          metric="exercise_success_rate"
-          value={l && l.exercises.attempted ? pct1(l.exercises.successPercent) : "—"}
-          toneValue={l && l.exercises.attempted ? l.exercises.successPercent : null}
-          delta={
-            l && l.exercises.attempted
-              ? { current: l.exercises.successPercent, previous: prevSuccess, mode: "pp" }
-              : undefined
-          }
-          hint={
-            l
-              ? `${l.exercises.averageAttempts.toLocaleString("es-AR")} intentos por ejercicio`
-              : undefined
-          }
-          spark={l?.dailyAccuracy.map((d) => d.accuracyPercent)}
+          metric="income"
+          value={fmtMoneyCompact(money.net)}
+          delta={{ current: money.net, previous: prevMoney?.net }}
+          hint={`Bruto ${fmtMoneyCompact(money.gross)} · reembolsos ${fmtMoneyCompact(money.refunded)}`}
+          spark={dailyRevenue(g)}
         />
       </KpiRow>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-3">
+        <DailySeriesChart
+          className="lg:col-span-2"
+          title="Usuarios activos"
+          metric="users_active"
+          seriesLabel="Activos"
+          showKindToggle={false}
+          points={g.engagement.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
+          previous={pg?.engagement.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
+          format={fmtCount}
+          range={range}
+          onSelectRange={onSelectRange}
+        />
         <AttentionList alerts={alerts} onSelectTab={onSelectTab} />
-        <div className="flex flex-col gap-4">
-          <DailySeriesChart
-            title="Usuarios activos por día"
-            metric="users_active"
-            seriesLabel="Activos"
-            showKindToggle={false}
-            points={g.engagement.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
-            previous={pg?.engagement.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
-            format={fmtCount}
-            range={range}
-            onSelectRange={onSelectRange}
-          />
-          <DailySeriesChart
-            title="Lecciones completadas por día"
-            metric="lessons_completed"
-            seriesLabel="Completadas"
-            showKindToggle={false}
-            points={b.activity.map((d) => ({ t: d.day, value: d.lessonsCompleted }))}
-            previous={prevBusiness.data?.activity.map((d) => ({
-              t: d.day,
-              value: d.lessonsCompleted,
-            }))}
-            format={fmtCount}
-            range={range}
-            dayResolution
-            onSelectRange={onSelectRange}
-          />
-        </div>
+      </div>
+
+      <SectionHeading
+        title="Panorama general"
+        caption="Todo el historial · no cambia con el período elegido"
+      />
+      <div className="grid gap-4 lg:grid-cols-2">
+        {l ? (
+          <>
+            <Funnel
+              title="Embudo de aprendizaje"
+              metric="learning_funnel"
+              steps={l.onboardingFunnel.map((s) => ({ key: s.key, count: s.count }))}
+            />
+            <SignReportsCard pending={b.errors.pendingSignReports} reports={l.reports} />
+          </>
+        ) : learning.isPending ? (
+          <LoadingState>Cargando panorama…</LoadingState>
+        ) : (
+          <ErrorState>No pudimos cargar el embudo ni los reportes.</ErrorState>
+        )}
       </div>
 
       <ServicesStrip
@@ -292,6 +283,15 @@ export function ResumenTab({
         unavailable={services.unavailable}
         action={{ label: "Ver infraestructura", onClick: () => onSelectTab("infraestructura") }}
       />
+    </div>
+  );
+}
+
+function SectionHeading({ title, caption }: { title: string; caption: string }) {
+  return (
+    <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <h2 className="font-display text-xl font-bold tracking-tight">{title}</h2>
+      <span className="text-text-muted text-[13px]">{caption}</span>
     </div>
   );
 }
