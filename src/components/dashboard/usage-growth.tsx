@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { daysSince, expiryTone, fmtDayMonth } from "@/components/dashboard/format";
+import { daysSince } from "@/components/dashboard/format";
 import { InfoPopover } from "@/components/dashboard/info-popover";
 import { KpiCard, KpiRow } from "@/components/dashboard/kpi-card";
 import { RevenueBySourceChart } from "@/components/dashboard/revenue-by-source-chart";
@@ -28,7 +28,6 @@ import {
 import { useGrowthQuery } from "@/components/dashboard/usage-queries";
 import type { GrowthMetrics, OrgUtilization } from "@/lib/api/metrics";
 import { previousRange, type DateTimeRange } from "@/lib/datetime-range";
-import { cn } from "@/lib/utils";
 
 /** The organization pipeline, in the order the segmented bar and legend read left-to-right. */
 const ORG_PIPELINE: { key: string; label: string; color: string }[] = [
@@ -351,17 +350,6 @@ function EndUsersPanel({
 /** How many rows a long listing shows before the "Ver más" toggle. */
 const ORG_TABLE_PREVIEW = 6;
 
-/** The license health badge, ranked: no free seats, then under-use, then renewal risk, else healthy. */
-function licenseStatus(o: OrgUtilization): { label: string; className: string } {
-  if (o.occupancyPercent >= 100)
-    return { label: "Sin cupos libres", className: "bg-primary-light text-primary-dark" };
-  if (o.occupancyPercent < 50)
-    return { label: "Bajo uso", className: "bg-shop-amber-light text-shop-amber-dark" };
-  if (expiryTone(o.expiresAt) === "danger")
-    return { label: "Vence pronto", className: "bg-danger-light text-danger" };
-  return { label: "Saludable", className: "bg-success-light text-success-dark" };
-}
-
 /** Occupancy bar colour: under-used warns, healthy (≥ 80 %) is green, the rest neutral. */
 function occupancyTone(percent: number): "warning" | "primary" | "success" {
   if (percent < 50) return "warning";
@@ -380,12 +368,7 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
   const visible = expanded ? rows : rows.slice(0, ORG_TABLE_PREVIEW);
   return (
     <Card id="licencias" className="scroll-mt-6">
-      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-        <CardTitle>Licencias por organización</CardTitle>
-        <p className="text-text-muted text-[13px]">
-          Ordenadas por riesgo: contratos grandes con poco uso o próximos a vencer
-        </p>
-      </div>
+      <CardTitle>Licencias por organización</CardTitle>
       {rows.length === 0 ? (
         <p className="text-text-muted mt-4 text-sm">Sin compras de cupos todavía.</p>
       ) : (
@@ -396,21 +379,16 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
                 <th className="pb-2 font-bold">Organización</th>
                 <th className="pb-2 pl-3 text-right font-bold">Cupos</th>
                 <th className="w-44 pb-2 pl-3 font-bold">Ocupación</th>
-                <th className="pb-2 pl-3 text-right font-bold">Activos</th>
-                <th className="pb-2 pl-3 font-bold">Vence</th>
                 <th className="pb-2 pl-3 text-right font-bold">Ingresos</th>
-                <th className="pb-2 pl-3 font-bold">Estado</th>
               </tr>
             </thead>
             <tbody>
               {visible.map((o) => {
-                const status = licenseStatus(o);
-                const expiry = expiryTone(o.expiresAt);
                 return (
                   <tr key={o.orgId} className="border-fill border-t">
                     <td className="py-2.5 font-extrabold">{o.name}</td>
                     <td className="py-2.5 pl-3 text-right">
-                      {NUMBER.format(o.seatsActive)}/{NUMBER.format(o.seatsSold)}
+                      {NUMBER.format(o.seatsActive)}/{NUMBER.format(o.seatsSold - o.seatsRefunded)}
                     </td>
                     <td className="py-2.5 pl-3">
                       <div className="flex items-center gap-2">
@@ -425,30 +403,7 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
                         </span>
                       </div>
                     </td>
-                    <td className="py-2.5 pl-3 text-right">{NUMBER.format(o.activeInRange)}</td>
-                    <td
-                      className={cn(
-                        "py-2.5 pl-3 whitespace-nowrap",
-                        expiry === "danger"
-                          ? "text-danger font-extrabold"
-                          : expiry === "warning"
-                            ? "text-shop-amber-dark font-extrabold"
-                            : "",
-                      )}
-                    >
-                      {fmtDayMonth(o.expiresAt)}
-                    </td>
                     <td className="py-2.5 pl-3 text-right font-extrabold">{fmtMoney(o.revenue)}</td>
-                    <td className="py-2.5 pl-3">
-                      <span
-                        className={cn(
-                          "inline-block rounded-full px-2.5 py-1 text-xs font-extrabold whitespace-nowrap",
-                          status.className,
-                        )}
-                      >
-                        {status.label}
-                      </span>
-                    </td>
                   </tr>
                 );
               })}

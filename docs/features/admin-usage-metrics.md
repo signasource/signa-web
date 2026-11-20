@@ -45,10 +45,11 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   The `/admin/organizations` list has tabs Pendientes/Activas/Rechazadas/Suspendidas/Todas; "Todas"
   excludes suspended (dadas de baja) orgs, and a suspended org's detail panel offers "Reactivar
   organización" (`PATCH status: ACTIVE`). Suspending asks for a mandatory reason (shown in the panel of a suspended org), and rejected/suspended orgs get "Dar de baja" (confirmed inline, `DELETE`), which frees their emails.
-  Finally the **per-org license utilization table** `OrgUtilizationTable` — contracted vs. used seats,
-  activos 7 d, vence (coloured by `expiryTone`), ingresos and an **Estado** badge (Bajo uso / Vence pronto /
-  Saludable / Sin cupos libres); ranked by risk, collapses to 6 rows behind a "Ver más (N)" toggle. Exposes
-  `useGrowthMetrics` (shared with Usuarios).
+  Finally the **per-org license utilization table** `OrgUtilizationTable` — contracted vs. used seats
+  (denominator = `seatsSold - seatsRefunded`, i.e. non-refunded seats only), ocupación, vence (coloured
+  by `expiryTone`), ingresos and an **Estado** badge (Bajo uso / Vence pronto / Saludable / Sin cupos
+  libres); ranked by risk, collapses to 6 rows behind a "Ver más (N)" toggle. Exposes `useGrowthMetrics`
+  (shared with Usuarios). `OrgUtilization` carries `seatsRefunded` from the API.
 - **Usuarios** (`usage-usuarios.tsx`) — "¿La gente usa Signa?": adquisición y actividad medidas sobre la
   ventana elegida. Range-based tasa de actividad (active/total, numerator/denominator), new users and active
   users each with a **period-over-period delta** (`Delta`, vs. the previous equal-length window; hidden for
