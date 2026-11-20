@@ -13,6 +13,7 @@ import {
   RefundRequestPill,
   SeatStatusPill,
 } from "@/components/dashboard/purchase-status";
+import { SeatEmailEditor } from "@/components/dashboard/seat-email-editor";
 import { WithdrawPurchase } from "@/components/dashboard/withdraw-purchase";
 import {
   Card,
@@ -25,6 +26,7 @@ import {
   primaryButton,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
+import { invitationsKey } from "@/features/dashboard/use-invited-seats";
 import { ApiError } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
 import type {
@@ -46,7 +48,6 @@ import {
   paymentMessage,
   paymentReturn,
   seatEmailLabel,
-  seatEmailSchema,
 } from "@/lib/purchases";
 import { cn } from "@/lib/utils";
 
@@ -80,57 +81,6 @@ function seatDates(seat: Seat, purchaseStatus: PurchaseStatus): string {
       : `Invitado el ${formatDate(seat.invitedAt)}`;
   }
   return "";
-}
-
-function EmailEditor({
-  seat,
-  onSave,
-  onCancel,
-  saving,
-  error,
-}: {
-  seat: Seat;
-  onSave: (email: string) => void;
-  onCancel: () => void;
-  saving: boolean;
-  error: string | null;
-}) {
-  const form = useForm<{ email: string }>({
-    resolver: zodResolver(seatEmailSchema),
-    defaultValues: { email: seat.email },
-  });
-  return (
-    <form
-      noValidate
-      onSubmit={form.handleSubmit((values) => onSave(values.email.trim()))}
-      className="flex flex-col gap-1.5"
-    >
-      <div className="flex flex-wrap gap-2">
-        <input
-          type="email"
-          autoFocus
-          aria-label="Nuevo email"
-          className="border-border bg-surface min-w-0 flex-1 rounded-lg border px-3 py-1.5 text-sm"
-          {...form.register("email")}
-        />
-        <button type="submit" disabled={saving} className={pillButton}>
-          {saving ? "Guardando…" : "Guardar"}
-        </button>
-        <button type="button" disabled={saving} onClick={onCancel} className={pillButton}>
-          Cancelar
-        </button>
-      </div>
-      {form.formState.errors.email ? (
-        <span className="text-danger text-xs">{form.formState.errors.email.message}</span>
-      ) : null}
-      {error ? <span className="text-danger text-xs">{error}</span> : null}
-      {seat.status === "INVITED" ? (
-        <span className="text-text-muted text-xs">
-          El link anterior deja de funcionar y mandamos uno nuevo. El plazo no se reinicia.
-        </span>
-      ) : null}
-    </form>
-  );
 }
 
 const REFUND_REASON_OPTIONS: { value: RefundRequestReason; label: string }[] = [
@@ -281,7 +231,10 @@ export default function PurchaseDetailPage() {
 
   const store = async (detail: PurchaseDetail) => {
     queryClient.setQueryData(key, detail);
-    await queryClient.invalidateQueries({ queryKey: ["organization", orgId, "purchases"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "purchases"] }),
+      queryClient.invalidateQueries({ queryKey: invitationsKey(orgId) }),
+    ]);
   };
 
   const updateEmail = useMutation({
@@ -669,7 +622,7 @@ export default function PurchaseDetailPage() {
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     {editing === seat.id ? (
-                      <EmailEditor
+                      <SeatEmailEditor
                         seat={seat}
                         saving={updateEmail.isPending}
                         error={updateError}
