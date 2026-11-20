@@ -97,7 +97,8 @@ function CoursePicker({
   }, [open]);
 
   const current = courses.find((c) => c.courseId === value);
-  const options = [{ courseId: null, courseName: "Todos los cursos" }, ...courses];
+  const withUsers = courses.filter((c) => c.enrolled > 0 || c.completed > 0);
+  const options = [{ courseId: null, courseName: "Todos los cursos" }, ...withUsers];
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div ref={ref} className="relative">
@@ -153,8 +154,8 @@ function CoursePicker({
         ) : null}
       </div>
       <span className="text-text-muted text-[13px]">
-        {NUMBER.format(courses.length)}{" "}
-        {courses.length === 1 ? "curso publicado" : "cursos publicados"}
+        {NUMBER.format(withUsers.length)}{" "}
+        {withUsers.length === 1 ? "curso con usuarios" : "cursos con usuarios"}
       </span>
     </div>
   );
@@ -402,7 +403,6 @@ export function LearningTab({
           previous={pl?.dailyAccuracy.map((d) => ({ t: d.day, value: d.accuracyPercent }))}
           format={(v) => `${Math.round(v)}%`}
           range={range}
-          dayResolution
           emptyAsNull
           onSelectRange={onSelectRange}
         />
