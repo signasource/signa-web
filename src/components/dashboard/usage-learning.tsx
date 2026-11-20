@@ -418,6 +418,7 @@ export function LearningTab({
           ) : (
             <ul className="flex flex-col gap-3">
               {[...b.accuracy.byBlockType]
+                .filter((bt) => bt.type !== "SPELL_NAME")
                 .sort((x, y) => x.accuracyPercent - y.accuracyPercent)
                 .map((bt) => (
                   <li key={bt.type} className="flex flex-col gap-1.5">
