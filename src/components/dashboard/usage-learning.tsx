@@ -394,18 +394,7 @@ export function LearningTab({
       </KpiRow>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <DailySeriesChart
-          title="Respuestas correctas"
-          metric="accuracy_evolution"
-          seriesLabel="Precisión diaria"
-          showKindToggle={false}
-          points={l.dailyAccuracy.map((d) => ({ t: d.day, value: d.accuracyPercent }))}
-          previous={pl?.dailyAccuracy.map((d) => ({ t: d.day, value: d.accuracyPercent }))}
-          format={(v) => `${Math.round(v)}%`}
-          range={range}
-          emptyAsNull
-          onSelectRange={onSelectRange}
-        />
+        <ContentToReview lessons={l.lessonsToReview ?? []} signs={l.hardestSigns ?? []} />
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
             <CardTitle>Precisión por tipo de ejercicio</CardTitle>
@@ -437,8 +426,6 @@ export function LearningTab({
           )}
         </Card>
       </div>
-
-      <ContentToReview lessons={l.lessonsToReview ?? []} signs={l.hardestSigns ?? []} />
     </div>
   );
 }
