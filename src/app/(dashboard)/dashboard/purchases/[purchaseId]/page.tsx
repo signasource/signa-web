@@ -26,6 +26,7 @@ import {
   primaryButton,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
+import { invitationsKey } from "@/features/dashboard/use-invited-seats";
 import { ApiError } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
 import type {
@@ -230,7 +231,10 @@ export default function PurchaseDetailPage() {
 
   const store = async (detail: PurchaseDetail) => {
     queryClient.setQueryData(key, detail);
-    await queryClient.invalidateQueries({ queryKey: ["organization", orgId, "purchases"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "purchases"] }),
+      queryClient.invalidateQueries({ queryKey: invitationsKey(orgId) }),
+    ]);
   };
 
   const updateEmail = useMutation({

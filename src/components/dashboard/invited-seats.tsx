@@ -7,7 +7,7 @@ import { Icon } from "@/components/dashboard/icons";
 import { SeatStatusPill } from "@/components/dashboard/purchase-status";
 import { SeatEmailEditor } from "@/components/dashboard/seat-email-editor";
 import { ErrorState, LoadingState, pillButton } from "@/components/dashboard/ui";
-import { useInvitedSeats } from "@/features/dashboard/use-invited-seats";
+import { invitationsKey, useInvitedSeats } from "@/features/dashboard/use-invited-seats";
 import { ApiError } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
 import type { PurchaseDetail, SeatStatus } from "@/lib/api/types";
@@ -45,7 +45,10 @@ export function InvitedSeats({
 
   const store = async (detail: PurchaseDetail) => {
     queryClient.setQueryData(["organization", orgId, "purchases", detail.purchase.id], detail);
-    await queryClient.invalidateQueries({ queryKey: ["organization", orgId, "purchases"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["organization", orgId, "purchases"] }),
+      queryClient.invalidateQueries({ queryKey: invitationsKey(orgId) }),
+    ]);
   };
 
   const updateEmail = useMutation({
@@ -128,7 +131,7 @@ export function InvitedSeats({
             <span>INVITADO</span>
             <span>ACCIONES</span>
           </div>
-          {rows.map(({ seat, purchase }) => {
+          {rows.map(({ seat, purchaseId, courseName, purchaseStatus }) => {
             const canRemind = canRemindSeat(seat, now);
             const reminded = seat.lastReminderAt ?? seat.autoReminderSentAt;
             return (
@@ -143,9 +146,7 @@ export function InvitedSeats({
                         setEditing(null);
                         updateEmail.reset();
                       }}
-                      onSave={(email) =>
-                        updateEmail.mutate({ purchaseId: purchase.id, seatId: seat.id, email })
-                      }
+                      onSave={(email) => updateEmail.mutate({ purchaseId, seatId: seat.id, email })}
                     />
                   </div>
                 ) : (
@@ -165,9 +166,9 @@ export function InvitedSeats({
                         </span>
                       ) : null}
                     </span>
-                    <span className="text-text-muted truncate text-sm">{purchase.courseName}</span>
+                    <span className="text-text-muted truncate text-sm">{courseName}</span>
                     <span>
-                      <SeatStatusPill status={seat.status} purchaseStatus={purchase.status} />
+                      <SeatStatusPill status={seat.status} purchaseStatus={purchaseStatus} />
                     </span>
                     <span className="text-text-muted text-sm">
                       {seat.invitedAt ? formatDate(seat.invitedAt) : "—"}
@@ -184,7 +185,7 @@ export function InvitedSeats({
                           }
                           onClick={() => {
                             setNotice(null);
-                            remind.mutate({ purchaseId: purchase.id, seatId: seat.id });
+                            remind.mutate({ purchaseId, seatId: seat.id });
                           }}
                           className={pillButton}
                         >
@@ -205,7 +206,7 @@ export function InvitedSeats({
                           Cambiar email
                         </button>
                       ) : null}
-                      <Link href={`/dashboard/purchases/${purchase.id}`} className={pillButton}>
+                      <Link href={`/dashboard/purchases/${purchaseId}`} className={pillButton}>
                         Ver compra
                       </Link>
                     </span>

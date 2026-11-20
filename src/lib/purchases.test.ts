@@ -9,8 +9,6 @@ import {
   emailsFromSheet,
   formatMoney,
   canRemindSeat,
-  hasInvitedSeats,
-  invitedSeatsOf,
   isErasedEmail,
   nextVolumeDiscount,
   paymentMessage,
@@ -199,46 +197,7 @@ describe("paymentMessage", () => {
   });
 });
 
-describe("invited seats", () => {
-  const counts = {
-    pendingPayment: 0,
-    invited: 0,
-    invitationExpired: 0,
-    active: 0,
-    accessExpired: 0,
-    revoked: 0,
-  };
-  const purchase = (status: Purchase["status"], seatCounts = counts) =>
-    ({ status, seatCounts }) as Purchase;
-  const seat = (id: string, email: string, status: Seat["status"]) =>
-    ({ id, email, status }) as Seat;
-
-  it("only loads purchases that can hold people who have not accepted", () => {
-    expect(hasInvitedSeats(purchase("PAID", { ...counts, invited: 2 }))).toBe(true);
-    expect(hasInvitedSeats(purchase("PENDING_PAYMENT", { ...counts, pendingPayment: 1 }))).toBe(
-      false,
-    );
-    expect(hasInvitedSeats(purchase("PAID", { ...counts, active: 3 }))).toBe(false);
-    expect(hasInvitedSeats(purchase("REFUNDED", { ...counts, invited: 2 }))).toBe(false);
-    expect(hasInvitedSeats(purchase("CANCELLED", { ...counts, pendingPayment: 2 }))).toBe(false);
-  });
-
-  it("keeps not-accepted seats and filters them by email", () => {
-    const detail = {
-      purchase: purchase("PAID"),
-      refunds: [],
-      seats: [
-        seat("1", "Ana@x.com", "INVITED"),
-        seat("2", "bob@x.com", "ACTIVE"),
-        seat("3", "carla@x.com", "INVITATION_EXPIRED"),
-        seat("4", "dan@x.com", "REVOKED"),
-      ],
-    };
-    expect(invitedSeatsOf(detail).map((r) => r.seat.id)).toEqual(["1", "3"]);
-    expect(invitedSeatsOf(detail, " ANA ").map((r) => r.seat.id)).toEqual(["1"]);
-    expect(invitedSeatsOf(detail, "", "INVITATION_EXPIRED").map((r) => r.seat.id)).toEqual(["3"]);
-  });
-
+describe("canRemindSeat", () => {
   it("only allows a reminder for sent invitations whose cooldown has passed", () => {
     const now = Date.parse("2026-11-20T12:00:00Z");
     const sent = (next: string | null) =>
