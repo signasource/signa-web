@@ -2,11 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
-import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
 import { Icon } from "@/components/dashboard/icons";
 import { InfoPopover } from "@/components/dashboard/info-popover";
 import { KpiCard, KpiRow } from "@/components/dashboard/kpi-card";
-import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import {
   Card,
   CardTitle,
@@ -72,7 +70,13 @@ function CoursePicker({
   value,
   onChange,
 }: {
-  courses: { courseId: string; courseName: string; courseVersion: string }[];
+  courses: {
+    courseId: string;
+    courseName: string;
+    courseVersion: string;
+    enrolled: number;
+    completed: number;
+  }[];
   value: string | null;
   onChange: (id: string | null) => void;
 }) {
@@ -317,15 +321,7 @@ function ContentToReview({ lessons, signs }: { lessons: LessonReview[]; signs: S
  * "Contenido a revisar". The learning funnel and sign reports live on the Resumen: the API counts
  * them over the whole history, so they ignore both the period and the course picker.
  */
-export function LearningTab({
-  range,
-  live,
-  onSelectRange,
-}: {
-  range: DateTimeRange;
-  live: boolean;
-  onSelectRange: RangeSelect;
-}) {
+export function LearningTab({ range, live }: { range: DateTimeRange; live: boolean }) {
   const [courseId, setCourseId] = useState<string | null>(null);
   const courseIds = courseId ? [courseId] : [];
   const prev = previousRange(range);
