@@ -95,8 +95,15 @@ describe("emailsFromSheet", () => {
     ).toEqual(["ana@x.com"]);
   });
 
-  it("falls back to the first column and keeps a header-less first row", () => {
+  it("keeps a header-less first row", () => {
     expect(emailsFromSheet([["ana@x.com"], ["bruno@x.com"]])).toEqual(["ana@x.com", "bruno@x.com"]);
+  });
+
+  it("finds emails regardless of leading empty rows or columns", () => {
+    expect(emailsFromSheet([[], [undefined, "marina@x.com"], ["", "mabel@x.com"]])).toEqual([
+      "marina@x.com",
+      "mabel@x.com",
+    ]);
   });
 
   it("returns nothing for an empty sheet", () => {
