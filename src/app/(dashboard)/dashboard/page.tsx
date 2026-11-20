@@ -102,11 +102,6 @@ export default function DashboardOverviewPage() {
         <div className="flex flex-wrap items-center gap-2">
           <CourseSelect />
           <PeriodFilter />
-          {modules.data ? (
-            <span className={cn(headerChip, "bg-fill font-bold")}>
-              {moduleList.length} {moduleList.length === 1 ? "módulo" : "módulos"}
-            </span>
-          ) : null}
         </div>
       </PageHeading>
 
