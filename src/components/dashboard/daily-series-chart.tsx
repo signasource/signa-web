@@ -193,15 +193,16 @@ export function DailySeriesChart({
   const subDay = bucketSeconds < DAY_SECONDS;
   const tickFmt = subDay ? TIME_FMT : DAY_FMT;
 
+  let data: Datum[];
+  const bucketMs = bucketSeconds * 1000;
+
   // The previous window's points, moved forward by the span so they line up with this window.
-  const spanMs = haveRange ? toMs - fromMs : 0;
+  // Round the span to the bucket boundary to ensure correct alignment.
+  const spanMs = haveRange ? Math.round((toMs - fromMs) / bucketMs) * bucketMs : 0;
   const prevValid = (previous ?? [])
     .map((p) => ({ epoch: new Date(p.t).getTime() + spanMs, value: p.value }))
     .filter((d) => Number.isFinite(d.epoch));
   const withPrevious = previous !== undefined && haveRange;
-
-  let data: Datum[];
-  const bucketMs = bucketSeconds * 1000;
   const bucketCount = haveRange ? Math.ceil((toMs - fromMs) / bucketMs) : 0;
   if (haveRange && bucketCount > 0 && bucketCount <= MAX_FILLED_POINTS) {
     // Lay out every bucket of the window, filling the ones without data with 0.

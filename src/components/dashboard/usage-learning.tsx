@@ -15,10 +15,7 @@ import {
 } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import { pct0, pct1, rate1, rateOrNull } from "@/components/dashboard/usage-math";
-import {
-  useBusinessQuery,
-  useLearningQuery,
-} from "@/components/dashboard/usage-queries";
+import { useBusinessQuery, useLearningQuery } from "@/components/dashboard/usage-queries";
 import type { LearningMetrics, LessonReview, SignDifficulty } from "@/lib/api/metrics";
 import { courseLessonHref } from "@/lib/course-deep-link";
 import { previousRange, type DateTimeRange } from "@/lib/datetime-range";
