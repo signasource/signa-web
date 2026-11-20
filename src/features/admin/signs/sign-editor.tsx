@@ -7,7 +7,6 @@ import { ConfirmDialog, type ConfirmRequest } from "@/features/admin/signs/confi
 import { errorMessage } from "@/features/admin/signs/errors";
 import { courseLessonHref } from "@/lib/course-deep-link";
 import { FORMAT_TINT, FormatBadge } from "@/features/admin/signs/sign-card";
-import { SignAnimationPanel } from "@/features/admin/signs/sign-animation-panel";
 import {
   adminApi,
   type AdminSignDetail,
@@ -378,14 +377,6 @@ function EditorForm({
             </div>
           ))}
         </section>
-
-        <SignAnimationPanel
-          sign={sign}
-          meaning={normalizeMeaning(meaning) || sign.meaning}
-          onSaved={applySaved}
-          onToast={onToast}
-          onConfirm={setConfirm}
-        />
 
         {/* usages */}
         <section className="border-border w-full rounded-lg border bg-white p-6">
