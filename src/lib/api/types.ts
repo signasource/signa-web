@@ -206,6 +206,8 @@ export type PurchaseQuote = {
   discountAmount: number;
   totalAmount: number;
   currency: string;
+  /** Business rule about refunds, to show before paying. */
+  refundRule: string;
 };
 
 export type SeatCounts = {
@@ -240,6 +242,8 @@ export type Purchase = {
   seatCounts: SeatCounts;
   /** True when the organization has a pending refund request for this purchase. */
   hasRefundRequest: boolean;
+  /** True once any invitee accepted their seat: the purchase can no longer be refunded. */
+  hasAcceptedSeats: boolean;
 };
 
 export type Seat = {
