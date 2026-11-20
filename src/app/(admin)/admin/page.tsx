@@ -1,8 +1,16 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Funnel } from "@/components/dashboard/funnel";
+import { SignReportsCard } from "@/components/dashboard/sign-reports-card";
+import { ErrorState, LoadingState } from "@/components/dashboard/ui";
+import { useLearningQuery } from "@/components/dashboard/usage-queries";
 import { adminApi, type ReportReason } from "@/lib/api/admin";
 import { useAdminAuth } from "@/features/admin/admin-auth-context";
+
+/** From before Signa existed: the funnel and sign reports read the whole history. */
+const HISTORY_START = "2020-01-01T00:00:00.000Z";
 
 const REASON_LABELS: Record<ReportReason, string> = {
   INCORRECT_SIGN: "Seña incorrecta",
@@ -82,6 +90,12 @@ export default function AdminResumenPage() {
     queryFn: adminApi.courses,
   });
 
+  // The learning funnel and sign reports are historical (the API ignores the window for them), so
+  // they are asked for the whole history up to when the page opened.
+  const [history] = useState(() => ({ from: HISTORY_START, to: new Date().toISOString() }));
+  const learning = useLearningQuery(history, false);
+  const registered = learning.data?.onboardingFunnel[0]?.count;
+
   const reportsByReason = reports?.reduce(
     (acc, report) => {
       acc[report.reason] = (acc[report.reason] ?? 0) + 1;
@@ -121,7 +135,12 @@ export default function AdminResumenPage() {
         <p className="text-text-muted mt-1 text-sm">{subtitle}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <StatCard
+          label="Usuarios registrados"
+          value={registered}
+          sub="Sin contar al equipo de SIGNA"
+        />
         <StatCard
           label="Organizaciones activas"
           value={stats?.activeOrganizations}
@@ -206,6 +225,24 @@ export default function AdminResumenPage() {
             })}
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {learning.isPending ? (
+          <LoadingState>Cargando embudo y reportes…</LoadingState>
+        ) : !learning.data ? (
+          <ErrorState>No pudimos cargar el embudo ni los reportes.</ErrorState>
+        ) : (
+          <>
+            <Funnel
+              title="Embudo de aprendizaje"
+              metric="learning_funnel"
+              subtitle="Todo el historial"
+              steps={learning.data.onboardingFunnel.map((s) => ({ key: s.key, count: s.count }))}
+            />
+            <SignReportsCard pending={stats?.openSignReports} reports={learning.data.reports} />
+          </>
+        )}
       </div>
 
       <div className="border-border bg-surface rounded-2xl border">
