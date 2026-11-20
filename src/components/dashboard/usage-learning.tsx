@@ -400,7 +400,9 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
         />
       </KpiRow>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* The review table gets the wider column: at half width its "Intentos" and "Reportes"
+          columns sat off-screen behind a horizontal scroll nobody noticed. */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <ContentToReview lessons={l.lessonsToReview ?? []} signs={l.hardestSigns ?? []} />
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
@@ -413,14 +415,11 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
             <p className="text-text-muted text-sm">Sin ejercicios evaluados.</p>
           ) : (
             <ul className="flex flex-col gap-3">
+              {/* Every evaluated type, camera ones included: they are part of "Tasa de éxito", and
+                  hiding them left that average below every bar shown. Non-evaluable blocks
+                  (INTRODUCE_SIGN, INVISIBLE_SIGNS) never reach this list. */}
               {[...b.accuracy.byBlockType]
-                .filter(
-                  (bt) =>
-                    bt.type !== "SPELL_NAME" &&
-                    bt.type !== "INVISIBLE_SIGNS" &&
-                    bt.type !== "PERFORM_SIGN" &&
-                    bt.type !== "INTRODUCE_SIGN",
-                )
+                .filter((bt) => bt.type !== "INVISIBLE_SIGNS" && bt.type !== "INTRODUCE_SIGN")
                 .sort((x, y) => x.accuracyPercent - y.accuracyPercent)
                 .map((bt) => (
                   <li key={bt.type} className="flex flex-col gap-1.5">

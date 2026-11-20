@@ -54,8 +54,10 @@ export const fmtMoney: ValueFormat = (v) =>
   v.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
 
 /**
- * Compact pesos for headline aggregates: "$13,77 M", "$847 k". Keeps two decimals in the millions
- * so a big total stays legible; falls back to {@link fmtMoney} below a thousand.
+ * Compact pesos for headline aggregates: "$13,77 M", "$847 k", "$20,5 k". Keeps two decimals in the
+ * millions and one below $100 k, so amounts shown side by side still add up ($20,5 k + $5,5 k =
+ * $26 k, where whole thousands read "$21 k + $6 k") and chart ticks do not round onto each other
+ * ($2,5 k read "$3 k"); falls back to {@link fmtMoney} below a thousand.
  */
 export const fmtMoneyCompact: ValueFormat = (v) => {
   const abs = Math.abs(v);
@@ -64,6 +66,9 @@ export const fmtMoneyCompact: ValueFormat = (v) => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })} M`;
-  if (abs >= 1_000) return `$${Math.round(v / 1_000).toLocaleString("es-AR")} k`;
+  if (abs >= 1_000)
+    return `$${(v / 1_000).toLocaleString("es-AR", {
+      maximumFractionDigits: abs >= 100_000 ? 0 : 1,
+    })} k`;
   return fmtMoney(v);
 };

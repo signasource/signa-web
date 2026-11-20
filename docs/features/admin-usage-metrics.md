@@ -66,7 +66,7 @@ endUsers.accounts`; admins, org admins and active org members are left out of bo
   (no reaccionaban al rango desde/hasta); the tab shows `retention7` (retention at 7 days of the window's signups) instead.
 - **Aprendizaje** (`usage-learning.tsx`) — "¿La gente aprende LSA?": lesson flow (iniciadas/completadas +
   tasa de finalización) and exercise flow (realizados, tasa de éxito, intentos promedio); the **evolución
-  de aciertos** daily chart beside precision by exercise type (excludes "Hacer la seña (cámara)", "Deletrear nombre (cámara)", and "Señas invisibles"), then "Contenido a revisar". The funnel and
+  de aciertos** daily chart beside precision by exercise type (every evaluated type, camera ones included — they are part of "Tasa de éxito", and hiding them left that average below every bar), then "Contenido a revisar". The funnel and
   sign reports moved to Resumen (historical, and they ignore the course picker); completion (per course, worst-first), enrollment-status
   donut, accuracy (global + per block type, worst-first), hardest lessons; a **dificultad y calidad** section
   — lessons by abandonment and exercises by error rate / retries (`ExerciseRanking`); vocabulary, sign-report
@@ -87,8 +87,8 @@ panels only populate in production; the Infra tab says so, and shows "sin datos"
 - **Período anterior** is drawn dashed on `DailySeriesChart` (`previous` prop) and `PerfChart`
   (`previous` + `previousShiftSeconds`).
 - **Tabs** carry health dots (Aprendizaje: completion/success; Infraestructura: services) and the
-  "Comparando con … · horario UTC" caption on the same row.
-- **Resumen** (see the tab bullet above for the current layout): "Requiere atención" (`buildAlerts`): pending orgs, pending reports (top sign), low-use
+  "Comparando con … · hora de Argentina" caption on the same row.
+- **Resumen** (see the tab bullet above for the current layout): "Requiere atención" (`buildAlerts`): pending orgs, unresolved reports (PENDING + REVIEWED, the same count as the sidebar badge; top sign), low-use
   contracts (→ Negocio `#licencias`), worst lesson abandonment ≥ 40 % (deep link
   `/admin/courses?course=&lesson=`, `lib/course-deep-link.ts`), email failures, failed imports.
   `ServicesStrip` (`services-status.tsx`): API/R2 availability (avg of `avg_over_time(up)`),
@@ -161,14 +161,17 @@ all TanStack queries (`refetchInterval`) refresh. Query keys: `["admin","metrics
 
 - **Money net of refunds:** the API keeps gross fields (`paidAmount`, `purchases`, `daily`) and adds
   `netAmount` + `netCount`/`netPurchases` + `dailyNet` (purchases that were **not** refunded, attributed to
-  the period they were paid in). Ingresos netos / Tasa de reembolso use the gross-minus-refunds flow
-  (`revenueTotals`); every other money figure uses the net fields: gem & paid-course tiles, ingresos por
-  fuente chart and income sparkline, ticket promedio, compras / ingreso por organización, ingresos in the
-  license table, payers and ingreso por usuario pagador.
+  the period they were paid in). **Every** money figure uses that rule, so they add up across the page:
+  Ingresos netos = the sum of the net fields = the bars of "Ingresos por fuente"; Tasa de reembolso =
+  (gross − net) / gross, i.e. the refunded share of this window's sales (`revenueTotals`). Subtracting
+  the refunds _made_ in the window (an older purchase refunded now) mixed periods and broke the
+  period-over-period delta. `fmtMoneyCompact` keeps one decimal under $100 k so tiles and legend add up.
 
 - **Universe:** every Usuarios metric (new, total, activation, active, sessions) counts accounts that are not
   `Role.ADMIN` (SIGNA staff). The "% de usuarios totales" under active users uses the same growth `users.total`.
-  XP windows are by UTC calendar day, end-exclusive, and the previous window shares no day with the current.
+  XP is stored per Argentine day, so the API counts the days whose midnight falls in the window (7 days → 7
+  days, 24 h → today), end-exclusive, and the previous window shares no day with the current; otherwise a
+  24 h window summed two days of XP against one day of active users ("XP por usuario activo" doubled).
 - **Active user:** a distinct learner (`Role.USER`) with _any_ authenticated activity in the app in the
   window (exercises, friends, shop, boosters, …), not just exercise attempts. `signa-api` records a
   throttled `user_activity` row (≤1/min/user) from `JwtAuthFilter`; counts are `COUNT(DISTINCT user)`, so
@@ -177,11 +180,15 @@ all TanStack queries (`refetchInterval`) refresh. Query keys: `["admin","metrics
   and keeps the max duration), so sessions appear without having to background the app.
 
 - **Resolution:** the **Growth** series (`SeriesCount`/`SeriesAmount` with a `t` instant) are
-  **adaptive**: signa-api buckets them by `floor(epoch/bucket)` with `bucket = MetricsRange.bucketSeconds()`
-  (minute if the span ≤ 6 h, hour if ≤ 3 d, else day), so a 30-minute window reads minute-by-minute and a
-  30-day window day-by-day. `DailySeriesChart` infers the unit from the point spacing (time label for
-  sub-day, date for day) and formats in **UTC** (the bucket boundary). Learning/Gamification series stay
-  **day** resolution (`DailyCount` with a `day`; XP comes from `UserDailyXp.xpDate`, a calendar day).
+  **adaptive**: signa-api buckets them from **Argentine midnight** (`MetricsRange.BUCKET_ORIGIN_SECONDS`,
+  03:00 UTC) with `bucket = MetricsRange.bucketSeconds()` (minute if the span ≤ 6 h, hour if ≤ 3 d, else
+  day), so a 30-minute window reads minute-by-minute and a 30-day window day-by-day, and a day bucket is an
+  Argentine calendar day. `DailySeriesChart` and `RevenueBySourceChart` lay their axis on the same
+  boundaries (`argentinaBucketStart` in `lib/timezone.ts`) and format in Argentina time. Bucketing or
+  formatting at UTC midnight showed each day under the previous date (UTC midnight is 21:00 the day
+  before), so a 7-day chart ended "yesterday". Learning/Gamification series stay **day** resolution
+  (`DailyCount` with a `day`, an Argentine day; parse it with `seriesPointMs`, never `new Date(day)`,
+  which reads it as UTC midnight).
 - **Grafana token:** performance panels need a Grafana Cloud `metrics:read` token on the server
   (`GRAFANA_CLOUD_PROM_*`). Without it the backend returns `available:false` and panels show "sin datos";
   the business tabs keep working.

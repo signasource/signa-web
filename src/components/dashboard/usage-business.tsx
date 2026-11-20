@@ -15,6 +15,7 @@ import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { useBusinessQuery } from "@/components/dashboard/usage-queries";
 import type { CountItem } from "@/lib/api/metrics";
 import type { DateTimeRange } from "@/lib/datetime-range";
+import { ARGENTINA_TIMEZONE, seriesPointMs } from "@/lib/timezone";
 
 export const NUMBER = new Intl.NumberFormat("es-AR");
 
@@ -36,15 +37,22 @@ export const REPORT_STATUS: Record<string, string> = {
   REJECTED: "Rechazados",
 };
 
-const DAY_FMT = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short" });
+const DAY_FMT = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "short",
+  timeZone: ARGENTINA_TIMEZONE,
+});
 
 export function countOf(items: CountItem[], key: string): number {
   return items.find((i) => i.key === key)?.count ?? 0;
 }
 
-/** The [start, end] unix-seconds bounds of a local calendar day (`YYYY-MM-DD`), end inclusive. */
+/**
+ * The [start, end] unix-seconds bounds of an Argentine calendar day (`YYYY-MM-DD`, as the API
+ * sends day series), end inclusive — whatever timezone the browser is in.
+ */
 export function dayRangeSeconds(dayIso: string): { from: number; to: number } {
-  const from = Math.floor(new Date(`${dayIso}T00:00:00`).getTime() / 1000);
+  const from = Math.floor(seriesPointMs(dayIso) / 1000);
   return { from, to: from + 24 * 3600 - 1 };
 }
 
@@ -83,7 +91,7 @@ export function DailyActivityChart({
   onSelectRange?: RangeSelect;
 }) {
   const bars: ActivityBar[] = activity.map((a) => ({
-    label: DAY_FMT.format(new Date(`${a.day}T00:00:00`)),
+    label: DAY_FMT.format(new Date(seriesPointMs(a.day))),
     dayIso: a.day,
     attempts: a.attempts,
     lessons: a.lessonsCompleted,

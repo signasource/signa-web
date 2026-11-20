@@ -16,7 +16,7 @@ import type { MetricId } from "@/components/dashboard/metric-catalog";
 import type { RangeSelect, ValueFormat } from "@/components/dashboard/perf-chart";
 import { Card, CardTitle } from "@/components/dashboard/ui";
 import type { DateTimeRange } from "@/lib/datetime-range";
-import { ARGENTINA_TIMEZONE } from "@/lib/timezone";
+import { ARGENTINA_TIMEZONE, argentinaBucketStart, seriesPointMs } from "@/lib/timezone";
 
 const DAY_SECONDS = 86400;
 const DAY_FMT = new Intl.DateTimeFormat("es-AR", {
@@ -107,9 +107,10 @@ export function RevenueBySourceChart({
   const byEpoch = new Map<number, Datum>();
   for (const src of sources) {
     for (const p of src.points) {
-      const raw = new Date(p.t).getTime();
+      const raw = seriesPointMs(p.t);
       if (!Number.isFinite(raw)) continue;
-      const epoch = Math.floor(raw / bucketMs) * bucketMs;
+      // Buckets start at Argentine midnight, like the API's (a day bucket is an Argentine day).
+      const epoch = argentinaBucketStart(raw, bucketMs);
       const row =
         byEpoch.get(epoch) ?? ({ epoch, label: tickFmt.format(new Date(epoch)) } as Datum);
       row[src.key] = (Number(row[src.key]) || 0) + p.amount;
@@ -119,7 +120,7 @@ export function RevenueBySourceChart({
   // Lay out every bucket of the window (days without income read as an empty slot, not a gap).
   const bucketCount = haveRange ? Math.ceil((toMs - fromMs) / bucketMs) : 0;
   if (haveRange && bucketCount > 0 && bucketCount <= 400) {
-    const start = Math.floor(fromMs / bucketMs) * bucketMs;
+    const start = argentinaBucketStart(fromMs, bucketMs);
     for (let epoch = start; epoch < toMs; epoch += bucketMs) {
       if (!byEpoch.has(epoch))
         byEpoch.set(epoch, { epoch, label: tickFmt.format(new Date(epoch)) } as Datum);

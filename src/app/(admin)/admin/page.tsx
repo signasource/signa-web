@@ -19,6 +19,7 @@ import {
   resolveRange,
   type RangeSelection,
 } from "@/lib/datetime-range";
+import { ARGENTINA_TIMEZONE } from "@/lib/timezone";
 import { cn } from "@/lib/utils";
 
 type TabKey = "resumen" | "negocio" | "usuarios" | "aprendizaje" | "infraestructura";
@@ -41,10 +42,13 @@ function isTabKey(value: string | null): value is TabKey {
 const WINDOW_DATE = new Intl.DateTimeFormat("es-AR", {
   day: "numeric",
   month: "short",
-  timeZone: "UTC",
+  timeZone: ARGENTINA_TIMEZONE,
 });
 
-/** "10 sep – 9 oct": the equal-length window immediately before the selected one, in UTC. */
+/**
+ * "10 sep – 9 oct": the equal-length window immediately before the selected one, in Argentina time
+ * (the charts and the API's day buckets use Argentine days too).
+ */
 function previousWindowLabel(range: { from: string; to: string }): string {
   const from = new Date(range.from).getTime();
   const to = new Date(range.to).getTime();
@@ -163,7 +167,7 @@ export default function AdminMetricasPage() {
         idBase="metrics"
         trailing={
           <p className="text-text-muted text-xs">
-            Comparando con {previousWindowLabel(range)} · horario UTC
+            Comparando con {previousWindowLabel(range)} · hora de Argentina
           </p>
         }
       />

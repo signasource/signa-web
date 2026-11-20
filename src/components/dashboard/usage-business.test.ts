@@ -13,11 +13,10 @@ describe("countOf", () => {
 });
 
 describe("dayRangeSeconds", () => {
-  it("spans a full local day (end inclusive)", () => {
+  it("spans a full Argentine day (end inclusive), whatever the browser's timezone", () => {
     const { from, to } = dayRangeSeconds("2026-11-05");
-    expect(new Date(from * 1000).getFullYear()).toBe(2026);
+    // Midnight in Argentina is 03:00 UTC.
+    expect(new Date(from * 1000).toISOString()).toBe("2026-11-05T03:00:00.000Z");
     expect(to - from).toBe(24 * 3600 - 1);
-    // Midnight local time → seconds divisible by 60.
-    expect(from % 60).toBe(0);
   });
 });
