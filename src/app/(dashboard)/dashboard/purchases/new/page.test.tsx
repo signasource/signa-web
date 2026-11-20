@@ -66,7 +66,7 @@ const catalog: PurchaseCatalog = {
   ],
   currency: "ARS",
   volumeDiscounts: [{ minSeats: 3, percent: 10 }],
-  minDays: 15,
+  minDays: 5,
   maxDays: 60,
   invitationDays: 10,
   maxSeats: 500,

@@ -79,8 +79,8 @@ export default function TermsPage() {
       <Section title="7. Organizaciones">
         <ul>
           <li>
-            Una organización puede comprar cupos de un curso por un período de 15 a 60 días e
-            invitar por email a una persona por cupo. Sus administradores ven el progreso de los
+            Una organización puede comprar cupos de un curso por un período de 5 a 60 días e invitar
+            por email a una persona por cupo. Sus administradores ven el progreso de los
             participantes, como se detalla en la Política de privacidad.
           </li>
           <li>
