@@ -79,11 +79,6 @@ export function GamificationSection({ range, live }: { range: DateTimeRange; liv
           }
         />
         <StripStat
-          label="Canje de gemas"
-          value={g.shop.gemsInInventory ? pct0(g.shop.redemptionRatePercent) : "—"}
-          sub={`${NUMBER.format(g.shop.totalGemsSpent)} de ${NUMBER.format(g.shop.gemsInInventory)}`}
-        />
-        <StripStat
           label="Regalos enviados"
           value={NUMBER.format(g.gifts.sent)}
           sub={g.gifts.sent ? `${pct0(rate1(g.gifts.claimed, g.gifts.sent))} reclamados` : null}
