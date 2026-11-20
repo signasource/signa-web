@@ -68,7 +68,7 @@ endUsers.accounts`; admins, org admins and active org members are left out of bo
   (no reaccionaban al rango desde/hasta); the tab shows `retention7` (retention at 7 days of the window's signups) instead.
 - **Aprendizaje** (`usage-learning.tsx`) — "¿La gente aprende LSA?": lesson flow (iniciadas/completadas +
   tasa de finalización) and exercise flow (realizados, tasa de éxito, intentos promedio); the **evolución
-  de aciertos** daily chart beside precision by exercise type, then "Contenido a revisar". The funnel and
+  de aciertos** daily chart beside precision by exercise type (excludes "Hacer la seña (cámara)", "Deletrear nombre (cámara)", and "Señas invisibles"), then "Contenido a revisar". The funnel and
   sign reports moved to Resumen (historical, and they ignore the course picker); completion (per course, worst-first), enrollment-status
   donut, accuracy (global + per block type, worst-first), hardest lessons; a **dificultad y calidad** section
   — lessons by abandonment and exercises by error rate / retries (`ExerciseRanking`); vocabulary, sign-report
