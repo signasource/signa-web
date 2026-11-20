@@ -55,9 +55,11 @@ export type AdminRefundRequest = {
   id: string;
   purchaseType: PurchaseType;
   purchaseId: string;
-  reason: RefundRequestReason;
+  /** Null when the buyer did not pick a reason. */
+  reason: RefundRequestReason | null;
   channel: string;
-  message: string;
+  /** Empty or null when the buyer left no comment. */
+  message: string | null;
   note: string | null;
   status: RefundRequestStatus;
   resolvedByName: string | null;

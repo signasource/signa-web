@@ -68,7 +68,7 @@ The page keeps its view state client-side (`{ kind: "list" | "purchase" | "refun
 
 **Refund request detail**
 
-- Left: reason, the user's message, requester and the linked purchase (clickable). Right: resolution panel — internal note, "Marcar como resuelto" (PENDING) or "Guardar nota" + "Reabrir" (RESOLVED) through `updateRefundRequest` (`action: "RESOLVE" | "REOPEN"`, or just `note`).
+- Left: reason ("Sin motivo" when none was picked), the user's message (hidden when empty), requester and the linked purchase (clickable). Right: resolution panel — internal note, "Marcar como resuelto" (PENDING) or "Guardar nota" + "Reabrir" (RESOLVED) through `updateRefundRequest` (`action: "RESOLVE" | "REOPEN"`, or just `note`).
 
 ## Admin · Other back-office screens
 

@@ -93,27 +93,26 @@ const REFUND_REASON_OPTIONS: { value: RefundRequestReason; label: string }[] = [
   { value: "OTHER", label: "Otro motivo" },
 ];
 
+/** Both fields are optional: an empty select or comment is simply not sent. */
 const refundSchema = z.object({
   reason: z
-    .enum([
-      "NOT_RECEIVED",
-      "MISTAKE",
-      "DUPLICATE",
-      "TECHNICAL",
-      "NOT_AS_EXPECTED",
-      "OTHER",
-    ] as const)
-    .refine((v) => v !== undefined, { message: "Seleccioná un motivo" }),
+    .enum(["", "NOT_RECEIVED", "MISTAKE", "DUPLICATE", "TECHNICAL", "NOT_AS_EXPECTED", "OTHER"])
+    .transform((v) => v || undefined),
   message: z
     .string()
-    .min(10, "Escribí al menos 10 caracteres")
-    .max(2000, "El mensaje no puede superar los 2000 caracteres"),
+    .trim()
+    .max(2000, "El mensaje no puede superar los 2000 caracteres")
+    .transform((v) => v || undefined),
 });
-type RefundFormValues = z.infer<typeof refundSchema>;
+type RefundFormInput = z.input<typeof refundSchema>;
+type RefundFormValues = z.output<typeof refundSchema>;
 
 function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId: string }) {
   const [sent, setSent] = useState(false);
-  const form = useForm<RefundFormValues>({ resolver: zodResolver(refundSchema) });
+  const form = useForm<RefundFormInput, unknown, RefundFormValues>({
+    resolver: zodResolver(refundSchema),
+    defaultValues: { reason: "", message: "" },
+  });
   const mutation = useMutation({
     mutationFn: (values: RefundFormValues) =>
       organizationsApi.createPurchaseRefundRequest(orgId, purchaseId, values),
@@ -152,14 +151,14 @@ function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId
       >
         <div className="flex flex-col gap-1">
           <label htmlFor="refund-reason" className="text-sm font-semibold">
-            Motivo
+            Motivo <span className="text-text-muted font-normal">(opcional)</span>
           </label>
           <select
             id="refund-reason"
             className="border-border bg-surface rounded-lg border px-3 py-2 text-sm"
             {...form.register("reason")}
           >
-            <option value="">Seleccioná un motivo…</option>
+            <option value="">Sin especificar</option>
             {REFUND_REASON_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
@@ -172,7 +171,7 @@ function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="refund-message" className="text-sm font-semibold">
-            Comentario
+            Comentario <span className="text-text-muted font-normal">(opcional)</span>
           </label>
           <textarea
             id="refund-message"

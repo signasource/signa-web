@@ -62,6 +62,12 @@ const REFUND_REASON_LABEL: Record<string, string> = {
   CHARGEBACK: "Contracargo",
 };
 
+/** The buyer may skip the reason, so a request can arrive without one. */
+function refundReasonLabel(reason: string | null): string {
+  if (!reason) return "Sin motivo";
+  return REFUND_REASON_LABEL[reason] ?? reason;
+}
+
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
   MERCADO_PAGO: "Mercado Pago",
 };
@@ -926,7 +932,7 @@ function RefundList({
                   </span>
                 </div>
                 <p className="m-0 mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
-                  {REFUND_REASON_LABEL[r.reason] ?? r.reason} · {r.requesterUsername} ·{" "}
+                  {refundReasonLabel(r.reason)} · {r.requesterUsername} ·{" "}
                   {fdate(r.createdAt)}
                 </p>
                 {r.message && (
@@ -1094,7 +1100,7 @@ function PurchaseDetailView({
         >
           <span className="min-w-0 flex-1">
             {pendingRefund
-              ? `Hay un pedido de reembolso pendiente desde el ${fdate(pendingRefund.createdAt)}: "${REFUND_REASON_LABEL[pendingRefund.reason]!}".`
+              ? `Hay un pedido de reembolso pendiente desde el ${fdate(pendingRefund.createdAt)}: "${refundReasonLabel(pendingRefund.reason)}".`
               : resolvedRefund
                 ? `Tuvo un pedido de reembolso, resuelto${resolvedRefund.resolvedAt ? ` el ${fdate(resolvedRefund.resolvedAt)}` : ""}.`
                 : ""}
@@ -1310,17 +1316,19 @@ function RefundDetailView({
               className="font-display m-0 text-lg font-bold"
               style={{ letterSpacing: "-0.015em" }}
             >
-              {REFUND_REASON_LABEL[rf.reason] ?? rf.reason}
+              {refundReasonLabel(rf.reason)}
             </h2>
             <p className="m-0 mt-0.5 text-xs" style={{ color: "var(--color-text-muted)" }}>
-              Motivo elegido por quien lo pidió
+              {rf.reason ? "Motivo elegido por quien lo pidió" : "Quien lo pidió no eligió un motivo"}
             </p>
-            <p
-              className="m-0 mt-4 text-[15px] text-pretty"
-              style={{ color: "var(--color-text)", lineHeight: 1.55 }}
-            >
-              &ldquo;{rf.message}&rdquo;
-            </p>
+            {rf.message ? (
+              <p
+                className="m-0 mt-4 text-[15px] text-pretty"
+                style={{ color: "var(--color-text)", lineHeight: 1.55 }}
+              >
+                &ldquo;{rf.message}&rdquo;
+              </p>
+            ) : null}
             <div
               className="mt-4 flex items-center gap-2.5 border-t pt-4"
               style={{ borderColor: "var(--color-border)" }}

@@ -135,7 +135,7 @@ export const organizationsApi = {
   createPurchaseRefundRequest: (
     orgId: string,
     purchaseId: string,
-    data: { reason: RefundRequestReason; message: string },
+    data: { reason?: RefundRequestReason; message?: string },
   ) =>
     api<UserRefundRequestResponse>(
       `/organizations/${orgId}/purchases/${purchaseId}/refund-request`,
