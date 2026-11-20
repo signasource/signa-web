@@ -2,11 +2,13 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CourseSelect } from "@/components/dashboard/course-select";
 import { PeriodFilter } from "@/components/dashboard/period-select";
 import { Icon } from "@/components/dashboard/icons";
 import { InvitedSeats } from "@/components/dashboard/invited-seats";
+import { MetricsTabs } from "@/components/dashboard/metrics-tabs";
 import {
   Avatar,
   ErrorState,
@@ -19,6 +21,7 @@ import {
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
 import { useCourseFilter, useWithFilters } from "@/features/dashboard/use-course-filter";
+import { useInvitedSeats } from "@/features/dashboard/use-invited-seats";
 import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
 import type { MemberActivityStatus, MemberSort, MemberStatus } from "@/lib/api/types";
@@ -40,13 +43,13 @@ const FILTERS: Filter[] = [
   { key: "active", label: "Activos", status: "ACTIVE", activity: "ACTIVE" },
   { key: "inactive", label: "Inactivos", status: "ACTIVE", activity: "INACTIVE" },
   { key: "notStarted", label: "Sin iniciar", status: "ACTIVE", activity: "NOT_STARTED" },
-  { key: "completed", label: "Completaron", status: "ACTIVE", activity: "COMPLETED" },
-  { key: "removed", label: "Quitados", status: "REMOVED" },
 ];
 
-/** People who got a seat but have not accepted yet: they are not members, so they come from purchases. */
-const INVITED_FILTER: Filter = { key: "invited", label: "Invitados", status: "ACTIVE" };
-const ALL_FILTERS = [...FILTERS.slice(0, 5), INVITED_FILTER, ...FILTERS.slice(5)];
+/** Members who left the organization; shown through a toggle, not a chip. */
+const REMOVED = { status: "REMOVED" as MemberStatus, activity: undefined };
+
+type Tab = "participantes" | "invitados";
+const TAB_PARAM = "tab";
 
 type Direction = "asc" | "desc";
 
@@ -112,6 +115,11 @@ export default function MembersPage() {
   const withFilters = useWithFilters();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>(FILTERS[0]!);
+  const [showRemoved, setShowRemoved] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab: Tab = searchParams.get(TAB_PARAM) === "invitados" ? "invitados" : "participantes";
   const [sort, setSort] = useState<{ by: MemberSort; direction: Direction }>({
     by: "name",
     direction: "asc",
@@ -124,13 +132,23 @@ export default function MembersPage() {
     setPaging({ scope, page: typeof next === "function" ? next(page) : next });
   const query = useDebounced(search.trim(), 300);
   const showCourse = !courseId && courses.length > 1;
-  const invitedView = filter.key === INVITED_FILTER.key;
-  const allView = filter.key === "all";
+  const invitedView = tab === "invitados";
+  const invited = useInvitedSeats(orgId, courseId);
+
+  const changeTab = (next: Tab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "invitados") params.set(TAB_PARAM, "invitados");
+    else params.delete(TAB_PARAM);
+    const search = params.toString();
+    router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
+    setSearch("");
+    setPage(0);
+  };
 
   const params = {
     query: query || undefined,
-    status: filter.status,
-    activity: filter.activity,
+    status: showRemoved ? REMOVED.status : filter.status,
+    activity: showRemoved ? REMOVED.activity : filter.activity,
     courseId,
     period,
     sort,
@@ -161,11 +179,15 @@ export default function MembersPage() {
     <section className="flex flex-col gap-5">
       <PageHeading
         title="Participantes"
-        subtitle="Seguí el avance de cada persona. Tocá un encabezado para ordenar la lista."
+        subtitle={
+          invitedView
+            ? "Quiénes recibieron una invitación por email y cómo va cada una."
+            : "Seguí el avance de cada persona. Tocá un encabezado para ordenar la lista."
+        }
       >
         <div className="flex flex-wrap items-center gap-2">
           <CourseSelect />
-          <PeriodFilter />
+          {invitedView ? null : <PeriodFilter />}
           <Link href="/dashboard/purchases" className={headerButton}>
             <Icon name="personAdd" className="size-4" />
             Sumar personas
@@ -173,184 +195,220 @@ export default function MembersPage() {
         </div>
       </PageHeading>
 
-      <div className="flex flex-col gap-3">
-        <label className="border-border bg-surface flex h-[42px] items-center gap-2 rounded-lg border px-3">
-          <Icon name="search" className="text-text-muted" />
-          <span className="sr-only">Buscar participantes</span>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
-            placeholder="Buscá por nombre, apellido o email"
-            className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
-          />
-        </label>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Estado">
-          {ALL_FILTERS.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              aria-pressed={filter.key === f.key}
-              onClick={() => {
-                setFilter(f);
+      <MetricsTabs<Tab>
+        idBase="members"
+        label="Secciones de participantes"
+        active={tab}
+        onChange={changeTab}
+        tabs={[
+          { key: "participantes", label: "Participantes" },
+          {
+            key: "invitados",
+            label: invited.isPending ? "Invitados" : `Invitados · ${invited.rows.length}`,
+          },
+        ]}
+      />
+
+      <div
+        role="tabpanel"
+        id={`members-panel-${tab}`}
+        aria-labelledby={`members-tab-${tab}`}
+        className="flex flex-col gap-5"
+      >
+        <div className="flex flex-col gap-3">
+          <label className="border-border bg-surface flex h-[42px] items-center gap-2 rounded-lg border px-3">
+            <Icon name="search" className="text-text-muted" />
+            <span className="sr-only">
+              {invitedView ? "Buscar invitados" : "Buscar participantes"}
+            </span>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
                 setPage(0);
               }}
+              placeholder={invitedView ? "Buscá por email" : "Buscá por nombre, apellido o email"}
+              className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
+            />
+          </label>
+          {invitedView ? null : (
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Estado">
+                {FILTERS.map((f) => {
+                  const pressed = !showRemoved && filter.key === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      aria-pressed={pressed}
+                      onClick={() => {
+                        setFilter(f);
+                        setShowRemoved(false);
+                        setPage(0);
+                      }}
+                      className={cn(
+                        "cursor-pointer rounded-full px-3.5 py-2 text-[13px] font-extrabold transition-colors",
+                        pressed ? "bg-text text-on-dark" : "bg-fill text-text hover:bg-fill-dark",
+                      )}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <label className="text-text-muted ml-auto flex cursor-pointer items-center gap-2 text-[13px] font-semibold">
+                <input
+                  type="checkbox"
+                  checked={showRemoved}
+                  onChange={(e) => {
+                    setShowRemoved(e.target.checked);
+                    setPage(0);
+                  }}
+                />
+                Mostrar quitados
+              </label>
+            </div>
+          )}
+        </div>
+
+        {invitedView ? <InvitedSeats orgId={orgId} courseId={courseId} query={query} /> : null}
+        {!invitedView && isPending ? <LoadingState>Cargando participantes…</LoadingState> : null}
+        {!invitedView && error ? (
+          <ErrorState>No pudimos cargar a los participantes.</ErrorState>
+        ) : null}
+
+        {!invitedView && data ? (
+          <>
+            <div
               className={cn(
-                "cursor-pointer rounded-full px-3.5 py-2 text-[13px] font-extrabold transition-colors",
-                filter.key === f.key
-                  ? "bg-text text-on-dark"
-                  : "bg-fill text-text hover:bg-fill-dark",
+                "border-border bg-surface overflow-x-auto rounded-2xl border transition-opacity",
+                isPlaceholderData && "opacity-60",
               )}
             >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {invitedView ? <InvitedSeats orgId={orgId} courseId={courseId} query={query} /> : null}
-      {!invitedView && isPending ? <LoadingState>Cargando participantes…</LoadingState> : null}
-      {!invitedView && error ? (
-        <ErrorState>No pudimos cargar a los participantes.</ErrorState>
-      ) : null}
-
-      {!invitedView && data ? (
-        <>
-          <div
-            className={cn(
-              "border-border bg-surface overflow-x-auto rounded-2xl border transition-opacity",
-              isPlaceholderData && "opacity-60",
-            )}
-          >
-            <div className="min-w-[940px] px-5 py-2">
-              <div
-                className={cn(
-                  GRID,
-                  "border-border text-text-muted border-b py-3 text-xs font-extrabold tracking-wider",
-                )}
-              >
-                <SortHeader label="PERSONA" field="name" sort={sort} onSort={onSort} />
-                <span>ESTADO</span>
-                <span>MÓDULO ACTUAL</span>
-                <SortHeader label="AVANCE" field="progress" sort={sort} onSort={onSort} />
-                <SortHeader label="ÚLTIMA VEZ" field="lastActivity" sort={sort} onSort={onSort} />
-                <SortHeader label="INCORPORACIÓN" field="joinedAt" sort={sort} onSort={onSort} />
-              </div>
-              {data.content.map((m) => {
-                const moduleLabel = currentModuleLabel(m, showCourse);
-                return (
-                  <Link
-                    key={m.userId}
-                    href={withFilters(`/dashboard/members/${m.userId}`)}
-                    className={cn(
-                      GRID,
-                      "border-fill hover:bg-background items-center border-b py-3",
-                    )}
-                  >
-                    <span className="flex min-w-0 items-center gap-2.5">
-                      <Avatar
-                        seed={m.userId}
-                        name={m.name}
-                        lastName={m.lastName}
-                        src={avatarSrc(m.avatarUrl)}
-                      />
+              <div className="min-w-[940px] px-5 py-2">
+                <div
+                  className={cn(
+                    GRID,
+                    "border-border text-text-muted border-b py-3 text-xs font-extrabold tracking-wider",
+                  )}
+                >
+                  <SortHeader label="PERSONA" field="name" sort={sort} onSort={onSort} />
+                  <span>ESTADO</span>
+                  <span>MÓDULO ACTUAL</span>
+                  <SortHeader label="AVANCE" field="progress" sort={sort} onSort={onSort} />
+                  <SortHeader label="ÚLTIMA VEZ" field="lastActivity" sort={sort} onSort={onSort} />
+                  <SortHeader label="INCORPORACIÓN" field="joinedAt" sort={sort} onSort={onSort} />
+                </div>
+                {data.content.map((m) => {
+                  const moduleLabel = currentModuleLabel(m, showCourse);
+                  return (
+                    <Link
+                      key={m.userId}
+                      href={withFilters(`/dashboard/members/${m.userId}`)}
+                      className={cn(
+                        GRID,
+                        "border-fill hover:bg-background items-center border-b py-3",
+                      )}
+                    >
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <Avatar
+                          seed={m.userId}
+                          name={m.name}
+                          lastName={m.lastName}
+                          src={avatarSrc(m.avatarUrl)}
+                        />
+                        <span className="flex min-w-0 flex-col">
+                          <span className="text-[15px] font-bold">
+                            {m.name} {m.lastName}
+                          </span>
+                          <span className="text-text-muted truncate text-[13px]">{m.email}</span>
+                        </span>
+                      </span>
+                      <span>
+                        <StatusPill status={m.activityStatus} />
+                      </span>
                       <span className="flex min-w-0 flex-col">
-                        <span className="text-[15px] font-bold">
-                          {m.name} {m.lastName}
+                        <span
+                          className={cn(
+                            "flex items-center gap-1.5 truncate text-sm",
+                            moduleLabel.finished && "text-success-dark font-bold",
+                            moduleLabel.text === "Todavía no empezó" && "text-text-muted",
+                          )}
+                        >
+                          {moduleLabel.finished ? (
+                            <Icon name="checkCircle" className="size-4" />
+                          ) : null}
+                          {moduleLabel.text}
                         </span>
-                        <span className="text-text-muted truncate text-[13px]">{m.email}</span>
-                      </span>
-                    </span>
-                    <span>
-                      <StatusPill status={m.activityStatus} />
-                    </span>
-                    <span className="flex min-w-0 flex-col">
-                      <span
-                        className={cn(
-                          "flex items-center gap-1.5 truncate text-sm",
-                          moduleLabel.finished && "text-success-dark font-bold",
-                          moduleLabel.text === "Todavía no empezó" && "text-text-muted",
-                        )}
-                      >
-                        {moduleLabel.finished ? (
-                          <Icon name="checkCircle" className="size-4" />
+                        {moduleLabel.detail ? (
+                          <span className="text-text-muted truncate text-xs">
+                            {moduleLabel.detail}
+                          </span>
                         ) : null}
-                        {moduleLabel.text}
                       </span>
-                      {moduleLabel.detail ? (
-                        <span className="text-text-muted truncate text-xs">
-                          {moduleLabel.detail}
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="flex items-center gap-2.5">
-                      <ProgressBar
-                        percent={m.progressPercentage}
-                        className="flex-1"
-                        label={`Avance de ${m.name}`}
-                      />
-                      <span className="w-10 text-sm font-extrabold">{m.progressPercentage}%</span>
-                    </span>
-                    <span className="text-text-muted text-sm">
-                      {formatRelativeDays(daysSince(m.lastActivityAt))}
-                    </span>
-                    <span className="text-text-muted text-sm">{formatDate(m.joinedAt)}</span>
-                  </Link>
-                );
-              })}
-              {data.content.length === 0 ? (
-                <div className="flex flex-col items-center gap-1.5 py-10 text-center">
-                  <p className="font-display text-lg font-bold">
-                    {query ? "No encontramos a nadie" : "No hay personas en este filtro"}
-                  </p>
-                  <p className="text-text-muted text-sm">
-                    {query
-                      ? "Probá con otro nombre o email."
-                      : "Elegí otro estado para ver al resto del equipo."}
-                  </p>
-                </div>
-              ) : null}
+                      <span className="flex items-center gap-2.5">
+                        <ProgressBar
+                          percent={m.progressPercentage}
+                          className="flex-1"
+                          label={`Avance de ${m.name}`}
+                        />
+                        <span className="w-10 text-sm font-extrabold">{m.progressPercentage}%</span>
+                      </span>
+                      <span className="text-text-muted text-sm">
+                        {formatRelativeDays(daysSince(m.lastActivityAt))}
+                      </span>
+                      <span className="text-text-muted text-sm">{formatDate(m.joinedAt)}</span>
+                    </Link>
+                  );
+                })}
+                {data.content.length === 0 ? (
+                  <div className="flex flex-col items-center gap-1.5 py-10 text-center">
+                    <p className="font-display text-lg font-bold">
+                      {query ? "No encontramos a nadie" : "No hay personas en este filtro"}
+                    </p>
+                    <p className="text-text-muted text-sm">
+                      {query
+                        ? "Probá con otro nombre o email."
+                        : "Elegí otro estado para ver al resto del equipo."}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
 
-          {total > 0 ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="text-text-muted text-sm font-semibold">
-                {totalPages > 1 ? `${people} · Página ${page + 1} de ${totalPages}` : people}
-              </span>
-              {totalPages > 1 ? (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className={pillButton}
-                    disabled={page === 0}
-                    onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  >
-                    <Icon name="chevronBack" className="size-3.5" />
-                    Anterior
-                  </button>
-                  <button
-                    type="button"
-                    className={pillButton}
-                    disabled={page >= totalPages - 1}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    Siguiente
-                    <Icon name="chevronForward" className="size-3.5" />
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </>
-      ) : null}
-
-      {allView ? (
-        <InvitedSeats orgId={orgId} courseId={courseId} query={query} hideWhenEmpty />
-      ) : null}
+            {total > 0 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-text-muted text-sm font-semibold">
+                  {totalPages > 1 ? `${people} · Página ${page + 1} de ${totalPages}` : people}
+                </span>
+                {totalPages > 1 ? (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={pillButton}
+                      disabled={page === 0}
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    >
+                      <Icon name="chevronBack" className="size-3.5" />
+                      Anterior
+                    </button>
+                    <button
+                      type="button"
+                      className={pillButton}
+                      disabled={page >= totalPages - 1}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      Siguiente
+                      <Icon name="chevronForward" className="size-3.5" />
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </>
+        ) : null}
+      </div>
     </section>
   );
 }

@@ -49,7 +49,8 @@ export function seatStatusLabel(status: SeatStatus, purchaseStatus: PurchaseStat
 /** A seat whose person has not accepted yet, with the purchase it belongs to. */
 export type InvitedSeat = { seat: Seat; purchase: Purchase };
 
-const NOT_ACCEPTED: SeatStatus[] = ["PENDING_PAYMENT", "INVITED", "INVITATION_EXPIRED"];
+/** Invitations actually sent: seats of an unpaid purchase have no invitation yet, so they are not here. */
+const NOT_ACCEPTED: SeatStatus[] = ["INVITED", "INVITATION_EXPIRED"];
 
 /** Whether the purchase may hold people who have not accepted (so its detail is worth loading). */
 const ERASED_EMAIL = /^erased-[^@]+@invalid$/i;
@@ -65,18 +66,31 @@ export function seatEmailLabel(email: string): string {
 }
 
 export function hasInvitedSeats(purchase: Purchase): boolean {
-  if (purchase.status !== "PAID" && purchase.status !== "PENDING_PAYMENT") return false;
+  if (purchase.status !== "PAID") return false;
   const c = purchase.seatCounts;
-  return c.pendingPayment + c.invited + c.invitationExpired > 0;
+  return c.invited + c.invitationExpired > 0;
 }
 
-/** Seats of the purchase not yet accepted, optionally matching a case-insensitive email search. */
-export function invitedSeatsOf(detail: PurchaseDetail, query = ""): InvitedSeat[] {
+/** Seats of the purchase not yet accepted, optionally of one status and matching an email search. */
+export function invitedSeatsOf(
+  detail: PurchaseDetail,
+  query = "",
+  status?: SeatStatus,
+): InvitedSeat[] {
   const q = query.trim().toLowerCase();
   return detail.seats
     .filter((s) => NOT_ACCEPTED.includes(s.status))
+    .filter((s) => !status || s.status === status)
     .filter((s) => !q || s.email.toLowerCase().includes(q))
     .map((seat) => ({ seat, purchase: detail.purchase }));
+}
+
+/** Whether a reminder can go out now: only to sent invitations, once the cooldown has passed. */
+export function canRemindSeat(seat: Seat, now: number = Date.now()): boolean {
+  return (
+    seat.status === "INVITED" &&
+    (!seat.nextReminderAvailableAt || new Date(seat.nextReminderAvailableAt).getTime() <= now)
+  );
 }
 
 /** Whether the organization can still cancel this purchase for a full refund. */

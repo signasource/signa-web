@@ -8,6 +8,7 @@ import {
   daysLeft,
   emailsFromSheet,
   formatMoney,
+  canRemindSeat,
   hasInvitedSeats,
   invitedSeatsOf,
   isErasedEmail,
@@ -215,7 +216,7 @@ describe("invited seats", () => {
   it("only loads purchases that can hold people who have not accepted", () => {
     expect(hasInvitedSeats(purchase("PAID", { ...counts, invited: 2 }))).toBe(true);
     expect(hasInvitedSeats(purchase("PENDING_PAYMENT", { ...counts, pendingPayment: 1 }))).toBe(
-      true,
+      false,
     );
     expect(hasInvitedSeats(purchase("PAID", { ...counts, active: 3 }))).toBe(false);
     expect(hasInvitedSeats(purchase("REFUNDED", { ...counts, invited: 2 }))).toBe(false);
@@ -235,6 +236,17 @@ describe("invited seats", () => {
     };
     expect(invitedSeatsOf(detail).map((r) => r.seat.id)).toEqual(["1", "3"]);
     expect(invitedSeatsOf(detail, " ANA ").map((r) => r.seat.id)).toEqual(["1"]);
+    expect(invitedSeatsOf(detail, "", "INVITATION_EXPIRED").map((r) => r.seat.id)).toEqual(["3"]);
+  });
+
+  it("only allows a reminder for sent invitations whose cooldown has passed", () => {
+    const now = Date.parse("2026-11-20T12:00:00Z");
+    const sent = (next: string | null) =>
+      ({ status: "INVITED", nextReminderAvailableAt: next }) as Seat;
+    expect(canRemindSeat(sent(null), now)).toBe(true);
+    expect(canRemindSeat(sent("2026-11-20T11:00:00Z"), now)).toBe(true);
+    expect(canRemindSeat(sent("2026-11-21T11:00:00Z"), now)).toBe(false);
+    expect(canRemindSeat({ ...sent(null), status: "INVITATION_EXPIRED" }, now)).toBe(false);
   });
 });
 
