@@ -28,8 +28,6 @@ import { cn } from "@/lib/utils";
 type Metric = "attempts" | "correct" | "lessons";
 
 const NUMBER = new Intl.NumberFormat("es-AR");
-/** Above this many bars the values move from the bars to the tooltip. */
-const MAX_LABELED_BARS = 14;
 
 const METRICS: {
   key: Metric;
@@ -261,15 +259,13 @@ export function PeriodActivity({
                         animationDuration={700}
                         animationEasing="ease-out"
                       >
-                        {points.length <= MAX_LABELED_BARS ? (
-                          <LabelList
-                            dataKey="text"
-                            position="top"
-                            fill="var(--color-text)"
-                            fontSize={12}
-                            fontWeight={800}
-                          />
-                        ) : null}
+                        <LabelList
+                          dataKey="text"
+                          position="top"
+                          fill="var(--color-text)"
+                          fontSize={12}
+                          fontWeight={800}
+                        />
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
