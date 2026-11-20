@@ -48,7 +48,8 @@ endUsers.accounts`; admins, org admins and active org members are left out of bo
   excludes suspended (dadas de baja) orgs, and a suspended org's detail panel offers "Reactivar
   organización" (`PATCH status: ACTIVE`). Suspending asks for a mandatory reason (shown in the panel of a suspended org), and rejected/suspended orgs get "Dar de baja" (confirmed inline, `DELETE`), which frees their emails.
   Finally the **per-org license utilization table** `OrgUtilizationTable` — contracted vs. used seats
-  (denominator = `seatsSold - seatsRefunded`, i.e. non-refunded seats only), ocupación, vence (coloured
+  (denominator = `seatsSold - seatsRefunded`, i.e. non-refunded seats only), ocupación (recalculated locally as
+  `seatsActive ÷ (seatsSold - seatsRefunded) × 100%` to exclude refunded seats), vence (coloured
   by `expiryTone`), ingresos and an **Estado** badge (Bajo uso / Vence pronto / Saludable / Sin cupos
   libres); ranked by risk, collapses to 6 rows behind a "Ver más (N)" toggle. Exposes `useGrowthMetrics`
   (shared with Usuarios). `OrgUtilization` carries `seatsRefunded` from the API.
