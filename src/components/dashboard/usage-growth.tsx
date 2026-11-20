@@ -54,7 +54,7 @@ function share(part: number, whole: number): number {
 /** Average org ticket per bucket (org income ÷ org purchases), for the KPI sparkline. */
 function dailyTicket(g: GrowthMetrics): number[] {
   const purchases = new Map(g.orgs.dailyPurchases.map((d) => [d.t, d.count]));
-  return g.revenue.daily
+  return g.revenue.dailyNet
     .filter((d) => (purchases.get(d.t) ?? 0) > 0)
     .map((d) => d.amount / purchases.get(d.t)!);
 }
@@ -85,7 +85,8 @@ export function GrowthTab({
   const prevMoney = pg ? revenueTotals(pg) : null;
   const conversion = paymentConversion(g);
   const payingUsers = g.endUsers.payingUsers;
-  const revenuePerPayer = payingUsers > 0 ? money.usersPaid / payingUsers : 0;
+  const revenuePerPayer =
+    payingUsers > 0 ? (g.gems.netAmount + g.courseSales.netAmount) / payingUsers : 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -130,12 +131,12 @@ export function GrowthTab({
         />
         <KpiCard
           metric="average_ticket"
-          value={g.revenue.paidCount ? fmtMoney(g.revenue.averageTicket) : "—"}
+          value={g.revenue.netCount ? fmtMoney(g.revenue.averageTicket) : "—"}
           delta={
-            g.revenue.paidCount
+            g.revenue.netCount
               ? {
                   current: g.revenue.averageTicket,
-                  previous: pg && pg.revenue.paidCount ? pg.revenue.averageTicket : null,
+                  previous: pg && pg.revenue.netCount ? pg.revenue.averageTicket : null,
                 }
               : undefined
           }
@@ -156,7 +157,7 @@ export function GrowthTab({
 
       <RevenueBySourceChart
         title="Ingresos por fuente"
-        subtitle="Ingresos brutos por día. Hacé clic en una barra para ver ese día."
+        subtitle="Ingresos por día, sin las compras reembolsadas. Hacé clic en una barra para ver ese día."
         metric="income"
         range={range}
         format={fmtMoneyCompact}
@@ -166,19 +167,19 @@ export function GrowthTab({
             key: "orgs",
             label: "Organizaciones",
             color: "var(--color-primary)",
-            points: g.revenue.daily,
+            points: g.revenue.dailyNet,
           },
           {
             key: "gems",
             label: "Gemas",
             color: "var(--color-gems-blue)",
-            points: g.gems.daily,
+            points: g.gems.dailyNet,
           },
           {
             key: "courses",
             label: "Cursos pagos",
             color: "var(--color-course-teal)",
-            points: g.courseSales.daily,
+            points: g.courseSales.dailyNet,
           },
         ]}
       />
@@ -186,11 +187,11 @@ export function GrowthTab({
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <OrganizationsPanel g={g} />
         <EndUsersPanel
-          gemsAmount={g.gems.paidAmount}
-          gemsPurchases={g.gems.purchases}
+          gemsAmount={g.gems.netAmount}
+          gemsPurchases={g.gems.netPurchases}
           gemsGranted={g.gems.gemsGranted}
-          coursesAmount={g.courseSales.paidAmount}
-          coursesPurchases={g.courseSales.purchases}
+          coursesAmount={g.courseSales.netAmount}
+          coursesPurchases={g.courseSales.netPurchases}
           payingUsers={payingUsers}
           revenuePerPayer={revenuePerPayer}
           repeatBuyerPercent={g.endUsers.repeatBuyerPercent}

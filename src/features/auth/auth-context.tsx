@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { setOnSessionExpired } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
+import { isTransientError, restoreWithRetry } from "@/lib/api/restore";
 import { sessionApi } from "@/lib/api/session";
 import { tokenStore } from "@/lib/api/token-store";
 import type { MyOrganization } from "@/lib/api/types";
@@ -17,6 +18,8 @@ type AuthContextValue = {
   logout: () => void;
   refreshOrganization: () => Promise<void>;
 };
+
+const KEEP_ALIVE_MS = 10 * 60 * 1000;
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -45,12 +48,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (inBackOffice) return;
     setOnSessionExpired(signOut);
+    let cancelled = false;
     const restore = tokenStore.hasSession()
-      ? fetchAdminOrganization().then(signIn)
+      ? restoreWithRetry(fetchAdminOrganization).then((org) => {
+          if (!cancelled) signIn(org);
+        })
       : Promise.reject(new Error("no session"));
-    restore.catch(signOut);
-    return () => setOnSessionExpired(null);
+    restore.catch((err) => {
+      if (cancelled) return;
+      // Still unreachable after retrying: show the login but keep the cookie for the next load.
+      if (isTransientError(err)) setStatus("unauthenticated");
+      else signOut();
+    });
+    return () => {
+      cancelled = true;
+      setOnSessionExpired(null);
+    };
   }, [inBackOffice, signIn, signOut]);
+
+  // Keep the session alive while the panel is open (same as the back-office): refresh on a timer
+  // and when the tab becomes visible again, so a regularly used panel never lapses.
+  useEffect(() => {
+    if (status !== "authenticated" || inBackOffice) return;
+    const keepAlive = () => {
+      void sessionApi.refresh().then((outcome) => {
+        if (outcome === "expired") signOut();
+      });
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") keepAlive();
+    };
+    const timer = window.setInterval(keepAlive, KEEP_ALIVE_MS);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [status, inBackOffice, signOut]);
 
   const login = useCallback(
     async (identifier: string, password: string) => {

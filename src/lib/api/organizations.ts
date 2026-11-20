@@ -8,6 +8,7 @@ import type {
   ModuleStats,
   MyOrganization,
   OrganizationActivity,
+  OrganizationInvitation,
   OrganizationMemberSummary,
   OrganizationOverview,
   Page,
@@ -140,6 +141,11 @@ export const organizationsApi = {
       `/organizations/${orgId}/purchases/${purchaseId}/refund-request`,
       { method: "POST", body: data },
     ),
+
+  invitations: (orgId: string, courseId?: string) =>
+    api<OrganizationInvitation[]>(`/organizations/${orgId}/invitations`, {
+      query: { courseId },
+    }),
 
   updateSeatEmail: (orgId: string, purchaseId: string, seatId: string, email: string) =>
     api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/seats/${seatId}`, {

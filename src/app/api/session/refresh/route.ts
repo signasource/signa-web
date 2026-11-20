@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { clearSession, deny, exchange, refreshTokenOf, sameOrigin } from "@/lib/session-server";
+import { clearSession, deny, refreshOnce, refreshTokenOf, sameOrigin } from "@/lib/session-server";
 
 export async function POST(request: NextRequest) {
   if (!sameOrigin(request)) return deny();
@@ -7,5 +7,5 @@ export async function POST(request: NextRequest) {
   if (!refreshToken) {
     return clearSession(NextResponse.json({ message: "Sin sesión" }, { status: 401 }));
   }
-  return exchange("/auth/refresh", { refresh_token: refreshToken });
+  return refreshOnce(refreshToken);
 }

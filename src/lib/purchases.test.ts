@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Purchase, Seat } from "@/lib/api/types";
+import type { Purchase } from "@/lib/api/types";
 import {
   daysToComplete,
   signsWithin,
@@ -8,8 +8,6 @@ import {
   daysLeft,
   emailsFromSheet,
   formatMoney,
-  hasInvitedSeats,
-  invitedSeatsOf,
   isErasedEmail,
   nextVolumeDiscount,
   paymentMessage,
@@ -23,7 +21,7 @@ import {
   volumeDiscountFor,
 } from "@/lib/purchases";
 
-const schema = purchaseFormSchema({ minDays: 15, maxDays: 60, maxSeats: 3 });
+const schema = purchaseFormSchema({ minDays: 5, maxDays: 60, maxSeats: 3 });
 
 const message = (values: Partial<{ courseId: string; durationDays: number; emails: string }>) => {
   const result = schema.safeParse({
@@ -45,7 +43,7 @@ describe("purchaseFormSchema", () => {
   });
 
   it("keeps the duration inside the range", () => {
-    expect(message({ durationDays: 14 })).toBe("El mínimo es 15 días.");
+    expect(message({ durationDays: 4 })).toBe("El mínimo es 5 días.");
     expect(message({ durationDays: 61 })).toBe("El máximo es 60 días.");
     expect(message({ durationDays: 20.5 })).toBe("Ingresá un número entero de días.");
   });
@@ -195,46 +193,6 @@ describe("paymentMessage", () => {
     expect(paymentMessage("expired").tone).toBe("danger");
     expect(paymentMessage("action_required").tone).toBe("warning");
     expect(paymentMessage("processing").tone).toBe("warning");
-  });
-});
-
-describe("invited seats", () => {
-  const counts = {
-    pendingPayment: 0,
-    invited: 0,
-    invitationExpired: 0,
-    active: 0,
-    accessExpired: 0,
-    revoked: 0,
-  };
-  const purchase = (status: Purchase["status"], seatCounts = counts) =>
-    ({ status, seatCounts }) as Purchase;
-  const seat = (id: string, email: string, status: Seat["status"]) =>
-    ({ id, email, status }) as Seat;
-
-  it("only loads purchases that can hold people who have not accepted", () => {
-    expect(hasInvitedSeats(purchase("PAID", { ...counts, invited: 2 }))).toBe(true);
-    expect(hasInvitedSeats(purchase("PENDING_PAYMENT", { ...counts, pendingPayment: 1 }))).toBe(
-      true,
-    );
-    expect(hasInvitedSeats(purchase("PAID", { ...counts, active: 3 }))).toBe(false);
-    expect(hasInvitedSeats(purchase("REFUNDED", { ...counts, invited: 2 }))).toBe(false);
-    expect(hasInvitedSeats(purchase("CANCELLED", { ...counts, pendingPayment: 2 }))).toBe(false);
-  });
-
-  it("keeps not-accepted seats and filters them by email", () => {
-    const detail = {
-      purchase: purchase("PAID"),
-      refunds: [],
-      seats: [
-        seat("1", "Ana@x.com", "INVITED"),
-        seat("2", "bob@x.com", "ACTIVE"),
-        seat("3", "carla@x.com", "INVITATION_EXPIRED"),
-        seat("4", "dan@x.com", "REVOKED"),
-      ],
-    };
-    expect(invitedSeatsOf(detail).map((r) => r.seat.id)).toEqual(["1", "3"]);
-    expect(invitedSeatsOf(detail, " ANA ").map((r) => r.seat.id)).toEqual(["1"]);
   });
 });
 

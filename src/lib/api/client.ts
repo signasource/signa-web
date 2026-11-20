@@ -1,5 +1,6 @@
 import { keysToCamel, keysToSnake } from "@/lib/case";
 import { env } from "@/lib/env";
+import type { RefreshResult } from "@/lib/api/session";
 import { tokenStore } from "@/lib/api/token-store";
 
 export class ApiError extends Error {
@@ -22,7 +23,7 @@ type RequestOptions = {
 };
 
 let onSessionExpired: (() => void) | null = null;
-let refreshInFlight: Promise<boolean> | null = null;
+let refreshInFlight: Promise<RefreshResult> | null = null;
 
 export function setOnSessionExpired(cb: (() => void) | null) {
   onSessionExpired = cb;
@@ -56,7 +57,7 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
   });
 }
 
-function refreshSession(): Promise<boolean> {
+function refreshSession(): Promise<RefreshResult> {
   refreshInFlight ??= (async () => {
     try {
       const { sessionApi } = await import("@/lib/api/session");
@@ -81,12 +82,14 @@ export async function api<T = void>(path: string, options: RequestOptions = {}):
   let res = await send(path, options);
 
   if (res.status === 401 && !options.anonymous) {
-    if (await refreshSession()) {
+    const outcome = await refreshSession();
+    if (outcome === "ok") {
       res = await send(path, options);
-    } else {
+    } else if (outcome === "expired") {
       tokenStore.clear();
       onSessionExpired?.();
     }
+    // "unavailable": keep the session; the caller sees the 401 and can retry later.
   }
 
   if (!res.ok) throw await toError(res);

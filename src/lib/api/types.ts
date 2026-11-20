@@ -258,6 +258,15 @@ export type Seat = {
   nextReminderAvailableAt: string | null;
 };
 
+/** `GET /organizations/{id}/invitations`: an invitation not yet accepted, with its purchase. */
+export type OrganizationInvitation = {
+  purchaseId: string;
+  courseId: string;
+  courseName: string;
+  purchaseStatus: PurchaseStatus;
+  seat: Seat;
+};
+
 export type RefundReason =
   | "PURCHASE_CANCELLED"
   | "ALREADY_PAID"

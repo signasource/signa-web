@@ -4,10 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { adminApi, type AdminSignDetail, type AdminSignUsage } from "@/lib/api/admin";
 import { SignEditor } from "@/features/admin/signs/sign-editor";
 
-vi.mock("@/features/admin/signs/sign-animation-panel", () => ({
-  SignAnimationPanel: () => null,
-}));
-
 const usage: AdminSignUsage = {
   courseId: "course-1",
   courseName: "Curso Básico",
