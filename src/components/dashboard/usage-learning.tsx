@@ -17,7 +17,6 @@ import { NUMBER } from "@/components/dashboard/usage-business";
 import { pct0, pct1, rate1, rateOrNull } from "@/components/dashboard/usage-math";
 import {
   useBusinessQuery,
-  useGrowthQuery,
   useLearningQuery,
 } from "@/components/dashboard/usage-queries";
 import type { LearningMetrics, LessonReview, SignDifficulty } from "@/lib/api/metrics";
@@ -328,7 +327,6 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
   const learning = useLearningQuery(range, live, courseIds);
   const previous = useLearningQuery(prev, live, courseIds);
   const business = useBusinessQuery(range, live, courseIds);
-  const growth = useGrowthQuery(range, live, courseIds);
 
   if (learning.isPending) return <LoadingState>Cargando métricas de aprendizaje…</LoadingState>;
   if (!learning.data)
@@ -337,7 +335,6 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
   const l = learning.data;
   const pl = previous.data;
   const b = business.data;
-  const activeUsers = growth.data?.engagement.activeInRange ?? 0;
 
   const completion = courseCompletion(l.courses, courseIds);
   const prevCompletion = pl ? courseCompletion(pl.courses, courseIds) : null;
@@ -381,17 +378,6 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
               : { current: completion.percent, previous: prevCompletion?.percent, mode: "pp" }
           }
           hint={`${NUMBER.format(completion.completed)} de ${NUMBER.format(completion.enrollments)} inscripciones`}
-        />
-        <KpiCard
-          metric="vocabulary_growth"
-          value={NUMBER.format(l.learnedSigns)}
-          delta={{ current: l.learnedSigns, previous: pl?.learnedSigns }}
-          hint={
-            activeUsers > 0
-              ? `${(Math.round((l.learnedSigns / activeUsers) * 10) / 10).toLocaleString("es-AR")} por usuario activo`
-              : "Señas nuevas incorporadas en el período"
-          }
-          spark={l.learnedSignsDaily.map((d) => d.count)}
         />
       </KpiRow>
 
