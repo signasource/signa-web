@@ -15,6 +15,9 @@ const AUTH_ERROR_MAP: Record<string, string> = {
   "An organization with this CUIT already exists":
     "Ya existe una organización registrada con ese CUIT.",
 
+  // Password reset
+  "Invalid or expired code": "El código no es válido o venció. Pedí uno nuevo.",
+
   // Generic
   "Too many requests": "Demasiados intentos. Esperá unos minutos y volvé a intentarlo.",
   "Internal server error": "Ocurrió un error inesperado. Intentalo de nuevo.",
@@ -34,7 +37,10 @@ function translateFieldError(field: string, detail: string): string | null {
     case "contactEmail":
     case "email":
       return "Ingresá un email válido.";
+    case "code":
+      return "Ingresá el código de 6 dígitos que te enviamos.";
     case "adminPassword":
+    case "newPassword":
     case "password":
       if (isBlank) return "Ingresá una contraseña.";
       if (isSize || isPattern) return "La contraseña debe tener al menos 8 caracteres.";
