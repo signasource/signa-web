@@ -83,6 +83,12 @@ const PATHS = {
       <path d="M8 12.5l3 3 5-6" />
     </>
   ),
+  tag: (
+    <>
+      <path d="M3 12V4.5A1.5 1.5 0 0 1 4.5 3H12l9 9-9 9-9-9z" />
+      <path d="M8 8h.01" />
+    </>
+  ),
   info: (
     <>
       <circle cx="12" cy="12" r="9" />

@@ -150,14 +150,45 @@ describe("NewPurchasePage", () => {
     renderPage();
 
     expect(await screen.findByText("Señas en video")).toBeInTheDocument();
+    // The hero shows at once; the sample waits for the media lookup.
     expect(
-      screen.getByRole("region", { name: "Así se verán las señas en tu curso" }),
+      await screen.findByRole("region", { name: "Así se verán las señas en tu curso" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Video de frente de la seña Dolor")).toBeInTheDocument();
 
     expect(screen.queryByRole("button", { name: "Fiebre" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Turno" }));
     expect(screen.getByLabelText("Video de frente de la seña Turno")).toBeInTheDocument();
+  });
+
+  it("estimates the days to finish the course at 15 minutes a day", async () => {
+    renderPage();
+    expect(
+      await screen.findByText(/una persona termina el curso en unos 2 días/),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "Resumen de LSA Salud" })).getByText(
+        /≈ 2 días a 15 min por día/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/1 módulo · ≈ 1 día a 15 min por día/)).toBeInTheDocument();
+  });
+
+  it("warns when the access is shorter than the course and offers enough days", async () => {
+    const long = { ...catalog.courses[0]!, signCount: 100 };
+    vi.mocked(organizationsApi.catalog).mockResolvedValue({ ...catalog, courses: [long] });
+    renderPage();
+    expect(await screen.findByText(/llega a ver unas 75 de las 100 señas/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Elegir 40 días" }));
+    await waitFor(() => expect(screen.queryByText(/llega a ver unas/)).not.toBeInTheDocument());
+    expect(screen.getByRole("spinbutton")).toHaveValue(40);
+  });
+
+  it("says more daily time is needed when not even the longest access is enough", async () => {
+    const huge = { ...catalog.courses[0]!, signCount: 200 };
+    vi.mocked(organizationsApi.catalog).mockResolvedValue({ ...catalog, courses: [huge] });
+    renderPage();
+    expect(await screen.findByText(/hace falta dedicarle un poco más por día/)).toBeInTheDocument();
   });
 
   it("suggests the next volume discount", async () => {

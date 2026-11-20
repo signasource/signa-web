@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Purchase, Seat } from "@/lib/api/types";
 import {
+  daysToComplete,
+  signsWithin,
   acceptedSeats,
   canWithdraw,
   daysLeft,
@@ -286,5 +288,28 @@ describe("seatEmailLabel", () => {
   it("keeps real emails untouched", () => {
     expect(isErasedEmail("ana@empresa.com")).toBe(false);
     expect(seatEmailLabel("ana@empresa.com")).toBe("ana@empresa.com");
+  });
+});
+
+describe("daysToComplete", () => {
+  it("rounds up the days at 15 minutes a day and 6 minutes per sign", () => {
+    expect(daysToComplete(30)).toBe(12);
+    expect(daysToComplete(31)).toBe(13);
+    expect(daysToComplete(1)).toBe(1);
+  });
+  it("is 0 for an empty course or no daily time", () => {
+    expect(daysToComplete(0)).toBe(0);
+    expect(daysToComplete(10, 0)).toBe(0);
+  });
+  it("takes another pace", () => {
+    expect(daysToComplete(30, 30, 5)).toBe(5);
+  });
+});
+
+describe("signsWithin", () => {
+  it("counts the signs reached in the days, capped at the course", () => {
+    expect(signsWithin(60, 200)).toBe(150);
+    expect(signsWithin(60, 40)).toBe(40);
+    expect(signsWithin(0, 40)).toBe(0);
   });
 });
