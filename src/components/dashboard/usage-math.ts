@@ -155,4 +155,3 @@ export function dailyRevenue(g: GrowthMetrics): number[] {
   add(g.courseSales.dailyNet);
   return [...byT.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v);
 }
-
