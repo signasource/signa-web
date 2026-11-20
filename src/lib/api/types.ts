@@ -67,12 +67,14 @@ export type OrganizationOverview = {
     participantsCompletedAll: number;
     totalLearningMinutes: number;
     averageLearningMinutes: number;
+    averagePendingLessons: number;
   };
   performance: {
     exerciseAttempts: number;
     correctPercentage: number;
     signRecognitionAttempts: number;
     signRecognitionCorrectPercentage: number;
+    hasCameraExercises: boolean;
     weeklyEvolution: WeeklyPerformance[];
   };
 };

@@ -1079,7 +1079,6 @@ function PurchaseDetailView({
         </div>
       )}
 
-
       {refundBanner && (
         <div
           className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4 text-sm font-semibold"
