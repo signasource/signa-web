@@ -156,7 +156,7 @@ export function dailyRevenue(g: GrowthMetrics): number[] {
   return [...byT.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v);
 }
 
-/** Paying end users over all accounts, as a percentage (one decimal). */
+/** Paying end users over total end users (no-org accounts only), as a percentage (one decimal). */
 export function paymentConversion(g: GrowthMetrics): number {
-  return rate1(g.endUsers.payingUsers, g.users.total);
+  return rate1(g.endUsers.payingUsers, g.endUsers.total);
 }

@@ -116,6 +116,7 @@ export type GrowthMetrics = {
   };
   /** End users (no org) who paid for anything: distinct payers and the repeat-buyer share. */
   endUsers: {
+    total: number;
     payingUsers: number;
     repeatBuyerPercent: number;
   };

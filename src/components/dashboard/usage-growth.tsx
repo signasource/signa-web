@@ -388,18 +388,18 @@ function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
                   <tr key={o.orgId} className="border-fill border-t">
                     <td className="py-2.5 font-extrabold">{o.name}</td>
                     <td className="py-2.5 pl-3 text-right">
-                      {NUMBER.format(o.seatsActive)}/{NUMBER.format(o.seatsSold - o.seatsRefunded)}
+                      {NUMBER.format(o.seatsActive || 0)}/{NUMBER.format((o.seatsSold || 0) - (o.seatsRefunded || 0))}
                     </td>
                     <td className="py-2.5 pl-3">
                       <div className="flex items-center gap-2">
                         <ProgressBar
-                          percent={o.occupancyPercent}
-                          tone={occupancyTone(o.occupancyPercent)}
+                          percent={o.occupancyPercent || 0}
+                          tone={occupancyTone(o.occupancyPercent || 0)}
                           className="flex-1"
                           label={`Ocupación de ${o.name}`}
                         />
                         <span className="w-10 text-right text-xs font-extrabold">
-                          {Math.round(o.occupancyPercent)}%
+                          {Math.round(o.occupancyPercent || 0)}%
                         </span>
                       </div>
                     </td>
