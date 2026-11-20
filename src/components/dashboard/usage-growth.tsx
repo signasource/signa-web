@@ -151,7 +151,7 @@ export function GrowthTab({
             previous: pg ? paymentConversion(pg) : null,
             mode: "pp",
           }}
-          hint={`${NUMBER.format(payingUsers)} ${payingUsers === 1 ? "usuario pagó algo" : "usuarios pagaron algo"}`}
+          hint={`${NUMBER.format(g.endUsers.payingAccounts)} de ${NUMBER.format(g.endUsers.accounts)} ${g.endUsers.accounts === 1 ? "usuario final pagó algo" : "usuarios finales pagaron algo"}`}
         />
       </KpiRow>
 
