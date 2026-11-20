@@ -755,7 +755,7 @@ function RefundList({
   const statusSeg = (["PENDING", "RESOLVED", "ALL"] as const).map((k) => ({
     key: k,
     label: k === "PENDING" ? "Pendientes" : k === "RESOLVED" ? "Resueltos" : "Todos",
-    count: k === "ALL" ? filtered.length : refunds.filter((r) => r.status === k).length,
+    count: k === "ALL" ? refunds.length : refunds.filter((r) => r.status === k).length,
   }));
 
   const chips: { label: string; onRemove: () => void }[] = [];
