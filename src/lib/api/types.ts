@@ -268,8 +268,76 @@ export type OrganizationInvitation = {
   courseId: string;
   courseName: string;
   purchaseStatus: PurchaseStatus;
+  /** The purchase's: after it the invitation can no longer be accepted. */
+  invitationDeadline: string | null;
   seat: Seat;
 };
+
+/** `GET /organizations/{id}/invitations/summary`: invitations of paid purchases (never refunded ones). */
+export type InvitationSummary = {
+  sent: number;
+  accepted: number;
+  /** Still acceptable (not expired). */
+  pending: number;
+  /** `accepted / sent`, rounded; 0 when nothing was sent. */
+  acceptancePercentage: number;
+};
+
+export type HomeActiveParticipant = {
+  userId: string;
+  name: string;
+  lastName: string;
+  avatarUrl: string | null;
+  /** Lesson blocks answered or viewed in the window. */
+  activities: number;
+  /** Distinct days (Argentine time) with activity in the window. */
+  activeDays: number;
+  lastActivityAt: string;
+  progressPercentage: number;
+};
+
+export type FollowUpReason = "ACCESS_EXPIRING" | "INACTIVE" | "LOW_PROGRESS";
+
+export type HomeFollowUpParticipant = {
+  userId: string;
+  name: string;
+  lastName: string;
+  avatarUrl: string | null;
+  /** In priority order. */
+  reasons: FollowUpReason[];
+  /** Over the courses still running and unfinished. */
+  progressPercentage: number;
+  /** Where an even pace would have them by now; null when no running access has an end date. */
+  expectedProgressPercentage: number | null;
+  lastActivityAt: string | null;
+  /** Soonest end among those courses; null when none ends. */
+  accessExpiresAt: string | null;
+  lastReminderAt: string | null;
+  /** Null when a reminder can be sent now. */
+  nextReminderAvailableAt: string | null;
+};
+
+/**
+ * `GET /organizations/{id}/home`: only people whose access comes from a paid purchase count (a
+ * refunded access leaves every figure, activity included).
+ */
+export type OrganizationHome = {
+  participants: number;
+  startedParticipants: number;
+  /** Among `startedParticipants` only. */
+  averageProgressPercentage: number;
+  completedParticipants: number;
+  /** `completedParticipants / participants`. */
+  completedPercentage: number;
+  activeWindowDays: number;
+  /** Most active first. */
+  activeParticipants: HomeActiveParticipant[];
+  /** Highest priority first. */
+  followUp: HomeFollowUpParticipant[];
+};
+
+/** `POST /organizations/{id}/members/{userId}/reminders`. */
+export type ParticipantReminder = { lastReminderAt: string; nextReminderAvailableAt: string };
 
 export type RefundReason =
   | "PURCHASE_CANCELLED"
@@ -339,23 +407,4 @@ export type Page<T> = {
   totalPages: number;
   number: number;
   size: number;
-};
-
-export type ActivityFigures = {
-  /** Distinct people with an attempt; for a whole period it is not the sum of the days. */
-  activeParticipants: number;
-  exerciseAttempts: number;
-  correctAnswers: number;
-  correctPercentage: number;
-  lessonsCompleted: number;
-  learningMinutes: number;
-};
-
-export type DailyActivity = { date: string; figures: ActivityFigures };
-
-export type OrganizationActivity = {
-  from: string;
-  to: string;
-  totals: ActivityFigures;
-  days: DailyActivity[];
 };

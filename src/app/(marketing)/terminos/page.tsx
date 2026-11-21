@@ -81,7 +81,8 @@ export default function TermsPage() {
           <li>
             Una organización puede comprar cupos de un curso por un período de 5 a 60 días e invitar
             por email a una persona por cupo. Sus administradores ven el progreso de los
-            participantes, como se detalla en la Política de privacidad.
+            participantes, como se detalla en la Política de privacidad, y pueden enviarles
+            recordatorios por email para que retomen la capacitación.
           </li>
           <li>
             Los cupos se pagan a través de Mercado Pago, que se rige también por sus condiciones.

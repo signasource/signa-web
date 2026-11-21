@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DailyActivity } from "@/lib/api/types";
 import {
-  activityGranularity,
-  bucketActivity,
   formatRange,
   matchPreset,
   periodFromParams,
@@ -13,20 +10,6 @@ import {
 } from "@/lib/date-range";
 
 const TODAY = new Date(2026, 9, 18, 15, 0); // Sunday 18 oct 2026
-
-function day(date: string, exerciseAttempts: number, correctAnswers: number, lessons = 0) {
-  return {
-    date,
-    figures: {
-      activeParticipants: exerciseAttempts ? 1 : 0,
-      exerciseAttempts,
-      correctAnswers,
-      correctPercentage: 0,
-      lessonsCompleted: lessons,
-      learningMinutes: 0,
-    },
-  } satisfies DailyActivity;
-}
 
 describe("date range", () => {
   it("builds presets from today", () => {
@@ -73,57 +56,5 @@ describe("date range", () => {
     expect(formatRange({ from: "2026-09-28", to: "2026-10-04" })).toBe("28 sep – 4 oct 2026");
     expect(formatRange({ from: "2025-12-20", to: "2026-01-05" })).toBe("20 dic 2025 – 5 ene 2026");
     expect(formatRange({ from: "2026-10-09", to: "2026-10-09" })).toBe("9 oct 2026");
-  });
-
-  it("keeps one bar per day for short periods", () => {
-    const buckets = bucketActivity([day("2026-10-01", 4, 3), day("2026-10-02", 0, 0, 2)]);
-    expect(buckets).toHaveLength(2);
-    expect(buckets[0]).toMatchObject({
-      label: "1 oct",
-      exerciseAttempts: 4,
-      correctPercentage: 75,
-    });
-    expect(buckets[1]).toMatchObject({ lessonsCompleted: 2, correctPercentage: 0 });
-  });
-
-  it("groups long periods by Monday-started week", () => {
-    // 40 days from Wednesday 2 sep: the first week is clipped to Wed–Sun.
-    const days = Array.from({ length: 40 }, (_, i) => {
-      const d = new Date(2026, 8, 2 + i);
-      const iso = `2026-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      return day(iso, 2, 1);
-    });
-    const buckets = bucketActivity(days);
-    expect(buckets[0]).toMatchObject({
-      start: "2026-09-02",
-      longLabel: "Semana del 2 sep",
-      exerciseAttempts: 10,
-      correctPercentage: 50,
-    });
-    expect(buckets[1]).toMatchObject({ start: "2026-09-07", exerciseAttempts: 14 });
-    expect(buckets.reduce((n, b) => n + b.exerciseAttempts, 0)).toBe(80);
-  });
-
-  it("groups periods past half a year by calendar month", () => {
-    expect(activityGranularity(31)).toBe("day");
-    expect(activityGranularity(182)).toBe("week");
-    expect(activityGranularity(183)).toBe("month");
-    // 220 days from 15 jun 2026 into jan 2027: the first month is clipped to 15–30 jun, and
-    // crossing a year adds it to the axis labels.
-    const days = Array.from({ length: 220 }, (_, i) => {
-      const d = new Date(2026, 5, 15 + i);
-      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      return day(iso, 1, 1);
-    });
-    const buckets = bucketActivity(days);
-    expect(buckets[0]).toMatchObject({
-      start: "2026-06-15",
-      label: "jun 26",
-      longLabel: "jun 2026",
-      exerciseAttempts: 16,
-      correctPercentage: 100,
-    });
-    expect(buckets[1]).toMatchObject({ start: "2026-07-01", exerciseAttempts: 31 });
-    expect(buckets.at(-1)).toMatchObject({ label: "ene 27", longLabel: "ene 2027" });
   });
 });
