@@ -35,7 +35,7 @@ export const organizationsApi = {
     orgName: string;
     cuit: string;
     contactEmail: string;
-    contactPhone?: string;
+    contactPhone: string;
     adminName: string;
     adminPassword: string;
   }) =>
