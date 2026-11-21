@@ -3,13 +3,7 @@
  * Prometheus series (average, peak, totals from a per-second rate). Kept free of React so they are
  * unit-tested on their own.
  */
-import type {
-  CohortRetention,
-  GrowthMetrics,
-  PerfMetrics,
-  PerfSeries,
-  SeriesAmount,
-} from "@/lib/api/metrics";
+import type { CohortRetention, GrowthMetrics, PerfMetrics, PerfSeries } from "@/lib/api/metrics";
 import type { DateTimeRange } from "@/lib/datetime-range";
 
 /** One decimal with an Argentine comma and a trailing "%": `pct1(5.8)` → "5,8%". */
@@ -152,16 +146,4 @@ export function revenueTotals(g: GrowthMetrics) {
     net: orgNet + usersNet,
     refundRate: rate1(refunded, gross),
   };
-}
-
-/** Income per bucket, net of refunded purchases, across every source (organizations, gems, paid courses), in time order. */
-export function dailyRevenue(g: GrowthMetrics): number[] {
-  const byT = new Map<string, number>();
-  const add = (series: SeriesAmount[]) => {
-    for (const p of series) byT.set(p.t, (byT.get(p.t) ?? 0) + p.amount);
-  };
-  add(g.revenue.dailyNet);
-  add(g.gems.dailyNet);
-  add(g.courseSales.dailyNet);
-  return [...byT.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v);
 }

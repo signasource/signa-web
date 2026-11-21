@@ -51,6 +51,7 @@ const PATHS = {
     </>
   ),
   chevronForward: <path d="M9 5l7 7-7 7" />,
+  close: <path d="M6 6l12 12M18 6L6 18" />,
   mail: (
     <>
       <rect x="3" y="5" width="18" height="14" rx="2.5" />

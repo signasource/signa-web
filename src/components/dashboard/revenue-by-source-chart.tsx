@@ -86,6 +86,7 @@ export function RevenueBySourceChart({
   format,
   onSelectRange,
   className,
+  height = 230,
 }: {
   title: string;
   subtitle?: string;
@@ -95,6 +96,8 @@ export function RevenueBySourceChart({
   format: ValueFormat;
   onSelectRange?: RangeSelect;
   className?: string;
+  /** Plot height in px (a compact row passes less). */
+  height?: number;
 }) {
   const fromMs = new Date(range.from).getTime();
   const toMs = new Date(range.to).getTime();
@@ -167,7 +170,7 @@ export function RevenueBySourceChart({
         <div
           role="img"
           aria-label={totals.map((t) => `${t.label}: ${format(t.total)}`).join(". ")}
-          className="h-[230px]"
+          style={{ height }}
         >
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data} margin={{ top: 16, right: 4, left: 4, bottom: 0 }}>

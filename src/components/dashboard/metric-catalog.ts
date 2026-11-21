@@ -153,20 +153,12 @@ export const METRICS = {
     threshold: { dir: "up", warn: 30, danger: 15 },
   },
   income: {
-    label: "Ingresos netos",
+    label: "Ingresos",
     description:
-      "Todo el dinero que entra, descontados los reembolsos: por un lado las organizaciones (compra de cupos) y por otro los usuarios finales (gemas y cursos).",
+      "Todo el dinero cobrado por ventas, sin contar las compras que se reembolsaron: organizaciones (compra de cupos) y usuarios finales (gemas y cursos).",
     howComputed:
-      "Sumamos el dinero de las compras pagadas dentro del período que no se reembolsaron (una compra cuenta en el día en que se pagó, igual que en «Ingresos por fuente»). La variación compara contra el período anterior de igual duración.",
-    goodWhen: "Crece y supera a los reembolsos.",
-  },
-  refunds: {
-    label: "Reembolsos",
-    description:
-      "Dinero devuelto por reembolsos o contracargos, separado entre organizaciones y usuarios finales.",
-    howComputed:
-      "Sumamos el dinero que se devolvió dentro del período, separado entre organizaciones y usuarios finales.",
-    goodWhen: "Lo más bajo posible frente a los ingresos.",
+      "Sumamos el importe de las compras pagadas dentro del período que no se reembolsaron (una compra cuenta en el día en que se pagó, igual que en «Ingresos por fuente»). Hacé clic en «Ver las compras» para ver cada una. La variación compara contra el período anterior de igual duración.",
+    goodWhen: "Crece de un período a otro.",
   },
   revenue: {
     label: "Ingresos de organizaciones",
@@ -176,29 +168,21 @@ export const METRICS = {
     goodWhen: "Crece y supera a los reembolsos.",
   },
   refund_rate: {
-    label: "Tasa de reembolso",
-    description: "Qué parte de los ingresos se termina devolviendo.",
+    label: "Tasa de reembolsos",
+    description: "Qué parte de las compras se termina reembolsando.",
     howComputed:
-      "De las compras pagadas dentro del período, dividimos el dinero de las que se reembolsaron por el total, como porcentaje.",
+      "De las compras pagadas dentro del período (organizaciones, gemas y cursos), dividimos la cantidad que se reembolsó por la cantidad total, como porcentaje. Hacé clic en «Ver las compras» para ver todas, con las reembolsadas primero.",
     goodWhen: "Lo más baja posible.",
     threshold: { dir: "down", warn: 5, danger: 10 },
   },
-  refund_rate_users: {
-    label: "Tasa de reembolso",
+  refund_reasons: {
+    label: "Motivos de reembolso",
     description:
-      "Qué parte de los ingresos de usuarios finales (gemas y cursos) se termina devolviendo.",
+      "Por qué se reembolsaron las compras del período. Todo reembolso (cupos, gemas o cursos) se pide eligiendo un motivo de la misma lista.",
     howComputed:
-      "Dividimos el dinero devuelto a usuarios finales por lo que ingresaron en el período, como porcentaje.",
-    goodWhen: "Lo más baja posible.",
-    threshold: { dir: "down", warn: 5, danger: 10 },
-  },
-  seat_utilization: {
-    label: "Uso de cupos",
-    description: "Cupos comprados por organizaciones que efectivamente usa un participante.",
-    howComputed:
-      "Dividimos los cupos que ya tienen un participante activo por el total de cupos vendidos.",
-    goodWhen: "Por encima del 70%: los cupos vendidos se están usando.",
-    threshold: { dir: "up", warn: 70, danger: 50 },
+      "Agrupamos las compras pagadas dentro del período que se reembolsaron según el motivo que eligió quien pidió el reembolso. «Contracargo» es cuando el comprador desconoció el pago ante su banco; «Sin motivo registrado», un reembolso hecho fuera de Signa o anterior a que el motivo fuera obligatorio.",
+    goodWhen:
+      "Pocos reembolsos y sin un motivo que se repita: un motivo dominante señala qué mejorar.",
   },
   gems_revenue: {
     label: "Compras de gemas",
@@ -228,12 +212,6 @@ export const METRICS = {
       "Contamos las personas distintas inscriptas en algún curso pago, al final del período.",
     goodWhen: "Crece: refleja que el contenido gratis convierte al pago.",
   },
-  orgs_active: {
-    label: "Organizaciones activas",
-    description: "Empresas e instituciones con la cuenta aprobada y operativa.",
-    howComputed: "Contamos las organizaciones aprobadas y operativas al final del período.",
-    goodWhen: "Crece; pocas quedan esperando aprobación.",
-  },
   orgs_pending: {
     label: "Organizaciones pendientes",
     description: "Organizaciones registradas que esperan la aprobación de SIGNA.",
@@ -254,27 +232,6 @@ export const METRICS = {
       "Dividimos el total de participantes activos por la cantidad de organizaciones que tienen al menos uno.",
     goodWhen: "Alto: las organizaciones aprovechan la plataforma con muchos participantes.",
   },
-  avg_revenue_per_org: {
-    label: "Ingreso promedio por organización",
-    description: "Cuánto gastó en promedio cada organización que compró.",
-    howComputed:
-      "Dividimos el dinero ingresado por organizaciones (sin las compras reembolsadas) entre las que hicieron al menos una compra vigente.",
-    goodWhen: "Alto y creciente.",
-  },
-  average_ticket: {
-    label: "Ticket promedio org.",
-    description: "Cuánto dinero entra en promedio por cada compra de cupos de organizaciones.",
-    howComputed:
-      "Dividimos el dinero ingresado por organizaciones entre la cantidad de compras confirmadas en el período, sin contar las reembolsadas.",
-    goodWhen: "Alto y estable; refleja contratos de mayor tamaño.",
-  },
-  purchases_count: {
-    label: "Compras de organizaciones",
-    description: "Compras de cupos confirmadas en el período.",
-    howComputed:
-      "Contamos las compras de cupos de organizaciones con pago confirmado en el período, sin las reembolsadas.",
-    goodWhen: "Acompaña el crecimiento comercial.",
-  },
   free_to_premium: {
     label: "Conversión de gratis a pago",
     description: "Qué proporción de los usuarios de cursos gratuitos llega a un curso pago.",
@@ -282,43 +239,53 @@ export const METRICS = {
       "Dividimos la gente en cursos pagos por la gente en cursos gratuitos, al final del período.",
     goodWhen: "Cuanto más alta, mejor conversión del contenido gratis al pago.",
   },
-  payment_conversion: {
-    label: "Conversión a pago",
+  gem_sources: {
+    label: "Origen de las gemas",
     description:
-      "Qué parte de los usuarios finales pagó algo (gemas o cursos) dentro del período. No cuenta a los usuarios de organizaciones.",
+      "De dónde salieron las gemas que recibieron los usuarios en el período: premios de desafíos, premios de logros o compradas con dinero.",
     howComputed:
-      "Dividimos los usuarios finales distintos que hicieron al menos una compra pagada en el período por el total de usuarios finales (sin administradores ni miembros o administradores de organizaciones).",
-    goodWhen: "Cuanto más alta, más gente llega a pagar algo.",
-    threshold: { dir: "up", warn: 5, danger: 2 },
+      "Sumamos las gemas de los premios de desafíos reclamados dentro del período, las de los logros obtenidos en el período y las de los packs de gemas pagados en el período que no se reembolsaron.",
+    goodWhen:
+      "Muestra cuánto pesa la compra frente a lo que se gana jugando: sirve para equilibrar la economía de gemas.",
   },
-  paying_users: {
-    label: "Usuarios que compraron",
-    description: "Personas distintas que pagaron algo (gemas o cursos) dentro del período.",
-    howComputed:
-      "Contamos las personas distintas con al menos una compra de gemas o de cursos confirmada en el período; las compras reembolsadas no cuentan.",
-    goodWhen: "Crece: más gente que paga.",
-  },
-  revenue_per_payer: {
-    label: "Ingreso por usuario pagador",
-    description: "Cuánto gastó en promedio cada persona que pagó algo (gemas o cursos).",
-    howComputed:
-      "Dividimos el dinero de gemas y cursos del período por la cantidad de personas que pagaron.",
-    goodWhen: "Alto y estable; refleja compras de mayor valor.",
-  },
-  repeat_buyers: {
-    label: "Recompra",
-    description: "Qué parte de los que pagaron algo volvió a comprar (dos o más compras).",
-    howComputed:
-      "De las personas que pagaron en el período, qué parte hizo dos o más compras (gemas y cursos sumados).",
-    goodWhen: "Cuanto más alta, mejor fidelidad de los usuarios pagadores.",
-  },
-  org_utilization: {
-    label: "Uso de cupos por organización",
+  survey_age: {
+    label: "Edad",
     description:
-      "Cupos contratados frente a los que realmente se usan, organización por organización. Que una contrate 100 y use 5 es una señal comercial importante.",
+      "Rangos de edad de las personas que se crearon una cuenta en el período, según la encuesta inicial de la app.",
     howComputed:
-      "Para cada organización mostramos los cupos con participante activo sobre los cupos comprados, junto con sus participantes e ingresos.",
-    goodWhen: "Ocupación alta: las licencias compradas se usan.",
+      "Contamos las cuentas creadas dentro del período por el rango de edad que eligieron al empezar. «Sin respuesta» son las que eligieron no decirlo o se registraron con una versión anterior de la app. El porcentaje es sobre todas las cuentas nuevas del período.",
+    goodWhen: "Sirve para adaptar las temáticas de los cursos a quién llega.",
+  },
+  survey_level: {
+    label: "Nivel de conocimiento",
+    description:
+      "Cuánta lengua de señas sabían las personas que se crearon una cuenta en el período, según la encuesta inicial.",
+    howComputed:
+      "Contamos las cuentas creadas dentro del período por el nivel que eligieron al empezar («Nunca lo vi», «Algo sé», «Ya lo uso»). «Sin respuesta» son las que no lo contestaron. El porcentaje es sobre todas las cuentas nuevas del período.",
+    goodWhen: "Sirve para adaptar la complejidad de los cursos.",
+  },
+  survey_motivation: {
+    label: "Motivación",
+    description:
+      "Por qué quieren aprender las personas que se crearon una cuenta en el período, según la encuesta inicial.",
+    howComputed:
+      "Contamos cuántas cuentas creadas dentro del período eligieron cada motivo al empezar. Se podía elegir más de uno, así que la suma puede superar al total de cuentas. «Sin respuesta» son las que no eligieron ninguno. El porcentaje es sobre todas las cuentas nuevas del período.",
+    goodWhen: "Sirve para adaptar las temáticas de los cursos.",
+  },
+  popular_courses: {
+    label: "Cursos más populares",
+    description: "Los cursos a los que más gente se sumó en el período, ordenados del más popular.",
+    howComputed:
+      "Para cada curso contamos los cupos de organizaciones que se activaron dentro del período (de compras no reembolsadas) más los individuales: compras del curso pagadas y no reembolsadas, e inscripciones por cuenta propia a cursos gratis.",
+    goodWhen:
+      "Muestra dónde está el interés: sirve para decidir qué contenido sumar o promocionar.",
+  },
+  course_revenue: {
+    label: "Ingresos por curso",
+    description: "Cuánto dinero generó cada curso en el período, de organizaciones e individuales.",
+    howComputed:
+      "Para cada curso sumamos las compras de cupos de organizaciones y las compras individuales pagadas dentro del período, sin las que se reembolsaron. Las gemas no son de un curso, así que no entran.",
+    goodWhen: "Identifica los cursos que más ingresos generan.",
   },
 
   // ── Aprendizaje & contenido ──────────────────────────────────────────────────────────────────

@@ -24,6 +24,7 @@ vi.mock("@/lib/api/organizations", () => ({
     checkout: vi.fn(),
     syncPayment: vi.fn(),
     withdrawPurchase: vi.fn(),
+    createPurchaseRefundRequest: vi.fn(),
   },
 }));
 
@@ -320,24 +321,28 @@ describe("PurchaseDetailPage", () => {
     expect(
       screen.getByText("Se anula 1 invitación pendiente: el link deja de funcionar."),
     ).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Motivo (opcional)"), {
+    // The reason is required: confirming without one only shows the error.
+    fireEvent.click(screen.getByRole("button", { name: /Sí, anular y reembolsar/ }));
+    expect(await screen.findByText("Elegí un motivo.")).toBeInTheDocument();
+    expect(organizationsApi.withdrawPurchase).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "MISTAKE" } });
+    fireEvent.change(screen.getByLabelText("Comentario (opcional)"), {
       target: { value: "Compramos el curso equivocado" },
     });
     fireEvent.click(screen.getByRole("button", { name: /Sí, anular y reembolsar/ }));
 
     await waitFor(() =>
-      expect(organizationsApi.withdrawPurchase).toHaveBeenCalledWith(
-        "org1",
-        "p1",
-        "Compramos el curso equivocado",
-      ),
+      expect(organizationsApi.withdrawPurchase).toHaveBeenCalledWith("org1", "p1", {
+        reason: "MISTAKE",
+        message: "Compramos el curso equivocado",
+      }),
     );
     expect(await screen.findByText(/Compra anulada y reembolsada el/)).toBeInTheDocument();
     expect(screen.getByText(/Listo: anulamos la compra/)).toBeInTheDocument();
     expect(screen.getByText("Acceso anulado")).toBeInTheDocument();
     expect(screen.getByText("1 con el acceso anulado")).toBeInTheDocument();
     expect(screen.getByText("Invitación anulada")).toBeInTheDocument();
-    expect(screen.getByText("Motivo: «Compramos el curso equivocado»")).toBeInTheDocument();
+    expect(screen.getByText("Comentario: «Compramos el curso equivocado»")).toBeInTheDocument();
     expect(screen.queryByText("Anular la compra")).not.toBeInTheDocument();
   });
 
@@ -350,9 +355,35 @@ describe("PurchaseDetailPage", () => {
     renderPage();
 
     fireEvent.click(await screen.findByRole("button", { name: "Anular compra" }));
+    fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "OTHER" } });
     fireEvent.click(screen.getByRole("button", { name: /Sí, anular y reembolsar/ }));
 
     expect(await screen.findByText(/Mercado Pago no respondió/)).toBeInTheDocument();
+  });
+
+  it("asks for a refund only once a reason is picked; the comment stays optional", async () => {
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(detail({}, [seat({ id: "s1" })]));
+    vi.mocked(organizationsApi.createPurchaseRefundRequest).mockReset();
+    vi.mocked(organizationsApi.createPurchaseRefundRequest).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof organizationsApi.createPurchaseRefundRequest>>,
+    );
+    renderPage();
+
+    expect(await screen.findByText("Pedir reembolso")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Enviar pedido" }));
+    expect(await screen.findByText("Elegí un motivo.")).toBeInTheDocument();
+    expect(organizationsApi.createPurchaseRefundRequest).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "TECHNICAL" } });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar pedido" }));
+
+    await waitFor(() =>
+      expect(organizationsApi.createPurchaseRefundRequest).toHaveBeenCalledWith("org1", "p1", {
+        reason: "TECHNICAL",
+        message: undefined,
+      }),
+    );
+    expect(await screen.findByText("Reembolso solicitado")).toBeInTheDocument();
   });
 
   it("does not offer cancelling once the withdrawal period ended", async () => {

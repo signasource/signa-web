@@ -386,7 +386,6 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
               : undefined
           }
           hint={`${l.exercises.averageAttempts.toLocaleString("es-AR")} intentos por ejercicio`}
-          spark={l.dailyAccuracy.map((d) => d.accuracyPercent)}
         />
         <KpiCard
           metric="global_course_completion"

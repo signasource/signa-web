@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fragment, useState } from "react";
 import {
   adminApi,
@@ -10,6 +11,8 @@ import {
   type RefundRequestStatus,
   type UnifiedPurchaseStatus,
 } from "@/lib/api/admin";
+import { purchaseFromSearch } from "@/lib/admin-purchase-link";
+import { refundReasonLabel } from "@/lib/refund-reasons";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -46,27 +49,6 @@ const REFUND_STATUS_META: Record<RefundRequestStatus, { label: string; bg: strin
     fg: "var(--color-success-dark)",
   },
 };
-
-const REFUND_REASON_LABEL: Record<string, string> = {
-  NOT_RECEIVED: "No recibí lo que compré",
-  MISTAKE: "Compré por error",
-  DUPLICATE: "Me cobraron dos veces",
-  TECHNICAL: "Problema técnico",
-  NOT_AS_EXPECTED: "No era lo que esperaba",
-  OTHER: "Otro",
-  PURCHASE_CANCELLED: "Pago de una compra cancelada",
-  ALREADY_PAID: "Pago duplicado",
-  AMOUNT_MISMATCH: "Monto distinto al de la compra",
-  BUYER_REQUESTED: "Arrepentimiento de la organización",
-  EXTERNAL_REFUND: "Reembolsado desde Mercado Pago",
-  CHARGEBACK: "Contracargo",
-};
-
-/** The buyer may skip the reason, so a request can arrive without one. */
-function refundReasonLabel(reason: string | null): string {
-  if (!reason) return "Sin motivo";
-  return REFUND_REASON_LABEL[reason] ?? reason;
-}
 
 const PAYMENT_METHOD_LABEL: Record<string, string> = {
   MERCADO_PAGO: "Mercado Pago",
@@ -1504,7 +1486,18 @@ type View =
   | { kind: "refund"; id: string };
 
 export default function AdminPurchasesPage() {
-  const [view, setView] = useState<View>({ kind: "list" });
+  // A link from the metrics (`?purchase=&type=`) opens that purchase until the admin navigates.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const linked = purchaseFromSearch(searchParams.toString());
+  const [chosen, setChosen] = useState<View | null>(null);
+  const view: View = chosen ?? (linked ? { kind: "purchase", ...linked } : { kind: "list" });
+  const setView = (next: View) => {
+    setChosen(next);
+    // Leaving the linked purchase drops it from the URL, so a reload shows what is on screen.
+    if (linked) router.replace(pathname);
+  };
   const [tab, setTab] = useState<"compras" | "reembolsos">("compras");
 
   const purchasesQ = useQuery({

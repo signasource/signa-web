@@ -14,7 +14,7 @@ type InvitedFilter = SeatStatus | "ALL";
 
 const FILTERS: { value: InvitedFilter; label: string }[] = [
   { value: "ALL", label: "Todas" },
-  { value: "INVITED", label: "Enviadas" },
+  { value: "INVITED", label: "Pendientes" },
   { value: "INVITATION_EXPIRED", label: "Vencidas" },
 ];
 

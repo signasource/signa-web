@@ -30,9 +30,15 @@ const DEFAULT_DRAFT = RANGE_PRESETS[1]!;
 export function PeriodSelect({
   value,
   onChange,
+  prefix,
+  hint,
 }: {
   value: Period;
   onChange: (period: Period) => void;
+  /** Names what the period applies to on the chip (e.g. "Incorporación"). */
+  prefix?: string;
+  /** One line at the top of the panel saying what the period filters. */
+  hint?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange>(() => value ?? DEFAULT_DRAFT.range(new Date()));
@@ -97,7 +103,7 @@ export function PeriodSelect({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={`Período: ${label}`}
+        aria-label={`${prefix ?? "Período"}: ${label}`}
         onClick={toggle}
         className={cn(
           headerChip,
@@ -105,7 +111,10 @@ export function PeriodSelect({
         )}
       >
         <Icon name="calendar" className="size-4" />
-        <span>{label}</span>
+        <span>
+          {prefix ? <span className="font-semibold opacity-75">{prefix}: </span> : null}
+          {label}
+        </span>
         <Icon
           name="chevronDown"
           className={cn("size-3.5 transition-transform", open && "rotate-180")}
@@ -118,6 +127,11 @@ export function PeriodSelect({
           aria-label="Elegir período"
           className="border-border bg-surface dash-card-enter absolute right-0 z-30 mt-2 flex w-[min(18rem,calc(100vw-2rem))] flex-col rounded-2xl border p-1.5 shadow-lg"
         >
+          {hint ? (
+            <p className="text-text-muted border-fill mb-1 border-b px-2.5 pt-1.5 pb-2 text-[13px] text-pretty">
+              {hint}
+            </p>
+          ) : null}
           <ul className="flex flex-col gap-0.5">
             {options.map((p) => {
               const selected = p.selected;
@@ -199,7 +213,7 @@ export function PeriodSelect({
 }
 
 /** {@link PeriodSelect} bound to the dashboard's URL period. */
-export function PeriodFilter() {
+export function PeriodFilter({ prefix, hint }: { prefix?: string; hint?: string } = {}) {
   const { period, setPeriod } = usePeriodFilter();
-  return <PeriodSelect value={period} onChange={setPeriod} />;
+  return <PeriodSelect value={period} onChange={setPeriod} prefix={prefix} hint={hint} />;
 }

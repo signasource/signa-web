@@ -29,13 +29,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { invitationsKey } from "@/features/dashboard/use-invited-seats";
 import { ApiError } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
-import type {
-  PurchaseDetail,
-  PurchaseStatus,
-  RefundRequestReason,
-  Seat,
-  SeatStatus,
-} from "@/lib/api/types";
+import type { PurchaseDetail, PurchaseStatus, Seat, SeatStatus } from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
 import {
   REFUNDED_MESSAGE,
@@ -49,7 +43,9 @@ import {
   paymentMessage,
   paymentReturn,
   seatEmailLabel,
+  type WithdrawalForm,
 } from "@/lib/purchases";
+import { REFUND_REASON_OPTIONS, REFUND_REASON_VALUES } from "@/lib/refund-reasons";
 import { cn } from "@/lib/utils";
 
 const PAYMENT_TONE = {
@@ -84,20 +80,9 @@ function seatDates(seat: Seat, purchaseStatus: PurchaseStatus): string {
   return "";
 }
 
-const REFUND_REASON_OPTIONS: { value: RefundRequestReason; label: string }[] = [
-  { value: "MISTAKE", label: "Me equivoqué al comprar" },
-  { value: "DUPLICATE", label: "Compra duplicada" },
-  { value: "NOT_RECEIVED", label: "No recibí lo que esperaba" },
-  { value: "NOT_AS_EXPECTED", label: "El curso no era lo esperado" },
-  { value: "TECHNICAL", label: "Problemas técnicos" },
-  { value: "OTHER", label: "Otro motivo" },
-];
-
-/** Both fields are optional: an empty select or comment is simply not sent. */
+/** A reason from the shared list is required; the comment is optional. */
 const refundSchema = z.object({
-  reason: z
-    .enum(["", "NOT_RECEIVED", "MISTAKE", "DUPLICATE", "TECHNICAL", "NOT_AS_EXPECTED", "OTHER"])
-    .transform((v) => v || undefined),
+  reason: z.enum(REFUND_REASON_VALUES, { error: "Elegí un motivo." }),
   message: z
     .string()
     .trim()
@@ -111,7 +96,7 @@ function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId
   const [sent, setSent] = useState(false);
   const form = useForm<RefundFormInput, unknown, RefundFormValues>({
     resolver: zodResolver(refundSchema),
-    defaultValues: { reason: "", message: "" },
+    defaultValues: { reason: undefined, message: "" },
   });
   const mutation = useMutation({
     mutationFn: (values: RefundFormValues) =>
@@ -151,14 +136,18 @@ function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId
       >
         <div className="flex flex-col gap-1">
           <label htmlFor="refund-reason" className="text-sm font-semibold">
-            Motivo <span className="text-text-muted font-normal">(opcional)</span>
+            Motivo
           </label>
           <select
             id="refund-reason"
+            defaultValue=""
+            aria-invalid={Boolean(form.formState.errors.reason)}
             className="border-border bg-surface rounded-lg border px-3 py-2 text-sm"
             {...form.register("reason")}
           >
-            <option value="">Sin especificar</option>
+            <option value="" disabled>
+              Elegí un motivo
+            </option>
             {REFUND_REASON_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
@@ -166,7 +155,9 @@ function RefundRequestSection({ orgId, purchaseId }: { orgId: string; purchaseId
             ))}
           </select>
           {form.formState.errors.reason ? (
-            <span className="text-danger text-xs">{form.formState.errors.reason.message}</span>
+            <span role="alert" className="text-danger text-xs">
+              {form.formState.errors.reason.message}
+            </span>
           ) : null}
         </div>
         <div className="flex flex-col gap-1">
@@ -284,7 +275,8 @@ export default function PurchaseDetailPage() {
   });
 
   const withdraw = useMutation({
-    mutationFn: (reason: string) => organizationsApi.withdrawPurchase(orgId!, purchaseId, reason),
+    mutationFn: (values: WithdrawalForm) =>
+      organizationsApi.withdrawPurchase(orgId!, purchaseId, values),
     onSuccess: store,
   });
 
@@ -480,7 +472,7 @@ export default function PurchaseDetailPage() {
           purchase={purchase}
           pending={withdraw.isPending}
           error={withdrawError}
-          onConfirm={(reason) => withdraw.mutate(reason)}
+          onConfirm={(values) => withdraw.mutate(values)}
         />
       ) : purchase.hasRefundRequest ? (
         <Card className="flex flex-col gap-2">
@@ -523,7 +515,7 @@ export default function PurchaseDetailPage() {
                     {REFUND_REASON_LABEL[refund.reason]}
                   </span>
                   {refund.note ? (
-                    <span className="text-text-muted text-[13px]">Motivo: «{refund.note}»</span>
+                    <span className="text-text-muted text-[13px]">Comentario: «{refund.note}»</span>
                   ) : null}
                 </span>
                 <span className="text-text-muted text-[13px] font-semibold">

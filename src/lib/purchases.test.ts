@@ -226,12 +226,23 @@ describe("canWithdraw", () => {
 });
 
 describe("withdrawalSchema", () => {
-  it("accepts an empty reason and caps it at 500 characters", () => {
-    expect(withdrawalSchema.safeParse({ reason: "" }).success).toBe(true);
-    expect(withdrawalSchema.safeParse({ reason: "x".repeat(500) }).success).toBe(true);
-    expect(withdrawalSchema.safeParse({ reason: "x".repeat(501) }).error?.issues[0]?.message).toBe(
-      "Usá hasta 500 caracteres.",
+  it("requires a reason from the shared list and keeps the comment optional", () => {
+    expect(withdrawalSchema.safeParse({ reason: "MISTAKE", message: "" }).success).toBe(true);
+    expect(withdrawalSchema.safeParse({ reason: "", message: "x" }).error?.issues[0]?.message).toBe(
+      "Elegí un motivo.",
     );
+    expect(withdrawalSchema.safeParse({ message: "x" }).success).toBe(false);
+    expect(withdrawalSchema.safeParse({ reason: "CHARGEBACK", message: "" }).success).toBe(false);
+  });
+
+  it("caps the comment at 500 characters", () => {
+    expect(withdrawalSchema.safeParse({ reason: "OTHER", message: "x".repeat(500) }).success).toBe(
+      true,
+    );
+    expect(
+      withdrawalSchema.safeParse({ reason: "OTHER", message: "x".repeat(501) }).error?.issues[0]
+        ?.message,
+    ).toBe("Usá hasta 500 caracteres.");
   });
 });
 

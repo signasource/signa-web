@@ -1,61 +1,66 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { daysSince } from "@/components/dashboard/format";
+import { useCallback, useState, type ReactNode } from "react";
+import { BreakdownPie } from "@/components/dashboard/breakdown-pie";
 import { InfoPopover } from "@/components/dashboard/info-popover";
-import { KpiCard, KpiRow } from "@/components/dashboard/kpi-card";
+import { KpiCard } from "@/components/dashboard/kpi-card";
 import { RevenueBySourceChart } from "@/components/dashboard/revenue-by-source-chart";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
 import { fmtMoney, fmtMoneyCompact } from "@/components/dashboard/perf-format";
-import {
-  Card,
-  CardTitle,
-  ErrorState,
-  LoadingState,
-  ProgressBar,
-  StatRows,
-} from "@/components/dashboard/ui";
+import { SalesListDialog } from "@/components/dashboard/sales-list-dialog";
+import { salesTotals, type SalesView } from "@/components/dashboard/sales-math";
+import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
-import { dailyRevenue, pct0, pct1, rate1, revenueTotals } from "@/components/dashboard/usage-math";
-import { useGrowthQuery } from "@/components/dashboard/usage-queries";
-import type { GrowthMetrics, OrgUtilization } from "@/lib/api/metrics";
+import { pct1 } from "@/components/dashboard/usage-math";
+import { useGrowthQuery, useSalesQuery } from "@/components/dashboard/usage-queries";
+import type { CoursePopularity, CourseRevenue, GemSource } from "@/lib/api/metrics";
 import { previousRange, type DateTimeRange } from "@/lib/datetime-range";
+import { refundReasonLabel } from "@/lib/refund-reasons";
 
-/** The organization pipeline, in the order the segmented bar and legend read left-to-right. */
-const ORG_PIPELINE: { key: string; label: string; color: string }[] = [
-  { key: "ACTIVE", label: "Activas", color: "var(--color-primary)" },
-  { key: "PENDING", label: "Pendientes", color: "var(--color-streak-orange)" },
-  { key: "SUSPENDED", label: "Suspendidas", color: "var(--color-primary-dark)" },
-  { key: "REJECTED", label: "Rechazadas", color: "var(--color-text-muted)" },
-];
+/** How the "Origen de las gemas" pie names each source. */
+const GEM_SOURCE_LABEL: Record<GemSource["source"], string> = {
+  CHALLENGES: "Desafíos",
+  ACHIEVEMENTS: "Logros",
+  PURCHASED: "Compradas",
+};
 
 /** Growth & business snapshot query — shared by the Resumen, Negocio and Usuarios tabs. */
 export function useGrowthMetrics(range: DateTimeRange, live: boolean) {
   return useGrowthQuery(range, live);
 }
 
-function orgCount(items: { key: string; count: number }[], key: string): number {
-  return items.find((i) => i.key === key)?.count ?? 0;
-}
+/**
+ * The Negocio grid: every row shares the same three columns on wide screens, so the counters line
+ * up with the same width (column 1) and the widgets beside them split the rest evenly. A single
+ * widget (`wide`) spans columns 2–3; two widgets take one each. Stacks on narrow screens.
+ */
+const NEGOCIO_COLUMNS =
+  "grid items-stretch gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(200px,1fr)_minmax(0,1.6fr)_minmax(0,1.6fr)]";
 
-/** A part-of-whole percentage rounded to a whole number (0 when the whole is 0). */
-function share(part: number, whole: number): number {
-  return whole > 0 ? Math.round((part / whole) * 100) : 0;
-}
-
-/** Average org ticket per bucket (org income ÷ org purchases), for the KPI sparkline. */
-function dailyTicket(g: GrowthMetrics): number[] {
-  const purchases = new Map(g.orgs.dailyPurchases.map((d) => [d.t, d.count]));
-  return g.revenue.dailyNet
-    .filter((d) => (purchases.get(d.t) ?? 0) > 0)
-    .map((d) => d.amount / purchases.get(d.t)!);
+function KpiBeside({
+  kpi,
+  children,
+  wide = false,
+}: {
+  kpi: ReactNode;
+  children: ReactNode;
+  /** One widget spanning both columns beside the counter. */
+  wide?: boolean;
+}) {
+  return (
+    <div className={NEGOCIO_COLUMNS}>
+      {kpi}
+      {wide ? <div className="flex min-w-0 xl:col-span-2 [&>*]:flex-1">{children}</div> : children}
+    </div>
+  );
 }
 
 /**
- * Negocio. A five-KPI north-star row (ingresos netos, tasa de reembolso, uso de cupos, ticket
- * promedio, conversión a pago), income **by source** (stacked), the **organizaciones** pipeline and
- * **usuarios finales** panels side by side, and the per-org license utilization table.
+ * Negocio, as three rows that each pair a counter with its breakdown: **Ingresos** beside income by
+ * source (a compact chart); **Tasa de reembolsos**, the refund reasons and where the users' gems
+ * came from as one row of three; then the most popular courses beside the income per course.
+ * The counters come from the sales detail (`/admin/metrics/sales`): Ingresos and Tasa de
+ * reembolsos open the purchases behind them. The source chart comes from the growth snapshot.
  */
 export function GrowthTab({
   range,
@@ -67,342 +72,248 @@ export function GrowthTab({
   onSelectRange: RangeSelect;
 }) {
   const query = useGrowthQuery(range, live);
-  const previous = useGrowthQuery(previousRange(range), live);
+  const sales = useSalesQuery(range, live);
+  const previousSales = useSalesQuery(previousRange(range), live);
+  const [openView, setOpenView] = useState<SalesView | null>(null);
+  const closeList = useCallback(() => setOpenView(null), []);
 
   if (query.isPending) return <LoadingState>Cargando métricas de negocio…</LoadingState>;
   if (!query.data) return <ErrorState>No pudimos cargar las métricas de negocio.</ErrorState>;
-
   const g = query.data;
-  const pg = previous.data;
-  const money = revenueTotals(g);
-  const prevMoney = pg ? revenueTotals(pg) : null;
-  const payingUsers = g.endUsers.payingUsers;
-  const revenuePerPayer =
-    payingUsers > 0 ? (g.gems.netAmount + g.courseSales.netAmount) / payingUsers : 0;
 
-  return (
-    <div className="flex flex-col gap-5">
-      <KpiRow>
-        <KpiCard
-          metric="income"
-          value={fmtMoneyCompact(money.net)}
-          delta={{ current: money.net, previous: prevMoney?.net }}
-          spark={dailyRevenue(g)}
-          hint={`Orgs ${share(money.orgNet, money.net)}% · usuarios finales ${share(money.usersNet, money.net)}%`}
-        />
-        <KpiCard
-          metric="refund_rate"
-          value={pct1(money.refundRate)}
-          toneValue={money.gross > 0 ? money.refundRate : null}
-          delta={{
-            current: money.refundRate,
-            previous: prevMoney && prevMoney.gross > 0 ? prevMoney.refundRate : null,
-            mode: "pp",
-            good: "down",
-          }}
-          hint={`${fmtMoneyCompact(money.refunded)} · orgs ${pct1(rate1(money.orgRefunded, money.orgPaid))} · usuarios ${pct1(rate1(money.usersRefunded, money.usersPaid))}`}
-        />
-        <KpiCard
-          metric="seat_utilization"
-          value={g.seats.sold ? pct0(g.seats.utilizationPercent) : "—"}
-          toneValue={g.seats.sold ? g.seats.utilizationPercent : null}
-          delta={
-            g.seats.sold
-              ? {
-                  current: Math.round(g.seats.utilizationPercent),
-                  previous:
-                    g.seats.previousUtilizationPercent == null
-                      ? null
-                      : Math.round(g.seats.previousUtilizationPercent),
-                  mode: "pp",
-                  decimals: 0,
-                }
-              : undefined
-          }
-          hint={`${NUMBER.format(g.seats.active)} de ${NUMBER.format(g.seats.sold)} cupos vendidos`}
-        />
-        <KpiCard
-          metric="average_ticket"
-          value={g.revenue.netCount ? fmtMoney(g.revenue.averageTicket) : "—"}
-          delta={
-            g.revenue.netCount
-              ? {
-                  current: g.revenue.averageTicket,
-                  previous: pg && pg.revenue.netCount ? pg.revenue.averageTicket : null,
-                }
-              : undefined
-          }
-          spark={dailyTicket(g)}
-          hint={`${NUMBER.format(g.orgs.purchasesInRange)} ${g.orgs.purchasesInRange === 1 ? "compra de organizaciones" : "compras de organizaciones"}`}
-        />
-      </KpiRow>
-
-      <RevenueBySourceChart
-        title="Ingresos por fuente"
-        subtitle="Ingresos por día, sin las compras reembolsadas. Hacé clic en una barra para ver ese día."
-        metric="income"
-        range={range}
-        format={fmtMoneyCompact}
-        onSelectRange={onSelectRange}
-        sources={[
-          {
-            key: "orgs",
-            label: "Organizaciones",
-            color: "var(--color-primary)",
-            points: g.revenue.dailyNet,
-          },
-          {
-            key: "gems",
-            label: "Gemas",
-            color: "var(--color-gems-blue)",
-            points: g.gems.dailyNet,
-          },
-          {
-            key: "courses",
-            label: "Cursos pagos",
-            color: "var(--color-course-teal)",
-            points: g.courseSales.dailyNet,
-          },
-        ]}
-      />
-
-      <div className="grid items-start gap-4 lg:grid-cols-2">
-        <OrganizationsPanel g={g} />
-        <EndUsersPanel
-          gemsAmount={g.gems.netAmount}
-          gemsPurchases={g.gems.netPurchases}
-          gemsGranted={g.gems.gemsGranted}
-          coursesAmount={g.courseSales.netAmount}
-          coursesPurchases={g.courseSales.netPurchases}
-          payingUsers={payingUsers}
-          revenuePerPayer={revenuePerPayer}
-          repeatBuyerPercent={g.endUsers.repeatBuyerPercent}
-        />
-      </div>
-
-      <OrgUtilizationTable rows={g.orgs.utilization} />
-    </div>
+  // The sales-backed widgets wait for (or report) the sales query on their own.
+  const s = sales.data;
+  const salesState = sales.isPending ? (
+    <Card>
+      <LoadingState>Cargando ventas…</LoadingState>
+    </Card>
+  ) : (
+    <Card>
+      <ErrorState>No pudimos cargar las ventas del período.</ErrorState>
+    </Card>
   );
-}
+  const t = s ? salesTotals(s.sales) : null;
+  const p = previousSales.data ? salesTotals(previousSales.data.sales) : null;
 
-/** B2B pipeline panel: a segmented status bar + legend, the pending-validation strip and org stats. */
-function OrganizationsPanel({ g }: { g: GrowthMetrics }) {
-  const segments = ORG_PIPELINE.map((s) => ({ ...s, count: orgCount(g.organizations, s.key) }));
-  const total = segments.reduce((sum, s) => sum + s.count, 0);
   return (
-    <Card className="flex flex-col gap-4">
-      <div className="flex items-center gap-1.5">
-        <CardTitle>Organizaciones</CardTitle>
-        <InfoPopover metric="orgs_active" className="ml-auto" />
-        <Link
-          href="/admin/organizations"
-          className="text-primary hover:text-primary-dark text-[13px] font-extrabold"
-        >
-          Gestionar
-        </Link>
-      </div>
+    <div className="flex flex-col gap-4">
+      <KpiBeside
+        wide
+        kpi={
+          t ? (
+            <KpiCard
+              metric="income"
+              value={fmtMoneyCompact(t.net)}
+              delta={{ current: t.net, previous: p?.net }}
+              onOpen={() => setOpenView("income")}
+            />
+          ) : (
+            salesState
+          )
+        }
+      >
+        <RevenueBySourceChart
+          title="Ingresos por fuente"
+          height={150}
+          metric="income"
+          range={range}
+          format={fmtMoneyCompact}
+          onSelectRange={onSelectRange}
+          sources={[
+            {
+              key: "orgs",
+              label: "Organizaciones",
+              color: "var(--color-primary)",
+              points: g.revenue.dailyNet,
+            },
+            {
+              key: "gems",
+              label: "Gemas",
+              color: "var(--color-gems-blue)",
+              points: g.gems.dailyNet,
+            },
+            {
+              key: "courses",
+              label: "Cursos pagos",
+              color: "var(--color-course-teal)",
+              points: g.courseSales.dailyNet,
+            },
+          ]}
+        />
+      </KpiBeside>
 
-      <div>
-        <div className="bg-fill flex h-3 gap-0.5 overflow-hidden rounded-full">
-          {total === 0
-            ? null
-            : segments.map((s) =>
-                s.count > 0 ? (
-                  <div
-                    key={s.key}
-                    style={{ width: `${(s.count / total) * 100}%`, background: s.color }}
-                  />
-                ) : null,
-              )}
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-          {segments.map((s) => (
-            <div key={s.key}>
-              <span className="text-text-muted flex items-center gap-1.5 text-[13px]">
-                <span className="size-2 shrink-0 rounded-full" style={{ background: s.color }} />
-                {s.label}
-              </span>
-              <p className="font-display mt-0.5 text-2xl font-extrabold tracking-tight">
-                {NUMBER.format(s.count)}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+      <KpiBeside
+        kpi={
+          t ? (
+            <KpiCard
+              metric="refund_rate"
+              value={t.count ? pct1(t.refundRate) : "—"}
+              toneValue={t.count ? t.refundRate : null}
+              delta={
+                t.count
+                  ? {
+                      current: t.refundRate,
+                      previous: p && p.count ? p.refundRate : null,
+                      mode: "pp",
+                      good: "down",
+                    }
+                  : undefined
+              }
+              onOpen={() => setOpenView("refund_rate")}
+            />
+          ) : (
+            salesState
+          )
+        }
+      >
+        {s ? (
+          <BreakdownPie
+            title="Motivos de reembolso"
+            metric="refund_reasons"
+            items={s.refundReasons.map((r) => ({
+              label: refundReasonLabel(r.reason),
+              value: r.count,
+            }))}
+          />
+        ) : (
+          salesState
+        )}
+        {s ? (
+          <BreakdownPie
+            title="Origen de las gemas"
+            metric="gem_sources"
+            items={s.gemSources.map((src) => ({
+              label: GEM_SOURCE_LABEL[src.source],
+              value: src.gems,
+            }))}
+          />
+        ) : (
+          salesState
+        )}
+      </KpiBeside>
 
-      {g.orgs.pending > 0 ? (
-        <div className="bg-shop-amber-light flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-2.5 text-[13px]">
-          <span className="text-shop-amber-dark font-extrabold">
-            {NUMBER.format(g.orgs.pending)}{" "}
-            {g.orgs.pending === 1 ? "pendiente de validar" : "pendientes de validar"}
-          </span>
-          {(() => {
-            const d = daysSince(g.orgs.oldestPendingCreatedAt);
-            return d != null ? (
-              <span className="text-shop-amber-dark">
-                la más antigua hace {d} {d === 1 ? "día" : "días"}
-              </span>
-            ) : null;
-          })()}
-          <Link
-            href="/admin/organizations"
-            className="text-shop-amber-dark ml-auto font-extrabold hover:underline"
-          >
-            Validar
-          </Link>
+      {s ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <PopularCoursesCard rows={s.popularCourses} />
+          <CourseRevenueCard rows={s.courseRevenue} />
         </div>
       ) : null}
 
-      <StatRows
-        rows={[
-          {
-            label: "Usuarios promedio por organización",
-            value: NUMBER.format(g.orgs.avgUsersPerOrg),
-          },
-          {
-            label: "Ingreso promedio por organización",
-            value: fmtMoney(g.orgs.avgRevenuePerOrg),
-          },
-          { label: "Compras en el período", value: NUMBER.format(g.orgs.purchasesInRange) },
-        ]}
-      />
-    </Card>
-  );
-}
-
-/** A compact money sub-tile for the "Usuarios finales" panel (gem packs / paid courses). */
-function MoneyTile({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <div className="bg-fill rounded-xl p-3.5">
-      <p className="text-text-muted text-[13px] font-bold">{label}</p>
-      <p className="font-display mt-1 text-2xl font-extrabold tracking-tight">{value}</p>
-      <p className="text-text-muted mt-0.5 text-[13px]">{hint}</p>
+      {openView && s ? (
+        <SalesListDialog view={openView} sales={s.sales} onClose={closeList} />
+      ) : null}
     </div>
   );
 }
 
-/** End-user (no-org) revenue panel: gem and paid-course money plus payer counts and repeat rate. */
-function EndUsersPanel({
-  gemsAmount,
-  gemsPurchases,
-  gemsGranted,
-  coursesAmount,
-  coursesPurchases,
-  payingUsers,
-  revenuePerPayer,
-  repeatBuyerPercent,
-}: {
-  gemsAmount: number;
-  gemsPurchases: number;
-  gemsGranted: number;
-  coursesAmount: number;
-  coursesPurchases: number;
-  payingUsers: number;
-  revenuePerPayer: number;
-  repeatBuyerPercent: number;
-}) {
+/** How many rows a ranking shows before the "Ver más" toggle. */
+const RANKING_PREVIEW = 8;
+
+/** The "Ver los N" / "Ver menos" toggle under a long ranking. */
+function useExpandable<T>(rows: T[]) {
+  const [expanded, setExpanded] = useState(false);
+  const canExpand = rows.length > RANKING_PREVIEW;
+  return {
+    visible: expanded ? rows : rows.slice(0, RANKING_PREVIEW),
+    toggle: canExpand ? (
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="text-primary hover:text-primary-dark mt-3 cursor-pointer text-[13px] font-extrabold"
+      >
+        {expanded ? "Ver menos" : `Ver los ${NUMBER.format(rows.length)} cursos`}
+      </button>
+    ) : null,
+  };
+}
+
+/**
+ * Courses ranked by the people who joined them in the window: organization seats activated plus
+ * individuals (paid orders and free self-enrollments). The table is its own text alternative.
+ */
+function PopularCoursesCard({ rows }: { rows: CoursePopularity[] }) {
+  const { visible, toggle } = useExpandable(rows);
   return (
-    <Card className="flex flex-col gap-4">
-      <div className="flex items-center gap-1.5">
-        <CardTitle>Usuarios finales</CardTitle>
-        <InfoPopover metric="paying_users" className="ml-auto" />
+    <Card className="min-w-0">
+      <div className="flex items-start justify-between gap-2">
+        <CardTitle>Cursos más populares</CardTitle>
+        <InfoPopover metric="popular_courses" />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <MoneyTile
-          label="Compras de gemas"
-          value={fmtMoneyCompact(gemsAmount)}
-          hint={`${NUMBER.format(gemsPurchases)} compras · ${NUMBER.format(gemsGranted)} gemas`}
-        />
-        <MoneyTile
-          label="Cursos pagos"
-          value={fmtMoneyCompact(coursesAmount)}
-          hint={`${NUMBER.format(coursesPurchases)} ${coursesPurchases === 1 ? "curso vendido" : "cursos vendidos"}`}
-        />
-      </div>
-      <StatRows
-        rows={[
-          { label: "Usuarios que compraron", value: NUMBER.format(payingUsers) },
-          { label: "Ingreso por usuario pagador", value: fmtMoney(revenuePerPayer) },
-          { label: "Recompra (2+ compras)", value: `${pct1(repeatBuyerPercent)}` },
-        ]}
-      />
+      {rows.length === 0 ? (
+        <p className="text-text-muted mt-3 text-sm">Nadie se sumó a un curso en este período.</p>
+      ) : (
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="text-text-muted text-left text-xs font-bold">
+                <th className="pb-2 font-bold">Curso</th>
+                <th className="pb-2 pl-3 text-right font-bold">Organizaciones</th>
+                <th className="pb-2 pl-3 text-right font-bold">Individuales</th>
+                <th className="pb-2 pl-3 text-right font-bold">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((c) => (
+                <tr key={c.courseId} className="border-fill border-t">
+                  <td className="py-2.5 font-extrabold">{c.courseName}</td>
+                  <td className="py-2.5 pl-3 text-right">{NUMBER.format(c.orgSeats)}</td>
+                  <td className="py-2.5 pl-3 text-right">{NUMBER.format(c.individual)}</td>
+                  <td className="py-2.5 pl-3 text-right font-extrabold">
+                    {NUMBER.format(c.total)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {toggle}
+        </div>
+      )}
     </Card>
   );
 }
 
-/** How many rows a long listing shows before the "Ver más" toggle. */
-const ORG_TABLE_PREVIEW = 6;
-
-/** Occupancy bar colour: under-used warns, healthy (≥ 80 %) is green, the rest neutral. */
-function occupancyTone(percent: number): "warning" | "primary" | "success" {
-  if (percent < 50) return "warning";
-  if (percent >= 80) return "success";
-  return "primary";
-}
-
-/**
- * Per-organization license utilization: contracted vs. used seats, active members, expiry and a
- * health badge. Ranked by risk (big contracts barely used or soon to renew). Long lists collapse to
- * {@link ORG_TABLE_PREVIEW} rows behind a "Ver las N organizaciones" toggle.
- */
-function OrgUtilizationTable({ rows }: { rows: OrgUtilization[] }) {
-  const [expanded, setExpanded] = useState(false);
-  const canExpand = rows.length > ORG_TABLE_PREVIEW;
-  const visible = expanded ? rows : rows.slice(0, ORG_TABLE_PREVIEW);
+/** Income per course (seat purchases + individual orders), refunded purchases left out. */
+function CourseRevenueCard({ rows }: { rows: CourseRevenue[] }) {
+  const { visible, toggle } = useExpandable(rows);
   return (
-    <Card id="licencias" className="scroll-mt-6">
-      <CardTitle>Licencias por organización</CardTitle>
+    <Card className="min-w-0">
+      <div className="flex items-start justify-between gap-2">
+        <CardTitle>Ingresos por curso</CardTitle>
+        <InfoPopover metric="course_revenue" />
+      </div>
       {rows.length === 0 ? (
-        <p className="text-text-muted mt-4 text-sm">Sin compras de cupos todavía.</p>
+        <p className="text-text-muted mt-3 text-sm">
+          Ningún curso generó ingresos en este período.
+        </p>
       ) : (
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="text-text-muted text-left text-xs font-bold">
-                <th className="pb-2 font-bold">Organización</th>
-                <th className="pb-2 pl-3 text-right font-bold">Cupos</th>
-                <th className="w-44 pb-2 pl-3 font-bold">Ocupación</th>
-                <th className="pb-2 pl-3 text-right font-bold">Ingresos</th>
+                <th className="pb-2 font-bold">Curso</th>
+                <th className="pb-2 pl-3 text-right font-bold">Organizaciones</th>
+                <th className="pb-2 pl-3 text-right font-bold">Individuales</th>
+                <th className="pb-2 pl-3 text-right font-bold">Total</th>
               </tr>
             </thead>
             <tbody>
-              {visible.map((o) => {
-                return (
-                  <tr key={o.orgId} className="border-fill border-t">
-                    <td className="py-2.5 font-extrabold">{o.name}</td>
-                    <td className="py-2.5 pl-3 text-right">
-                      {NUMBER.format(o.seatsActive ?? 0)}/{NUMBER.format(o.seatsSold ?? 0)}
-                    </td>
-                    <td className="py-2.5 pl-3">
-                      <div className="flex items-center gap-2">
-                        <ProgressBar
-                          percent={o.occupancyPercent ?? 0}
-                          tone={occupancyTone(o.occupancyPercent ?? 0)}
-                          className="flex-1"
-                          label={`Ocupación de ${o.name}`}
-                        />
-                        <span className="w-10 text-right text-xs font-extrabold">
-                          {Math.round(o.occupancyPercent ?? 0)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 pl-3 text-right font-extrabold">
-                      {fmtMoney(o.revenue ?? 0)}
-                    </td>
-                  </tr>
-                );
-              })}
+              {visible.map((c) => (
+                <tr key={c.courseId} className="border-fill border-t">
+                  <td className="py-2.5 font-extrabold">{c.courseName}</td>
+                  <td className="py-2.5 pl-3 text-right whitespace-nowrap">
+                    {fmtMoney(c.orgAmount)}
+                  </td>
+                  <td className="py-2.5 pl-3 text-right whitespace-nowrap">
+                    {fmtMoney(c.individualAmount)}
+                  </td>
+                  <td className="py-2.5 pl-3 text-right font-extrabold whitespace-nowrap">
+                    {fmtMoney(c.total)}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
-          {canExpand ? (
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              className="text-primary hover:text-primary-dark mt-3 cursor-pointer text-[13px] font-extrabold"
-            >
-              {expanded ? "Ver menos" : `Ver las ${NUMBER.format(rows.length)} organizaciones`}
-            </button>
-          ) : null}
+          {toggle}
         </div>
       )}
     </Card>
