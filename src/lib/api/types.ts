@@ -352,12 +352,7 @@ export type ParticipantSummary = {
 
 /** Where a participant stands in a course (or, in the total row, across all of them). */
 export type TrainingStatus =
-  | "INVITATION_PENDING"
-  | "NOT_STARTED"
-  | "ACTIVE"
-  | "INACTIVE"
-  | "COMPLETED"
-  | "ACCESS_EXPIRED";
+  "INVITATION_PENDING" | "NOT_STARTED" | "ACTIVE" | "INACTIVE" | "COMPLETED" | "ACCESS_EXPIRED";
 
 /** A participant's training in one course; the total row has `courseId`/`courseName` null. */
 export type CourseTraining = {
