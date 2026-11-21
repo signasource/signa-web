@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/dashboard/icons";
 import { METRICS, type MetricId } from "@/components/dashboard/metric-catalog";
@@ -19,6 +19,35 @@ const PANEL_WIDTH = 320; // px; matches the clamp below
  */
 export function InfoPopover({ metric, className }: { metric: MetricId; className?: string }) {
   const def = METRICS[metric];
+  return (
+    <InfoButton label={def.label} className={className}>
+      <p className="text-text text-[13px] leading-relaxed">{def.description}</p>
+      <dl className="flex flex-col gap-1.5 text-[12px]">
+        <div>
+          <dt className="text-text-muted font-extrabold tracking-wider uppercase">
+            Cómo se calcula
+          </dt>
+          <dd className="text-text-muted mt-0.5 leading-relaxed">{def.howComputed}</dd>
+        </div>
+        <div>
+          <dt className="text-text-muted font-extrabold tracking-wider uppercase">Qué es sano</dt>
+          <dd className="text-text-muted mt-0.5 leading-relaxed">{def.goodWhen}</dd>
+        </div>
+      </dl>
+    </InfoButton>
+  );
+}
+
+/** The same "i" button and panel with any content, titled `label`. */
+export function InfoButton({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -83,7 +112,7 @@ export function InfoPopover({ metric, className }: { metric: MetricId; className
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={`Qué es «${def.label}»`}
+        aria-label={`Qué es «${label}»`}
         onClick={() => setOpen((o) => !o)}
         className="text-text-muted hover:text-text focus-visible:text-text cursor-pointer transition-colors"
       >
@@ -95,7 +124,7 @@ export function InfoPopover({ metric, className }: { metric: MetricId; className
               ref={panelRef}
               id={panelId}
               role="dialog"
-              aria-label={def.label}
+              aria-label={label}
               style={{
                 position: "fixed",
                 top: pos.top,
@@ -105,22 +134,8 @@ export function InfoPopover({ metric, className }: { metric: MetricId; className
               }}
               className="border-border bg-surface dash-card-enter z-[100] flex max-w-[calc(100vw-1rem)] flex-col gap-2 overflow-y-auto rounded-2xl border p-4 text-left shadow-lg"
             >
-              <p className="font-display text-sm font-bold tracking-tight">{def.label}</p>
-              <p className="text-text text-[13px] leading-relaxed">{def.description}</p>
-              <dl className="flex flex-col gap-1.5 text-[12px]">
-                <div>
-                  <dt className="text-text-muted font-extrabold tracking-wider uppercase">
-                    Cómo se calcula
-                  </dt>
-                  <dd className="text-text-muted mt-0.5 leading-relaxed">{def.howComputed}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted font-extrabold tracking-wider uppercase">
-                    Qué es sano
-                  </dt>
-                  <dd className="text-text-muted mt-0.5 leading-relaxed">{def.goodWhen}</dd>
-                </div>
-              </dl>
+              <p className="font-display text-sm font-bold tracking-tight">{label}</p>
+              {children}
             </div>,
             document.body,
           )

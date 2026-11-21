@@ -1,14 +1,8 @@
-import type { ActivityFigures, DailyActivity } from "@/lib/api/types";
-
 const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const DAY_MS = 86_400_000;
 
 /** Longest custom period the dashboard endpoints accept (inclusive days). */
 export const MAX_RANGE_DAYS = 366;
-/** Up to this many days the chart shows one bar per day; longer periods group by week. */
-export const MAX_DAILY_BARS = 31;
-/** Past this many days weekly bars get too thin and the chart groups by month. */
-export const MAX_WEEKLY_DAYS = 182;
 
 export const ALL_TIME_LABEL = "Todo el historial";
 
@@ -127,89 +121,4 @@ export function formatRange(range: DateRange): string {
   if (from.getMonth() !== to.getMonth())
     return `${from.getDate()} ${MONTHS[from.getMonth()]} – ${full(to)}`;
   return `${from.getDate()} – ${full(to)}`;
-}
-
-export type ActivityGranularity = "day" | "week" | "month";
-
-/** How the chart groups a period of `days` days. */
-export function activityGranularity(days: number): ActivityGranularity {
-  if (days <= MAX_DAILY_BARS) return "day";
-  if (days <= MAX_WEEKLY_DAYS) return "week";
-  return "month";
-}
-
-export type ActivityBucket = {
-  /** First day of the bucket (ISO date). */
-  start: string;
-  /** Axis label: "9 oct", or "oct" for a month. */
-  label: string;
-  /** Text-alternative label: "9 oct", "Semana del 6 oct" or "oct 2026". */
-  longLabel: string;
-  exerciseAttempts: number;
-  correctPercentage: number;
-  lessonsCompleted: number;
-};
-
-function shortDate(d: Date): string {
-  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
-}
-
-/**
- * Groups the API's day-by-day figures into chart bars: one per day for short periods, one per
- * week (Monday start, clipped to the period) for longer ones, one per calendar month past
- * {@link MAX_WEEKLY_DAYS} days. Correct % is recomputed from the summed answers, never averaged.
- */
-export function bucketActivity(days: DailyActivity[]): ActivityBucket[] {
-  const granularity = activityGranularity(days.length);
-  const firstDate = days[0] ? parseISODate(days[0].date) : null;
-  const lastDate = days.at(-1) ? parseISODate(days.at(-1)!.date) : null;
-  const severalYears = firstDate?.getFullYear() !== lastDate?.getFullYear();
-  const buckets: (ActivityBucket & { correctAnswers: number })[] = [];
-  for (const day of days) {
-    const date = parseISODate(day.date);
-    if (!date) continue;
-    const opensBucket =
-      buckets.length === 0 ||
-      granularity === "day" ||
-      (granularity === "week" && date.getDay() === 1) ||
-      (granularity === "month" && date.getDate() === 1);
-    if (opensBucket) {
-      const month = MONTHS[date.getMonth()]!;
-      buckets.push({
-        start: day.date,
-        label:
-          granularity === "month"
-            ? severalYears
-              ? `${month} ${String(date.getFullYear()).slice(2)}`
-              : month
-            : shortDate(date),
-        longLabel:
-          granularity === "month"
-            ? `${month} ${date.getFullYear()}`
-            : granularity === "week"
-              ? `Semana del ${shortDate(date)}`
-              : shortDate(date),
-        exerciseAttempts: 0,
-        correctAnswers: 0,
-        correctPercentage: 0,
-        lessonsCompleted: 0,
-      });
-    }
-    const bucket = buckets[buckets.length - 1]!;
-    bucket.exerciseAttempts += day.figures.exerciseAttempts;
-    bucket.correctAnswers += day.figures.correctAnswers;
-    bucket.lessonsCompleted += day.figures.lessonsCompleted;
-  }
-  return buckets.map(({ correctAnswers, ...b }) => ({
-    ...b,
-    correctPercentage: b.exerciseAttempts
-      ? Math.round((correctAnswers / b.exerciseAttempts) * 100)
-      : 0,
-  }));
-}
-
-export function hasActivity(totals: ActivityFigures): boolean {
-  return (
-    totals.activeParticipants > 0 || totals.exerciseAttempts > 0 || totals.lessonsCompleted > 0
-  );
 }
