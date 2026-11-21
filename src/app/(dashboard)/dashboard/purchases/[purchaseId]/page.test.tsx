@@ -12,8 +12,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: navigation.replace }),
   useSearchParams: () => new URLSearchParams(navigation.search),
 }));
+const auth = vi.hoisted(() => ({ refreshOrganization: vi.fn(() => Promise.resolve()) }));
 vi.mock("@/features/auth/auth-context", () => ({
-  useAuth: () => ({ organization: { id: "org1", name: "Hospital", status: "ACTIVE" } }),
+  useAuth: () => ({
+    organization: { id: "org1", name: "Hospital", status: "ACTIVE" },
+    refreshOrganization: auth.refreshOrganization,
+  }),
 }));
 vi.mock("@/lib/api/organizations", () => ({
   organizationsApi: {
@@ -100,6 +104,7 @@ describe("PurchaseDetailPage", () => {
     vi.mocked(organizationsApi.syncPayment).mockReset();
     navigation.search = "";
     navigation.replace.mockReset();
+    auth.refreshOrganization.mockClear();
   });
   afterEach(cleanup);
 
@@ -185,6 +190,14 @@ describe("PurchaseDetailPage", () => {
     expect(organizationsApi.syncPayment).toHaveBeenCalledWith("org1", "p1");
     expect(navigation.replace).toHaveBeenCalledWith("/dashboard/purchases/p1", { scroll: false });
     expect(screen.queryByText("Cancelar compra")).not.toBeInTheDocument();
+  });
+
+  it("does not refresh the organization while the purchase status stays the same", async () => {
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(detail({}, [seat({ id: "s1" })]));
+    renderPage();
+
+    await screen.findByText("LSA Salud");
+    expect(auth.refreshOrganization).not.toHaveBeenCalled();
   });
 
   it("keeps only the pending notice when Mercado Pago did not approve the payment", async () => {

@@ -207,7 +207,7 @@ export default function PurchaseDetailPage() {
   // Read once: the URL is cleaned right after so a reload does not sync again.
   const [returned] = useState(() => paymentReturn(new URLSearchParams(searchParams.toString())));
   const handledReturn = useRef(false);
-  const { organization } = useAuth();
+  const { organization, refreshOrganization } = useAuth();
   const orgId = organization?.id;
   const queryClient = useQueryClient();
   const key = ["organization", orgId, "purchases", purchaseId];
@@ -232,6 +232,19 @@ export default function PurchaseDetailPage() {
           ? 15000
           : false,
   });
+
+  // A purchase that gets paid or refunded changes the contracted courses (the course filter) and
+  // every figure of the panel, whether the change came from an action here or from polling.
+  const lastStatus = useRef<PurchaseStatus | undefined>(undefined);
+  const status = data?.purchase.status;
+  useEffect(() => {
+    if (!status) return;
+    const previous = lastStatus.current;
+    lastStatus.current = status;
+    if (previous === undefined || previous === status) return;
+    void refreshOrganization().catch(() => {});
+    void queryClient.invalidateQueries({ queryKey: ["organization", orgId] });
+  }, [status, orgId, queryClient, refreshOrganization]);
 
   const store = async (detail: PurchaseDetail) => {
     queryClient.setQueryData(key, detail);
