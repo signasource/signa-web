@@ -2,112 +2,65 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { Fragment } from "react";
 import { CourseSelect } from "@/components/dashboard/course-select";
-import { Icon } from "@/components/dashboard/icons";
+import { ActiveParticipantsCard } from "@/components/dashboard/home/active-participants-card";
+import { FollowUpCard } from "@/components/dashboard/home/follow-up-card";
 import {
-  Avatar,
-  Card,
-  CardTitle,
+  PendingInvitationsCard,
+  invitationSummaryKey,
+} from "@/components/dashboard/home/pending-invitations";
+import {
   EmptyState,
   ErrorState,
   LoadingState,
   PageHeading,
   ProgressBar,
-  SectionIcon,
   StatCard,
-  StatRows,
   primaryButton,
 } from "@/components/dashboard/ui";
-import { PeriodActivity } from "@/components/dashboard/period-activity";
-import { PeriodFilter } from "@/components/dashboard/period-select";
 import { useAuth } from "@/features/auth/auth-context";
 import { useCourseFilter, useWithFilters } from "@/features/dashboard/use-course-filter";
-import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
-import {
-  ACTIVE_WINDOW_DAYS,
-  daysSince,
-  formatDecimal,
-  formatMinutes,
-  formatRelativeDays,
-} from "@/lib/dashboard-format";
-
-const NUMBER = new Intl.NumberFormat("es-AR");
-
-/** Longest-idle participants first: who to nudge. */
-const NUDGE_QUERY = {
-  status: "ACTIVE",
-  activity: "INACTIVE",
-  sort: { by: "lastActivity", direction: "asc" },
-  size: 4,
-} as const;
+import type { InvitationSummary } from "@/lib/api/types";
 
 export default function DashboardOverviewPage() {
   const { organization } = useAuth();
   const orgId = organization?.id;
-  const { courseId, courses } = useCourseFilter();
-  const showCourses = !courseId && courses.length > 1;
+  const { courseId } = useCourseFilter();
   const withFilters = useWithFilters();
-  const { period } = usePeriodFilter();
-  const filters = { courseId, period };
+  const memberHref = (userId: string) => withFilters(`/dashboard/members/${userId}`);
 
-  const overview = useQuery({
-    queryKey: ["organization", orgId, "overview", filters],
-    queryFn: () => organizationsApi.overview(orgId!, filters),
+  const homeKey = ["organization", orgId, "home", courseId ?? null] as const;
+  const home = useQuery({
+    queryKey: homeKey,
+    queryFn: () => organizationsApi.home(orgId!, courseId),
     enabled: Boolean(orgId),
     placeholderData: keepPreviousData,
   });
-  const modules = useQuery({
-    queryKey: ["organization", orgId, "modules", filters],
-    queryFn: () => organizationsApi.modules(orgId!, filters),
+  // Shared with the pending invitations card (same key): decides the empty state.
+  const invitations = useQuery<InvitationSummary>({
+    queryKey: invitationSummaryKey(orgId, courseId),
+    queryFn: () => organizationsApi.invitationSummary(orgId!, courseId),
     enabled: Boolean(orgId),
-    placeholderData: keepPreviousData,
-  });
-  const activity = useQuery({
-    queryKey: ["organization", orgId, "activity", filters],
-    queryFn: () => organizationsApi.activity(orgId!, filters),
-    enabled: Boolean(orgId),
-    placeholderData: keepPreviousData,
-  });
-  const members = useQuery({
-    queryKey: ["organization", orgId, "members", { ...NUDGE_QUERY, ...filters }],
-    queryFn: () => organizationsApi.members(orgId!, { ...NUDGE_QUERY, ...filters }),
-    enabled: Boolean(orgId),
-    placeholderData: keepPreviousData,
   });
 
-  if (overview.isPending) return <LoadingState>Cargando métricas…</LoadingState>;
-  if (overview.error) return <ErrorState>No pudimos cargar las métricas.</ErrorState>;
+  if (home.isPending) return <LoadingState>Cargando métricas…</LoadingState>;
+  if (home.error) return <ErrorState>No pudimos cargar las métricas.</ErrorState>;
 
-  const { participation, progress, performance } = overview.data;
-  const moduleList = modules.data ?? [];
-  const startedPct = (n: number) =>
-    participation.totalParticipants ? (n / participation.totalParticipants) * 100 : 0;
-  const funnel = [
-    { label: "Inscriptas", value: participation.totalParticipants, tone: "bg-primary-medallion" },
-    { label: "Iniciaron", value: participation.participantsStarted, tone: "bg-accent-violet" },
-    { label: "Completaron", value: progress.participantsCompletedAll, tone: "bg-success" },
-  ];
-  const nudges = (members.data?.content ?? []).map((member) => ({
-    member,
-    days: daysSince(member.lastActivityAt),
-  }));
+  const data = home.data;
+  const nobodyYet = data.participants === 0 && invitations.data?.sent === 0 && !courseId;
 
   return (
     <section className="flex flex-col gap-6">
       <PageHeading title="Resumen">
-        <div className="flex flex-wrap items-center gap-2">
-          <CourseSelect />
-          <PeriodFilter />
-        </div>
+        <CourseSelect />
       </PageHeading>
 
-      {participation.totalParticipants === 0 ? (
+      {nobodyYet ? (
         <EmptyState
           mascot
           title="Todavía no hay participantes"
-          body="Comprá cupos para tu equipo: cada persona recibe una invitación por email. Las métricas aparecen acá apenas alguien complete su primera lección."
+          body="Comprá cupos para tu equipo: cada persona recibe una invitación por email. Las métricas aparecen acá apenas alguien la acepte."
           action={
             <Link href="/dashboard/purchases" className={primaryButton}>
               Comprar cupos
@@ -116,306 +69,47 @@ export default function DashboardOverviewPage() {
         />
       ) : (
         <div className="dash-page-enter flex flex-col gap-4">
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
-            <StatCard
-              delay={0}
-              label="Participantes"
-              value={participation.totalParticipants}
-              hint={`${participation.participantsStarted} iniciaron la capacitación`}
-            />
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-4">
+            <PendingInvitationsCard orgId={orgId} courseId={courseId} delay={0} />
             <StatCard
               delay={60}
-              label={
-                period
-                  ? "Activos en el período"
-                  : `Activos (últimos ${participation.activeWindowDays} días)`
-              }
-              value={participation.activeParticipants}
-              hint={`${participation.inactiveParticipants} inactivos`}
-            />
-            <StatCard
-              delay={120}
               label="Progreso promedio"
-              value={`${progress.averageProgressPercentage}%`}
+              value={`${data.averageProgressPercentage}%`}
+              hint={
+                data.startedParticipants === 0
+                  ? "Nadie inició la capacitación todavía"
+                  : `Entre ${data.startedParticipants} ${data.startedParticipants === 1 ? "participante que inició" : "participantes que iniciaron"}`
+              }
             >
               <ProgressBar
-                percent={progress.averageProgressPercentage}
+                percent={data.averageProgressPercentage}
                 tone="primary"
                 label="Progreso promedio"
                 className="mt-3"
               />
-            </StatCard>
-            <StatCard
-              delay={180}
-              label={period ? "Lecciones completadas en el período" : "Lecciones completadas"}
-              value={NUMBER.format(progress.completedLessons)}
-              hint={`${progress.participantsCompletedAll} completaron todo el curso`}
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-4">
-            <div className="min-w-0 flex-[2_1_460px]">
-              <PeriodActivity
-                delay={240}
-                period={period}
-                data={activity.data}
-                isPending={activity.isPending}
-                isError={activity.isError}
-                isFetching={activity.isFetching && !activity.isPending}
-              />
-            </div>
-            <Card delay={300} className="flex min-w-0 flex-[1_1_260px] flex-col gap-4">
-              <div>
-                <CardTitle>Avance del equipo</CardTitle>
-                <p className="text-text-muted mt-0.5 text-[13px]">
-                  {period
-                    ? "Personas en cada etapa al cierre del período"
-                    : "Personas en cada etapa del curso"}
-                </p>
-              </div>
-              <ul className="flex flex-col gap-3.5">
-                {funnel.map((f) => (
-                  <li key={f.label} className="flex flex-col gap-1.5">
-                    <div className="flex justify-between gap-2 text-sm">
-                      <span className="font-bold">{f.label}</span>
-                      <span className="font-extrabold">{f.value}</span>
-                    </div>
-                    <div className="bg-fill h-2.5 overflow-hidden rounded-full">
-                      <div
-                        className={`${f.tone} h-full rounded-full`}
-                        style={{ width: `${startedPct(f.value)}%` }}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-4">
-            <Card delay={360} className="flex flex-col gap-3.5">
-              <div className="flex items-center gap-2.5">
-                <SectionIcon name="people" className="bg-primary-light text-primary-dark" />
-                <CardTitle>Participación</CardTitle>
-              </div>
-              <StatRows
-                rows={[
-                  {
-                    label: period ? "Días activos promedio" : "Días activos promedio (últimos 30)",
-                    value: formatDecimal(participation.averageActiveDaysLast30),
-                    hint: "Cantidad de días distintos en que cada participante tuvo actividad en la app, en promedio, en los últimos 30 días.",
-                  },
-                  {
-                    label: "Con racha activa hoy",
-                    value: participation.participantsWithStreak,
-                    hint: "Participantes con al menos un día de actividad consecutivo hasta hoy.",
-                  },
-                  {
-                    label: "Racha actual más larga",
-                    value: (
-                      <>
-                        <Icon name="flame" className="text-streak-orange size-4" />
-                        {participation.longestCurrentStreak} días
-                      </>
-                    ),
-                    hint: "La racha de días consecutivos más larga entre todos los participantes.",
-                  },
-                  {
-                    label: "Sin iniciar",
-                    value: participation.totalParticipants - participation.participantsStarted,
-                    hint: "Participantes que todavía no completaron ninguna lección.",
-                  },
-                ]}
-              />
-            </Card>
-            <Card delay={420} className="flex flex-col gap-3.5">
-              <div className="flex items-center gap-2.5">
-                <SectionIcon name="trend" className="bg-course-teal-light text-avatar-teal-dark" />
-                <CardTitle>Progreso</CardTitle>
-              </div>
-              <StatRows
-                rows={[
-                  {
-                    label: "Lecciones pendientes en promedio",
-                    value: progress.averagePendingLessons,
-                    hint: "Promedio de lecciones sin completar por persona, calculado sobre todos los participantes.",
-                  },
-                  ...(!courseId
-                    ? ([
-                        {
-                          label: "Tiempo total de aprendizaje",
-                          value: formatMinutes(progress.totalLearningMinutes),
-                          hint: "Suma de los minutos de uso de la app de todos los participantes, contados desde que cada uno se incorporó a la organización.",
-                        },
-                        {
-                          label: "Tiempo promedio por persona",
-                          value: formatMinutes(progress.averageLearningMinutes),
-                          hint: "Promedio de minutos de aprendizaje por participante, calculado desde la incorporación de cada uno a la organización.",
-                        },
-                      ] as const)
-                    : []),
-                ]}
-              />
-            </Card>
-            <Card delay={480} className="flex flex-col gap-3.5">
-              <div className="flex items-center gap-2.5">
-                <SectionIcon name="hand" className="bg-shop-amber-light text-shop-amber-dark" />
-                <CardTitle>Desempeño</CardTitle>
-              </div>
-              <StatRows
-                rows={[
-                  {
-                    label: "Ejercicios realizados",
-                    value: NUMBER.format(performance.exerciseAttempts),
-                    hint: "Total de intentos de ejercicios de todos los participantes en el período.",
-                  },
-                  {
-                    label: "Respuestas correctas",
-                    value: `${performance.correctPercentage}%`,
-                    hint: "Porcentaje de respuestas correctas sobre el total de intentos de ejercicios.",
-                  },
-                  ...(performance.hasCameraExercises
-                    ? [
-                        {
-                          label: "Intentos de reconocimiento de señas",
-                          value: NUMBER.format(performance.signRecognitionAttempts),
-                          hint: "Total de intentos en ejercicios de reconocimiento por cámara.",
-                        },
-                        {
-                          label: "Señas reconocidas correctamente",
-                          value: `${performance.signRecognitionCorrectPercentage}%`,
-                          hint: "Porcentaje de reconocimientos correctos en los ejercicios de cámara.",
-                        },
-                      ]
-                    : []),
-                ]}
-              />
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-4">
-            <Card delay={540} className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <CardTitle>Desempeño por módulo</CardTitle>
-                <Link
-                  href={withFilters("/dashboard/modules")}
-                  className="text-primary-dark text-sm font-bold hover:underline"
-                >
-                  Ver contenidos
-                </Link>
-              </div>
-              {modules.isPending ? <LoadingState /> : null}
-              {modules.error ? <ErrorState>No pudimos cargar los módulos.</ErrorState> : null}
-              {modules.data && moduleList.length === 0 ? (
-                <p className="text-text-muted text-sm">Todavía no hay módulos para mostrar.</p>
-              ) : null}
-              <ul className="flex flex-col">
-                {moduleList.map((m, index) => {
-                  const firstOfCourse = m.courseId !== moduleList[index - 1]?.courseId;
-                  const number = moduleList
-                    .slice(0, index + 1)
-                    .filter((x) => x.courseId === m.courseId).length;
-                  return (
-                    <Fragment key={m.topicId}>
-                      {showCourses && firstOfCourse ? (
-                        <li className="text-text-muted pt-3 pb-1 text-xs font-extrabold tracking-wider uppercase first:pt-0">
-                          {m.courseName}
-                        </li>
-                      ) : null}
-                      <li className="border-fill grid grid-cols-[28px_minmax(0,1fr)_120px_44px] items-center gap-3 border-b py-2.5 last:border-b-0">
-                        <span className="bg-primary text-on-primary font-display flex size-7 items-center justify-center rounded-full text-[13px] font-extrabold">
-                          {number}
-                        </span>
-                        <span className="truncate text-sm font-bold">{m.title}</span>
-                        {m.exerciseAttempts > 0 ? (
-                          <>
-                            <ProgressBar
-                              percent={m.correctPercentage}
-                              tone={m.correctPercentage >= 85 ? "success" : "primary"}
-                              label={`Respuestas correctas en ${m.title}`}
-                            />
-                            <span className="text-right text-sm font-extrabold">
-                              {m.correctPercentage}%
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-text-muted col-span-2 text-right text-[13px]">
-                            Sin ejercicios
-                          </span>
-                        )}
-                      </li>
-                    </Fragment>
-                  );
-                })}
-              </ul>
-              <p className="text-text-muted text-[13px]">
-                Porcentaje de respuestas correctas en los ejercicios de cada módulo.
+              <p className="text-text-muted mt-2.5 text-[13px]">
+                Capacitaciones completadas:{" "}
+                <span className="text-text font-extrabold">
+                  {data.completedParticipants} ({data.completedPercentage}%)
+                </span>
               </p>
-            </Card>
+            </StatCard>
+          </div>
 
-            <Card delay={600} className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <CardTitle>Necesitan un empujón</CardTitle>
-                  <p className="text-text-muted mt-0.5 text-[13px]">
-                    {period
-                      ? "Sin actividad en el período"
-                      : `Sin actividad hace más de ${ACTIVE_WINDOW_DAYS} días`}
-                  </p>
-                </div>
-                <Link
-                  href={withFilters("/dashboard/members")}
-                  className="text-primary-dark text-sm font-bold hover:underline"
-                >
-                  Ver todos
-                </Link>
-              </div>
-              {members.isPending ? <LoadingState /> : null}
-              {members.error ? (
-                <ErrorState>No pudimos cargar a los participantes.</ErrorState>
-              ) : null}
-              {members.data && nudges.length === 0 ? (
-                <p className="text-text-muted text-sm">
-                  {period
-                    ? "Todos tuvieron actividad en el período. ¡Buen ritmo!"
-                    : "Nadie está inactivo por ahora. ¡Buen ritmo!"}
-                </p>
-              ) : null}
-              <ul className="flex flex-col">
-                {nudges.map(({ member, days }) => (
-                  <li key={member.userId} className="border-fill border-b last:border-b-0">
-                    <Link
-                      href={withFilters(`/dashboard/members/${member.userId}`)}
-                      className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_92px] items-center gap-3 py-2.5"
-                    >
-                      <span className="flex min-w-0 items-center gap-2.5 text-[15px] font-bold">
-                        <Avatar
-                          seed={member.userId}
-                          name={member.name}
-                          lastName={member.lastName}
-                        />
-                        <span className="truncate">
-                          {member.name} {member.lastName.charAt(0)}.
-                        </span>
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <ProgressBar
-                          percent={member.progressPercentage}
-                          className="flex-1"
-                          label={`Avance de ${member.name}`}
-                        />
-                        <span className="w-[38px] text-sm font-extrabold">
-                          {member.progressPercentage}%
-                        </span>
-                      </span>
-                      <span className="text-shop-amber-dark text-right text-sm font-bold">
-                        {formatRelativeDays(days)}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </Card>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-4">
+            <FollowUpCard
+              orgId={orgId}
+              participants={data.followUp}
+              homeKey={homeKey}
+              memberHref={memberHref}
+              delay={120}
+            />
+            <ActiveParticipantsCard
+              participants={data.activeParticipants}
+              windowDays={data.activeWindowDays}
+              memberHref={memberHref}
+              delay={180}
+            />
           </div>
         </div>
       )}
