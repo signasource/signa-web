@@ -12,26 +12,29 @@ import { canRemind, formatExpiresIn, pendingInvitations } from "@/lib/home-metri
 import { isErasedEmail, seatEmailLabel } from "@/lib/purchases";
 import { cn } from "@/lib/utils";
 
-export const invitationSummaryKey = (orgId: string | undefined) => [
+export const invitationSummaryKey = (orgId: string | undefined, courseId: string | undefined) => [
   ...invitationsKey(orgId),
   "summary",
+  courseId ?? null,
 ];
 
 /**
- * Invitations still waiting for an answer, with the acceptance rate below. Not narrowed by the
- * course filter: it is about who joined, not about a course. Opens the list to remind people.
+ * Invitations still waiting for an answer, with the acceptance rate below, for the course filter
+ * (every course when none is chosen). Opens the list to remind people.
  */
 export function PendingInvitationsCard({
   orgId,
+  courseId,
   delay,
 }: {
   orgId: string | undefined;
+  courseId: string | undefined;
   delay?: number;
 }) {
   const [open, setOpen] = useState(false);
   const summary = useQuery({
-    queryKey: invitationSummaryKey(orgId),
-    queryFn: () => organizationsApi.invitationSummary(orgId!),
+    queryKey: invitationSummaryKey(orgId, courseId),
+    queryFn: () => organizationsApi.invitationSummary(orgId!, courseId),
     enabled: Boolean(orgId),
     refetchOnWindowFocus: true,
   });
@@ -46,15 +49,7 @@ export function PendingInvitationsCard({
         className="border-border bg-surface dash-card-enter hover:border-text-muted flex cursor-pointer flex-col rounded-2xl border p-[18px] text-left transition-colors disabled:cursor-default"
         style={delay !== undefined ? ({ "--delay": `${delay}ms` } as CSSProperties) : undefined}
       >
-        <span className="text-text-muted flex items-center justify-between gap-2 text-[13px] font-bold">
-          Invitaciones pendientes
-          {summary.data ? (
-            <span className="text-primary-dark inline-flex items-center gap-0.5">
-              Ver listado
-              <Icon name="chevronForward" className="size-3.5" />
-            </span>
-          ) : null}
-        </span>
+        <span className="text-text-muted text-[13px] font-bold">Invitaciones pendientes</span>
         {summary.isPending ? (
           <span className="mt-3">
             <LoadingState>Cargando invitaciones…</LoadingState>
@@ -73,23 +68,35 @@ export function PendingInvitationsCard({
                 ? "Todavía no enviaste invitaciones"
                 : `Tasa de aceptación: ${summary.data.acceptancePercentage}% (${summary.data.accepted} de ${summary.data.sent})`}
             </span>
+            <span className="text-primary-dark mt-auto inline-flex items-center gap-0.5 pt-3 text-[13px] font-bold">
+              Ver listado
+              <Icon name="chevronForward" className="size-3.5" />
+            </span>
           </>
         )}
       </button>
-      {open ? <PendingInvitationsDialog orgId={orgId} onClose={() => setOpen(false)} /> : null}
+      {open ? (
+        <PendingInvitationsDialog
+          orgId={orgId}
+          courseId={courseId}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
     </>
   );
 }
 
 function PendingInvitationsDialog({
   orgId,
+  courseId,
   onClose,
 }: {
   orgId: string | undefined;
+  courseId: string | undefined;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const { isPending, error, rows } = useInvitedSeats(orgId, undefined);
+  const { isPending, error, rows } = useInvitedSeats(orgId, courseId);
   const [notice, setNotice] = useState<string | null>(null);
   const remind = useMutation({
     mutationFn: ({ purchaseId, seatId }: { purchaseId: string; seatId: string }) =>
@@ -100,6 +107,26 @@ function PendingInvitationsDialog({
     },
     onError: () => setNotice(null),
   });
+  const remindAll = useMutation({
+    mutationFn: async (seats: { purchaseId: string; seatId: string }[]) => {
+      const results = await Promise.allSettled(
+        seats.map((s) => organizationsApi.remindSeat(orgId!, s.purchaseId, s.seatId)),
+      );
+      return {
+        sent: results.filter((r) => r.status === "fulfilled").length,
+        failed: results.filter((r) => r.status === "rejected").length,
+      };
+    },
+    onSuccess: async ({ sent, failed }) => {
+      setNotice(
+        failed === 0
+          ? `Mandamos ${sent} ${sent === 1 ? "recordatorio" : "recordatorios"}.`
+          : `Mandamos ${sent} y no pudimos mandar ${failed}. Probá de nuevo más tarde.`,
+      );
+      await queryClient.invalidateQueries({ queryKey: invitationsKey(orgId) });
+    },
+  });
+  const busy = remind.isPending || remindAll.isPending;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -110,6 +137,7 @@ function PendingInvitationsDialog({
   }, [onClose]);
 
   const pending = pendingInvitations(rows);
+  const remindable = pending.filter(({ seat }) => canRemind(seat.nextReminderAvailableAt));
 
   return (
     <div
@@ -145,6 +173,31 @@ function PendingInvitationsDialog({
             <Icon name="close" className="size-5" />
           </button>
         </div>
+
+        {pending.length > 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-text-muted text-[13px]">
+              {pending.length} {pending.length === 1 ? "invitación" : "invitaciones"}
+            </span>
+            <button
+              type="button"
+              disabled={remindable.length === 0 || busy}
+              onClick={() =>
+                remindAll.mutate(
+                  remindable.map(({ seat, purchaseId }) => ({ purchaseId, seatId: seat.id })),
+                )
+              }
+              className={pillButton}
+            >
+              <Icon name="mail" className="size-3.5" />
+              {remindAll.isPending
+                ? "Enviando…"
+                : remindable.length === 0
+                  ? "Todas recibieron un recordatorio"
+                  : `Enviar recordatorio a todas (${remindable.length})`}
+            </button>
+          </div>
+        ) : null}
 
         {notice ? (
           <p role="status" className="text-success-dark text-sm font-bold">
@@ -198,7 +251,7 @@ function PendingInvitationsDialog({
                     ) : null}
                     <button
                       type="button"
-                      disabled={!available || remind.isPending}
+                      disabled={!available || busy}
                       title={
                         available || !seat.nextReminderAvailableAt
                           ? undefined

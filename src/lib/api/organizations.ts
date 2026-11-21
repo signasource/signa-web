@@ -152,8 +152,10 @@ export const organizationsApi = {
       query: { courseId },
     }),
 
-  invitationSummary: (orgId: string) =>
-    api<InvitationSummary>(`/organizations/${orgId}/invitations/summary`),
+  invitationSummary: (orgId: string, courseId?: string) =>
+    api<InvitationSummary>(`/organizations/${orgId}/invitations/summary`, {
+      query: { courseId },
+    }),
 
   updateSeatEmail: (orgId: string, purchaseId: string, seatId: string, email: string) =>
     api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/seats/${seatId}`, {

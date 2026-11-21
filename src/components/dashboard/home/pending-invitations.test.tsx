@@ -34,11 +34,11 @@ function invitation(email: string, invitationDeadline: string): OrganizationInvi
   };
 }
 
-function renderCard() {
+function renderCard(courseId?: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <PendingInvitationsCard orgId="org1" />
+      <PendingInvitationsCard orgId="org1" courseId={courseId} />
     </QueryClientProvider>,
   );
 }
@@ -87,10 +87,27 @@ describe("PendingInvitationsCard", () => {
       "late@x.com",
     ]);
 
-    fireEvent.click(within(rows[0]!).getByRole("button", { name: /Enviar recordatorio/ }));
+    fireEvent.click(within(rows[0]!).getByRole("button", { name: /^Enviar recordatorio$/ }));
     await waitFor(() =>
       expect(organizationsApi.remindSeat).toHaveBeenCalledWith("org1", "p1", "soon@x.com"),
     );
+  });
+
+  it("narrows the summary and the list to the chosen course", async () => {
+    vi.mocked(organizationsApi.invitationSummary).mockResolvedValue({
+      sent: 1,
+      accepted: 0,
+      pending: 1,
+      acceptancePercentage: 0,
+    });
+    vi.mocked(organizationsApi.invitations).mockResolvedValue([]);
+    renderCard("c1");
+
+    await screen.findByText(/Tasa de aceptación/);
+    fireEvent.click(screen.getByRole("button", { name: /Invitaciones pendientes/ }));
+
+    await waitFor(() => expect(organizationsApi.invitations).toHaveBeenCalledWith("org1", "c1"));
+    expect(organizationsApi.invitationSummary).toHaveBeenCalledWith("org1", "c1");
   });
 
   it("says when nothing was sent yet", async () => {
@@ -103,5 +120,32 @@ describe("PendingInvitationsCard", () => {
     renderCard();
 
     expect(await screen.findByText("Todavía no enviaste invitaciones")).toBeTruthy();
+  });
+
+  it("reminds every pending invitation at once", async () => {
+    vi.mocked(organizationsApi.invitationSummary).mockResolvedValue({
+      sent: 2,
+      accepted: 0,
+      pending: 2,
+      acceptancePercentage: 0,
+    });
+    vi.mocked(organizationsApi.invitations).mockResolvedValue([
+      invitation("a@x.com", "2999-01-01T12:00:00Z"),
+      invitation("b@x.com", "2999-01-02T12:00:00Z"),
+    ]);
+    vi.mocked(organizationsApi.remindSeat).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof organizationsApi.remindSeat>>,
+    );
+    renderCard();
+
+    await screen.findByText(/Tasa de aceptación/);
+    fireEvent.click(screen.getByRole("button", { name: /Invitaciones pendientes/ }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(
+      await within(dialog).findByRole("button", { name: "Enviar recordatorio a todas (2)" }),
+    );
+
+    expect(await within(dialog).findByText("Mandamos 2 recordatorios.")).toBeTruthy();
+    expect(organizationsApi.remindSeat).toHaveBeenCalledTimes(2);
   });
 });

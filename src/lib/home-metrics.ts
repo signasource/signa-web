@@ -1,5 +1,5 @@
 import type { HomeFollowUpParticipant, OrganizationInvitation } from "@/lib/api/types";
-import { daysSince, formatRelativeDays } from "@/lib/dashboard-format";
+import { daysSince, formatDayMonth, formatRelativeDays } from "@/lib/dashboard-format";
 
 const DAY_MS = 86_400_000;
 
@@ -40,22 +40,59 @@ export function followUpLabels(
   participant: HomeFollowUpParticipant,
   now: Date = new Date(),
 ): string[] {
+  const expires = participant.accessExpiresAt
+    ? formatExpiresIn(participant.accessExpiresAt, now).toLowerCase()
+    : "vence pronto";
   return participant.reasons.map((reason) => {
     switch (reason) {
       case "ACCESS_EXPIRING":
-        return participant.accessExpiresAt
-          ? `Acceso: ${formatExpiresIn(participant.accessExpiresAt, now).toLowerCase()}`
-          : "Acceso por vencer";
+        return `Acceso: ${expires}`;
+      case "EXPIRING_WITH_LOW_PROGRESS":
+        return `Menos del 50% · ${expires}`;
       case "INACTIVE": {
         const days = daysSince(participant.lastActivityAt, now);
         return days === null
           ? "Nunca empezó"
           : `Sin actividad · ${formatRelativeDays(days).toLowerCase()}`;
       }
-      case "LOW_PROGRESS":
-        return participant.expectedProgressPercentage === null
-          ? "Poco avance"
-          : `Poco avance · debería ir por ${participant.expectedProgressPercentage}%`;
     }
   });
+}
+
+/** "Últ. vez hoy", "Últ. vez ayer", "Últ. vez hace 3 días". */
+export function formatLastSeen(iso: string | null, now: Date = new Date()): string {
+  const days = daysSince(iso, now);
+  return days === null ? "Sin actividad" : `Últ. vez ${formatRelativeDays(days).toLowerCase()}`;
+}
+
+/** "La salud", "La salud y En la cafetería", "A, B y C". */
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} y ${names.at(-1)}`;
+}
+
+/**
+ * What the follow-up progress bar means: lessons completed of the courses that put the person on
+ * the list (already narrowed by the course filter) and when the soonest access ends.
+ * "13% completado de La salud · acceso hasta el 24 nov".
+ */
+export function followUpProgressText(participant: HomeFollowUpParticipant): string {
+  const courses = joinNames(participant.courses.map((c) => c.courseName));
+  const base = courses
+    ? `${participant.progressPercentage}% completado de ${courses}`
+    : `${participant.progressPercentage}% completado`;
+  return participant.accessExpiresAt
+    ? `${base} · acceso hasta el ${formatDayMonth(participant.accessExpiresAt)}`
+    : base;
+}
+
+/** Tooltip of the follow-up bar: one line per course, "La salud: 13% · vence el 24 nov". */
+export function followUpCourseDetail(participant: HomeFollowUpParticipant): string {
+  return participant.courses
+    .map(
+      (c) =>
+        `${c.courseName}: ${c.progressPercentage}%` +
+        (c.accessExpiresAt ? ` · vence el ${formatDayMonth(c.accessExpiresAt)}` : ""),
+    )
+    .join("\n");
 }

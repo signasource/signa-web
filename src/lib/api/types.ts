@@ -273,7 +273,10 @@ export type OrganizationInvitation = {
   seat: Seat;
 };
 
-/** `GET /organizations/{id}/invitations/summary`: invitations of paid purchases (never refunded ones). */
+/**
+ * `GET /organizations/{id}/invitations/summary[?courseId=]`: invitations of paid purchases (never
+ * refunded ones).
+ */
 export type InvitationSummary = {
   sent: number;
   accepted: number;
@@ -296,7 +299,21 @@ export type HomeActiveParticipant = {
   progressPercentage: number;
 };
 
-export type FollowUpReason = "ACCESS_EXPIRING" | "INACTIVE" | "LOW_PROGRESS";
+/**
+ * Why someone needs follow-up, in priority order: an unfinished course ends in less than 3 days; one
+ * ends in less than 7 days with less than 50 % done; no activity in the last 7 days.
+ */
+export type FollowUpReason = "ACCESS_EXPIRING" | "EXPIRING_WITH_LOW_PROGRESS" | "INACTIVE";
+
+/** One unfinished course of someone who needs follow-up. */
+export type HomeFollowUpCourse = {
+  courseId: string;
+  courseName: string;
+  /** Lessons completed of their version of the course. */
+  progressPercentage: number;
+  /** Null when the access doesn't end. */
+  accessExpiresAt: string | null;
+};
 
 export type HomeFollowUpParticipant = {
   userId: string;
@@ -305,10 +322,10 @@ export type HomeFollowUpParticipant = {
   avatarUrl: string | null;
   /** In priority order. */
   reasons: FollowUpReason[];
-  /** Over the courses still running and unfinished. */
+  /** The courses still running that they have not finished. */
+  courses: HomeFollowUpCourse[];
+  /** Over those courses together. */
   progressPercentage: number;
-  /** Where an even pace would have them by now; null when no running access has an end date. */
-  expectedProgressPercentage: number | null;
   lastActivityAt: string | null;
   /** Soonest end among those courses; null when none ends. */
   accessExpiresAt: string | null;

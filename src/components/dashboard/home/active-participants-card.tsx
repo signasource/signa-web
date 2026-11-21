@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Avatar, Card, CardTitle } from "@/components/dashboard/ui";
 import { avatarSrc } from "@/lib/avatar-url";
 import type { HomeActiveParticipant } from "@/lib/api/types";
-import { daysSince, formatRelativeDays } from "@/lib/dashboard-format";
+import { formatLastSeen } from "@/lib/home-metrics";
 
 const VISIBLE = 6;
 const NUMBER = new Intl.NumberFormat("es-AR");
@@ -30,7 +30,7 @@ export function ActiveParticipantsCard({
       <div>
         <CardTitle>Participantes activos</CardTitle>
         <p className="text-text-muted mt-0.5 text-[13px]">
-          Con actividad en los últimos {windowDays} días. Los más activos, primero.
+          Actividades completadas en los últimos {windowDays} días. Los más activos, primero.
         </p>
       </div>
       {participants.length === 0 ? (
@@ -57,14 +57,12 @@ export function ActiveParticipantsCard({
                       {p.name} {p.lastName}
                     </span>
                     <span className="text-text-muted text-xs">
-                      {NUMBER.format(p.activities)}{" "}
-                      {p.activities === 1 ? "actividad" : "actividades"} · {p.activeDays}{" "}
-                      {p.activeDays === 1 ? "día" : "días"} · avance {p.progressPercentage}%
+                      {formatLastSeen(p.lastActivityAt)} · avance {p.progressPercentage}%
                     </span>
                   </span>
                 </span>
-                <span className="text-success-dark text-right text-sm font-bold">
-                  {formatRelativeDays(daysSince(p.lastActivityAt))}
+                <span className="text-success-dark text-right text-sm font-extrabold whitespace-nowrap">
+                  {NUMBER.format(p.activities)} {p.activities === 1 ? "actividad" : "actividades"}
                 </span>
               </Link>
             </li>

@@ -39,8 +39,8 @@ export default function DashboardOverviewPage() {
   });
   // Shared with the pending invitations card (same key): decides the empty state.
   const invitations = useQuery<InvitationSummary>({
-    queryKey: invitationSummaryKey(orgId),
-    queryFn: () => organizationsApi.invitationSummary(orgId!),
+    queryKey: invitationSummaryKey(orgId, courseId),
+    queryFn: () => organizationsApi.invitationSummary(orgId!, courseId),
     enabled: Boolean(orgId),
   });
 
@@ -69,8 +69,8 @@ export default function DashboardOverviewPage() {
         />
       ) : (
         <div className="dash-page-enter flex flex-col gap-4">
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
-            <PendingInvitationsCard orgId={orgId} delay={0} />
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-4">
+            <PendingInvitationsCard orgId={orgId} courseId={courseId} delay={0} />
             <StatCard
               delay={60}
               label="Progreso promedio"
@@ -94,18 +94,6 @@ export default function DashboardOverviewPage() {
                 </span>
               </p>
             </StatCard>
-            <StatCard
-              delay={120}
-              label="Participantes activos"
-              value={data.activeParticipants.length}
-              hint={`De ${data.participants} en los últimos ${data.activeWindowDays} días`}
-            />
-            <StatCard
-              delay={180}
-              label="Requieren seguimiento"
-              value={data.followUp.length}
-              hint="Inactivos, con poco avance o por vencer"
-            />
           </div>
 
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-4">
@@ -114,13 +102,13 @@ export default function DashboardOverviewPage() {
               participants={data.followUp}
               homeKey={homeKey}
               memberHref={memberHref}
-              delay={240}
+              delay={120}
             />
             <ActiveParticipantsCard
               participants={data.activeParticipants}
               windowDays={data.activeWindowDays}
               memberHref={memberHref}
-              delay={300}
+              delay={180}
             />
           </div>
         </div>
