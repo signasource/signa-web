@@ -117,6 +117,8 @@ export type AdminStats = {
   activeOrganizations: number;
   pendingOrganizations: number;
   openSignReports: number;
+  pendingSignReports: number;
+  reviewedSignReports: number;
   totalUsers: number;
   activeUsersLast7Days: number;
   waitlistCount: number;

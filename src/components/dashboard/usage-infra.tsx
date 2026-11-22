@@ -244,13 +244,17 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
           isError={throughput.isError}
           isFetching={throughput.isFetching}
           format={(v) => Math.round(v).toLocaleString("es-AR")}
+          tickFormat={(v) =>
+            v.toLocaleString("es-AR", {
+              maximumFractionDigits: v < 1 ? 1 : 0,
+            })
+          }
           onSelectRange={onSelectRange}
           seriesNames={["req/s"]}
           previous={prevThroughput.data}
           previousShiftSeconds={spanSeconds(perf.range)}
           showKindToggle={false}
         />
-        <SlowOpsTable {...perf} />
       </div>
 
       <Collapsible title="Sistema y recursos" summary={<SystemSummary {...perf} />} panels={5}>
@@ -369,75 +373,3 @@ function mean(s: PerfSeries): number | null {
   return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
 }
 
-/**
- * "Operaciones más lentas": p95 per endpoint over the window (slowest first) with each endpoint's
- * traffic, as a ranking table instead of ten overlaid lines.
- */
-function SlowOpsTable(perf: PerfProps) {
-  const slow = usePerfWidget("slowest_ops", perf.range, perf.step, perf.live);
-  const rates = usePerfWidget("endpoint_rate", perf.range, perf.step, perf.live);
-
-  const rateByEndpoint = new Map(
-    (rates.data?.series ?? []).map((s) => [endpointLabel(s.labels), mean(s)]),
-  );
-  const rows = (slow.data?.series ?? [])
-    .map((s) => ({ label: endpointLabel(s.labels), p95: mean(s) }))
-    .filter((r): r is { label: string; p95: number } => r.p95 != null)
-    .sort((a, b) => b.p95 - a.p95)
-    .slice(0, 5);
-
-  return (
-    <Card className="flex min-w-0 flex-col gap-3">
-      <div className="flex items-start gap-1.5">
-        <div className="min-w-0">
-          <CardTitle>Operaciones más lentas</CardTitle>
-          <p className="text-text-muted mt-0.5 text-[13px]">p95 por endpoint en el período</p>
-        </div>
-        <InfoPopover metric="slowest_ops" className="ml-auto" />
-      </div>
-      {slow.isPending ? (
-        <LoadingState>Cargando operaciones…</LoadingState>
-      ) : slow.data && !slow.data.available ? (
-        <p className="text-text-muted text-sm">Sin acceso a Grafana.</p>
-      ) : rows.length === 0 ? (
-        <p className="text-text-muted text-sm">Sin datos en este período.</p>
-      ) : (
-        <table className="w-full border-collapse text-sm">
-          <thead className="sr-only">
-            <tr>
-              <th>Operación</th>
-              <th>Consultas por segundo</th>
-              <th>p95</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => {
-              const rate = rateByEndpoint.get(r.label);
-              return (
-                <tr key={r.label} className="border-fill border-t">
-                  <td
-                    className="max-w-0 truncate py-2.5 pr-3 font-mono text-[13px]"
-                    title={r.label}
-                  >
-                    {r.label}
-                  </td>
-                  <td className="text-text-muted py-2.5 pl-3 text-right whitespace-nowrap">
-                    {rate == null ? "—" : fmtRate1(rate)}
-                  </td>
-                  <td
-                    className={cn(
-                      "py-2.5 pl-3 text-right font-extrabold whitespace-nowrap",
-                      r.p95 >= 0.5 ? "text-shop-amber-dark" : "",
-                    )}
-                  >
-                    {fmtLatency(r.p95)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-    </Card>
-  );
-}
