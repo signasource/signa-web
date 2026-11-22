@@ -4,9 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DatetimeRangePicker } from "@/components/dashboard/datetime-range-picker";
 import { MetricsTabs, type TabItem } from "@/components/dashboard/metrics-tabs";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
-import { metricTone } from "@/components/dashboard/kpi-card";
-import { worstTone } from "@/components/dashboard/services-status";
-import { REFRESH_MS, useLearningQuery } from "@/components/dashboard/usage-queries";
+import { REFRESH_MS } from "@/components/dashboard/usage-queries";
 import { PageHeading } from "@/components/dashboard/ui";
 import { GrowthTab } from "@/components/dashboard/usage-growth";
 import { InfraTab } from "@/components/dashboard/usage-infra";
@@ -117,20 +115,7 @@ export default function AdminMetricasPage() {
 
   const perf = { range: infraRange, step: infraStep, live };
 
-  // Health dot on the aprendizaje tab from its two headline rates.
-  const learning = useLearningQuery(range, live);
-  const l = learning.data;
-  const learningTone = l
-    ? worstTone([
-        l.lessons.started
-          ? metricTone("lesson_completion_rate", l.lessons.completionPercent)
-          : "neutral",
-        l.exercises.attempted
-          ? metricTone("exercise_success_rate", l.exercises.successPercent)
-          : "neutral",
-      ])
-    : "neutral";
-  const tabs = BASE_TABS.map((t) => (t.key === "aprendizaje" ? { ...t, dot: learningTone } : t));
+  const tabs = BASE_TABS;
 
   return (
     <section className="flex flex-col gap-6">

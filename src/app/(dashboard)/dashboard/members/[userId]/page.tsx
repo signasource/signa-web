@@ -79,20 +79,59 @@ function SortButton({
   );
 }
 
-/** The cells of one course row (or the total row) of the training table. */
-function TrainingCells({
-  row,
-  name,
-  total = false,
+/** Pill-shaped select filter, matching the admin panel aesthetic. */
+function PillSelect({
+  label,
+  value,
+  options,
+  active,
+  onChange,
+  ariaLabel,
 }: {
-  row: CourseTraining;
-  name: string;
-  /** The all-courses summary row: its name in the brand colour, on its tinted band. */
-  total?: boolean;
+  label: string;
+  value: string;
+  options: { v: string; l: string }[];
+  active: boolean;
+  onChange: (v: string) => void;
+  ariaLabel: string;
 }) {
   return (
+    <label
+      className="relative inline-flex h-[34px] cursor-pointer items-center gap-1.5 rounded-full border px-3 pl-3.5 text-[13px] font-semibold whitespace-nowrap"
+      style={{
+        borderColor: active ? "var(--color-primary-medallion)" : "var(--color-border)",
+        background: active ? "var(--color-primary-light)" : "var(--color-surface)",
+        color: active ? "var(--color-primary-dark)" : "var(--color-text)",
+      }}
+    >
+      <span style={{ color: active ? "var(--color-primary)" : "var(--color-text-muted)", fontWeight: 500 }}>
+        {label}
+      </span>
+      <span>{value}</span>
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 9l7 7 7-7" />
+      </svg>
+      <select
+        value={options.find((o) => o.l === value)?.v ?? options[0]?.v ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={ariaLabel}
+        className="absolute inset-0 cursor-pointer opacity-0"
+      >
+        {options.map((o) => (
+          <option key={o.v} value={o.v}>
+            {o.l}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/** The cells of one course row of the training table. */
+function TrainingCells({ row, name }: { row: CourseTraining; name: string }) {
+  return (
     <>
-      <span className={cn("text-[15px] font-bold", total && "text-primary-dark")}>{name}</span>
+      <span className="text-[15px] font-bold">{name}</span>
       <span>
         <TrainingPill status={row.status} />
       </span>
@@ -123,6 +162,28 @@ function TrainingCells({
         {row.expiresAt ? formatDate(row.expiresAt) : "—"}
       </span>
     </>
+  );
+}
+
+/** Summary row showing only the average progress across the visible courses. */
+function TotalRow({ row, label }: { row: CourseTraining; label: string }) {
+  return (
+    <div role="row" className={cn(GRID, "border-border border-t pt-3")}>
+      <span className="text-text-muted text-[13px] font-semibold">{label}</span>
+      <span />
+      <span className="flex items-center gap-2">
+        <ProgressBar
+          percent={row.progressPercentage}
+          tone={row.progressPercentage >= 100 ? "success" : "primary"}
+          className="max-w-[80px]"
+          label={label}
+        />
+        <span className="text-text-muted text-[13px] font-semibold">{row.progressPercentage}%</span>
+      </span>
+      <span />
+      <span />
+      <span />
+    </div>
   );
 }
 
@@ -164,41 +225,35 @@ function TrainingTable({ courses, total }: { courses: CourseTraining[]; total: C
                 "border-border text-text-muted items-start border-b pb-3 text-xs font-extrabold",
               )}
             >
-              <span className="flex flex-col gap-1.5">
+              <span className="flex flex-col gap-2">
                 <SortButton label="CURSO" by="course" sort={sort} onSort={onSort} />
-                <select
-                  value={courseFilter}
-                  onChange={(e) => setCourseFilter(e.target.value)}
-                  aria-label="Filtrar por curso"
-                  className="border-border bg-surface text-text rounded-lg border px-2 py-1 text-[13px] font-semibold"
-                >
-                  <option value="ALL">Todos</option>
-                  {courses.flatMap((c) =>
-                    c.courseId ? (
-                      <option key={c.courseId} value={c.courseId}>
-                        {c.courseName}
-                      </option>
-                    ) : (
-                      []
+                <PillSelect
+                  label="Curso: "
+                  value={courseFilter === "ALL" ? "Todos" : (courses.find((c) => c.courseId === courseFilter)?.courseName ?? "Todos")}
+                  active={courseFilter !== "ALL"}
+                  ariaLabel="Filtrar por curso"
+                  onChange={setCourseFilter}
+                  options={[
+                    { v: "ALL", l: "Todos" },
+                    ...courses.flatMap((c) =>
+                      c.courseId ? [{ v: c.courseId, l: c.courseName ?? c.courseId }] : [],
                     ),
-                  )}
-                </select>
+                  ]}
+                />
               </span>
-              <span className="flex flex-col gap-1.5">
+              <span className="flex flex-col gap-2">
                 <SortButton label="ESTADO" by="status" sort={sort} onSort={onSort} />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as TrainingStatus | "ALL")}
-                  aria-label="Filtrar por estado"
-                  className="border-border bg-surface text-text rounded-lg border px-2 py-1 text-[13px] font-semibold"
-                >
-                  <option value="ALL">Todos</option>
-                  {STATUSES.map((st) => (
-                    <option key={st} value={st}>
-                      {trainingStatusLabel(st)}
-                    </option>
-                  ))}
-                </select>
+                <PillSelect
+                  label="Estado: "
+                  value={statusFilter === "ALL" ? "Todos" : trainingStatusLabel(statusFilter)}
+                  active={statusFilter !== "ALL"}
+                  ariaLabel="Filtrar por estado"
+                  onChange={(v) => setStatusFilter(v as TrainingStatus | "ALL")}
+                  options={[
+                    { v: "ALL", l: "Todos" },
+                    ...STATUSES.map((st) => ({ v: st, l: trainingStatusLabel(st) })),
+                  ]}
+                />
               </span>
               <SortButton label="PROGRESO" by="progress" sort={sort} onSort={onSort} />
               <SortButton label="ÚLTIMA ACTIVIDAD" by="lastActivity" sort={sort} onSort={onSort} />
@@ -222,13 +277,10 @@ function TrainingTable({ courses, total }: { courses: CourseTraining[]; total: C
               </p>
             ) : null}
             {rows.length > 0 ? (
-              <div role="row" className={cn(GRID, "bg-primary-light mt-1.5 rounded-xl py-3")}>
-                <TrainingCells
-                  row={shownTotal}
-                  name={filtered ? "Cursos mostrados" : "Todos los cursos"}
-                  total
-                />
-              </div>
+              <TotalRow
+                row={shownTotal}
+                label={filtered ? "Promedio de cursos mostrados" : "Promedio de los cursos"}
+              />
             ) : null}
           </div>
         </div>
