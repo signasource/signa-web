@@ -231,6 +231,8 @@ function signSort(
   });
 }
 
+const MODAL_PAGE_SIZE = 20;
+
 /** Full-screen sortable modal for the sign analysis table. */
 function SignAnalysisModal({
   signs,
@@ -243,6 +245,7 @@ function SignAnalysisModal({
 }) {
   const [sortCol, setSortCol] = useState<SignSortKey>("precision");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -255,9 +258,12 @@ function SignAnalysisModal({
   function handleSort(col: SignSortKey) {
     if (col === sortCol) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortCol(col); setSortDir("asc"); }
+    setPage(0);
   }
 
   const sorted = signSort(signs, sortCol, sortDir, reportsBySign);
+  const totalPages = Math.ceil(sorted.length / MODAL_PAGE_SIZE);
+  const paginated = totalPages > 1 ? sorted.slice(page * MODAL_PAGE_SIZE, (page + 1) * MODAL_PAGE_SIZE) : sorted;
 
   return createPortal(
     <div
@@ -272,7 +278,10 @@ function SignAnalysisModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="border-border flex items-center justify-between border-b p-4">
-          <h2 className="font-display text-lg font-extrabold tracking-tight">Análisis de contenido</h2>
+          <div>
+            <h2 className="font-display text-lg font-extrabold tracking-tight">Análisis de contenido</h2>
+            <p className="text-text-muted text-xs">{NUMBER.format(signs.length)} señas</p>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -292,7 +301,7 @@ function SignAnalysisModal({
               </tr>
             </thead>
             <tbody>
-              {sorted.map((s) => {
+              {paginated.map((s) => {
                 const reports = reportsBySign.get(s.sign) ?? 0;
                 return (
                   <tr key={s.sign} className="border-fill border-t">
@@ -320,6 +329,33 @@ function SignAnalysisModal({
             </tbody>
           </table>
         </div>
+        {totalPages > 1 ? (
+          <div className="border-border flex items-center justify-between border-t px-4 py-3">
+            <span className="text-text-muted text-xs">
+              Página {page + 1} de {totalPages}
+            </span>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => setPage((p) => p - 1)}
+                disabled={page === 0}
+                className="text-text-muted hover:bg-fill hover:text-text disabled:opacity-30 grid size-8 cursor-pointer place-items-center rounded-lg disabled:cursor-default"
+                aria-label="Página anterior"
+              >
+                <Icon name="chevronBack" className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page === totalPages - 1}
+                className="text-text-muted hover:bg-fill hover:text-text disabled:opacity-30 grid size-8 cursor-pointer place-items-center rounded-lg disabled:cursor-default"
+                aria-label="Página siguiente"
+              >
+                <Icon name="chevronForward" className="size-4" />
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>,
     document.body,
