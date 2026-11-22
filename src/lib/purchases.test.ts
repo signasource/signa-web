@@ -227,6 +227,15 @@ describe("canWithdraw", () => {
   it("closes as soon as an invitee accepted, even inside the period", () => {
     expect(canWithdraw(purchase("PAID", "2026-10-26T00:00:00Z", true), now)).toBe(false);
   });
+
+  it("is open for a purchase SIGNA confirmed by hand, until its refund was asked for", () => {
+    const manual = {
+      ...purchase("PAID", "2026-10-26T00:00:00Z"),
+      paymentMethod: "MANUAL",
+    } as Purchase;
+    expect(canWithdraw(manual, now)).toBe(true);
+    expect(canWithdraw({ ...manual, hasRefundRequest: true }, now)).toBe(false);
+  });
 });
 
 describe("withdrawalSchema", () => {

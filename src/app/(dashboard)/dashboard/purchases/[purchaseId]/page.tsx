@@ -472,7 +472,7 @@ export default function PurchaseDetailPage() {
                       group === option.value && "border-primary bg-primary-light text-primary-dark",
                     )}
                   >
-                    {option.label}
+                    {option.label} · {seatsInGroup(seats, option.value).length}
                   </button>
                 ))}
               </div>

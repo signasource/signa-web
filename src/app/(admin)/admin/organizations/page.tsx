@@ -2,8 +2,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { SortTh } from "@/components/admin/sort-th";
+import { matchesOrganization } from "@/lib/admin-organizations";
 import { adminApi, type AdminOrganization, type OrganizationStatus } from "@/lib/api/admin";
+import { nextSort, sortRows, type SortDir, type SortValue } from "@/lib/table-sort";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 20;
 
 const STATUS_LABELS: Record<OrganizationStatus, string> = {
   PENDING: "Pendiente",
@@ -27,44 +32,15 @@ const TABS: { label: string; value: OrganizationStatus | "ALL" }[] = [
   { label: "Todas", value: "ALL" },
 ];
 
-type SortKey = "name" | "status" | "activeMembers" | "createdAt";
-type SortDir = "asc" | "desc";
+type OrgSort = "name" | "status" | "activeMembers" | "createdAt";
 
-function sortOrgs(
-  orgs: AdminOrganization[],
-  key: SortKey | null,
-  dir: SortDir,
-): AdminOrganization[] {
-  if (!key) return orgs;
-  return [...orgs].sort((a, b) => {
-    let cmp = 0;
-    if (key === "name") cmp = a.name.localeCompare(b.name, "es");
-    else if (key === "status")
-      cmp = STATUS_LABELS[a.status].localeCompare(STATUS_LABELS[b.status], "es");
-    else if (key === "activeMembers") cmp = a.activeMembers - b.activeMembers;
-    else if (key === "createdAt") cmp = a.createdAt.localeCompare(b.createdAt);
-    return dir === "asc" ? cmp : -cmp;
-  });
-}
-
-function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 12 12"
-      fill="currentColor"
-      aria-hidden
-      className={cn("ml-1 inline-block transition-opacity", active ? "opacity-100" : "opacity-30")}
-    >
-      {dir === "asc" || !active ? (
-        <path d="M6 2.5L9.5 7.5H2.5L6 2.5Z" />
-      ) : (
-        <path d="M6 9.5L2.5 4.5H9.5L6 9.5Z" />
-      )}
-    </svg>
-  );
-}
+/** What each sortable column orders by, and the direction of its first click. */
+const ORG_SORT: Record<OrgSort, { key: (o: AdminOrganization) => SortValue; first: SortDir }> = {
+  name: { key: (o) => o.name, first: "asc" },
+  status: { key: (o) => STATUS_LABELS[o.status], first: "asc" },
+  activeMembers: { key: (o) => o.activeMembers, first: "desc" },
+  createdAt: { key: (o) => o.createdAt, first: "desc" },
+};
 
 function StatusBadge({ status }: { status: OrganizationStatus }) {
   return (
@@ -280,17 +256,22 @@ export default function OrganizationsPage() {
   const [tab, setTab] = useState<OrganizationStatus | "ALL">("PENDING");
   const [selected, setSelected] = useState<AdminOrganization | null>(null);
   const [page, setPage] = useState(0);
-  const [sortKey, setSortKey] = useState<SortKey | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<{ by: OrgSort; dir: SortDir }>({
+    by: "createdAt",
+    dir: "desc",
+  });
 
+  // Organizations are few: the tab's whole list comes at once and is searched, sorted and paged
+  // here, so sorting covers every organization and not just the page on screen.
   const { data, isLoading } = useQuery({
-    queryKey: ["admin", "organizations", tab, page],
+    queryKey: ["admin", "organizations", tab],
     queryFn: () =>
       adminApi.organizations({
         // "Todas" excludes suspended (dadas de baja); they live in their own tab.
         status: tab === "ALL" ? ["PENDING", "ACTIVE", "REJECTED"] : [tab],
-        page,
-        size: 20,
+        page: 0,
+        size: 1000,
       }),
   });
 
@@ -326,23 +307,17 @@ export default function OrganizationsPage() {
         : undefined,
   };
 
-  function handleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
-  }
-
-  const rows = sortOrgs(data?.content ?? [], sortKey, sortDir);
-
-  const COLUMNS: { key: SortKey; label: string; className: string }[] = [
-    { key: "name", label: "Organización", className: "px-5 py-3 text-left" },
-    { key: "status", label: "Estado", className: "px-5 py-3 text-left" },
-    { key: "activeMembers", label: "Participantes", className: "px-5 py-3 text-left" },
-    { key: "createdAt", label: "Alta", className: "px-5 py-3 text-left" },
-  ];
+  const matching = sortRows(
+    (data?.content ?? []).filter((o) => matchesOrganization(o, query)),
+    ORG_SORT[sort.by].key,
+    sort.dir,
+  );
+  const totalPages = Math.ceil(matching.length / PAGE_SIZE);
+  const rows = matching.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const onSort = (field: OrgSort) => {
+    setSort((s) => nextSort(s, field, ORG_SORT[field].first));
+    setPage(0);
+  };
 
   return (
     <div className="flex h-full gap-6">
@@ -369,7 +344,7 @@ export default function OrganizationsPage() {
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors",
-                tab === value ? "bg-white text-text shadow-sm" : "text-text-muted hover:text-text",
+                tab === value ? "text-text bg-white shadow-sm" : "text-text-muted hover:text-text",
               )}
             >
               {label}
@@ -378,6 +353,25 @@ export default function OrganizationsPage() {
               )}
             </button>
           ))}
+        </div>
+
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(0);
+            }}
+            placeholder="Buscar por nombre, email o CUIT"
+            aria-label="Buscar organizaciones"
+            className="border-border bg-surface focus:border-primary min-w-52 flex-1 rounded-full border px-4 py-2 text-[13px] font-bold outline-none"
+          />
+          {data ? (
+            <span className="text-text-muted text-sm font-semibold">
+              {matching.length} {matching.length === 1 ? "organización" : "organizaciones"}
+            </span>
+          ) : null}
         </div>
 
         {isLoading ? (
@@ -392,17 +386,15 @@ export default function OrganizationsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-border bg-fill text-text-muted border-b">
-                    {COLUMNS.map(({ key, label, className }) => (
-                      <th key={key} className={className}>
-                        <button
-                          onClick={() => handleSort(key)}
-                          className="hover:text-text inline-flex items-center font-semibold transition-colors"
-                        >
-                          {label}
-                          <SortIcon active={sortKey === key} dir={sortDir} />
-                        </button>
-                      </th>
-                    ))}
+                    <SortTh label="Organización" field="name" sort={sort} onSort={onSort} />
+                    <SortTh label="Estado" field="status" sort={sort} onSort={onSort} />
+                    <SortTh
+                      label="Participantes"
+                      field="activeMembers"
+                      sort={sort}
+                      onSort={onSort}
+                    />
+                    <SortTh label="Alta" field="createdAt" sort={sort} onSort={onSort} />
                   </tr>
                 </thead>
                 <tbody>
@@ -439,7 +431,7 @@ export default function OrganizationsPage() {
               </table>
             </div>
 
-            {data && data.totalPages > 1 && (
+            {totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between">
                 <button
                   disabled={page === 0}
@@ -449,10 +441,10 @@ export default function OrganizationsPage() {
                   Anterior
                 </button>
                 <span className="text-text-muted text-sm">
-                  Página {page + 1} de {data.totalPages}
+                  Página {page + 1} de {totalPages}
                 </span>
                 <button
-                  disabled={page >= data.totalPages - 1}
+                  disabled={page >= totalPages - 1}
                   onClick={() => setPage((p) => p + 1)}
                   className="border-border text-text-muted hover:bg-fill rounded-xl border px-4 py-2 text-sm font-medium disabled:opacity-40"
                 >

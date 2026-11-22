@@ -68,6 +68,8 @@ export function canWithdraw(purchase: Purchase, now: Date = new Date()): boolean
   return (
     purchase.status === "PAID" &&
     !purchase.hasAcceptedSeats &&
+    // Already asked (a purchase confirmed by hand stays paid until SIGNA gives the money back).
+    !purchase.hasRefundRequest &&
     purchase.refundableUntil !== null &&
     new Date(purchase.refundableUntil).getTime() > now.getTime()
   );

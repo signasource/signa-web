@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { fmtShortDate } from "@/components/dashboard/format";
@@ -14,9 +14,25 @@ import {
 } from "@/components/dashboard/sales-math";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import { pct1 } from "@/components/dashboard/usage-math";
+import { SortTh } from "@/components/admin/sort-th";
 import { adminPurchaseHref } from "@/lib/admin-purchase-link";
 import type { Sale } from "@/lib/api/metrics";
 import { refundReasonLabel } from "@/lib/refund-reasons";
+import { nextSort, sortRows, type SortDir, type SortValue } from "@/lib/table-sort";
+
+type SaleSort = "paidAt" | "type" | "product" | "buyer" | "amount" | "reason";
+
+/** What each column of the list orders by, and its first direction. */
+const SALE_SORT: Record<SaleSort, { key: (s: Sale) => SortValue; first: SortDir }> = {
+  paidAt: { key: (s) => s.paidAt, first: "desc" },
+  type: { key: (s) => SALE_TYPE_LABEL[s.type], first: "asc" },
+  product: { key: (s) => s.productName, first: "asc" },
+  buyer: { key: (s) => s.buyerName, first: "asc" },
+  amount: { key: (s) => s.amount, first: "desc" },
+  reason: { key: (s) => (s.refundReason ? refundReasonLabel(s.refundReason) : null), first: "asc" },
+};
+
+const TH = "px-0 pt-0 pb-2 pl-3 text-xs font-bold";
 
 const TITLE: Record<SalesView, string> = {
   income: "Compras que suman a los ingresos",
@@ -52,7 +68,9 @@ export function SalesListDialog({
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
-  const rows = salesForView(sales, view);
+  const [sort, setSort] = useState<{ by: SaleSort; dir: SortDir }>({ by: "paidAt", dir: "desc" });
+  const rows = sortRows(salesForView(sales, view), SALE_SORT[sort.by].key, sort.dir);
+  const onSort = (field: SaleSort) => setSort((s) => nextSort(s, field, SALE_SORT[field].first));
   const total = rows.reduce((sum, s) => sum + s.amount, 0);
   const refunds = view === "refund_rate";
 
@@ -108,12 +126,45 @@ export function SalesListDialog({
             <table className="w-full min-w-[720px] border-collapse text-sm">
               <thead className="bg-surface sticky top-0">
                 <tr className="text-text-muted text-left text-xs font-bold">
-                  <th className="pb-2 font-bold">Pagada</th>
-                  <th className="pb-2 pl-3 font-bold">Tipo</th>
-                  <th className="pb-2 pl-3 font-bold">Producto</th>
-                  <th className="pb-2 pl-3 font-bold">Comprador</th>
-                  <th className="pb-2 pl-3 text-right font-bold">Importe</th>
-                  {refunds ? <th className="pb-2 pl-3 font-bold">Motivo</th> : null}
+                  <SortTh
+                    label="Pagada"
+                    field="paidAt"
+                    sort={sort}
+                    onSort={onSort}
+                    className={`${TH} pl-0`}
+                  />
+                  <SortTh label="Tipo" field="type" sort={sort} onSort={onSort} className={TH} />
+                  <SortTh
+                    label="Producto"
+                    field="product"
+                    sort={sort}
+                    onSort={onSort}
+                    className={TH}
+                  />
+                  <SortTh
+                    label="Comprador"
+                    field="buyer"
+                    sort={sort}
+                    onSort={onSort}
+                    className={TH}
+                  />
+                  <SortTh
+                    label="Importe"
+                    field="amount"
+                    sort={sort}
+                    onSort={onSort}
+                    align="right"
+                    className={TH}
+                  />
+                  {refunds ? (
+                    <SortTh
+                      label="Motivo"
+                      field="reason"
+                      sort={sort}
+                      onSort={onSort}
+                      className={TH}
+                    />
+                  ) : null}
                   <th className="pb-2 pl-3">
                     <span className="sr-only">Detalle</span>
                   </th>
