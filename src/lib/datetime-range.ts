@@ -122,3 +122,29 @@ export function selectionLabel(selection: RangeSelection): string {
   if (selection.kind === "preset") return presetByKey(selection.key)?.label ?? "Período";
   return `${DATETIME_FMT.format(new Date(selection.from))} – ${DATETIME_FMT.format(new Date(selection.to))}`;
 }
+
+/**
+ * The window (unix seconds) a chart selection becomes. The end is cut at `nowSec` without moving
+ * the start, so clicking the bucket in progress (10:00–11:00 at 10:31) opens 10:00–10:31 — the
+ * same people the bar counted — and not 9:31–10:31. Only a window shorter than `minSpan` is
+ * widened around its middle (and then kept before `nowSec`), so a spike never reads as "sin datos".
+ */
+export function selectionWindow(
+  fromSeconds: number,
+  toSeconds: number,
+  nowSec: number,
+  minSpan: number,
+): { from: number; to: number } {
+  let from = Math.min(fromSeconds, toSeconds);
+  let to = Math.min(Math.max(fromSeconds, toSeconds), nowSec);
+  if (to - from < minSpan) {
+    const mid = (from + to) / 2;
+    from = Math.round(mid - minSpan / 2);
+    to = Math.round(mid + minSpan / 2);
+    if (to > nowSec) {
+      from -= to - nowSec;
+      to = nowSec;
+    }
+  }
+  return { from, to };
+}

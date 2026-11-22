@@ -141,12 +141,20 @@ with the selected `[from, to]` seconds; clicking a day bar in `DailyActivityChar
 The page turns that into a `{ kind: "custom", from, to }` `RangeSelection`, which re-runs **every** widget
 (their query keys include `from/to`). No extra plumbing: the shared filter already propagates. A tiny
 selection is widened to a minimum span (`MIN_SPAN_SECONDS`, 5 min) so focusing on a spike never reads as
-"sin datos" (Prometheus scrapes every 60 s). Each time-series widget has its **own line/bar toggle**
+"sin datos" (Prometheus scrapes every 60 s). The window comes from `selectionWindow` (`src/lib/datetime-range.ts`): the end is cut at now **without
+moving the start**, so clicking the bucket in progress (10:00–11:00 at 10:31) opens 10:00–10:31 — the
+people that bar counted — and not 9:31–10:31; only a window under the minimum span is widened (and kept
+before now). Each time-series widget has its **own line/bar toggle**
 (`ChartKindToggle` in `chart-kind.tsx`, a local `useState` per chart, in the card header) — there is no
 page-level toggle. `DailySeriesChart` takes the active `range` and lays out **every** bucket of the period
 on the x axis (gaps filled with 0, or "sin datos"/null for rates via `emptyAsNull`), at a resolution that
 follows the window (minute/hour/day, or forced day via `dayResolution` for the day-only Learning/
-Gamification series); the y axis is labelled with values.
+Gamification series); the y axis is labelled with values. Its x axis is keyed by each bucket's **instant** (`epoch`),
+not its label: in a 24 h window "10:00" is two buckets (yesterday and today), and a repeated category made
+the tooltip show the other day's value. Lines are **steps** (`stepAfter`): a bucket's count holds over the
+whole bucket, so the line rises at 10:00 when someone came in at 10:xx instead of sloping up from 9:00.
+The tooltip names the whole bucket (`bucketLabel`: "22 nov, 10:00 – 11:00", or the day) — an hour's
+active count is distinct people in that hour, so zooming into it shows per-minute counts that are lower.
 
 ## Data sources (two, one picker)
 

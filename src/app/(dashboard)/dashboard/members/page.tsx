@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { CourseSelect } from "@/components/dashboard/course-select";
 import { PeriodFilter } from "@/components/dashboard/period-select";
 import { Icon } from "@/components/dashboard/icons";
+import { InfoButton } from "@/components/dashboard/info-popover";
 import { InvitedSeats } from "@/components/dashboard/invited-seats";
 import { MetricsTabs } from "@/components/dashboard/metrics-tabs";
 import {
@@ -170,7 +171,6 @@ export default function MembersPage() {
 
   const total = data?.totalElements ?? 0;
   const totalPages = data?.totalPages ?? 0;
-  const people = `${total} ${total === 1 ? "persona" : "personas"}`;
 
   return (
     <section className="flex flex-col gap-5">
@@ -182,14 +182,10 @@ export default function MembersPage() {
             : "Seguí el avance de cada persona. Tocá un encabezado para ordenar la lista."
         }
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <CourseSelect />
-          {invitedView ? null : <PeriodFilter prefix="Incorporación" hint={JOINED_HINT} />}
-          <Link href="/dashboard/purchases" className={headerButton}>
-            <Icon name="personAdd" className="size-4" />
-            Sumar personas
-          </Link>
-        </div>
+        <Link href="/dashboard/purchases" className={headerButton}>
+          <Icon name="personAdd" className="size-4" />
+          Sumar personas
+        </Link>
       </PageHeading>
 
       <MetricsTabs<Tab>
@@ -198,7 +194,10 @@ export default function MembersPage() {
         active={tab}
         onChange={changeTab}
         tabs={[
-          { key: "participantes", label: "Participantes" },
+          {
+            key: "participantes",
+            label: data ? `Participantes · ${total}` : "Participantes",
+          },
           {
             key: "invitados",
             label: invited.isPending ? "Invitados" : `Invitados · ${invited.rows.length}`,
@@ -240,13 +239,6 @@ export default function MembersPage() {
                         key={f.key}
                         type="button"
                         aria-pressed={pressed}
-                        title={
-                          f.activity === "ACTIVE"
-                            ? legend.active
-                            : f.activity === "INACTIVE"
-                              ? legend.inactive
-                              : undefined
-                        }
                         onClick={() => {
                           setFilter(f);
                           setPage(0);
@@ -261,26 +253,54 @@ export default function MembersPage() {
                     );
                   })}
                 </div>
-                <label className="text-text-muted ml-auto flex cursor-pointer items-center gap-2 text-[13px] font-semibold">
-                  <input
-                    type="checkbox"
-                    checked={showCompleted}
-                    onChange={(e) => {
-                      setShowCompleted(e.target.checked);
-                      setPage(0);
-                    }}
-                  />
+                <InfoButton className="mr-2" label="Activos e inactivos">
+                  <p className="text-text text-[13px] leading-relaxed">{legend.active}</p>
+                  <p className="text-text text-[13px] leading-relaxed">{legend.inactive}</p>
+                </InfoButton>
+                <button
+                  type="button"
+                  aria-pressed={showCompleted}
+                  onClick={() => {
+                    setShowCompleted((v) => !v);
+                    setPage(0);
+                  }}
+                  className={cn(
+                    "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-extrabold transition-colors",
+                    showCompleted
+                      ? "border-primary bg-primary-light text-primary-dark"
+                      : "border-border bg-surface text-text-muted hover:text-text",
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "grid size-4 place-items-center rounded-full border",
+                      showCompleted
+                        ? "border-primary bg-primary text-on-primary"
+                        : "border-border-strong",
+                    )}
+                  >
+                    {showCompleted ? <Icon name="check" className="size-3" /> : null}
+                  </span>
                   Mostrar completados
-                </label>
+                </button>
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                  <CourseSelect />
+                  <PeriodFilter prefix="Incorporación" hint={JOINED_HINT} />
+                </div>
               </div>
-              <p className="text-text-muted text-[13px] text-pretty">
-                <span className="text-text font-bold">{legend.active}</span> {legend.inactive}
-              </p>
             </div>
           )}
         </div>
 
-        {invitedView ? <InvitedSeats orgId={orgId} courseId={courseId} query={query} /> : null}
+        {invitedView ? (
+          <InvitedSeats
+            orgId={orgId}
+            courseId={courseId}
+            query={query}
+            filtersEnd={<CourseSelect />}
+          />
+        ) : null}
         {!invitedView && isPending ? <LoadingState>Cargando participantes…</LoadingState> : null}
         {!invitedView && error ? (
           <ErrorState>No pudimos cargar a los participantes.</ErrorState>
@@ -313,7 +333,7 @@ export default function MembersPage() {
                     href={withFilters(`/dashboard/members/${m.userId}`)}
                     className={cn(
                       GRID,
-                      "border-fill hover:bg-background items-center border-b py-3",
+                      "border-fill hover:bg-background items-center border-b py-3 last:border-b-0",
                     )}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
@@ -373,33 +393,31 @@ export default function MembersPage() {
               </div>
             </div>
 
-            {total > 0 ? (
+            {totalPages > 1 ? (
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-text-muted text-sm font-semibold">
-                  {totalPages > 1 ? `${people} · Página ${page + 1} de ${totalPages}` : people}
+                  Página {page + 1} de {totalPages}
                 </span>
-                {totalPages > 1 ? (
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className={pillButton}
-                      disabled={page === 0}
-                      onClick={() => setPage((p) => Math.max(0, p - 1))}
-                    >
-                      <Icon name="chevronBack" className="size-3.5" />
-                      Anterior
-                    </button>
-                    <button
-                      type="button"
-                      className={pillButton}
-                      disabled={page >= totalPages - 1}
-                      onClick={() => setPage((p) => p + 1)}
-                    >
-                      Siguiente
-                      <Icon name="chevronForward" className="size-3.5" />
-                    </button>
-                  </div>
-                ) : null}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className={pillButton}
+                    disabled={page === 0}
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  >
+                    <Icon name="chevronBack" className="size-3.5" />
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    className={pillButton}
+                    disabled={page >= totalPages - 1}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Siguiente
+                    <Icon name="chevronForward" className="size-3.5" />
+                  </button>
+                </div>
               </div>
             ) : null}
           </>
