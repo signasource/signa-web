@@ -5,18 +5,23 @@ import { OrgTrigger } from "@/components/landing/org-trigger";
 const THEMATIC = [
   {
     icon: "danger",
-    title: "Salud",
+    title: "La salud",
     body: "Para equipos que atienden pacientes.",
   },
   {
-    icon: "message",
-    title: "Atención al cliente",
-    body: "Para mostradores, bancos, comercios y oficinas.",
+    icon: "book",
+    title: "Curso Educación",
+    body: "Para docentes y personal de escuelas.",
   },
   {
-    icon: "book",
-    title: "Educación",
-    body: "Para docentes y personal de escuelas.",
+    icon: "coffee",
+    title: "En la cafetería",
+    body: "Para bares, restaurantes y espacios gastronómicos.",
+  },
+  {
+    icon: "star",
+    title: "Curso base - Parte 2",
+    body: "Continuá tu aprendizaje con más vocabulario esencial.",
   },
 ] as const;
 
@@ -42,7 +47,7 @@ export function Cursos() {
               </span>
             </div>
             <p className="font-display relative text-5xl leading-none font-extrabold tracking-tight">
-              Curso básico de LSA
+              Curso base - Parte 1
             </p>
             <p className="text-text-muted relative max-w-md text-lg leading-relaxed">
               Para todas las personas que usan Signa. Las bases para comunicarte desde el primer
@@ -183,6 +188,48 @@ function ThematicIcon({ icon }: { icon: string }) {
           strokeLinejoin="round"
         >
           <path d="M4 5h16v11H9l-5 4z" />
+        </svg>
+      </div>
+    );
+  }
+  if (icon === "coffee") {
+    return (
+      <div className="bg-shop-amber-light text-shop-amber-dark flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
+        <svg
+          aria-hidden="true"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+          <line x1="6" y1="1" x2="6" y2="4" />
+          <line x1="10" y1="1" x2="10" y2="4" />
+          <line x1="14" y1="1" x2="14" y2="4" />
+        </svg>
+      </div>
+    );
+  }
+  if (icon === "star") {
+    return (
+      <div className="bg-primary/15 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl">
+        <svg
+          aria-hidden="true"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
         </svg>
       </div>
     );
