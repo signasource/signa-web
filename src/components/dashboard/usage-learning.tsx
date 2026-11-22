@@ -386,7 +386,6 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
               : undefined
           }
           hint={`${l.exercises.averageAttempts.toLocaleString("es-AR")} intentos por ejercicio`}
-          spark={l.dailyAccuracy.map((d) => d.accuracyPercent)}
         />
         <KpiCard
           metric="global_course_completion"
@@ -415,6 +414,9 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
             <p className="text-text-muted text-sm">Sin ejercicios evaluados.</p>
           ) : (
             <ul className="flex flex-col gap-3">
+              {/* Every evaluated type, camera ones included: they are part of "Tasa de éxito", and
+                  hiding them left that average below every bar shown. Non-evaluable blocks
+                  (INTRODUCE_SIGN, INVISIBLE_SIGNS) never reach this list. */}
               {[...b.accuracy.byBlockType]
                 .filter((bt) =>
                   ["CONTEXT_RESPONSE", "SELECT_SIGN", "SELECT_MEANING", "MATCH"].includes(bt.type),

@@ -39,6 +39,7 @@ export default function DeleteAccountPage() {
           <li>Tus estadísticas, racha, XP, logros y desafíos.</li>
           <li>Tus amistades, solicitudes y «me gusta».</li>
           <li>Tus notificaciones, configuraciones y los datos de tus dispositivos.</li>
+          <li>Tus respuestas a la encuesta inicial (rango de edad, nivel y motivación).</li>
           <li>Tu pertenencia a organizaciones y las invitaciones enviadas a tu email.</li>
         </ul>
       </Section>

@@ -36,6 +36,8 @@ export type AdminPurchaseDetail = AdminPurchaseListItem & {
 };
 
 export type RefundRequestStatus = "PENDING" | "RESOLVED";
+import type { RefundRequestReason as BuyerRefundReason } from "@/lib/api/types";
+
 export type RefundRequestReason =
   | "NOT_RECEIVED"
   | "MISTAKE"
@@ -55,7 +57,7 @@ export type AdminRefundRequest = {
   id: string;
   purchaseType: PurchaseType;
   purchaseId: string;
-  /** Null when the buyer did not pick a reason. */
+  /** Required for new requests; null only on legacy ones made before it was. */
   reason: RefundRequestReason | null;
   channel: string;
   /** Empty or null when the buyer left no comment. */
@@ -553,8 +555,12 @@ export const adminApi = {
   confirmPurchase: (id: string, type: PurchaseType) =>
     api<void>(`/admin/purchases/${id}/confirm`, { method: "POST", query: { type } }),
 
-  refundPurchase: (id: string, type: PurchaseType) =>
-    api<void>(`/admin/purchases/${id}/refund`, { method: "POST", query: { type } }),
+  /** Refunds a purchase by hand; every refund needs a reason (the comment is optional). */
+  refundPurchase: (
+    id: string,
+    type: PurchaseType,
+    data: { reason: BuyerRefundReason; message?: string },
+  ) => api<void>(`/admin/purchases/${id}/refund`, { method: "POST", query: { type }, body: data }),
 
   // ── Refund requests ────────────────────────────────────────────────────────
 

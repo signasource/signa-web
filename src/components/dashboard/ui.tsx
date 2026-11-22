@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import { Icon, type IconName } from "@/components/dashboard/icons";
-import type { MemberActivityStatus } from "@/lib/api/types";
+import type { MemberActivityStatus, TrainingStatus } from "@/lib/api/types";
 import { initials, progressTone, type ProgressTone } from "@/lib/dashboard-format";
 import { cn } from "@/lib/utils";
 
@@ -175,6 +175,35 @@ const STATUS: Record<MemberActivityStatus, { label: string; className: string }>
 
 export function StatusPill({ status }: { status: MemberActivityStatus }) {
   const { label, className } = STATUS[status];
+  return (
+    <span
+      className={cn(
+        "inline-block rounded-full px-2.5 py-1 text-xs font-extrabold whitespace-nowrap",
+        className,
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
+const TRAINING: Record<TrainingStatus, { label: string; className: string }> = {
+  INVITATION_PENDING: { label: "Invitación pendiente", className: "bg-fill text-text-muted" },
+  NOT_STARTED: { label: "Sin iniciar", className: "bg-fill text-text" },
+  ACTIVE: { label: "Activo", className: "bg-success-light text-success-dark" },
+  INACTIVE: { label: "Inactivo", className: "bg-shop-amber-light text-shop-amber-dark" },
+  COMPLETED: { label: "Completado", className: "bg-primary-light text-primary-dark" },
+  ACCESS_EXPIRED: { label: "Acceso vencido", className: "bg-danger-light text-danger" },
+};
+
+/** The label of a training state, for filters and screen readers. */
+export function trainingStatusLabel(status: TrainingStatus): string {
+  return TRAINING[status].label;
+}
+
+/** A participant's state in a course (or across all of them), in the participant detail. */
+export function TrainingPill({ status }: { status: TrainingStatus }) {
+  const { label, className } = TRAINING[status];
   return (
     <span
       className={cn(
