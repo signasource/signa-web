@@ -18,7 +18,7 @@ export function FormatBadge({ format }: { format: AnimationFormat | null }) {
         !format && "bg-danger-light text-danger",
       )}
     >
-      {format === "glb" ? "GLB · 3D" : format === "mp4" ? "MP4 · video" : "Sin animación"}
+      {format === "glb" ? "GLB · 3D" : format === "mp4" ? "MP4 · video" : "Sin archivo"}
     </span>
   );
 }

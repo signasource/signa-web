@@ -27,7 +27,7 @@ const FORMAT_TABS: { key: FormatFilter; label: string }[] = [
   { key: "all", label: "Todas" },
   { key: "glb", label: "3D (.glb)" },
   { key: "mp4", label: "Video (.mp4)" },
-  { key: "none", label: "Sin animación" },
+  { key: "none", label: "Sin archivo" },
 ];
 
 const SORTS: { key: SignSort; label: string }[] = [

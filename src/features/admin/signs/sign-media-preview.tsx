@@ -103,7 +103,7 @@ export function SignMediaPreview({
             />
           ) : (
             <div className="text-text-muted flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm">
-              <span className="font-display text-text text-base font-bold">Sin animación</span>
+              <span className="font-display text-text text-base font-bold">Sin archivo</span>
               Subí un .glb o un .mp4 para que la seña se vea en la app.
             </div>
           )}

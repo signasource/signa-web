@@ -11,7 +11,7 @@ is linkable and the browser's back button works:
 
 - **Catalog** (no `id`): the whole catalog is loaded once (`GET /admin/signs?size=1000`, a few
   hundred signs) and filtered in the browser (`filterSigns`): accent/case-insensitive search, format
-  tabs (Todas · 3D · Video · Sin animación, with counts) and sort (A→Z, recent uploads, most used).
+  tabs (Todas · 3D · Video · Sin archivo, with counts) and sort (A→Z, recent uploads, most used).
   "Nueva seña" opens a react-hook-form + zod dialog (`newSignSchema`) and lands in the editor.
 - **Editor** (`?id=<sign>`): explicit save (no autosave — a rename rewrites live lessons). Shows
   `Guardado / Sin guardar`, discards, guards leaving with unsaved changes, and deletes. "Eliminar" is disabled, with the reason in a

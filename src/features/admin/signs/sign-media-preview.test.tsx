@@ -44,7 +44,7 @@ describe("SignMediaPreview", () => {
   it("shows an empty state without animation", () => {
     render(<SignMediaPreview meaning="hola" format={null} url={null} />);
 
-    expect(screen.getByText("Sin animación")).toBeTruthy();
+    expect(screen.getByText("Sin archivo")).toBeTruthy();
     expect(screen.getByText("hola")).toBeTruthy();
   });
 
