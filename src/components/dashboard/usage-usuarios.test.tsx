@@ -63,9 +63,9 @@ describe("UsersTab", () => {
   });
   afterEach(cleanup);
 
-  it("keeps only the active and new users charts, then the onboarding survey", () => {
+  it("shows new users on the left and active users on the right, then the onboarding survey", () => {
     renderTab();
-    const titles = ["Usuarios activos", "Nuevos usuarios", "Encuesta inicial", "Edad"].map(
+    const titles = ["Nuevos usuarios", "Usuarios activos", "Encuesta inicial", "Edad"].map(
       (t) => screen.getAllByText(t, { exact: true })[0]!,
     );
     for (let i = 1; i < titles.length; i++) {
