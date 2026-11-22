@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -200,6 +201,7 @@ export default function PurchaseDetailPage() {
   const [showCourse, setShowCourse] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
+  const [copied, setCopied] = useState(false);
 
   const { data, isPending, error } = useQuery({
     queryKey: key,
@@ -293,6 +295,13 @@ export default function PurchaseDetailPage() {
 
   if (isPending) return <LoadingState />;
   if (error) return <ErrorState>No pudimos cargar los datos.</ErrorState>;
+
+  const copyMpOrderId = (value: string) => {
+    void navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const { purchase, seats, refunds } = data;
   const payment =
@@ -609,7 +618,30 @@ export default function PurchaseDetailPage() {
                   ],
                   ["Referencia de compra", purchase.externalRef],
                   ...(purchase.mpOrderId
-                    ? [["Orden de Mercado Pago", purchase.mpOrderId] as [string, string]]
+                    ? [
+                        [
+                          "Orden de Mercado Pago",
+                          <span key="mp" className="flex min-w-0 items-center justify-end gap-1.5">
+                            <span
+                              className="max-w-[140px] cursor-text select-all truncate font-extrabold"
+                              title={purchase.mpOrderId}
+                            >
+                              {purchase.mpOrderId}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => copyMpOrderId(purchase.mpOrderId!)}
+                              title="Copiar número de orden"
+                              className="text-text-muted hover:text-text shrink-0 transition-colors"
+                            >
+                              <Icon
+                                name={copied ? "check" : "copy"}
+                                className="size-4"
+                              />
+                            </button>
+                          </span>,
+                        ] as [string, React.ReactNode],
+                      ]
                     : []),
                   [
                     "Plazo para aceptar",
@@ -658,14 +690,14 @@ export default function PurchaseDetailPage() {
                             ],
                           ]
                         : []),
-                ] as [string, string][]
+                ] as [string, React.ReactNode][]
               ).map(([label, value]) => (
                 <div
                   key={label}
                   className="border-fill flex justify-between gap-3 border-b py-2.5 last:border-b-0"
                 >
                   <dt className="text-text-muted">{label}</dt>
-                  <dd className="text-right font-extrabold">{value}</dd>
+                  <dd className="min-w-0 text-right font-extrabold">{value}</dd>
                 </div>
               ))}
             </dl>
