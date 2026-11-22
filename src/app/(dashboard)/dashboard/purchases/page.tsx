@@ -2,10 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useState } from "react";
 import { Icon } from "@/components/dashboard/icons";
+import { PeriodSelect } from "@/components/dashboard/period-select";
 import { PurchaseStatusPill, RefundRequestPill } from "@/components/dashboard/purchase-status";
 import {
-  Card,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -14,78 +15,26 @@ import {
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
 import { organizationsApi } from "@/lib/api/organizations";
-import type { Purchase } from "@/lib/api/types";
+import type { PurchaseStatus } from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
-import { acceptedSeats, daysLeft, formatMoney } from "@/lib/purchases";
+import type { Period } from "@/lib/date-range";
+import { PURCHASE_FILTERS, formatMoney, visiblePurchases } from "@/lib/purchases";
+import { cn } from "@/lib/utils";
 
-function windowLabel(purchase: Purchase): string {
-  if (purchase.status === "PENDING_PAYMENT") return "Las invitaciones salen al confirmarse el pago";
-  if (purchase.status === "CANCELLED") return "Compra cancelada";
-  if (purchase.status === "REFUNDED") {
-    return purchase.refundedAt
-      ? `Anulada y reembolsada el ${formatDate(purchase.refundedAt)}`
-      : "Anulada y reembolsada";
-  }
-  if (purchase.hasRefundRequest) return "Reembolso en revisión";
-  const left = daysLeft(purchase.invitationDeadline);
-  if (left === null) return "";
-  return left === 0
-    ? `Plazo de invitación cerrado el ${formatDate(purchase.invitationDeadline!)}`
-    : `Quedan ${left} ${left === 1 ? "día" : "días"} para aceptar (hasta el ${formatDate(purchase.invitationDeadline!)})`;
-}
+const GRID =
+  "grid grid-cols-[130px_minmax(200px,2fr)_80px_110px_minmax(120px,1fr)_160px] items-center gap-4";
 
-function PurchaseRow({ purchase }: { purchase: Purchase }) {
-  const counts = purchase.seatCounts;
-  const facts = [
-    { label: "Aceptaron", value: acceptedSeats(counts) },
-    { label: "Sin aceptar", value: counts.invited },
-    { label: "Vencidas", value: counts.invitationExpired },
-  ];
-  return (
-    <Link
-      href={`/dashboard/purchases/${purchase.id}`}
-      className="border-border bg-surface hover:border-primary/40 dash-card-enter flex flex-col gap-4 rounded-2xl border p-5 transition-colors"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <p className="font-display text-lg font-bold tracking-tight">{purchase.courseName}</p>
-          <p className="text-text-muted text-[13px]">
-            {purchase.seats} {purchase.seats === 1 ? "cupo" : "cupos"} · {purchase.durationDays}{" "}
-            días de acceso · {formatMoney(purchase.totalAmount, purchase.currency)}
-          </p>
-        </div>
-        {purchase.hasRefundRequest ? (
-          <RefundRequestPill />
-        ) : (
-          <PurchaseStatusPill status={purchase.status} />
-        )}
-      </div>
-      {purchase.status === "PAID" ? (
-        <dl className="grid grid-cols-3 gap-3">
-          {facts.map((fact) => (
-            <div key={fact.label} className="bg-background rounded-xl px-3 py-2">
-              <dt className="text-text-muted text-xs font-bold">{fact.label}</dt>
-              <dd className="font-display text-xl font-extrabold">{fact.value}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
-      <p className="text-text-muted flex flex-wrap items-center justify-between gap-2 text-[13px]">
-        <span>{windowLabel(purchase)}</span>
-        <span>
-          {purchase.paidAt
-            ? `Pagada el ${formatDate(purchase.paidAt)}`
-            : `Creada el ${formatDate(purchase.createdAt)}`}
-        </span>
-      </p>
-    </Link>
-  );
-}
-
+/**
+ * The organization's purchases: only what each purchase is (date, course, seats, days, amount,
+ * payment state). Filter by payment state and by the purchase date; sort by the purchase date.
+ */
 export default function PurchasesPage() {
   const { organization } = useAuth();
   const orgId = organization?.id;
   const canBuy = organization?.status === "ACTIVE";
+  const [status, setStatus] = useState<PurchaseStatus | "ALL">("ALL");
+  const [period, setPeriod] = useState<Period>(null);
+  const [direction, setDirection] = useState<"asc" | "desc">("desc");
 
   const { data, isPending, error } = useQuery({
     queryKey: ["organization", orgId, "purchases"],
@@ -100,11 +49,13 @@ export default function PurchasesPage() {
     </Link>
   ) : null;
 
+  const rows = data ? visiblePurchases(data, { status, period, direction }) : [];
+
   return (
     <section className="flex flex-col gap-5">
       <PageHeading
         title="Compras"
-        subtitle="Cada compra es independiente: tiene sus cupos, su plazo de invitación de 10 días y sus fechas de acceso."
+        subtitle="Cada compra es independiente: tiene sus cupos, su plazo de invitación y sus fechas de acceso."
       >
         {buy}
       </PageHeading>
@@ -124,18 +75,97 @@ export default function PurchasesPage() {
           }
         />
       ) : (
-        <div className="flex flex-col gap-3">
-          {data.map((purchase) => (
-            <PurchaseRow key={purchase.id} purchase={purchase} />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Estado del pago">
+              {PURCHASE_FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  aria-pressed={status === f.value}
+                  onClick={() => setStatus(f.value)}
+                  className={cn(
+                    "cursor-pointer rounded-full px-3.5 py-2 text-[13px] font-extrabold transition-colors",
+                    status === f.value
+                      ? "bg-text text-on-dark"
+                      : "bg-fill text-text hover:bg-fill-dark",
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <div className="ml-auto">
+              <PeriodSelect
+                value={period}
+                onChange={setPeriod}
+                prefix="Fecha de compra"
+                hint="Filtra por el día en que se hizo la compra."
+              />
+            </div>
+          </div>
+
+          <div className="border-border bg-surface overflow-x-auto rounded-2xl border">
+            <div className="min-w-[860px] px-5 py-2">
+              <div
+                className={cn(
+                  GRID,
+                  "border-border text-text-muted border-b py-3 text-xs font-extrabold tracking-wider",
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={() => setDirection((d) => (d === "desc" ? "asc" : "desc"))}
+                  title="Ordenar por fecha de compra"
+                  aria-label={`Ordenar por fecha de compra: ${direction === "desc" ? "más recientes primero" : "más antiguas primero"}`}
+                  className="hover:text-text text-text inline-flex cursor-pointer items-center gap-1 text-left tracking-wider"
+                >
+                  FECHA
+                  <Icon
+                    name={direction === "desc" ? "arrowDown" : "arrowUp"}
+                    className="size-3.5"
+                  />
+                </button>
+                <span>CURSO</span>
+                <span className="text-right">CUPOS</span>
+                <span className="text-right">DURACIÓN</span>
+                <span className="text-right">TOTAL</span>
+                <span>ESTADO</span>
+              </div>
+              {rows.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/dashboard/purchases/${p.id}`}
+                  className={cn(GRID, "border-fill hover:bg-background border-b py-3.5")}
+                >
+                  <span className="text-text-muted text-sm">{formatDate(p.createdAt)}</span>
+                  <span className="font-display text-[15px] font-bold">{p.courseName}</span>
+                  <span className="text-right text-sm font-bold">{p.seats}</span>
+                  <span className="text-right text-sm">{p.durationDays} días</span>
+                  <span className="text-right text-sm font-extrabold">
+                    {formatMoney(p.totalAmount, p.currency)}
+                  </span>
+                  <span>
+                    {p.hasRefundRequest ? (
+                      <RefundRequestPill />
+                    ) : (
+                      <PurchaseStatusPill status={p.status} />
+                    )}
+                  </span>
+                </Link>
+              ))}
+              {rows.length === 0 ? (
+                <p className="text-text-muted py-8 text-center text-sm">
+                  No hay compras con estos filtros.
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <p className="text-text-muted text-sm font-semibold">
+            {rows.length} {rows.length === 1 ? "compra" : "compras"}
+          </p>
+        </>
       )}
-      <Card className="text-text-muted text-[13px] text-pretty">
-        Las invitaciones son personales: solo las puede aceptar la cuenta del email que cargaste.
-        Mientras no las acepten podés corregir el email o mandar un recordatorio desde el detalle de
-        la compra; a los 5 días les mandamos uno automático. Un cupo que no se aceptó en plazo se
-        pierde.
-      </Card>
     </section>
   );
 }

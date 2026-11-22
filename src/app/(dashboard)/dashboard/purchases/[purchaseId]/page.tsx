@@ -13,6 +13,7 @@ import {
   RefundRequestPill,
   SeatStatusPill,
 } from "@/components/dashboard/purchase-status";
+import { CourseDetailsDialog } from "@/components/dashboard/course-details-dialog";
 import { SeatEmailEditor } from "@/components/dashboard/seat-email-editor";
 import { WithdrawPurchase } from "@/components/dashboard/withdraw-purchase";
 import {
@@ -29,20 +30,20 @@ import { useAuth } from "@/features/auth/auth-context";
 import { invitationsKey } from "@/features/dashboard/use-invited-seats";
 import { ApiError } from "@/lib/api/client";
 import { organizationsApi } from "@/lib/api/organizations";
-import type { PurchaseDetail, PurchaseStatus, Seat, SeatStatus } from "@/lib/api/types";
+import type { PurchaseDetail, PurchaseStatus, Seat } from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
 import {
   REFUNDED_MESSAGE,
-  REFUND_REASON_LABEL,
-  SEAT_STATUS_LABEL,
-  acceptedSeats,
+  PAYMENT_METHOD_LABEL,
+  SEAT_GROUPS,
   canWithdraw,
+  seatsInGroup,
   REFUND_RULE,
-  daysLeft,
   formatMoney,
   paymentMessage,
   paymentReturn,
   seatEmailLabel,
+  type SeatGroup,
   type WithdrawalForm,
 } from "@/lib/purchases";
 import { REFUND_REASON_OPTIONS, REFUND_REASON_VALUES } from "@/lib/refund-reasons";
@@ -53,14 +54,6 @@ const PAYMENT_TONE = {
   warning: "bg-shop-amber-light text-shop-amber-dark",
   danger: "bg-danger-light text-danger",
 } as const;
-
-const FILTERS: { value: SeatStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "Todos" },
-  { value: "INVITED", label: "Sin aceptar" },
-  { value: "ACTIVE", label: "Acceso activo" },
-  { value: "INVITATION_EXPIRED", label: "Invitación vencida" },
-  { value: "ACCESS_EXPIRED", label: "Acceso vencido" },
-];
 
 function seatDates(seat: Seat, purchaseStatus: PurchaseStatus): string {
   if (seat.activatedAt && seat.accessExpiresAt) {
@@ -203,7 +196,8 @@ export default function PurchaseDetailPage() {
   const queryClient = useQueryClient();
   const key = ["organization", orgId, "purchases", purchaseId];
   const [editing, setEditing] = useState<string | null>(null);
-  const [filter, setFilter] = useState<SeatStatus | "ALL">("ALL");
+  const [group, setGroup] = useState<SeatGroup>("ALL");
+  const [showCourse, setShowCourse] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
 
@@ -222,6 +216,13 @@ export default function PurchaseDetailPage() {
             !query.state.data.purchase.hasAcceptedSeats
           ? 15000
           : false,
+  });
+
+  // How the people of this purchase are doing; only once someone could have accepted.
+  const progress = useQuery({
+    queryKey: [...key, "progress"],
+    queryFn: () => organizationsApi.purchaseProgress(orgId!, purchaseId),
+    enabled: Boolean(orgId) && Boolean(data?.purchase.paidAt),
   });
 
   const store = async (detail: PurchaseDetail) => {
@@ -303,10 +304,11 @@ export default function PurchaseDetailPage() {
             data.refunds.length > 0
           ? REFUNDED_MESSAGE
           : null;
-  const counts = purchase.seatCounts;
   const unpaid = purchase.paidAt === null;
-  const left = daysLeft(purchase.invitationDeadline, new Date(now), purchase.paidAt);
-  const visible = filter === "ALL" ? seats : seats.filter((seat) => seat.status === filter);
+  const visible = seatsInGroup(seats, group);
+  const seatProgress = new Map(
+    (progress.data?.seats ?? []).map((s) => [s.seatId, s.progressPercentage]),
+  );
   const withdrawError =
     withdraw.error instanceof ApiError && withdraw.error.status === 400
       ? "Ya no se puede anular esta compra: el plazo terminó o cambió su estado. Recargá la página."
@@ -327,13 +329,19 @@ export default function PurchaseDetailPage() {
       {back}
       <PageHeading
         title={purchase.courseName}
-        subtitle={`Compra del ${formatDate(purchase.createdAt)} · ${purchase.seats} ${purchase.seats === 1 ? "cupo" : "cupos"} de ${purchase.durationDays} días`}
+        subtitle={`Compra del ${formatDate(purchase.createdAt)}`}
       >
-        {purchase.hasRefundRequest ? (
-          <RefundRequestPill />
-        ) : (
-          <PurchaseStatusPill status={purchase.status} />
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {purchase.hasRefundRequest ? (
+            <RefundRequestPill />
+          ) : (
+            <PurchaseStatusPill status={purchase.status} />
+          )}
+          <button type="button" onClick={() => setShowCourse(true)} className={pillButton}>
+            <Icon name="book" className="size-4" />
+            Ver detalles del curso
+          </button>
+        </div>
       </PageHeading>
 
       {payment ? (
@@ -397,305 +405,278 @@ export default function PurchaseDetailPage() {
       ) : null}
       {cancel.error ? <ErrorState>No pudimos cancelar la compra.</ErrorState> : null}
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
-        {unpaid ? (
-          <>
-            <StatCard
-              label="Total"
-              value={formatMoney(purchase.totalAmount, purchase.currency)}
-              hint={
-                purchase.discountPercent > 0
-                  ? `${formatMoney(purchase.pricePerSeat, purchase.currency)} por cupo · ${purchase.discountPercent}% de descuento`
-                  : `${formatMoney(purchase.pricePerSeat, purchase.currency)} por cupo`
-              }
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="flex min-w-0 flex-col gap-5">
+          {unpaid ? null : (
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
+              <StatCard
+                label="Completaron"
+                value={progress.data ? progress.data.completed : "—"}
+                hint={
+                  progress.data
+                    ? `de ${progress.data.participants} ${progress.data.participants === 1 ? "persona" : "personas"} en el curso`
+                    : progress.isPending
+                      ? "Cargando…"
+                      : "No pudimos cargar el avance"
+                }
+              />
+              <StatCard
+                label="Tasa de finalización"
+                value={
+                  progress.data && progress.data.participants > 0
+                    ? `${progress.data.completionPercentage}%`
+                    : "—"
+                }
+                hint="Completaron ÷ personas en el curso"
+              />
+              <StatCard
+                label="Progreso promedio"
+                value={
+                  progress.data && progress.data.started > 0
+                    ? `${progress.data.averageProgress}%`
+                    : "—"
+                }
+                hint={
+                  progress.data
+                    ? `De ${progress.data.started} ${progress.data.started === 1 ? "persona que empezó" : "personas que empezaron"}`
+                    : "De quienes empezaron"
+                }
+              />
+            </div>
+          )}
+
+          <Card className="flex flex-col gap-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle>Personas</CardTitle>
+              <div
+                className="flex flex-wrap gap-1.5"
+                role="group"
+                aria-label="Filtrar por invitación"
+              >
+                {SEAT_GROUPS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={group === option.value}
+                    onClick={() => setGroup(option.value)}
+                    className={cn(
+                      pillButton,
+                      group === option.value && "border-primary bg-primary-light text-primary-dark",
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {notice ? (
+              <p role="status" className="text-success-dark text-sm font-semibold">
+                {notice}
+              </p>
+            ) : null}
+            {remind.error ? (
+              <ErrorState>
+                {remind.error instanceof ApiError && remind.error.status === 400
+                  ? "Ya mandamos un recordatorio hace poco. Probá más tarde."
+                  : "No pudimos mandar el recordatorio."}
+              </ErrorState>
+            ) : null}
+            {visible.length === 0 ? (
+              <p className="text-text-muted border-fill-dark rounded-2xl border border-dashed p-4 text-center text-sm">
+                {group === "ACCEPTED"
+                  ? "Nadie aceptó la invitación todavía."
+                  : group === "NOT_ACCEPTED"
+                    ? "No hay invitaciones sin aceptar."
+                    : "Esta compra no tiene personas."}
+              </p>
+            ) : (
+              <ul className="flex flex-col">
+                {visible.map((seat) => {
+                  const canRemind =
+                    seat.status === "INVITED" &&
+                    (!seat.nextReminderAvailableAt ||
+                      new Date(seat.nextReminderAvailableAt).getTime() <= now);
+                  const seatAdvance = seatProgress.get(seat.id);
+                  return (
+                    <li
+                      key={seat.id}
+                      className="border-fill flex flex-wrap items-center justify-between gap-3 border-b py-3 last:border-b-0"
+                    >
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        {editing === seat.id ? (
+                          <SeatEmailEditor
+                            seat={seat}
+                            saving={updateEmail.isPending}
+                            error={updateError}
+                            onCancel={() => {
+                              setEditing(null);
+                              updateEmail.reset();
+                            }}
+                            onSave={(email) => updateEmail.mutate({ seatId: seat.id, email })}
+                          />
+                        ) : (
+                          <>
+                            <span className="truncate font-semibold">
+                              {seat.userName ? `${seat.userName} · ` : null}
+                              {seatEmailLabel(seat.email)}
+                            </span>
+                            <span className="text-text-muted text-[13px]">
+                              {seatDates(seat, purchase.status)}
+                              {seatAdvance !== undefined ? ` · Avance ${seatAdvance}%` : ""}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      {editing === seat.id ? null : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <SeatStatusPill status={seat.status} purchaseStatus={purchase.status} />
+                          {seat.canEditEmail ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNotice(null);
+                                updateEmail.reset();
+                                setEditing(seat.id);
+                              }}
+                              className={pillButton}
+                            >
+                              Cambiar email
+                            </button>
+                          ) : null}
+                          {seat.status === "INVITED" ? (
+                            <button
+                              type="button"
+                              disabled={!canRemind || remind.isPending}
+                              title={
+                                canRemind
+                                  ? undefined
+                                  : `Podés mandar otro recordatorio el ${formatDate(seat.nextReminderAvailableAt!)}`
+                              }
+                              onClick={() => {
+                                setNotice(null);
+                                remind.mutate(seat.id);
+                              }}
+                              className={pillButton}
+                            >
+                              <Icon name="mail" className="size-4" />
+                              Recordar
+                            </button>
+                          ) : null}
+                          {seat.userId ? (
+                            <Link href={`/dashboard/members/${seat.userId}`} className={pillButton}>
+                              Ver avance
+                            </Link>
+                          ) : null}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Card>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-5">
+          <Card className="flex flex-col gap-1">
+            <CardTitle>Resumen de la compra</CardTitle>
+            <p className="font-display mt-1 text-3xl font-extrabold tracking-tight">
+              {formatMoney(purchase.totalAmount, purchase.currency)}
+            </p>
+            <dl className="flex flex-col text-sm">
+              {(
+                [
+                  [
+                    "Precio por cupo",
+                    purchase.discountPercent > 0
+                      ? `${formatMoney(purchase.pricePerSeat, purchase.currency)} (${purchase.discountPercent}% off)`
+                      : formatMoney(purchase.pricePerSeat, purchase.currency),
+                  ],
+                  ["Cupos", String(purchase.seats)],
+                  ["Fecha de compra", formatDate(purchase.createdAt)],
+                  ["Fecha de pago", purchase.paidAt ? formatDate(purchase.paidAt) : "Pendiente"],
+                  [
+                    "Método de pago",
+                    purchase.paymentMethod ? PAYMENT_METHOD_LABEL[purchase.paymentMethod] : "—",
+                  ],
+                  [
+                    "Plazo para aceptar",
+                    purchase.invitationDeadline
+                      ? `Hasta el ${formatDate(purchase.invitationDeadline)}`
+                      : "Empieza con el pago",
+                  ],
+                  [
+                    "Duración del acceso",
+                    `${purchase.durationDays} días desde que cada persona acepta`,
+                  ],
+                  ...(purchase.status === "REFUNDED"
+                    ? [
+                        [
+                          "Anulación",
+                          purchase.refundedAt
+                            ? `Reembolsada el ${formatDate(purchase.refundedAt)}`
+                            : "Reembolsada",
+                        ],
+                      ]
+                    : purchase.status === "PAID"
+                      ? [
+                          [
+                            "Anulación con reembolso",
+                            purchase.refundableUntil && canWithdraw(purchase, new Date(now))
+                              ? `Hasta el ${formatDate(purchase.refundableUntil)}`
+                              : "Ya no disponible",
+                          ],
+                        ]
+                      : []),
+                ] as [string, string][]
+              ).map(([label, value]) => (
+                <div
+                  key={label}
+                  className="border-fill flex justify-between gap-3 border-b py-2.5 last:border-b-0"
+                >
+                  <dt className="text-text-muted">{label}</dt>
+                  <dd className="text-right font-extrabold">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
+
+          {canWithdraw(purchase, new Date(now)) ? (
+            <WithdrawPurchase
+              purchase={purchase}
+              pending={withdraw.isPending}
+              error={withdrawError}
+              onConfirm={(values) => withdraw.mutate(values)}
             />
-            <StatCard
-              label="Cupos"
-              value={purchase.seats}
-              hint={`${purchase.seats === 1 ? "Una persona" : `${purchase.seats} personas`}, un email cada una`}
-            />
-            <StatCard
-              label="Duración del acceso"
-              value={`${purchase.durationDays} días`}
-              hint="Desde que cada persona acepta"
-            />
-            <StatCard
-              label="Señas del curso"
-              value={purchase.signCount}
-              hint={purchase.courseName}
-            />
-          </>
-        ) : (
-          <>
-            <StatCard
-              label="Total"
-              value={formatMoney(purchase.totalAmount, purchase.currency)}
-              hint={
-                purchase.discountPercent > 0
-                  ? `${formatMoney(purchase.pricePerSeat, purchase.currency)} por cupo · ${purchase.discountPercent}% de descuento`
-                  : `${formatMoney(purchase.pricePerSeat, purchase.currency)} por cupo`
-              }
-            />
-            <StatCard
-              label="Aceptaron"
-              value={`${acceptedSeats(counts)}/${purchase.seats}`}
-              hint={
-                purchase.status === "REFUNDED"
-                  ? `${counts.revoked} con el acceso anulado`
-                  : `${counts.active} con acceso activo`
-              }
-            />
-            <StatCard
-              label="Sin aceptar"
-              value={counts.invited}
-              hint={
-                purchase.status === "REFUNDED"
-                  ? "Invitaciones anuladas"
-                  : purchase.status === "PAID" && left !== null
-                    ? left === 0
-                      ? "El plazo ya cerró"
-                      : `Quedan ${left} ${left === 1 ? "día" : "días"}`
-                    : "Todavía no se enviaron"
-              }
-            />
-            <StatCard
-              label="Cupos perdidos"
-              value={counts.invitationExpired}
-              hint="Invitaciones vencidas sin aceptar"
-            />
-          </>
-        )}
+          ) : purchase.hasRefundRequest ? (
+            <Card className="flex flex-col gap-2">
+              <CardTitle>Reembolso en revisión</CardTitle>
+              <p className="text-text-muted text-sm text-pretty">
+                Recibimos tu pedido de reembolso. Nuestro equipo lo analizará y te va a responder
+                por email.
+              </p>
+            </Card>
+          ) : purchase.status === "PAID" && !purchase.hasAcceptedSeats && orgId ? (
+            <RefundRequestSection orgId={orgId} purchaseId={purchaseId} />
+          ) : purchase.status === "PAID" && purchase.hasAcceptedSeats ? (
+            <Card className="flex flex-col gap-2">
+              <CardTitle>Reembolso no disponible</CardTitle>
+              <p className="text-text-muted text-sm text-pretty">
+                Al menos una persona invitada ya aceptó su invitación, por eso esta compra ya no se
+                puede reembolsar. {REFUND_RULE}
+              </p>
+            </Card>
+          ) : null}
+        </div>
       </div>
 
-      {canWithdraw(purchase, new Date(now)) ? (
-        <WithdrawPurchase
-          purchase={purchase}
-          pending={withdraw.isPending}
-          error={withdrawError}
-          onConfirm={(values) => withdraw.mutate(values)}
+      {showCourse && orgId ? (
+        <CourseDetailsDialog
+          orgId={orgId}
+          purchaseId={purchaseId}
+          onClose={() => setShowCourse(false)}
         />
-      ) : purchase.hasRefundRequest ? (
-        <Card className="flex flex-col gap-2">
-          <CardTitle>Reembolso en revisión</CardTitle>
-          <p className="text-text-muted text-sm text-pretty">
-            Recibimos tu pedido de reembolso. Nuestro equipo lo analizará y te va a responder por
-            email.
-          </p>
-        </Card>
-      ) : purchase.status === "PAID" && !purchase.hasAcceptedSeats && orgId ? (
-        <RefundRequestSection orgId={orgId} purchaseId={purchaseId} />
-      ) : purchase.status === "PAID" && purchase.hasAcceptedSeats ? (
-        <Card className="flex flex-col gap-2">
-          <CardTitle>Reembolso no disponible</CardTitle>
-          <p className="text-text-muted text-sm text-pretty">
-            Al menos una persona invitada ya aceptó su invitación, por eso esta compra ya no se
-            puede reembolsar. {REFUND_RULE}
-          </p>
-        </Card>
       ) : null}
-
-      {data.refunds.length > 0 ? (
-        <Card className="flex flex-col gap-1">
-          <CardTitle>Pagos devueltos</CardTitle>
-          <p className="text-text-muted text-sm text-pretty">
-            Devoluciones de pagos de esta compra a través de Mercado Pago. El dinero puede tardar
-            unos días en verse según el medio de pago.
-          </p>
-          <ul className="flex flex-col text-sm">
-            {data.refunds.map((refund) => (
-              <li
-                key={refund.createdAt}
-                className="border-fill flex flex-wrap items-center justify-between gap-2 border-b py-2.5 last:border-b-0"
-              >
-                <span className="flex flex-col">
-                  <span className="font-extrabold">
-                    {formatMoney(refund.amount, refund.currency)}
-                  </span>
-                  <span className="text-text-muted text-[13px]">
-                    {REFUND_REASON_LABEL[refund.reason]}
-                  </span>
-                  {refund.note ? (
-                    <span className="text-text-muted text-[13px]">Comentario: «{refund.note}»</span>
-                  ) : null}
-                </span>
-                <span className="text-text-muted text-[13px] font-semibold">
-                  {refund.status === "REFUNDED" && refund.refundedAt
-                    ? `Devuelto el ${formatDate(refund.refundedAt)}`
-                    : "Devolución en proceso"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ) : null}
-
-      {unpaid ? null : (
-        <Card className="flex flex-col gap-1">
-          <CardTitle>Datos de la compra</CardTitle>
-          <dl className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-6 text-sm">
-            {[
-              ["Fecha de pago", purchase.paidAt ? formatDate(purchase.paidAt) : "Pendiente"],
-              [
-                "Plazo para aceptar",
-                purchase.invitationDeadline
-                  ? `Hasta el ${formatDate(purchase.invitationDeadline)}`
-                  : "Empieza con el pago",
-              ],
-              [
-                "Duración del acceso",
-                `${purchase.durationDays} días desde que cada persona acepta`,
-              ],
-              ["Señas del curso", String(purchase.signCount)],
-              ...(purchase.status === "REFUNDED"
-                ? [
-                    [
-                      "Anulación",
-                      purchase.refundedAt
-                        ? `Reembolsada el ${formatDate(purchase.refundedAt)}`
-                        : "Reembolsada",
-                    ],
-                  ]
-                : purchase.status === "PAID"
-                  ? [
-                      [
-                        "Anulación con reembolso",
-                        purchase.refundableUntil && canWithdraw(purchase, new Date(now))
-                          ? `Hasta el ${formatDate(purchase.refundableUntil)}`
-                          : "Ya no disponible",
-                      ],
-                    ]
-                  : []),
-            ].map(([label, value]) => (
-              <div key={label} className="border-fill flex justify-between gap-3 border-b py-2.5">
-                <dt className="text-text-muted">{label}</dt>
-                <dd className="text-right font-extrabold">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
-      )}
-
-      <Card className="flex flex-col gap-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle>Personas</CardTitle>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por estado">
-            {FILTERS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={filter === option.value}
-                onClick={() => setFilter(option.value)}
-                className={cn(
-                  pillButton,
-                  filter === option.value && "border-primary bg-primary-light text-primary-dark",
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        {notice ? (
-          <p role="status" className="text-success-dark text-sm font-semibold">
-            {notice}
-          </p>
-        ) : null}
-        {remind.error ? (
-          <ErrorState>
-            {remind.error instanceof ApiError && remind.error.status === 400
-              ? "Ya mandamos un recordatorio hace poco. Probá más tarde."
-              : "No pudimos mandar el recordatorio."}
-          </ErrorState>
-        ) : null}
-        {visible.length === 0 ? (
-          <p className="text-text-muted border-fill-dark rounded-2xl border border-dashed p-4 text-center text-sm">
-            No hay personas con el estado «{filter === "ALL" ? "Todos" : SEAT_STATUS_LABEL[filter]}
-            ».
-          </p>
-        ) : (
-          <ul className="flex flex-col">
-            {visible.map((seat) => {
-              const canRemind =
-                seat.status === "INVITED" &&
-                (!seat.nextReminderAvailableAt ||
-                  new Date(seat.nextReminderAvailableAt).getTime() <= now);
-              return (
-                <li
-                  key={seat.id}
-                  className="border-fill flex flex-wrap items-center justify-between gap-3 border-b py-3 last:border-b-0"
-                >
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    {editing === seat.id ? (
-                      <SeatEmailEditor
-                        seat={seat}
-                        saving={updateEmail.isPending}
-                        error={updateError}
-                        onCancel={() => {
-                          setEditing(null);
-                          updateEmail.reset();
-                        }}
-                        onSave={(email) => updateEmail.mutate({ seatId: seat.id, email })}
-                      />
-                    ) : (
-                      <>
-                        <span className="truncate font-semibold">
-                          {seat.userName ? `${seat.userName} · ` : null}
-                          {seatEmailLabel(seat.email)}
-                        </span>
-                        <span className="text-text-muted text-[13px]">
-                          {seatDates(seat, purchase.status)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  {editing === seat.id ? null : (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <SeatStatusPill status={seat.status} purchaseStatus={purchase.status} />
-                      {seat.canEditEmail ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNotice(null);
-                            updateEmail.reset();
-                            setEditing(seat.id);
-                          }}
-                          className={pillButton}
-                        >
-                          Cambiar email
-                        </button>
-                      ) : null}
-                      {seat.status === "INVITED" ? (
-                        <button
-                          type="button"
-                          disabled={!canRemind || remind.isPending}
-                          title={
-                            canRemind
-                              ? undefined
-                              : `Podés mandar otro recordatorio el ${formatDate(seat.nextReminderAvailableAt!)}`
-                          }
-                          onClick={() => {
-                            setNotice(null);
-                            remind.mutate(seat.id);
-                          }}
-                          className={pillButton}
-                        >
-                          <Icon name="mail" className="size-4" />
-                          Recordar
-                        </button>
-                      ) : null}
-                      {seat.userId ? (
-                        <Link href={`/dashboard/members/${seat.userId}`} className={pillButton}>
-                          Ver avance
-                        </Link>
-                      ) : null}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
     </section>
   );
 }

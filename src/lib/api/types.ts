@@ -244,6 +244,21 @@ export type Purchase = {
   hasRefundRequest: boolean;
   /** True once any invitee accepted their seat: the purchase can no longer be refunded. */
   hasAcceptedSeats: boolean;
+  /** How it was paid: Mercado Pago, by hand (manual confirmation), or null while unpaid. */
+  paymentMethod: "MERCADO_PAGO" | "MANUAL" | null;
+};
+
+/**
+ * `GET /organizations/{id}/purchases/{purchaseId}/progress`: the people who accepted a seat of the
+ * purchase and how they are doing in its course. `averageProgress` is of those who started.
+ */
+export type PurchaseProgress = {
+  participants: number;
+  started: number;
+  completed: number;
+  completionPercentage: number;
+  averageProgress: number;
+  seats: { seatId: string; progressPercentage: number }[];
 };
 
 export type Seat = {

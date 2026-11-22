@@ -1,6 +1,7 @@
 import { api } from "@/lib/api/client";
 import type { Period } from "@/lib/date-range";
 import type {
+  CatalogCourse,
   InvitationSummary,
   MemberActivityStatus,
   MemberProgress,
@@ -22,6 +23,7 @@ import type {
   PurchaseCatalog,
   PurchaseCheckout,
   PurchaseDetail,
+  PurchaseProgress,
   PurchaseQuote,
   RedeemInviteCodeResponse,
   RefundRequestReason,
@@ -144,6 +146,14 @@ export const organizationsApi = {
 
   purchase: (orgId: string, purchaseId: string) =>
     api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}`),
+
+  /** How the people of a purchase are doing in its course (completed, rate, average progress). */
+  purchaseProgress: (orgId: string, purchaseId: string) =>
+    api<PurchaseProgress>(`/organizations/${orgId}/purchases/${purchaseId}/progress`),
+
+  /** The purchase's course as the buy screen showed it, from the version that was bought. */
+  purchasedCourse: (orgId: string, purchaseId: string) =>
+    api<CatalogCourse>(`/organizations/${orgId}/purchases/${purchaseId}/course`),
 
   createPurchase: (
     orgId: string,
