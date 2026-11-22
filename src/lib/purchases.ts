@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ApiError } from "@/lib/api/client";
 import type {
   Purchase,
   PurchaseStatus,
@@ -263,4 +264,15 @@ export function signsWithin(
 ): number {
   if (days <= 0) return 0;
   return Math.min(signCount, Math.floor((days * minutesPerDay) / minutesPerSign));
+}
+
+/**
+ * Why the back-office could not resolve a refund request. Seats someone already accepted are never
+ * refunded from Signa (only Mercado Pago refunds and chargebacks revoke them), so the API refuses.
+ */
+export function refundResolveErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.status === 400 && /accepted/i.test(error.message)) {
+    return "No se puede reembolsar: al menos un invitado ya aceptó su cupo.";
+  }
+  return "No pudimos guardar los cambios. Probá de nuevo.";
 }

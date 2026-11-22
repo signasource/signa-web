@@ -100,7 +100,11 @@ export default function PrivacyPage() {
           pueden ver en el panel web: tu nombre, apellido, email y foto de perfil (si la cargaste),
           tu estado de membresía, tu progreso en los cursos contratados, tu última actividad, el
           módulo que estás cursando, tus aciertos en los ejercicios, las señas que aprendiste, tu
-          racha, tus minutos de aprendizaje y tus días activos.
+          racha, tus minutos de aprendizaje, tus días activos y cuándo vence tu acceso a cada curso.
+        </p>
+        <p>
+          Desde el panel también pueden enviarte por email un recordatorio para que retomes la
+          capacitación, como mucho uno por día.
         </p>
         <p>
           No ven tus amistades ni tus compras, y los resultados de los ejercicios solo incluyen los

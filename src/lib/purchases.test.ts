@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { ApiError } from "@/lib/api/client";
 import type { Purchase } from "@/lib/api/types";
 import {
   daysToComplete,
+  refundResolveErrorMessage,
   signsWithin,
   acceptedSeats,
   canWithdraw,
@@ -294,5 +296,24 @@ describe("signsWithin", () => {
     expect(signsWithin(60, 200)).toBe(150);
     expect(signsWithin(60, 40)).toBe(40);
     expect(signsWithin(0, 40)).toBe(0);
+  });
+});
+
+describe("refundResolveErrorMessage", () => {
+  it("explains a refund refused because a seat was accepted", () => {
+    expect(
+      refundResolveErrorMessage(
+        new ApiError(
+          400,
+          "This purchase cannot be refunded: an invitee already accepted their seat",
+        ),
+      ),
+    ).toBe("No se puede reembolsar: al menos un invitado ya aceptó su cupo.");
+  });
+
+  it("falls back to a generic message", () => {
+    expect(refundResolveErrorMessage(new ApiError(500, "boom"))).toBe(
+      "No pudimos guardar los cambios. Probá de nuevo.",
+    );
   });
 });

@@ -51,7 +51,6 @@ const PATHS = {
     </>
   ),
   chevronForward: <path d="M9 5l7 7-7 7" />,
-  close: <path d="M6 6l12 12M18 6L6 18" />,
   mail: (
     <>
       <rect x="3" y="5" width="18" height="14" rx="2.5" />
@@ -65,6 +64,7 @@ const PATHS = {
     </>
   ),
   add: <path d="M12 5v14M5 12h14" />,
+  close: <path d="M6 6l12 12M18 6L6 18" />,
   copy: (
     <>
       <rect x="8" y="8" width="12" height="12" rx="2.5" />

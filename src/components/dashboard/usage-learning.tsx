@@ -418,7 +418,9 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
                   hiding them left that average below every bar shown. Non-evaluable blocks
                   (INTRODUCE_SIGN, INVISIBLE_SIGNS) never reach this list. */}
               {[...b.accuracy.byBlockType]
-                .filter((bt) => bt.type !== "INVISIBLE_SIGNS" && bt.type !== "INTRODUCE_SIGN")
+                .filter((bt) =>
+                  ["CONTEXT_RESPONSE", "SELECT_SIGN", "SELECT_MEANING", "MATCH"].includes(bt.type),
+                )
                 .sort((x, y) => x.accuracyPercent - y.accuracyPercent)
                 .map((bt) => (
                   <li key={bt.type} className="flex flex-col gap-1.5">

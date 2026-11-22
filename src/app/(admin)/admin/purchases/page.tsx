@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/admin";
 import { purchaseFromSearch } from "@/lib/admin-purchase-link";
 import { refundReasonLabel } from "@/lib/refund-reasons";
+import { refundResolveErrorMessage } from "@/lib/purchases";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -1436,6 +1437,15 @@ function RefundDetailView({
               />
             </label>
           </div>
+          {update.error ? (
+            <p
+              role="alert"
+              className="px-4 pt-3 text-[13px]"
+              style={{ color: "var(--color-danger)" }}
+            >
+              {refundResolveErrorMessage(update.error)}
+            </p>
+          ) : null}
           <div className="flex gap-2 border-t p-4" style={{ borderColor: "var(--color-border)" }}>
             {!resolved && (
               <button

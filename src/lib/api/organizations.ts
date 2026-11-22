@@ -1,13 +1,14 @@
 import { api } from "@/lib/api/client";
 import type { Period } from "@/lib/date-range";
 import type {
+  InvitationSummary,
   MemberActivityStatus,
   MemberProgress,
   MemberSort,
   MemberStatus,
   ModuleStats,
   MyOrganization,
-  OrganizationActivity,
+  OrganizationHome,
   OrganizationInvitation,
   OrganizationMemberSummary,
   OrganizationOverview,
@@ -15,6 +16,7 @@ import type {
   ParticipantActivity,
   ParticipantSummary,
   ParticipantTraining,
+  ParticipantReminder,
   Purchase,
   PaymentSync,
   PurchaseCatalog,
@@ -38,7 +40,7 @@ export const organizationsApi = {
     orgName: string;
     cuit: string;
     contactEmail: string;
-    contactPhone?: string;
+    contactPhone: string;
     adminName: string;
     adminPassword: string;
   }) =>
@@ -58,10 +60,8 @@ export const organizationsApi = {
       query: { courseId: params.courseId, ...periodQuery(params.period) },
     }),
 
-  activity: (orgId: string, params: { courseId?: string; period?: Period }) =>
-    api<OrganizationActivity>(`/organizations/${orgId}/activity`, {
-      query: { courseId: params.courseId, ...periodQuery(params.period) },
-    }),
+  home: (orgId: string, courseId?: string) =>
+    api<OrganizationHome>(`/organizations/${orgId}/home`, { query: { courseId } }),
 
   members: (
     orgId: string,
@@ -120,6 +120,11 @@ export const organizationsApi = {
   member: (orgId: string, userId: string, period?: Period) =>
     api<MemberProgress>(`/organizations/${orgId}/members/${userId}`, {
       query: periodQuery(period),
+    }),
+
+  remindMember: (orgId: string, userId: string) =>
+    api<ParticipantReminder>(`/organizations/${orgId}/members/${userId}/reminders`, {
+      method: "POST",
     }),
 
   removeMember: (orgId: string, userId: string) =>
@@ -183,6 +188,11 @@ export const organizationsApi = {
 
   invitations: (orgId: string, courseId?: string) =>
     api<OrganizationInvitation[]>(`/organizations/${orgId}/invitations`, {
+      query: { courseId },
+    }),
+
+  invitationSummary: (orgId: string, courseId?: string) =>
+    api<InvitationSummary>(`/organizations/${orgId}/invitations/summary`, {
       query: { courseId },
     }),
 

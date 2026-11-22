@@ -12,6 +12,7 @@ import { useAuth } from "@/features/auth/auth-context";
 import { mapAuthError } from "@/lib/auth-errors";
 import { organizationsApi } from "@/lib/api/organizations";
 import { formatCuit, validateCuit } from "@/lib/cuit";
+import { validatePhone } from "@/lib/phone";
 
 type Tab = "login" | "registro";
 
@@ -29,7 +30,11 @@ const registroSchema = z
       .refine((v) => validateCuit(v), "El CUIT no es válido."),
     adminName: z.string().min(2, "Ingresá tu nombre completo."),
     email: z.string().email("Ingresá un email válido."),
-    telefono: z.string().optional(),
+    telefono: z
+      .string()
+      .trim()
+      .min(1, "Ingresá un teléfono de contacto.")
+      .refine((v) => validatePhone(v), "El teléfono no es válido."),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
     confirmPassword: z.string().min(1, "Confirmá tu contraseña."),
   })
@@ -134,7 +139,7 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
         orgName: values.organizacion,
         cuit: values.cuit,
         contactEmail: values.email,
-        contactPhone: values.telefono || undefined,
+        contactPhone: values.telefono,
         adminName: values.adminName,
         adminPassword: values.password,
       });
@@ -199,7 +204,7 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
       </label>
 
       <label className={LABEL}>
-        Teléfono <span className="text-text-muted font-normal">(opcional)</span>
+        Teléfono
         <input
           {...register("telefono")}
           type="tel"
@@ -207,6 +212,7 @@ function RegistroForm({ onSuccess }: { onSuccess: () => void }) {
           placeholder="+54 11 1234-5678"
           className={INPUT}
         />
+        {errors.telefono && <span className={ERROR}>{errors.telefono.message}</span>}
       </label>
 
       <p className="text-text-muted text-[13px] text-pretty">
