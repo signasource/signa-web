@@ -72,10 +72,20 @@ export function useLearningQuery(
   });
 }
 
-export function useGamificationQuery(range: DateTimeRange | null, live: boolean) {
+/** Onboarding survey answers of the window's signups (the "Usuarios" tab). */
+export function useOnboardingQuery(range: DateTimeRange | null, live: boolean) {
   return useQuery({
-    queryKey: ["admin", "metrics", "gamification", range?.from, range?.to],
-    queryFn: () => metricsApi.gamification({ from: range!.from, to: range!.to }),
+    queryKey: ["admin", "metrics", "onboarding", range?.from, range?.to],
+    queryFn: () => metricsApi.onboarding({ from: range!.from, to: range!.to }),
+    ...options(range, live),
+  });
+}
+
+/** The "Negocio" sales detail: purchases of the window, refund reasons and course rankings. */
+export function useSalesQuery(range: DateTimeRange | null, live: boolean) {
+  return useQuery({
+    queryKey: ["admin", "metrics", "sales", range?.from, range?.to],
+    queryFn: () => metricsApi.sales({ from: range!.from, to: range!.to }),
     ...options(range, live),
   });
 }
