@@ -46,7 +46,21 @@ export default function PurchasesPage() {
 
   // Build the course list from purchases so refunded courses remain selectable.
   const purchaseCourses = data
-    ? [...new Map(data.map((p) => [p.courseId, { id: p.courseId, name: p.courseName, description: null, coverUrl: null, isFree: false, signLanguageCode: "LSA" }])).values()]
+    ? [
+        ...new Map(
+          data.map((p) => [
+            p.courseId,
+            {
+              id: p.courseId,
+              name: p.courseName,
+              description: null,
+              coverUrl: null,
+              isFree: false,
+              signLanguageCode: "LSA",
+            },
+          ]),
+        ).values(),
+      ]
     : undefined;
   const { courseId } = useCourseFilter(purchaseCourses);
 
