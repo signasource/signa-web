@@ -421,15 +421,6 @@ export default function PurchaseDetailPage() {
                 }
               />
               <StatCard
-                label="Tasa de finalización"
-                value={
-                  progress.data && progress.data.participants > 0
-                    ? `${progress.data.completionPercentage}%`
-                    : "—"
-                }
-                hint="Completaron ÷ personas en el curso"
-              />
-              <StatCard
                 label="Progreso promedio"
                 value={
                   progress.data && progress.data.started > 0
@@ -440,6 +431,14 @@ export default function PurchaseDetailPage() {
                   progress.data
                     ? `De ${progress.data.started} ${progress.data.started === 1 ? "persona que empezó" : "personas que empezaron"}`
                     : "De quienes empezaron"
+                }
+              />
+              <StatCard
+                label="Tasa de finalización"
+                value={
+                  progress.data && progress.data.participants > 0
+                    ? `${progress.data.completionPercentage}%`
+                    : "—"
                 }
               />
             </div>

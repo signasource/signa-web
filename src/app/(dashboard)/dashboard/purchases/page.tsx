@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
+import { CourseSelect } from "@/components/dashboard/course-select";
 import { Icon } from "@/components/dashboard/icons";
 import { PeriodSelect } from "@/components/dashboard/period-select";
 import { PurchaseStatusPill, RefundRequestPill } from "@/components/dashboard/purchase-status";
@@ -14,6 +15,7 @@ import {
   headerButton,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
+import { useCourseFilter } from "@/features/dashboard/use-course-filter";
 import { organizationsApi } from "@/lib/api/organizations";
 import type { PurchaseStatus } from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
@@ -32,6 +34,7 @@ export default function PurchasesPage() {
   const { organization } = useAuth();
   const orgId = organization?.id;
   const canBuy = organization?.status === "ACTIVE";
+  const { courseId } = useCourseFilter();
   const [status, setStatus] = useState<PurchaseStatus | "ALL">("ALL");
   const [period, setPeriod] = useState<Period>(null);
   const [direction, setDirection] = useState<"asc" | "desc">("desc");
@@ -49,12 +52,13 @@ export default function PurchasesPage() {
     </Link>
   ) : null;
 
-  const rows = data ? visiblePurchases(data, { status, period, direction }) : [];
+  const rows = data ? visiblePurchases(data, { courseId, status, period, direction }) : [];
 
   return (
     <section className="flex flex-col gap-5">
       <PageHeading
         title="Compras"
+        count={data && data.length > 0 ? rows.length : undefined}
         subtitle="Cada compra es independiente: tiene sus cupos, su plazo de invitación y sus fechas de acceso."
       >
         {buy}
@@ -95,7 +99,8 @@ export default function PurchasesPage() {
                 </button>
               ))}
             </div>
-            <div className="ml-auto">
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <CourseSelect />
               <PeriodSelect
                 value={period}
                 onChange={setPeriod}
@@ -136,7 +141,10 @@ export default function PurchasesPage() {
                 <Link
                   key={p.id}
                   href={`/dashboard/purchases/${p.id}`}
-                  className={cn(GRID, "border-fill hover:bg-background border-b py-3.5")}
+                  className={cn(
+                    GRID,
+                    "border-fill hover:bg-background border-b py-3.5 last:border-b-0",
+                  )}
                 >
                   <span className="text-text-muted text-sm">{formatDate(p.createdAt)}</span>
                   <span className="font-display text-[15px] font-bold">{p.courseName}</span>
@@ -161,9 +169,6 @@ export default function PurchasesPage() {
               ) : null}
             </div>
           </div>
-          <p className="text-text-muted text-sm font-semibold">
-            {rows.length} {rows.length === 1 ? "compra" : "compras"}
-          </p>
         </>
       )}
     </section>

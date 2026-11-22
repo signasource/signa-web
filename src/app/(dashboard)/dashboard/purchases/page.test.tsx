@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { organizationsApi } from "@/lib/api/organizations";
 import type { Purchase } from "@/lib/api/types";
 import PurchasesPage from "./page";
@@ -9,6 +9,19 @@ vi.mock("@/features/auth/auth-context", () => ({
   useAuth: () => ({ organization: { id: "org1", name: "Hospital", status: "ACTIVE" } }),
 }));
 vi.mock("@/lib/api/organizations", () => ({ organizationsApi: { purchases: vi.fn() } }));
+const filter = vi.hoisted(() => ({ courseId: undefined as string | undefined }));
+const COURSES = [
+  { id: "salud", name: "LSA Salud" },
+  { id: "edu", name: "Curso Educación" },
+];
+vi.mock("@/features/dashboard/use-course-filter", () => ({
+  useCourseFilter: () => ({
+    courses: COURSES,
+    course: COURSES.find((c) => c.id === filter.courseId) ?? null,
+    courseId: filter.courseId,
+    setCourseId: vi.fn(),
+  }),
+}));
 
 function purchase(overrides: Partial<Purchase>): Purchase {
   return {
@@ -46,15 +59,22 @@ function purchase(overrides: Partial<Purchase>): Purchase {
 }
 
 const LIST = [
-  purchase({ id: "a", courseName: "LSA Salud", createdAt: "2026-11-10T15:00:00Z" }),
+  purchase({
+    id: "a",
+    courseId: "salud",
+    courseName: "LSA Salud",
+    createdAt: "2026-11-10T15:00:00Z",
+  }),
   purchase({
     id: "b",
+    courseId: "edu",
     courseName: "Curso Educación",
     status: "REFUNDED",
     createdAt: "2026-11-01T12:00:00Z",
   }),
   purchase({
     id: "c",
+    courseId: "salud",
     courseName: "En la cafetería",
     status: "PENDING_PAYMENT",
     paidAt: null,
@@ -71,7 +91,12 @@ function renderPage() {
   );
 }
 
+const heading = () => screen.getByRole("heading", { level: 1 });
+
 describe("PurchasesPage", () => {
+  beforeEach(() => {
+    filter.courseId = undefined;
+  });
   afterEach(cleanup);
 
   it("lists only what each purchase is, newest first", async () => {
@@ -91,7 +116,9 @@ describe("PurchasesPage", () => {
     for (const gone of ["Aceptaron", "Sin aceptar", "Vencidas"]) {
       expect(screen.queryByText(gone)).not.toBeInTheDocument();
     }
-    expect(screen.getByText("3 compras")).toBeInTheDocument();
+    // The count sits next to the title, not under the table.
+    expect(heading()).toHaveTextContent("Compras · 3");
+    expect(screen.queryByText("3 compras")).not.toBeInTheDocument();
   });
 
   it("filters by payment state and sorts by purchase date", async () => {
@@ -102,7 +129,7 @@ describe("PurchasesPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reembolsado" }));
     expect(screen.getByText("Curso Educación")).toBeInTheDocument();
     expect(screen.queryByText("LSA Salud")).not.toBeInTheDocument();
-    expect(screen.getByText("1 compra")).toBeInTheDocument();
+    expect(heading()).toHaveTextContent("Compras · 1");
 
     fireEvent.click(screen.getByRole("button", { name: "Pendiente" }));
     expect(screen.getByText("En la cafetería")).toBeInTheDocument();
@@ -130,5 +157,24 @@ describe("PurchasesPage", () => {
     await screen.findByText("LSA Salud");
     fireEvent.click(screen.getByRole("button", { name: "Reembolsado" }));
     expect(screen.getByText("No hay compras con estos filtros.")).toBeInTheDocument();
+  });
+
+  it("filters by the course picked in the header", async () => {
+    filter.courseId = "salud";
+    vi.mocked(organizationsApi.purchases).mockResolvedValue(LIST);
+    renderPage();
+    expect(
+      await screen.findByText("LSA Salud", { selector: "span.font-display" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("En la cafetería")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Curso Educación", { selector: "span.font-display" }),
+    ).not.toBeInTheDocument();
+    expect(heading()).toHaveTextContent("Compras · 2");
+    // The course chip is in the header.
+    expect(screen.getByRole("button", { name: /LSA Salud/ })).toHaveAttribute(
+      "aria-haspopup",
+      "listbox",
+    );
   });
 });

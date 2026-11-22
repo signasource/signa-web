@@ -486,6 +486,18 @@ describe("PurchaseDetailPage", () => {
     expect(await screen.findByText("25%")).toBeInTheDocument();
     expect(screen.getByText("Completaron")).toBeInTheDocument();
     expect(screen.getByText("de 4 personas en el curso")).toBeInTheDocument();
+    // The rate has no hint, and it comes last: Completaron, Progreso promedio, Tasa.
+    expect(screen.queryByText(/personas completaron/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Completaron ÷ personas en el curso")).not.toBeInTheDocument();
+    const order = ["Completaron", "Progreso promedio", "Tasa de finalización"].map((t) =>
+      screen.getByText(t, { exact: true }),
+    );
+    expect(
+      order[0]!.compareDocumentPosition(order[1]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      order[1]!.compareDocumentPosition(order[2]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(screen.getByText("60%")).toBeInTheDocument();
     expect(screen.getByText("De 3 personas que empezaron")).toBeInTheDocument();
     expect(screen.getByText(/Avance 80%/)).toBeInTheDocument();

@@ -130,20 +130,6 @@ export type MemberProgress = {
   avatarUrl: string | null;
 };
 
-export type ModuleStats = {
-  courseId: string;
-  courseName: string;
-  topicId: string;
-  title: string;
-  order: number;
-  totalLessons: number;
-  participantsCompleted: number;
-  participantsInProgress: number;
-  completionPercentage: number;
-  exerciseAttempts: number;
-  correctPercentage: number;
-};
-
 /** `REFUNDED`: paid and then given back (withdrawal, refund in Mercado Pago or chargeback). */
 export type PurchaseStatus = "PENDING_PAYMENT" | "PAID" | "CANCELLED" | "REFUNDED";
 export type SeatStatus =

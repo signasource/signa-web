@@ -292,19 +292,26 @@ export function argentineDay(iso: string): string {
 }
 
 /**
- * The purchases the list shows: by payment state, bought (created) within the period — Argentine
- * days, both ends included — and sorted by purchase date. Does not touch the list it gets.
+ * The purchases the list shows: by course, by payment state, bought (created) within the period —
+ * Argentine days, both ends included — and sorted by purchase date. Does not touch the list it gets.
  */
 export function visiblePurchases(
   purchases: Purchase[],
   {
+    courseId,
     status,
     period,
     direction,
-  }: { status: PurchaseStatus | "ALL"; period: Period; direction: "asc" | "desc" },
+  }: {
+    courseId?: string;
+    status: PurchaseStatus | "ALL";
+    period: Period;
+    direction: "asc" | "desc";
+  },
 ): Purchase[] {
   const sign = direction === "asc" ? 1 : -1;
   return purchases
+    .filter((p) => !courseId || p.courseId === courseId)
     .filter((p) => status === "ALL" || p.status === status)
     .filter((p) => {
       if (!period) return true;

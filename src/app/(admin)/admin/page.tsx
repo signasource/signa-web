@@ -17,6 +17,7 @@ import {
   DEFAULT_SELECTION,
   deriveStepSeconds,
   resolveRange,
+  selectionWindow,
   type RangeSelection,
 } from "@/lib/datetime-range";
 import { ARGENTINA_TIMEZONE } from "@/lib/timezone";
@@ -104,18 +105,12 @@ export default function AdminMetricasPage() {
   // A time window picked by dragging a chart (or clicking a day bar) becomes the global filter.
   // Tiny selections are widened to a minimum span so focusing on a spike never reads as "sin datos".
   const onSelectRange: RangeSelect = (fromSeconds, toSeconds) => {
-    let from = Math.min(fromSeconds, toSeconds);
-    let to = Math.max(fromSeconds, toSeconds);
-    if (to - from < MIN_SPAN_SECONDS) {
-      const mid = (from + to) / 2;
-      from = Math.round(mid - MIN_SPAN_SECONDS / 2);
-      to = Math.round(mid + MIN_SPAN_SECONDS / 2);
-    }
-    const nowSec = Math.floor(Date.now() / 1000);
-    if (to > nowSec) {
-      from -= to - nowSec;
-      to = nowSec;
-    }
+    const { from, to } = selectionWindow(
+      fromSeconds,
+      toSeconds,
+      Math.floor(Date.now() / 1000),
+      MIN_SPAN_SECONDS,
+    );
     changeSelection({
       kind: "custom",
       from: new Date(from * 1000).toISOString(),

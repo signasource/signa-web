@@ -7,7 +7,6 @@ import type {
   MemberProgress,
   MemberSort,
   MemberStatus,
-  ModuleStats,
   MyOrganization,
   OrganizationHome,
   OrganizationInvitation,
@@ -131,11 +130,6 @@ export const organizationsApi = {
 
   removeMember: (orgId: string, userId: string) =>
     api(`/organizations/${orgId}/members/${userId}`, { method: "DELETE" }),
-
-  modules: (orgId: string, params: { courseId?: string; period?: Period }) =>
-    api<ModuleStats[]>(`/organizations/${orgId}/modules`, {
-      query: { courseId: params.courseId, ...periodQuery(params.period) },
-    }),
 
   catalog: () => api<PurchaseCatalog>("/organizations/catalog", { anonymous: true }),
 
