@@ -4,6 +4,11 @@ import { OrgTrigger } from "@/components/landing/org-trigger";
 
 const THEMATIC = [
   {
+    icon: "star",
+    title: "Curso base - Parte 2",
+    body: "Continuá tu aprendizaje con más vocabulario esencial.",
+  },
+  {
     icon: "danger",
     title: "La salud",
     body: "Para equipos que atienden pacientes.",
@@ -17,11 +22,6 @@ const THEMATIC = [
     icon: "coffee",
     title: "En la cafetería",
     body: "Para bares, restaurantes y espacios gastronómicos.",
-  },
-  {
-    icon: "star",
-    title: "Curso base - Parte 2",
-    body: "Continuá tu aprendizaje con más vocabulario esencial.",
   },
 ] as const;
 
