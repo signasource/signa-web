@@ -55,6 +55,14 @@ export function useBusinessQuery(
   });
 }
 
+export function useGamificationQuery(range: DateTimeRange | null, live: boolean) {
+  return useQuery({
+    queryKey: ["admin", "metrics", "gamification", range?.from, range?.to],
+    queryFn: () => metricsApi.gamification({ from: range!.from, to: range!.to }),
+    ...options(range, live),
+  });
+}
+
 export function useLearningQuery(
   range: DateTimeRange | null,
   live: boolean,
@@ -68,14 +76,6 @@ export function useLearningQuery(
         to: range!.to,
         courseIds: courseIds.length > 0 ? courseIds : undefined,
       }),
-    ...options(range, live),
-  });
-}
-
-export function useGamificationQuery(range: DateTimeRange | null, live: boolean) {
-  return useQuery({
-    queryKey: ["admin", "metrics", "gamification", range?.from, range?.to],
-    queryFn: () => metricsApi.gamification({ from: range!.from, to: range!.to }),
     ...options(range, live),
   });
 }

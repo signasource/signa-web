@@ -20,7 +20,7 @@ import {
   useGamificationQuery,
   useLearningQuery,
 } from "@/components/dashboard/usage-queries";
-import type { LearningMetrics, SignDifficulty } from "@/lib/api/metrics";
+import type { SignDifficulty } from "@/lib/api/metrics";
 import type { DateTimeRange } from "@/lib/datetime-range";
 import { cn } from "@/lib/utils";
 
@@ -199,7 +199,7 @@ function SortTh({
         type="button"
         onClick={() => onSort(col)}
         className={cn(
-          "inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-text",
+          "hover:text-text inline-flex cursor-pointer items-center gap-1 transition-colors",
           active ? "text-text" : "text-text-muted",
           align === "right" && "flex-row-reverse",
         )}
@@ -225,7 +225,7 @@ function signSort(
   return [...signs].sort((a, b) => {
     const mult = dir === "asc" ? 1 : -1;
     if (col === "sign") return mult * a.sign.localeCompare(b.sign, "es");
-    if (col === "precision") return mult * ((100 - a.errorPercent) - (100 - b.errorPercent));
+    if (col === "precision") return mult * (100 - a.errorPercent - (100 - b.errorPercent));
     if (col === "evaluated") return mult * (a.evaluated - b.evaluated);
     return mult * ((reportsBySign.get(a.sign) ?? 0) - (reportsBySign.get(b.sign) ?? 0));
   });
@@ -257,13 +257,17 @@ function SignAnalysisModal({
 
   function handleSort(col: SignSortKey) {
     if (col === sortCol) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else { setSortCol(col); setSortDir("asc"); }
+    else {
+      setSortCol(col);
+      setSortDir("asc");
+    }
     setPage(0);
   }
 
   const sorted = signSort(signs, sortCol, sortDir, reportsBySign);
   const totalPages = Math.ceil(sorted.length / MODAL_PAGE_SIZE);
-  const paginated = totalPages > 1 ? sorted.slice(page * MODAL_PAGE_SIZE, (page + 1) * MODAL_PAGE_SIZE) : sorted;
+  const paginated =
+    totalPages > 1 ? sorted.slice(page * MODAL_PAGE_SIZE, (page + 1) * MODAL_PAGE_SIZE) : sorted;
 
   return createPortal(
     <div
@@ -279,7 +283,9 @@ function SignAnalysisModal({
       >
         <div className="border-border flex items-center justify-between border-b p-4">
           <div>
-            <h2 className="font-display text-lg font-extrabold tracking-tight">Análisis de contenido</h2>
+            <h2 className="font-display text-lg font-extrabold tracking-tight">
+              Análisis de contenido
+            </h2>
             <p className="text-text-muted text-xs">{NUMBER.format(signs.length)} señas</p>
           </div>
           <button
@@ -295,10 +301,37 @@ function SignAnalysisModal({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="text-text-muted text-left text-xs font-bold">
-                <SortTh label="Seña" col="sign" currentCol={sortCol} currentDir={sortDir} onSort={handleSort} />
-                <SortTh label="Intentos" col="evaluated" currentCol={sortCol} currentDir={sortDir} align="right" onSort={handleSort} />
-                <SortTh label="Precisión" col="precision" currentCol={sortCol} currentDir={sortDir} align="right" onSort={handleSort} />
-                <SortTh label="Reportes" col="reports" currentCol={sortCol} currentDir={sortDir} align="right" onSort={handleSort} />
+                <SortTh
+                  label="Seña"
+                  col="sign"
+                  currentCol={sortCol}
+                  currentDir={sortDir}
+                  onSort={handleSort}
+                />
+                <SortTh
+                  label="Intentos"
+                  col="evaluated"
+                  currentCol={sortCol}
+                  currentDir={sortDir}
+                  align="right"
+                  onSort={handleSort}
+                />
+                <SortTh
+                  label="Precisión"
+                  col="precision"
+                  currentCol={sortCol}
+                  currentDir={sortDir}
+                  align="right"
+                  onSort={handleSort}
+                />
+                <SortTh
+                  label="Reportes"
+                  col="reports"
+                  currentCol={sortCol}
+                  currentDir={sortDir}
+                  align="right"
+                  onSort={handleSort}
+                />
               </tr>
             </thead>
             <tbody>
@@ -321,10 +354,17 @@ function SignAnalysisModal({
                     <td className="py-2.5 pl-3 text-right font-bold">
                       {NUMBER.format(s.evaluated)}
                     </td>
-                    <td className={cn("py-2.5 pl-3 text-right", accuracyClass(100 - s.errorPercent))}>
+                    <td
+                      className={cn("py-2.5 pl-3 text-right", accuracyClass(100 - s.errorPercent))}
+                    >
                       {pct0(100 - s.errorPercent)}
                     </td>
-                    <td className={cn("py-2.5 pl-3 text-right", reports >= 3 ? "text-danger font-extrabold" : "font-bold")}>
+                    <td
+                      className={cn(
+                        "py-2.5 pl-3 text-right",
+                        reports >= 3 ? "text-danger font-extrabold" : "font-bold",
+                      )}
+                    >
                       {NUMBER.format(reports)}
                     </td>
                   </tr>
@@ -343,7 +383,7 @@ function SignAnalysisModal({
                 type="button"
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page === 0}
-                className="text-text-muted hover:bg-fill hover:text-text disabled:opacity-30 grid size-8 cursor-pointer place-items-center rounded-lg disabled:cursor-default"
+                className="text-text-muted hover:bg-fill hover:text-text grid size-8 cursor-pointer place-items-center rounded-lg disabled:cursor-default disabled:opacity-30"
                 aria-label="Página anterior"
               >
                 <Icon name="chevronBack" className="size-4" />
@@ -352,7 +392,7 @@ function SignAnalysisModal({
                 type="button"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page === totalPages - 1}
-                className="text-text-muted hover:bg-fill hover:text-text disabled:opacity-30 grid size-8 cursor-pointer place-items-center rounded-lg disabled:cursor-default"
+                className="text-text-muted hover:bg-fill hover:text-text grid size-8 cursor-pointer place-items-center rounded-lg disabled:cursor-default disabled:opacity-30"
                 aria-label="Página siguiente"
               >
                 <Icon name="chevronForward" className="size-4" />
@@ -398,9 +438,7 @@ function SignAnalysis({
     <Card className="flex min-w-0 flex-col gap-3">
       <CardTitle>Análisis de contenido</CardTitle>
       {signs.length === 0 ? (
-        <p className="text-text-muted text-sm">
-          Sin señas con muestra suficiente en el período.
-        </p>
+        <p className="text-text-muted text-sm">Sin señas con muestra suficiente en el período.</p>
       ) : (
         <>
           <div className="overflow-x-auto">
@@ -494,7 +532,11 @@ function SignAnalysis({
         </>
       )}
       {modalOpen ? (
-        <SignAnalysisModal signs={signs} reportsBySign={reportsBySign} onClose={() => setModalOpen(false)} />
+        <SignAnalysisModal
+          signs={signs}
+          reportsBySign={reportsBySign}
+          onClose={() => setModalOpen(false)}
+        />
       ) : null}
     </Card>
   );
@@ -627,7 +669,7 @@ function AchievementsTable({ range, live }: { range: DateTimeRange; live: boolea
     <Card className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2.5">
         <CardTitle>Sistema de logros</CardTitle>
-        <span className="text-text-muted text-[11px] font-bold uppercase tracking-wide">
+        <span className="text-text-muted text-[11px] font-bold tracking-wide uppercase">
           Independiente del curso
         </span>
         <InfoPopover metric="achievements_least" className="ml-auto" />
@@ -645,7 +687,7 @@ function AchievementsTable({ range, live }: { range: DateTimeRange; live: boolea
                     <button
                       type="button"
                       onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-                      className="text-text-muted hover:text-text inline-flex flex-row-reverse cursor-pointer items-center gap-1 transition-colors"
+                      className="text-text-muted hover:text-text inline-flex cursor-pointer flex-row-reverse items-center gap-1 transition-colors"
                     >
                       <Icon
                         name={sortDir === "asc" ? "arrowUp" : "arrowDown"}
@@ -664,9 +706,7 @@ function AchievementsTable({ range, live }: { range: DateTimeRange; live: boolea
                   return (
                     <tr key={a.name} className="border-fill border-t">
                       <td className="py-2.5 font-extrabold">{a.name}</td>
-                      <td className="py-2.5 pl-3 text-right font-bold">
-                        {NUMBER.format(a.count)}
-                      </td>
+                      <td className="py-2.5 pl-3 text-right font-bold">{NUMBER.format(a.count)}</td>
                       <td
                         className={cn(
                           "py-2.5 pl-3 text-right",
