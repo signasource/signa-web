@@ -81,14 +81,7 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   duración de sesión), the habit & gamification section (`usage-gamification.tsx` deleted) and
   everything else crossed out in the sheet. The survey has its own loading / error states; the two
   series still render if it fails.
-- **Aprendizaje** (`usage-learning.tsx`) — "¿La gente aprende LSA?": lesson flow (iniciadas/completadas +
-  tasa de finalización) and exercise flow (realizados, tasa de éxito, intentos promedio); the **evolución
-  de aciertos** daily chart beside precision by exercise type (every evaluated type, camera ones included — they are part of "Tasa de éxito", and hiding them left that average below every bar), then "Contenido a revisar". The funnel and
-  sign reports moved to Resumen (historical, and they ignore the course picker); completion (per course, worst-first), enrollment-status
-  donut, accuracy (global + per block type, worst-first), hardest lessons; a **dificultad y calidad** section
-  — lessons by abandonment and exercises by error rate / retries (`ExerciseRanking`); vocabulary, sign-report
-  resolution + most-reported signs, imports. Timing-per-lesson/exercise and weighted avg progress are not yet
-  calculable (no stored timing) and are intentionally omitted.
+- **Aprendizaje** (`usage-learning.tsx`) — "¿La gente aprende LSA?": a course selector, then one KPI card — **Tasa de precisión** (`exercise_success_rate`, period-over-period delta, no hint text); a two-column grid with **Análisis de contenido** (signs only, sortable columns: Seña / Precisión / Reportes — reports joined from `l.reports.mostReportedPending` by sign name) and **Precisión por tipo de ejercicio** (progress bars by block type); and a full-width **Sistema de logros** table (`useGamificationQuery`, merged from `topUnlocked` + `leastUnlocked`, sortable by count asc/desc, with a "Ver todos los logros →" button that opens a modal showing every achievement's unlock rate as a `ProgressBar`). Removed: `lesson_completion_rate` and `global_course_completion` KPI cards; lessons view in "Contenido a revisar" (renamed to "Análisis de contenido", signs only); `courseCompletion` and `abandonmentClass` helpers; `previous` query (no longer needed); `rate1`, `Link`, `courseLessonHref` imports.
 - **Infraestructura** (`usage-infra.tsx`) — services strip, then **Backend** directly (no sub-tabs). **Backend** grouped into **API · HTTP** (latency p95/p99, throughput, 4xx/5xx, slowest ops) and **Sistema y recursos** (CPU/mem host + containers, JVM heap/GC — collapsed). The recognition accuracy KPI (camera exercises) is shown in the Backend KPI row. Web / Landing and ML · reconocimiento sub-tabs were removed.
 
 `GoldenTile` (`golden-row.tsx`) is the headline tile that signals a metric's health at a glance, coloured success/warning/danger from the metric's `threshold`; today it is used by the Infraestructura perf tiles (`PerfGoldenTile` in `perf-panel.tsx`), while the other tabs open with `KpiCard`s (v3 layout below). Perf (Prometheus/Grafana)
@@ -117,8 +110,7 @@ panels only populate in production; the Infra tab says so, and shows "sin datos"
 - **Funnel** (`funnel.tsx`): `funnelPath` drops a step fewer people reach than a later one (reading-only
   lessons complete without exercises, which used to print "108% sigue"); every transition reads
   "↓ N% sigue" and the biggest drop is red ("· mayor caída").
-- **Aprendizaje**: single course picker, "Contenido a revisar" from
-  `lessonsToReview` (API: course, abandonment, accuracy, attempts ≥ 30, pending reports per lesson).
+- **Aprendizaje**: single course picker, "Análisis de contenido" (signs only, sortable: Seña/Precisión/Reportes), "Sistema de logros" full-width below (sortable, all-achievements modal with progress bars).
 - **Infraestructura**: Backend KPIs are window averages (peak in hint); 4xx+5xx and p95+p99 share a
   chart; slow ops table with per-endpoint req/s (`endpoint_rate` widget); "Sistema y recursos" collapsed (CPU, mem, containers, JVM heap — 5 panels).
 - Designer "Notas de diseño" boxes in the mockups are annotations, not UI.

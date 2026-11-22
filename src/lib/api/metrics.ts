@@ -265,6 +265,7 @@ export type LessonReview = {
 /** One sign ranked by difficulty across exercise blocks that test it. */
 export type SignDifficulty = {
   sign: string;
+  signId: string | null;
   evaluated: number;
   correct: number;
   errorPercent: number;

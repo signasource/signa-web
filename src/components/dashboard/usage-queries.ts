@@ -72,6 +72,14 @@ export function useLearningQuery(
   });
 }
 
+export function useGamificationQuery(range: DateTimeRange | null, live: boolean) {
+  return useQuery({
+    queryKey: ["admin", "metrics", "gamification", range?.from, range?.to],
+    queryFn: () => metricsApi.gamification({ from: range!.from, to: range!.to }),
+    ...options(range, live),
+  });
+}
+
 /** Onboarding survey answers of the window's signups (the "Usuarios" tab). */
 export function useOnboardingQuery(range: DateTimeRange | null, live: boolean) {
   return useQuery({

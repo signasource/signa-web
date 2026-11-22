@@ -538,9 +538,11 @@ export const METRICS = {
     goodWhen: "Una base sana con usuarios avanzando hacia los tramos altos.",
   },
   achievements_least: {
-    label: "Logros menos desbloqueados",
-    description: "Los logros que casi nadie consigue (incluye los que nadie desbloqueó).",
-    howComputed: "Ordenamos los logros por cantidad de desbloqueos, de menor a mayor.",
+    label: "Sistema de logros",
+    description:
+      "Logros desbloqueados en el período seleccionado, ordenados de menor a mayor. No varía según el curso — aplica a todos los usuarios.",
+    howComputed:
+      "Contamos los desbloqueos de cada logro activo dentro del período y los ordenamos de menor a mayor. Los logros que nadie desbloqueó en el período aparecen con 0.",
     goodWhen: "Permite detectar logros inalcanzables o mal calibrados.",
   },
   challenge_claim_rate: {
