@@ -5,7 +5,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/dashboard/icons";
 import { InfoPopover } from "@/components/dashboard/info-popover";
-import { KpiCard } from "@/components/dashboard/kpi-card";
 import {
   Card,
   CardTitle,
@@ -15,7 +14,7 @@ import {
   ProgressBar,
 } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
-import { pct0, pct1, rateOrNull } from "@/components/dashboard/usage-math";
+import { pct0, pct1 } from "@/components/dashboard/usage-math";
 import {
   useBusinessQuery,
   useGamificationQuery,
@@ -726,7 +725,6 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
 
   const l = learning.data;
   const b = business.data;
-  const prevSuccess = rateOrNull(l.exercises.previousCorrect, l.exercises.previousAttempted);
   const reportsBySign = new Map(
     (l.reports.mostReportedPending ?? []).map((r) => [r.meaning, r.count]),
   );
@@ -735,20 +733,8 @@ export function LearningTab({ range, live }: { range: DateTimeRange; live: boole
     <div className="flex flex-col gap-5">
       <CoursePicker courses={l.courses} value={selectedKey} onChange={setSelectedKey} />
 
-      {/* Row 1: accuracy KPI beside precision-by-type bars. */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <KpiCard
-          metric="exercise_success_rate"
-          label="Tasa de precisión"
-          className="justify-center"
-          value={l.exercises.attempted ? pct1(l.exercises.successPercent) : "—"}
-          toneValue={l.exercises.attempted ? l.exercises.successPercent : null}
-          delta={
-            l.exercises.attempted
-              ? { current: l.exercises.successPercent, previous: prevSuccess, mode: "pp" }
-              : undefined
-          }
-        />
+      {/* Row 1: precision by exercise type. */}
+      <div className="grid gap-4">
         <Card className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-1.5">
             <CardTitle>Precisión por tipo de ejercicio</CardTitle>
