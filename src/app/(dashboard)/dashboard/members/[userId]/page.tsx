@@ -104,11 +104,25 @@ function PillSelect({
         color: active ? "var(--color-primary-dark)" : "var(--color-text)",
       }}
     >
-      <span style={{ color: active ? "var(--color-primary)" : "var(--color-text-muted)", fontWeight: 500 }}>
+      <span
+        style={{
+          color: active ? "var(--color-primary)" : "var(--color-text-muted)",
+          fontWeight: 500,
+        }}
+      >
         {label}
       </span>
       <span>{value}</span>
-      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="12"
+        height="12"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M5 9l7 7 7-7" />
       </svg>
       <select
@@ -229,7 +243,11 @@ function TrainingTable({ courses, total }: { courses: CourseTraining[]; total: C
                 <SortButton label="CURSO" by="course" sort={sort} onSort={onSort} />
                 <PillSelect
                   label="Curso: "
-                  value={courseFilter === "ALL" ? "Todos" : (courses.find((c) => c.courseId === courseFilter)?.courseName ?? "Todos")}
+                  value={
+                    courseFilter === "ALL"
+                      ? "Todos"
+                      : (courses.find((c) => c.courseId === courseFilter)?.courseName ?? "Todos")
+                  }
                   active={courseFilter !== "ALL"}
                   ariaLabel="Filtrar por curso"
                   onChange={setCourseFilter}
