@@ -94,7 +94,7 @@ describe("MemberDetailPage", () => {
     }
   });
 
-  it("filters and sorts the course rows; the total row stays", async () => {
+  it("filters and sorts the course rows; the total follows what is shown", async () => {
     vi.mocked(organizationsApi.participantTraining).mockResolvedValue(TRAINING);
     renderPage();
     await screen.findByText("Ana Pérez");
@@ -103,13 +103,44 @@ describe("MemberDetailPage", () => {
     let rows = screen.getAllByRole("row");
     expect(rows).toHaveLength(3);
     expect(rows[1]).toHaveTextContent("LSA Salud");
+    expect(rows[2]).toHaveTextContent("Cursos mostrados");
+    expect(rows[2]).toHaveTextContent("40%");
+
+    // Only the pending invitation: the total is that, not the API's total for every course.
+    fireEvent.change(screen.getByLabelText("Filtrar por estado"), {
+      target: { value: "INVITATION_PENDING" },
+    });
+    rows = screen.getAllByRole("row");
+    expect(rows[2]).toHaveTextContent("Cursos mostrados");
+    expect(rows[2]).toHaveTextContent("Invitación pendiente");
+    expect(rows[2]).not.toHaveTextContent("40%");
 
     fireEvent.change(screen.getByLabelText("Filtrar por estado"), { target: { value: "ALL" } });
-    fireEvent.change(screen.getByLabelText("Filtrar por curso"), { target: { value: "zzz" } });
-    expect(screen.getByText("Ningún curso coincide con los filtros.")).toBeInTheDocument();
     expect(screen.getByText("Todos los cursos")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Filtrar por curso"), { target: { value: "" } });
+    // The course filter is a list of their courses, nothing to type.
+    const course = screen.getByLabelText("Filtrar por curso");
+    expect(
+      within(course)
+        .getAllByRole("option")
+        .map((o) => o.textContent),
+    ).toEqual(["Todos", "LSA Salud", "Educación"]);
+    fireEvent.change(course, { target: { value: "c1" } });
+    rows = screen.getAllByRole("row");
+    expect(rows).toHaveLength(3);
+    expect(rows[1]).toHaveTextContent("LSA Salud");
+    expect(rows[2]).toHaveTextContent("Cursos mostrados");
+
+    // A course and a state that do not match: no rows, no total.
+    fireEvent.change(screen.getByLabelText("Filtrar por estado"), {
+      target: { value: "INVITATION_PENDING" },
+    });
+    expect(screen.getByText("Ningún curso coincide con los filtros.")).toBeInTheDocument();
+    expect(screen.queryByText("Todos los cursos")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cursos mostrados")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Filtrar por estado"), { target: { value: "ALL" } });
+    fireEvent.change(course, { target: { value: "ALL" } });
     fireEvent.click(screen.getByRole("button", { name: /PROGRESO/ }));
     rows = screen.getAllByRole("row");
     expect(within(rows[1]!).getByText("LSA Salud")).toBeInTheDocument();

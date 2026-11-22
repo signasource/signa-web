@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CourseTraining } from "@/lib/api/types";
-import { activityLegend, visibleTraining } from "@/lib/participants";
+import { activityLegend, trainingTotal, visibleTraining } from "@/lib/participants";
 
 describe("activityLegend", () => {
   it("explains active and inactive for the selected course", () => {
@@ -51,7 +51,7 @@ const ROWS = [
 
 describe("visibleTraining", () => {
   const ids = (rows: CourseTraining[]) => rows.map((r) => r.courseId);
-  const all = { course: "", status: "ALL" as const };
+  const all = { courseId: "ALL", status: "ALL" as const };
 
   it("sorts by any column, both ways", () => {
     expect(ids(visibleTraining(ROWS, all, { by: "course", direction: "asc" }))).toEqual([
@@ -77,21 +77,17 @@ describe("visibleTraining", () => {
     ]);
   });
 
-  it("filters by course name ignoring accents and by state", () => {
+  it("filters by course and by state", () => {
     expect(
       ids(
-        visibleTraining(
-          ROWS,
-          { course: "educacion", status: "ALL" },
-          { by: "course", direction: "asc" },
-        ),
+        visibleTraining(ROWS, { courseId: "b", status: "ALL" }, { by: "course", direction: "asc" }),
       ),
     ).toEqual(["b"]);
     expect(
       ids(
         visibleTraining(
           ROWS,
-          { course: "", status: "INVITATION_PENDING" },
+          { courseId: "ALL", status: "INVITATION_PENDING" },
           { by: "course", direction: "asc" },
         ),
       ),
@@ -102,5 +98,75 @@ describe("visibleTraining", () => {
     const copy = [...ROWS];
     visibleTraining(ROWS, all, { by: "progress", direction: "asc" });
     expect(ROWS).toEqual(copy);
+  });
+});
+
+describe("trainingTotal", () => {
+  const NOW = new Date("2026-11-22T12:00:00Z");
+  const row = (over: Partial<CourseTraining>): CourseTraining => ({
+    courseId: "c",
+    courseName: "Curso",
+    status: "ACTIVE",
+    progressPercentage: 0,
+    lastActivityAt: null,
+    startedAt: null,
+    expiresAt: null,
+    ...over,
+  });
+
+  it("averages progress and picks latest activity, earliest start and nearest future expiry", () => {
+    const t = trainingTotal(
+      [
+        row({
+          progressPercentage: 40,
+          lastActivityAt: "2026-11-20T10:00:00Z",
+          startedAt: "2026-10-01T10:00:00Z",
+          expiresAt: "2026-12-30T10:00:00Z",
+        }),
+        row({
+          status: "INACTIVE",
+          progressPercentage: 15,
+          lastActivityAt: "2026-11-01T10:00:00Z",
+          startedAt: "2026-09-01T10:00:00Z",
+          expiresAt: "2026-12-01T10:00:00Z",
+        }),
+        row({ status: "INVITATION_PENDING", progressPercentage: 0 }),
+      ],
+      NOW,
+    );
+    expect(t).toMatchObject({
+      courseId: null,
+      status: "ACTIVE",
+      progressPercentage: 28,
+      lastActivityAt: "2026-11-20T10:00:00Z",
+      startedAt: "2026-09-01T10:00:00Z",
+      expiresAt: "2026-12-01T10:00:00Z",
+    });
+  });
+
+  it("is completed only if every course is, and expired when nothing has access left", () => {
+    const done = row({ status: "COMPLETED", progressPercentage: 100 });
+    expect(trainingTotal([done, done], NOW).status).toBe("COMPLETED");
+    const expired = row({
+      status: "ACCESS_EXPIRED",
+      lastActivityAt: "2026-09-01T10:00:00Z",
+      expiresAt: "2026-10-01T10:00:00Z",
+    });
+    const t = trainingTotal([done, expired], NOW);
+    expect(t.status).toBe("ACCESS_EXPIRED");
+    expect(t.expiresAt).toBe("2026-10-01T10:00:00Z");
+  });
+
+  it("is inactive after 7 quiet days, not started without activity", () => {
+    const old = row({ status: "INACTIVE", lastActivityAt: "2026-11-10T10:00:00Z" });
+    expect(trainingTotal([old], NOW).status).toBe("INACTIVE");
+    expect(trainingTotal([row({ status: "NOT_STARTED" })], NOW).status).toBe("NOT_STARTED");
+  });
+
+  it("counts pending invitations only when there is nothing else", () => {
+    expect(trainingTotal([row({ status: "INVITATION_PENDING" })], NOW).status).toBe(
+      "INVITATION_PENDING",
+    );
+    expect(trainingTotal([], NOW).status).toBe("NOT_STARTED");
   });
 });

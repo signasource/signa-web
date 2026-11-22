@@ -1,12 +1,12 @@
 import { api } from "@/lib/api/client";
 import type { Period } from "@/lib/date-range";
 import type {
+  CatalogCourse,
   InvitationSummary,
   MemberActivityStatus,
   MemberProgress,
   MemberSort,
   MemberStatus,
-  ModuleStats,
   MyOrganization,
   OrganizationHome,
   OrganizationInvitation,
@@ -22,6 +22,7 @@ import type {
   PurchaseCatalog,
   PurchaseCheckout,
   PurchaseDetail,
+  PurchaseProgress,
   PurchaseQuote,
   RedeemInviteCodeResponse,
   RefundRequestReason,
@@ -130,11 +131,6 @@ export const organizationsApi = {
   removeMember: (orgId: string, userId: string) =>
     api(`/organizations/${orgId}/members/${userId}`, { method: "DELETE" }),
 
-  modules: (orgId: string, params: { courseId?: string; period?: Period }) =>
-    api<ModuleStats[]>(`/organizations/${orgId}/modules`, {
-      query: { courseId: params.courseId, ...periodQuery(params.period) },
-    }),
-
   catalog: () => api<PurchaseCatalog>("/organizations/catalog", { anonymous: true }),
 
   quote: (params: { courseId: string; seats: number; durationDays: number }) =>
@@ -144,6 +140,14 @@ export const organizationsApi = {
 
   purchase: (orgId: string, purchaseId: string) =>
     api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}`),
+
+  /** How the people of a purchase are doing in its course (completed, rate, average progress). */
+  purchaseProgress: (orgId: string, purchaseId: string) =>
+    api<PurchaseProgress>(`/organizations/${orgId}/purchases/${purchaseId}/progress`),
+
+  /** The purchase's course as the buy screen showed it, from the version that was bought. */
+  purchasedCourse: (orgId: string, purchaseId: string) =>
+    api<CatalogCourse>(`/organizations/${orgId}/purchases/${purchaseId}/course`),
 
   createPurchase: (
     orgId: string,

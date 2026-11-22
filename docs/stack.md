@@ -9,7 +9,7 @@
 1. **Two very different surfaces in one repo:** a public marketing site (SEO, fast first paint, static) and an authenticated data dashboard (interactive tables/charts).
 2. **API is stateless bearer JWT + CORS, no cookies** (`signa-api`), so the dashboard is effectively a SPA against a remote API.
 3. **Team already writes React + TypeScript strict** (`signa-mobile`), and the brand tokens live there.
-4. The org dashboard is a **read-mostly analytics panel** (members, overview, modules) plus seat purchases; the SIGNA back-office is a CRUD/analytics tool (courses, signs, users, usage metrics).
+4. The org dashboard is a **read-mostly analytics panel** (members and seat purchases); the SIGNA back-office is a CRUD/analytics tool (courses, signs, users, usage metrics).
 
 ## Decisions
 

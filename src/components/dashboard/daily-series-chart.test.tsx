@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { DailySeriesChart } from "@/components/dashboard/daily-series-chart";
+import { DailySeriesChart, bucketLabel } from "@/components/dashboard/daily-series-chart";
 import { fmtCount } from "@/components/dashboard/perf-format";
 
 describe("DailySeriesChart", () => {
@@ -113,5 +113,13 @@ describe("DailySeriesChart", () => {
       />,
     );
     expect(container.querySelector('[role="group"]')).toBeNull();
+  });
+});
+
+describe("bucketLabel", () => {
+  it("names the whole bucket below a day, and only the day otherwise", () => {
+    const tenArt = Date.parse("2026-11-22T13:00:00Z");
+    expect(bucketLabel(tenArt, 3600)).toMatch(/22 nov.*10:00.*–.*11:00/);
+    expect(bucketLabel(tenArt, 86400)).toBe("22 nov");
   });
 });

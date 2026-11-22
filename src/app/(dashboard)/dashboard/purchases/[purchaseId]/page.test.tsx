@@ -25,6 +25,8 @@ vi.mock("@/lib/api/organizations", () => ({
     syncPayment: vi.fn(),
     withdrawPurchase: vi.fn(),
     createPurchaseRefundRequest: vi.fn(),
+    purchaseProgress: vi.fn(),
+    purchasedCourse: vi.fn(),
   },
 }));
 
@@ -78,6 +80,7 @@ function detail(overrides: Partial<PurchaseDetail["purchase"]> = {}, seats: Seat
       },
       hasRefundRequest: false,
       hasAcceptedSeats: false,
+      paymentMethod: "MERCADO_PAGO" as const,
       ...overrides,
     },
     seats,
@@ -99,6 +102,14 @@ describe("PurchaseDetailPage", () => {
     vi.mocked(organizationsApi.purchase).mockReset();
     vi.mocked(organizationsApi.withdrawPurchase).mockReset();
     vi.mocked(organizationsApi.syncPayment).mockReset();
+    vi.mocked(organizationsApi.purchaseProgress).mockResolvedValue({
+      participants: 0,
+      started: 0,
+      completed: 0,
+      completionPercentage: 0,
+      averageProgress: 0,
+      seats: [],
+    });
     navigation.search = "";
     navigation.replace.mockReset();
   });
@@ -128,8 +139,16 @@ describe("PurchaseDetailPage", () => {
     expect(screen.getAllByText("Cambiar email")).toHaveLength(1);
     expect(screen.getByText("Ver avance")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Sin aceptar" }));
+    // Only three filters: everyone, accepted, not accepted; each row keeps its own state.
+    for (const gone of ["Sin aceptar", "Acceso activo", "Invitación vencida", "Acceso vencido"]) {
+      expect(screen.queryByRole("button", { name: gone })).not.toBeInTheDocument();
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Invitación sin aceptar" }));
     expect(screen.queryByText("Bruno Díaz · bruno@x.com")).not.toBeInTheDocument();
+    expect(screen.getByText("ana@x.com")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Invitación aceptada" }));
+    expect(screen.queryByText("ana@x.com")).not.toBeInTheDocument();
+    expect(screen.getByText("Bruno Díaz · bruno@x.com")).toBeInTheDocument();
   });
 
   it("offers cancelling while the purchase is unpaid", async () => {
@@ -247,9 +266,9 @@ describe("PurchaseDetailPage", () => {
     });
     renderPage();
 
-    expect(await screen.findByText("Pagos devueltos")).toBeInTheDocument();
-    expect(screen.getByText("Se pagó después de cancelar o anular la compra")).toBeInTheDocument();
     expect(await screen.findByText(/te devolvimos el pago completo/)).toBeInTheDocument();
+    // The "Pagos devueltos" card is gone; the banner already says the money went back.
+    expect(screen.queryByText("Pagos devueltos")).not.toBeInTheDocument();
     expect(
       screen.queryByText("¡Listo! Recibimos el pago y mandamos las invitaciones por email."),
     ).not.toBeInTheDocument();
@@ -340,9 +359,8 @@ describe("PurchaseDetailPage", () => {
     expect(await screen.findByText(/Compra anulada y reembolsada el/)).toBeInTheDocument();
     expect(screen.getByText(/Listo: anulamos la compra/)).toBeInTheDocument();
     expect(screen.getByText("Acceso anulado")).toBeInTheDocument();
-    expect(screen.getByText("1 con el acceso anulado")).toBeInTheDocument();
     expect(screen.getByText("Invitación anulada")).toBeInTheDocument();
-    expect(screen.getByText("Comentario: «Compramos el curso equivocado»")).toBeInTheDocument();
+    expect(screen.queryByText("Pagos devueltos")).not.toBeInTheDocument();
     expect(screen.queryByText("Anular la compra")).not.toBeInTheDocument();
   });
 
@@ -415,8 +433,8 @@ describe("PurchaseDetailPage", () => {
     renderPage();
 
     expect(await screen.findByText(/Compra anulada y reembolsada el/)).toBeInTheDocument();
-    expect(screen.getByText(/Contracargo/)).toBeInTheDocument();
-    expect(screen.getByText("Invitaciones anuladas")).toBeInTheDocument();
+    expect(screen.queryByText("Pagos devueltos")).not.toBeInTheDocument();
+    expect(screen.getByText("Anulación")).toBeInTheDocument();
   });
 
   it("changes a pending email", async () => {
@@ -447,5 +465,57 @@ describe("PurchaseDetailPage", () => {
     });
     renderPage();
     expect(await screen.findByText("No pudimos cargar los datos.")).toBeInTheDocument();
+  });
+
+  it("shows how the purchase people are doing and the transaction summary", async () => {
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(
+      detail({ paymentMethod: "MERCADO_PAGO" }, [
+        seat({ id: "s1", email: "ana@x.com", activatedAt: "2026-10-21T12:00:00Z" }),
+      ]),
+    );
+    vi.mocked(organizationsApi.purchaseProgress).mockResolvedValue({
+      participants: 4,
+      started: 3,
+      completed: 1,
+      completionPercentage: 25,
+      averageProgress: 60,
+      seats: [{ seatId: "s1", progressPercentage: 80 }],
+    });
+    renderPage();
+
+    expect(await screen.findByText("25%")).toBeInTheDocument();
+    expect(screen.getByText("Completaron")).toBeInTheDocument();
+    expect(screen.getByText("de 4 personas en el curso")).toBeInTheDocument();
+    // The rate has no hint, and it comes last: Completaron, Progreso promedio, Tasa.
+    expect(screen.queryByText(/personas completaron/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Completaron ÷ personas en el curso")).not.toBeInTheDocument();
+    const order = ["Completaron", "Progreso promedio", "Tasa de finalización"].map((t) =>
+      screen.getByText(t, { exact: true }),
+    );
+    expect(
+      order[0]!.compareDocumentPosition(order[1]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      order[1]!.compareDocumentPosition(order[2]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByText("60%")).toBeInTheDocument();
+    expect(screen.getByText("De 3 personas que empezaron")).toBeInTheDocument();
+    expect(screen.getByText(/Avance 80%/)).toBeInTheDocument();
+    expect(screen.getByText("Resumen de la compra")).toBeInTheDocument();
+    expect(screen.getByText("Mercado Pago")).toBeInTheDocument();
+    expect(screen.getByText("Plazo para aceptar")).toBeInTheDocument();
+    expect(screen.getByText("Duración del acceso")).toBeInTheDocument();
+  });
+
+  it("opens the bought course's details", async () => {
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(detail({}, []));
+    vi.mocked(organizationsApi.purchasedCourse).mockReturnValue(new Promise(() => {}));
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: /Ver detalles del curso/ }));
+    expect(screen.getByRole("dialog", { name: "Detalles del curso" })).toBeInTheDocument();
+    expect(organizationsApi.purchasedCourse).toHaveBeenCalledWith("org1", "p1");
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

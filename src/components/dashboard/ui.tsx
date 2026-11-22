@@ -7,17 +7,25 @@ import { cn } from "@/lib/utils";
 
 export function PageHeading({
   title,
+  count,
   subtitle,
   children,
 }: {
   title: string;
+  /** How many items the page lists, shown as "Title · N" (like the section tabs). */
+  count?: number;
   subtitle?: ReactNode;
   children?: ReactNode;
 }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="font-display text-3xl leading-9 font-bold">{title}</h1>
+        <h1 className="font-display text-3xl leading-9 font-bold">
+          {title}
+          {count !== undefined ? (
+            <span className="text-text-muted font-semibold"> · {count}</span>
+          ) : null}
+        </h1>
         {subtitle ? <p className="text-text-muted mt-1 max-w-2xl text-[15px]">{subtitle}</p> : null}
       </div>
       {children}

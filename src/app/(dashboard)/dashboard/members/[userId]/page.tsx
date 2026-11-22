@@ -22,7 +22,7 @@ import { organizationsApi } from "@/lib/api/organizations";
 import type { CourseTraining, TrainingStatus } from "@/lib/api/types";
 import { avatarSrc } from "@/lib/avatar-url";
 import { daysSince, formatDate, formatRelativeDays } from "@/lib/dashboard-format";
-import { visibleTraining, type TrainingSort } from "@/lib/participants";
+import { trainingTotal, visibleTraining, type TrainingSort } from "@/lib/participants";
 import { cn } from "@/lib/utils";
 
 const STATUSES: TrainingStatus[] = [
@@ -45,7 +45,7 @@ const FIRST_DIRECTION: Record<TrainingSort, "asc" | "desc"> = {
 };
 
 const GRID =
-  "grid grid-cols-[minmax(200px,1.6fr)_170px_minmax(170px,1.3fr)_130px_120px_120px] items-center gap-4";
+  "grid grid-cols-[minmax(200px,1.6fr)_150px_minmax(120px,1.3fr)_160px_110px_110px] items-center gap-4";
 
 function SortButton({
   label,
@@ -127,9 +127,12 @@ function TrainingTable({ courses, total }: { courses: CourseTraining[]; total: C
     by: "course",
     direction: "asc",
   });
-  const [courseFilter, setCourseFilter] = useState("");
+  const [courseFilter, setCourseFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState<TrainingStatus | "ALL">("ALL");
-  const rows = visibleTraining(courses, { course: courseFilter, status: statusFilter }, sort);
+  const rows = visibleTraining(courses, { courseId: courseFilter, status: statusFilter }, sort);
+  // The total follows what is on screen: the API's row unfiltered, recomputed for a filtered list.
+  const filtered = courseFilter !== "ALL" || statusFilter !== "ALL";
+  const shownTotal = filtered ? trainingTotal(rows) : total;
   const onSort = (by: TrainingSort) =>
     setSort((s) =>
       s.by === by
@@ -154,14 +157,23 @@ function TrainingTable({ courses, total }: { courses: CourseTraining[]; total: C
             >
               <span className="flex flex-col gap-1.5">
                 <SortButton label="CURSO" by="course" sort={sort} onSort={onSort} />
-                <input
-                  type="search"
+                <select
                   value={courseFilter}
                   onChange={(e) => setCourseFilter(e.target.value)}
-                  placeholder="Filtrar"
                   aria-label="Filtrar por curso"
-                  className="border-border bg-surface text-text rounded-lg border px-2 py-1 text-[13px] font-semibold outline-none"
-                />
+                  className="border-border bg-surface text-text rounded-lg border px-2 py-1 text-[13px] font-semibold"
+                >
+                  <option value="ALL">Todos</option>
+                  {courses.flatMap((c) =>
+                    c.courseId ? (
+                      <option key={c.courseId} value={c.courseId}>
+                        {c.courseName}
+                      </option>
+                    ) : (
+                      []
+                    ),
+                  )}
+                </select>
               </span>
               <span className="flex flex-col gap-1.5">
                 <SortButton label="ESTADO" by="status" sort={sort} onSort={onSort} />
@@ -184,19 +196,30 @@ function TrainingTable({ courses, total }: { courses: CourseTraining[]; total: C
               <SortButton label="INICIO" by="startedAt" sort={sort} onSort={onSort} />
               <SortButton label="VENCIMIENTO" by="expiresAt" sort={sort} onSort={onSort} />
             </div>
-            {rows.map((row) => (
-              <div key={row.courseId} role="row" className={cn(GRID, "border-fill border-b py-3")}>
-                <TrainingCells row={row} name={row.courseName ?? ""} />
-              </div>
-            ))}
+            <div>
+              {rows.map((row) => (
+                <div
+                  key={row.courseId}
+                  role="row"
+                  className={cn(GRID, "border-fill border-b py-3 last:border-b-0")}
+                >
+                  <TrainingCells row={row} name={row.courseName ?? ""} />
+                </div>
+              ))}
+            </div>
             {rows.length === 0 ? (
-              <p className="text-text-muted border-fill border-b py-4 text-center text-sm">
+              <p className="text-text-muted py-4 text-center text-sm">
                 Ningún curso coincide con los filtros.
               </p>
             ) : null}
-            <div role="row" className={cn(GRID, "bg-fill/60 -mx-3 mt-1 rounded-xl px-3 py-3")}>
-              <TrainingCells row={total} name="Todos los cursos" />
-            </div>
+            {rows.length > 0 ? (
+              <div role="row" className={cn(GRID, "border-border border-t py-3")}>
+                <TrainingCells
+                  row={shownTotal}
+                  name={filtered ? "Cursos mostrados" : "Todos los cursos"}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       )}

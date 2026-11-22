@@ -48,7 +48,7 @@ const MAX_FILLED_POINTS = 1500;
 
 /** One series point. `t` is the bucket's start instant (ISO-8601) or a `YYYY-MM-DD` day. */
 type Point = { t: string; value: number };
-type Datum = { label: string; epoch: number; value: number | null; prev?: number | null };
+type Datum = { epoch: number; value: number | null; prev?: number | null };
 
 /**
  * Bucket size (seconds) for a window, matching how the API buckets the series: minute if the span is
@@ -75,17 +75,25 @@ function inferBucketSeconds(epochsMs: number[]): number {
   return Number.isFinite(min) ? Math.round(min / 1000) : DAY_SECONDS;
 }
 
-function makeTooltip(format: ValueFormat, fullTime: boolean) {
+/**
+ * What one bucket covers, for its tooltip: the day ("22 nov") or, below a day, its start and end
+ * ("22 nov, 10:00 – 11:00"), so an hour's distinct count is not read as a single instant.
+ */
+export function bucketLabel(epochMs: number, bucketSeconds: number): string {
+  if (bucketSeconds >= DAY_SECONDS) return DAY_FMT.format(new Date(epochMs));
+  return `${FULL_FMT.format(new Date(epochMs))} – ${TIME_FMT.format(new Date(epochMs + bucketSeconds * 1000))}`;
+}
+
+function makeTooltip(format: ValueFormat, bucketSeconds: number) {
   return function SeriesTooltip({
     active,
     payload,
   }: TooltipContentProps<TooltipValueType, string | number>) {
     const point = payload?.[0]?.payload as Datum | undefined;
     if (!active || !point) return null;
-    const fmt = fullTime ? FULL_FMT : DAY_FMT;
     return (
       <div className="border-border bg-surface rounded-xl border px-3 py-2 text-[13px] shadow-lg">
-        <p className="text-text-muted font-bold">{fmt.format(new Date(point.epoch))}</p>
+        <p className="text-text-muted font-bold">{bucketLabel(point.epoch, bucketSeconds)}</p>
         <p className="font-extrabold">{point.value == null ? "Sin datos" : format(point.value)}</p>
         {point.prev !== undefined ? (
           <p className="text-text-muted">
@@ -219,7 +227,6 @@ export function DailySeriesChart({
       const datum: Datum = {
         epoch,
         value: has ? valueByEpoch.get(epoch)! : emptyAsNull ? null : 0,
-        label: tickFmt.format(new Date(epoch)),
       };
       if (withPrevious) {
         datum.prev = prevByEpoch.has(epoch)
@@ -231,7 +238,7 @@ export function DailySeriesChart({
       data.push(datum);
     }
   } else {
-    data = valid.map((d) => ({ ...d, label: tickFmt.format(new Date(d.epoch)) }));
+    data = valid;
   }
 
   const summary = data
@@ -276,8 +283,12 @@ export function DailySeriesChart({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data} margin={{ top: 16, right: 4, left: 4, bottom: 0 }}>
               <CartesianGrid stroke="var(--color-fill)" vertical={false} />
+              {/* Keyed by the bucket's instant, not its label: in a 24 h window "10:00" is two
+                  buckets (yesterday and today), and a repeated category made the tooltip and the
+                  bar disagree. */}
               <XAxis
-                dataKey="label"
+                dataKey="epoch"
+                tickFormatter={(epoch) => tickFmt.format(new Date(Number(epoch)))}
                 axisLine={false}
                 tickLine={false}
                 interval="preserveStartEnd"
@@ -293,13 +304,13 @@ export function DailySeriesChart({
                 tick={{ fill: "var(--color-text-muted)", fontSize: 11 }}
               />
               <Tooltip
-                content={makeTooltip(format, subDay)}
+                content={makeTooltip(format, bucketSeconds)}
                 cursor={{ fill: "var(--color-fill)", radius: 8 }}
                 isAnimationActive={false}
               />
               {withPrevious ? (
                 <Line
-                  type="monotone"
+                  type="stepAfter"
                   dataKey="prev"
                   stroke={PREVIOUS_COLOR}
                   strokeWidth={1.5}
@@ -311,7 +322,7 @@ export function DailySeriesChart({
               ) : null}
               {kind === "line" ? (
                 <Line
-                  type="monotone"
+                  type="stepAfter"
                   dataKey="value"
                   stroke="var(--color-primary)"
                   strokeWidth={2}
