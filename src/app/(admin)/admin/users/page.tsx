@@ -1,9 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AdminAvatar } from "@/components/admin/admin-avatar";
 import { AdminsPanel } from "@/components/admin/admins-panel";
+import { Icon } from "@/components/dashboard/icons";
+import { headerChip } from "@/components/dashboard/ui";
 import {
   relativeDate,
   ROLE_COLORS,
@@ -13,11 +15,302 @@ import {
 import { adminApi, type AdminUser, type UserRole } from "@/lib/api/admin";
 import { cn } from "@/lib/utils";
 
+// ── RolePicker ────────────────────────────────────────────────────────────────
+
+const ROLE_OPTIONS: { value: UserRole | ""; label: string }[] = [
+  { value: "", label: "Todos los roles" },
+  { value: "USER", label: "Usuario" },
+  { value: "ORG_ADMIN", label: "Admin de org." },
+  { value: "ADMIN", label: "Admin Signa" },
+];
+
+function RolePicker({
+  value,
+  onChange,
+}: {
+  value: UserRole | "";
+  onChange: (v: UserRole | "") => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (
+        e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)
+      )
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+
+  const current = ROLE_OPTIONS.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={menuId}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          headerChip,
+          "cursor-pointer border transition-shadow hover:shadow-sm",
+          value
+            ? "bg-primary-light text-primary-dark"
+            : "border-border bg-surface text-text border",
+        )}
+      >
+        <Icon name="people" className="size-4" />
+        <span>{current?.label ?? "Todos los roles"}</span>
+        <Icon name="chevronDown" className={cn("size-3.5 transition-transform", open && "rotate-180")} />
+      </button>
+
+      {open ? (
+        <ul
+          id={menuId}
+          role="listbox"
+          aria-label="Rol"
+          className="border-border bg-surface dash-card-enter absolute left-0 z-30 mt-2 flex w-52 flex-col gap-0.5 rounded-2xl border p-1.5 shadow-lg"
+        >
+          {ROLE_OPTIONS.map((opt) => {
+            const selected = value === opt.value;
+            return (
+              <li key={opt.value} role="option" aria-selected={selected}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors",
+                    selected ? "bg-primary-light text-primary-dark" : "hover:bg-fill text-text",
+                  )}
+                >
+                  <span className="truncate">{opt.label}</span>
+                  {selected ? <Icon name="check" className="size-4" /> : null}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+// ── DateRangePicker ───────────────────────────────────────────────────────────
+
+const DATE_FMT = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short" });
+
+function formatDate(iso: string): string {
+  const d = new Date(iso + "T12:00:00");
+  return DATE_FMT.format(d);
+}
+
+function dateRangeLabel(from: string, to: string): string {
+  if (!from && !to) return "Todo";
+  if (from && to) return `${formatDate(from)} – ${formatDate(to)}`;
+  if (from) return `Desde ${formatDate(from)}`;
+  return `Hasta ${formatDate(to)}`;
+}
+
+const dateInput =
+  "border-border bg-surface text-text focus:border-primary w-full rounded-xl border px-3 py-2 text-sm font-bold outline-none";
+
+function DateRangePicker({
+  label,
+  from,
+  to,
+  onFromChange,
+  onToChange,
+}: {
+  label: string;
+  from: string;
+  to: string;
+  onFromChange: (v: string) => void;
+  onToChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const panelId = useId();
+  const active = !!(from || to);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (
+        e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)
+      )
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          headerChip,
+          "cursor-pointer border transition-shadow hover:shadow-sm",
+          active ? "bg-primary-light text-primary-dark" : "border-border bg-surface text-text",
+        )}
+      >
+        <Icon name="calendar" className="size-4" />
+        <span>
+          {label}: {dateRangeLabel(from, to)}
+        </span>
+        <Icon name="chevronDown" className={cn("size-3.5 transition-transform", open && "rotate-180")} />
+      </button>
+
+      {open ? (
+        <div
+          id={panelId}
+          role="dialog"
+          aria-label={`Rango de fecha: ${label}`}
+          className="border-border bg-surface dash-card-enter absolute left-0 z-30 mt-2 w-64 rounded-2xl border p-3 shadow-lg"
+        >
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-text-muted text-xs font-bold">Desde</label>
+              <input
+                type="date"
+                value={from}
+                max={to || undefined}
+                onChange={(e) => onFromChange(e.target.value)}
+                className={dateInput}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-text-muted text-xs font-bold">Hasta</label>
+              <input
+                type="date"
+                value={to}
+                min={from || undefined}
+                onChange={(e) => onToChange(e.target.value)}
+                className={dateInput}
+              />
+            </div>
+            {active ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onFromChange("");
+                  onToChange("");
+                }}
+                className="text-text-muted hover:text-text cursor-pointer self-start text-[13px] font-bold"
+              >
+                Limpiar
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ── Sortable column header ────────────────────────────────────────────────────
+
+type SortDir = "asc" | "desc";
+type SortField = "name" | "role" | "createdAt" | "lastActivity" | "streak";
+
+function SortTh({
+  label,
+  field,
+  sortBy,
+  sortDir,
+  onSort,
+  align = "left",
+}: {
+  label: string;
+  field: SortField;
+  sortBy: SortField | null;
+  sortDir: SortDir;
+  onSort: (f: SortField) => void;
+  align?: "left" | "right";
+}) {
+  const active = sortBy === field;
+  return (
+    <th className={cn("px-5 py-3 font-bold", align === "right" ? "text-right" : "text-left")}>
+      <button
+        type="button"
+        onClick={() => onSort(field)}
+        className={cn(
+          "hover:text-text inline-flex cursor-pointer items-center gap-1 transition-colors",
+          active ? "text-text" : "text-text-muted",
+          align === "right" && "flex-row-reverse",
+        )}
+      >
+        <span>{label}</span>
+        <Icon
+          name={active ? (sortDir === "asc" ? "arrowUp" : "arrowDown") : "sortable"}
+          className="size-3.5 shrink-0"
+        />
+      </button>
+    </th>
+  );
+}
+
+// ── Client-side sort ──────────────────────────────────────────────────────────
+
+function sortUsers(users: AdminUser[], field: SortField | null, dir: SortDir): AdminUser[] {
+  if (!field) return users;
+  return [...users].sort((a, b) => {
+    const mult = dir === "asc" ? 1 : -1;
+    if (field === "name") {
+      const na = `${a.name} ${a.lastName}`;
+      const nb = `${b.name} ${b.lastName}`;
+      return mult * na.localeCompare(nb, "es");
+    }
+    if (field === "role") return mult * a.role.localeCompare(b.role);
+    if (field === "createdAt") {
+      const da = a.createdAt ?? "";
+      const db = b.createdAt ?? "";
+      return mult * da.localeCompare(db);
+    }
+    if (field === "lastActivity") {
+      const da = a.lastSeenDate ?? a.lastStreakDate ?? "";
+      const db = b.lastSeenDate ?? b.lastStreakDate ?? "";
+      return mult * da.localeCompare(db);
+    }
+    if (field === "streak") return mult * (a.currentStreak - b.currentStreak);
+    return 0;
+  });
+}
+
+// ── UsersTab ──────────────────────────────────────────────────────────────────
+
 function UsersTab() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | "">("");
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
+  const [lastActiveFrom, setLastActiveFrom] = useState("");
+  const [lastActiveTo, setLastActiveTo] = useState("");
   const [page, setPage] = useState(0);
+  const [sortBy, setSortBy] = useState<SortField | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [selected, setSelected] = useState<AdminUser | null>(null);
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
@@ -36,47 +329,83 @@ function UsersTab() {
     }, 300);
   }
 
+  function handleSort(field: SortField) {
+    if (sortBy === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(field);
+      setSortDir("asc");
+    }
+  }
+
+  function handleFilterChange<T>(setter: (v: T) => void, value: T) {
+    setter(value);
+    setPage(0);
+  }
+
   const { data, isLoading } = useQuery({
-    queryKey: ["admin", "users", debouncedQuery, roleFilter, page],
+    queryKey: [
+      "admin",
+      "users",
+      debouncedQuery,
+      roleFilter,
+      page,
+      createdFrom,
+      createdTo,
+      lastActiveFrom,
+      lastActiveTo,
+    ],
     queryFn: () =>
       adminApi.users({
         query: debouncedQuery || undefined,
         role: roleFilter || undefined,
         page,
         size: 20,
+        createdFrom: createdFrom || undefined,
+        createdTo: createdTo || undefined,
+        lastActiveFrom: lastActiveFrom || undefined,
+        lastActiveTo: lastActiveTo || undefined,
       }),
   });
 
+  const sorted = useMemo(
+    () => sortUsers(data?.content ?? [], sortBy, sortDir),
+    [data?.content, sortBy, sortDir],
+  );
+
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-center gap-3">
+      <div className="mb-5 flex flex-wrap items-center gap-2">
         <input
           type="search"
           value={query}
           onChange={handleSearch}
           placeholder="Nombre, @usuario o email"
-          className="border-border bg-surface focus:border-primary min-w-60 flex-1 rounded-xl border px-4 py-2.5 text-sm outline-none"
+          className="border-border bg-surface focus:border-primary min-w-52 flex-1 rounded-full border px-4 py-2 text-[13px] font-bold outline-none"
         />
-        <select
+        <RolePicker
           value={roleFilter}
-          onChange={(e) => {
-            setRoleFilter(e.target.value as UserRole | "");
-            setPage(0);
-          }}
-          className="border-border bg-surface text-text rounded-xl border px-3 py-2.5 text-sm outline-none"
-        >
-          <option value="">Todos los roles</option>
-          <option value="USER">Usuario</option>
-          <option value="ORG_ADMIN">Admin de org.</option>
-          <option value="ADMIN">Admin Signa</option>
-        </select>
+          onChange={(v) => handleFilterChange(setRoleFilter, v)}
+        />
+        <DateRangePicker
+          label="Incorporación"
+          from={createdFrom}
+          to={createdTo}
+          onFromChange={(v) => handleFilterChange(setCreatedFrom, v)}
+          onToChange={(v) => handleFilterChange(setCreatedTo, v)}
+        />
+        <DateRangePicker
+          label="Últ. actividad"
+          from={lastActiveFrom}
+          to={lastActiveTo}
+          onFromChange={(v) => handleFilterChange(setLastActiveFrom, v)}
+          onToChange={(v) => handleFilterChange(setLastActiveTo, v)}
+        />
       </div>
 
       {data && (
         <p className="text-text-muted mb-3 text-xs">
           {data.totalElements.toLocaleString("es-AR")} cuentas
-          {data.content.filter((u) => !u.verified).length > 0 &&
-            ` · ${data.content.filter((u) => !u.verified).length} sin verificar en esta página`}
         </p>
       )}
 
@@ -91,25 +420,26 @@ function UsersTab() {
           <div className="border-border bg-surface overflow-hidden rounded-2xl border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-border bg-fill text-text-muted border-b">
-                  <th className="px-5 py-3 text-left font-semibold">Usuario</th>
-                  <th className="px-5 py-3 text-left font-semibold">Rol</th>
-                  <th className="px-5 py-3 text-left font-semibold">Organización</th>
-                  <th className="px-5 py-3 text-left font-semibold">Acceso</th>
-                  <th className="px-5 py-3 text-left font-semibold">Racha</th>
-                  <th className="px-5 py-3 text-left font-semibold">Última actividad</th>
+                <tr className="border-border bg-fill text-text-muted border-b text-xs">
+                  <SortTh label="Usuario" field="name" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortTh label="Rol" field="role" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <th className="px-5 py-3 text-left font-bold">Organización</th>
+                  <th className="px-5 py-3 text-left font-bold">Acceso</th>
+                  <SortTh label="Incorporación" field="createdAt" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortTh label="Racha" field="streak" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortTh label="Última actividad" field="lastActivity" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
               <tbody>
-                {data?.content.length === 0 && (
+                {sorted.length === 0 && !isLoading && (
                   <tr>
-                    <td colSpan={7} className="text-text-muted px-5 py-8 text-center">
+                    <td colSpan={8} className="text-text-muted px-5 py-8 text-center">
                       No se encontraron usuarios.
                     </td>
                   </tr>
                 )}
-                {data?.content.map((user) => (
+                {sorted.map((user) => (
                   <tr
                     key={user.id}
                     className="border-border hover:bg-fill/50 cursor-pointer border-b last:border-0"
@@ -160,11 +490,14 @@ function UsersTab() {
                         · {user.verified ? "verificada" : "sin verificar"}
                       </span>
                     </td>
+                    <td className="text-text-muted px-5 py-3.5 text-xs">
+                      {relativeDate(user.createdAt ?? null)}
+                    </td>
                     <td className="text-text px-5 py-3.5 text-sm font-medium">
                       {user.currentStreak > 0 ? `${user.currentStreak} días` : "—"}
                     </td>
                     <td className="text-text-muted px-5 py-3.5 text-xs">
-                      {relativeDate(user.lastStreakDate)}
+                      {relativeDate(user.lastSeenDate ?? user.lastStreakDate)}
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <span className="text-primary text-xs font-semibold">Ver</span>

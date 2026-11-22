@@ -174,6 +174,8 @@ export type AdminUser = {
   authProvider: "GOOGLE" | "EMAIL";
   currentStreak: number;
   lastStreakDate: string | null;
+  lastSeenDate: string | null;
+  createdAt: string;
   avatar: string | null;
 };
 
@@ -449,7 +451,18 @@ export const adminApi = {
       body: { status, adminNote },
     }),
 
-  users: (params?: { query?: string; role?: UserRole; page?: number; size?: number }) =>
+  users: (params?: {
+    query?: string;
+    role?: UserRole;
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortDir?: "asc" | "desc";
+    createdFrom?: string;
+    createdTo?: string;
+    lastActiveFrom?: string;
+    lastActiveTo?: string;
+  }) =>
     api<Page<AdminUser>>("/admin/users", {
       query: params as Record<string, string | number | boolean | undefined>,
     }),
