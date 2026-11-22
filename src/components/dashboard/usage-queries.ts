@@ -1,8 +1,8 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { metricsApi, type PerfMetrics } from "@/lib/api/metrics";
-import type { DateTimeRange } from "@/lib/datetime-range";
+import { metricsApi, type PerfMetrics, type RangeParams } from "@/lib/api/metrics";
+import { isAllTimeRange, type DateTimeRange } from "@/lib/datetime-range";
 
 /** How often every widget refreshes while the dashboard is "en vivo". */
 export const REFRESH_MS = 30_000;
@@ -15,10 +15,16 @@ export const REFRESH_MS = 30_000;
  */
 function options(range: DateTimeRange | null, live: boolean) {
   return {
-    enabled: Boolean(range?.from && range?.to),
+    enabled: range !== null,
     placeholderData: keepPreviousData,
     refetchInterval: live ? REFRESH_MS : (false as const),
   };
+}
+
+/** Converts a resolved range to API params, omitting from/to for all-time queries. */
+function rangeParams(range: DateTimeRange): RangeParams {
+  if (isAllTimeRange(range)) return {};
+  return { from: range.from, to: range.to };
 }
 
 export function useGrowthQuery(
@@ -30,8 +36,7 @@ export function useGrowthQuery(
     queryKey: ["admin", "metrics", "growth", range?.from, range?.to, ...courseIds],
     queryFn: () =>
       metricsApi.growth({
-        from: range!.from,
-        to: range!.to,
+        ...rangeParams(range!),
         courseIds: courseIds.length > 0 ? courseIds : undefined,
       }),
     ...options(range, live),
@@ -47,8 +52,7 @@ export function useBusinessQuery(
     queryKey: ["admin", "metrics", "business", range?.from, range?.to, ...courseIds],
     queryFn: () =>
       metricsApi.business({
-        from: range!.from,
-        to: range!.to,
+        ...rangeParams(range!),
         courseIds: courseIds.length > 0 ? courseIds : undefined,
       }),
     ...options(range, live),
@@ -58,7 +62,7 @@ export function useBusinessQuery(
 export function useGamificationQuery(range: DateTimeRange | null, live: boolean) {
   return useQuery({
     queryKey: ["admin", "metrics", "gamification", range?.from, range?.to],
-    queryFn: () => metricsApi.gamification({ from: range!.from, to: range!.to }),
+    queryFn: () => metricsApi.gamification(rangeParams(range!)),
     ...options(range, live),
   });
 }
@@ -72,8 +76,7 @@ export function useLearningQuery(
     queryKey: ["admin", "metrics", "learning", range?.from, range?.to, ...courseIds],
     queryFn: () =>
       metricsApi.learning({
-        from: range!.from,
-        to: range!.to,
+        ...rangeParams(range!),
         courseIds: courseIds.length > 0 ? courseIds : undefined,
       }),
     ...options(range, live),
@@ -84,7 +87,7 @@ export function useLearningQuery(
 export function useOnboardingQuery(range: DateTimeRange | null, live: boolean) {
   return useQuery({
     queryKey: ["admin", "metrics", "onboarding", range?.from, range?.to],
-    queryFn: () => metricsApi.onboarding({ from: range!.from, to: range!.to }),
+    queryFn: () => metricsApi.onboarding(rangeParams(range!)),
     ...options(range, live),
   });
 }
@@ -93,7 +96,7 @@ export function useOnboardingQuery(range: DateTimeRange | null, live: boolean) {
 export function useSalesQuery(range: DateTimeRange | null, live: boolean) {
   return useQuery({
     queryKey: ["admin", "metrics", "sales", range?.from, range?.to],
-    queryFn: () => metricsApi.sales({ from: range!.from, to: range!.to }),
+    queryFn: () => metricsApi.sales(rangeParams(range!)),
     ...options(range, live),
   });
 }
@@ -106,7 +109,7 @@ export function usePerfWidget(
 ) {
   return useQuery<PerfMetrics>({
     queryKey: ["admin", "metrics", "perf", widget, range?.from, range?.to, step],
-    queryFn: () => metricsApi.perf(widget, { from: range!.from, to: range!.to, step }),
+    queryFn: () => metricsApi.perf(widget, { ...rangeParams(range!), step }),
     ...options(range, live),
   });
 }

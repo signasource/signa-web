@@ -11,12 +11,25 @@ export type DateTimeRange = { from: string; to: string };
 
 /** The dashboard selection: a rolling preset (recomputed from "now") or a fixed custom window. */
 export type RangeSelection =
-  { kind: "preset"; key: string } | { kind: "custom"; from: string; to: string };
+  | { kind: "all" }
+  | { kind: "preset"; key: string }
+  | { kind: "custom"; from: string; to: string };
 
 export type RangePreset = { key: string; label: string; minutes: number };
 
 /** Longest window the API accepts (inclusive days), mirroring the backend's MetricsRange cap. */
 export const MAX_RANGE_DAYS = 366;
+
+export const ALL_TIME_LABEL = "Todo el historial";
+
+/** Sentinel range that signals "no date filter" (whole history). Both bounds are empty strings so
+ * the HTTP client omits them and the backend applies no date restriction. */
+export const ALL_TIME_RANGE: DateTimeRange = { from: "", to: "" };
+
+/** True when {@code range} is the whole-history sentinel (no date filter). */
+export function isAllTimeRange(range: DateTimeRange): boolean {
+  return range.from === "" && range.to === "";
+}
 const MINUTE_MS = 60_000;
 
 export const RANGE_PRESETS: RangePreset[] = [
@@ -28,7 +41,7 @@ export const RANGE_PRESETS: RangePreset[] = [
   { key: "30d", label: "Últimos 30 días", minutes: 30 * 24 * 60 },
 ];
 
-export const DEFAULT_SELECTION: RangeSelection = { kind: "preset", key: "24h" };
+export const DEFAULT_SELECTION: RangeSelection = { kind: "all" };
 
 function presetByKey(key: string): RangePreset | undefined {
   return RANGE_PRESETS.find((p) => p.key === key);
@@ -44,6 +57,7 @@ export function presetRange(minutes: number, now: Date = new Date()): DateTimeRa
 
 /** Resolves a selection to concrete instants; presets are anchored to {@code now}. */
 export function resolveRange(selection: RangeSelection, now: Date = new Date()): DateTimeRange {
+  if (selection.kind === "all") return ALL_TIME_RANGE;
   if (selection.kind === "custom") return { from: selection.from, to: selection.to };
   const preset = presetByKey(selection.key) ?? RANGE_PRESETS[3]!;
   return presetRange(preset.minutes, now);
@@ -119,6 +133,7 @@ const DATETIME_FMT = new Intl.DateTimeFormat("es-AR", {
 
 /** Chip text: the preset name, or the formatted bounds for a custom range. */
 export function selectionLabel(selection: RangeSelection): string {
+  if (selection.kind === "all") return ALL_TIME_LABEL;
   if (selection.kind === "preset") return presetByKey(selection.key)?.label ?? "Período";
   return `${DATETIME_FMT.format(new Date(selection.from))} – ${DATETIME_FMT.format(new Date(selection.to))}`;
 }

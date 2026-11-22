@@ -150,7 +150,9 @@ export default function AdminMetricasPage() {
         idBase="metrics"
         trailing={
           <p className="text-text-muted text-xs">
-            Comparando con {previousWindowLabel(range)} · hora de Argentina
+            {selection.kind === "all"
+              ? "Todo el historial · hora de Argentina"
+              : `Comparando con ${previousWindowLabel(range)} · hora de Argentina`}
           </p>
         }
       />
