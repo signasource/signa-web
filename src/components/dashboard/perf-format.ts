@@ -31,6 +31,14 @@ export const fmtReqs: ValueFormat = (v) => `${dec(v, 2)}/s`;
 export const fmtReqsShort: ValueFormat = (v) =>
   v >= 10 ? `${Math.round(v).toLocaleString("es-AR")} req/s` : `${dec(v, 1)} req/s`;
 
+/** Requests per second (raw from Prometheus) converted to per-minute for display. */
+export const fmtReqsPerMinute: ValueFormat = (v) => {
+  const rpm = v * 60;
+  return rpm >= 10
+    ? `${Math.round(rpm).toLocaleString("es-AR")} req/min`
+    : `${dec(rpm, 1)} req/min`;
+};
+
 /** Per-endpoint rate for tables: "4,1/s". */
 export const fmtRate1: ValueFormat = (v) => `${dec(v, 1)}/s`;
 

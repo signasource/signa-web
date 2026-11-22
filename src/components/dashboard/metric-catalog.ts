@@ -612,10 +612,10 @@ export const METRICS = {
     goodWhen: "Sin picos sostenidos.",
   },
   throughput: {
-    label: "Consultas por segundo",
-    description: "Cuántas consultas por segundo atiende el servidor.",
+    label: "Consultas por minuto",
+    description: "Cuántas consultas por minuto atiende el servidor.",
     howComputed:
-      "Contamos cuántas consultas por segundo recibe el servidor en promedio en el período; el pico es el valor más alto.",
+      "Contamos cuántas consultas por minuto recibe el servidor en promedio en el período; el pico es el valor más alto.",
     goodWhen: "Acompaña el uso real sin saturar.",
   },
   error_rate: {
