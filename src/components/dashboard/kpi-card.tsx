@@ -69,7 +69,12 @@ export function KpiCard({
   const tone = toneValue === undefined ? "neutral" : metricTone(metric, toneValue);
   const name = label ?? def.label;
   return (
-    <div className={cn("border-border bg-surface dash-card-enter flex min-w-0 flex-col rounded-2xl border p-[18px]", className)}>
+    <div
+      className={cn(
+        "border-border bg-surface dash-card-enter flex min-w-0 flex-col rounded-2xl border p-[18px]",
+        className,
+      )}
+    >
       <div className="flex min-w-0 items-center gap-1.5">
         {tone !== "neutral" ? (
           <span className={cn("size-2 shrink-0 rounded-full", TONE_DOT[tone])} aria-hidden />
