@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
 import { AdminAvatar } from "@/components/admin/admin-avatar";
 import { AdminsPanel } from "@/components/admin/admins-panel";
@@ -271,7 +271,10 @@ function SortTh({
   return (
     <th
       aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
-      className={cn("px-5 py-3 font-bold", align === "right" ? "text-right" : "text-left")}
+      className={cn(
+        "px-3 py-3 font-bold whitespace-nowrap select-none",
+        align === "right" ? "text-right" : "text-left",
+      )}
     >
       <button
         type="button"
@@ -340,7 +343,7 @@ function UsersTab() {
     setPage(0);
   }
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isPlaceholderData } = useQuery({
     queryKey: [
       "admin",
       "users",
@@ -367,6 +370,9 @@ function UsersTab() {
         sortBy,
         sortDir,
       }),
+    // Re-sorting or paging keeps the current rows on screen (dimmed) until the new ones arrive,
+    // instead of swapping the table for the loading skeleton.
+    placeholderData: keepPreviousData,
   });
 
   const sorted = data?.content ?? [];
@@ -412,8 +418,13 @@ function UsersTab() {
         </div>
       ) : (
         <>
-          <div className="border-border bg-surface overflow-hidden rounded-2xl border">
-            <table className="w-full text-sm">
+          <div
+            className={cn(
+              "border-border bg-surface overflow-x-auto rounded-2xl border transition-opacity",
+              isPlaceholderData && "opacity-60",
+            )}
+          >
+            <table className="w-full min-w-[960px] text-sm">
               <thead>
                 <tr className="border-border bg-fill text-text-muted border-b text-xs">
                   <SortTh
@@ -465,7 +476,9 @@ function UsersTab() {
                     sortDir={sortDir}
                     onSort={handleSort}
                   />
-                  <th className="px-5 py-3" />
+                  <th className="px-3 py-3">
+                    <span className="sr-only">Detalle</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -482,14 +495,14 @@ function UsersTab() {
                     className="border-border hover:bg-fill/50 cursor-pointer border-b last:border-0"
                     onClick={() => setSelected(user)}
                   >
-                    <td className="px-5 py-3.5">
+                    <td className="px-3 py-3.5">
                       <div className="flex items-center gap-3">
                         <AdminAvatar
                           name={user.name}
                           lastName={user.lastName}
                           avatar={user.avatar}
                         />
-                        <div className="min-w-0">
+                        <div className="max-w-[190px] min-w-0">
                           <p className="text-text truncate font-semibold">
                             {user.name} {user.lastName}
                             {!user.enabled && (
@@ -498,26 +511,29 @@ function UsersTab() {
                               </span>
                             )}
                           </p>
-                          <p className="text-text-muted truncate text-xs">
+                          <p
+                            className="text-text-muted truncate text-xs"
+                            title={`@${user.username} · ${user.email}`}
+                          >
                             @{user.username} · {user.email}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-3 py-3.5">
                       <span
                         className={cn(
-                          "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                          "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
                           ROLE_COLORS[user.role],
                         )}
                       >
                         {ROLE_LABELS[user.role]}
                       </span>
                     </td>
-                    <td className="text-text-muted px-5 py-3.5 text-sm">
+                    <td className="text-text-muted px-3 py-3.5 text-sm">
                       {user.organizationName ?? "—"}
                     </td>
-                    <td className="px-5 py-3.5 text-xs">
+                    <td className="px-3 py-3.5 text-xs whitespace-nowrap">
                       <span className="text-text font-medium">
                         {user.authProvider === "GOOGLE" ? "Google" : "Email"}
                       </span>
@@ -527,17 +543,19 @@ function UsersTab() {
                         · {user.verified ? "verificada" : "sin verificar"}
                       </span>
                     </td>
-                    <td className="text-text-muted px-5 py-3.5 text-xs">
+                    <td className="text-text-muted px-3 py-3.5 text-xs">
                       {relativeDate(user.createdAt ?? null)}
                     </td>
-                    <td className="text-text px-5 py-3.5 text-sm font-medium">
+                    <td className="text-text px-3 py-3.5 text-sm font-medium">
                       {user.currentStreak > 0 ? `${user.currentStreak} días` : "—"}
                     </td>
-                    <td className="text-text-muted px-5 py-3.5 text-xs">
+                    <td className="text-text-muted px-3 py-3.5 text-xs">
                       {relativeDate(user.lastSeenDate ?? user.lastStreakDate)}
                     </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <span className="text-primary text-xs font-semibold">Ver</span>
+                    <td className="py-3.5 pr-4 pl-2 text-right">
+                      <span className="bg-primary-light text-primary-dark inline-flex rounded-full px-3 py-1 text-xs font-bold whitespace-nowrap">
+                        Ver
+                      </span>
                     </td>
                   </tr>
                 ))}

@@ -27,7 +27,7 @@ export function SortTh<F extends string>({
     <th
       aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
       className={cn(
-        "px-5 py-3 font-semibold whitespace-nowrap",
+        "px-5 py-3 font-semibold whitespace-nowrap select-none",
         align === "right" ? "text-right" : "text-left",
         className,
       )}

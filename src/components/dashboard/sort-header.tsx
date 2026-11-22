@@ -31,7 +31,7 @@ export function SortHeader<F extends string>({
         title={`Ordenar por ${label.toLowerCase()}`}
         onClick={() => onSort(field)}
         className={cn(
-          "hover:text-text inline-flex cursor-pointer items-center gap-1 tracking-wider transition-colors",
+          "hover:text-text inline-flex cursor-pointer items-center gap-1 tracking-wider whitespace-nowrap transition-colors select-none",
           active && "text-text",
           align === "right" && "flex-row-reverse",
         )}
