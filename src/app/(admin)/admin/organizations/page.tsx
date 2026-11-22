@@ -27,6 +27,45 @@ const TABS: { label: string; value: OrganizationStatus | "ALL" }[] = [
   { label: "Todas", value: "ALL" },
 ];
 
+type SortKey = "name" | "status" | "activeMembers" | "createdAt";
+type SortDir = "asc" | "desc";
+
+function sortOrgs(
+  orgs: AdminOrganization[],
+  key: SortKey | null,
+  dir: SortDir,
+): AdminOrganization[] {
+  if (!key) return orgs;
+  return [...orgs].sort((a, b) => {
+    let cmp = 0;
+    if (key === "name") cmp = a.name.localeCompare(b.name, "es");
+    else if (key === "status")
+      cmp = STATUS_LABELS[a.status].localeCompare(STATUS_LABELS[b.status], "es");
+    else if (key === "activeMembers") cmp = a.activeMembers - b.activeMembers;
+    else if (key === "createdAt") cmp = a.createdAt.localeCompare(b.createdAt);
+    return dir === "asc" ? cmp : -cmp;
+  });
+}
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="currentColor"
+      aria-hidden
+      className={cn("ml-1 inline-block transition-opacity", active ? "opacity-100" : "opacity-30")}
+    >
+      {dir === "asc" || !active ? (
+        <path d="M6 2.5L9.5 7.5H2.5L6 2.5Z" />
+      ) : (
+        <path d="M6 9.5L2.5 4.5H9.5L6 9.5Z" />
+      )}
+    </svg>
+  );
+}
+
 function StatusBadge({ status }: { status: OrganizationStatus }) {
   return (
     <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", STATUS_COLORS[status])}>
@@ -241,6 +280,8 @@ export default function OrganizationsPage() {
   const [tab, setTab] = useState<OrganizationStatus | "ALL">("PENDING");
   const [selected, setSelected] = useState<AdminOrganization | null>(null);
   const [page, setPage] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "organizations", tab, page],
@@ -252,6 +293,56 @@ export default function OrganizationsPage() {
         size: 20,
       }),
   });
+
+  const { data: pendingPage } = useQuery({
+    queryKey: ["admin", "organizations", "count", "PENDING"],
+    queryFn: () => adminApi.organizations({ status: ["PENDING"], page: 0, size: 1 }),
+    staleTime: 60_000,
+  });
+  const { data: activePage } = useQuery({
+    queryKey: ["admin", "organizations", "count", "ACTIVE"],
+    queryFn: () => adminApi.organizations({ status: ["ACTIVE"], page: 0, size: 1 }),
+    staleTime: 60_000,
+  });
+  const { data: rejectedPage } = useQuery({
+    queryKey: ["admin", "organizations", "count", "REJECTED"],
+    queryFn: () => adminApi.organizations({ status: ["REJECTED"], page: 0, size: 1 }),
+    staleTime: 60_000,
+  });
+  const { data: suspendedPage } = useQuery({
+    queryKey: ["admin", "organizations", "count", "SUSPENDED"],
+    queryFn: () => adminApi.organizations({ status: ["SUSPENDED"], page: 0, size: 1 }),
+    staleTime: 60_000,
+  });
+
+  const tabCounts: Record<OrganizationStatus | "ALL", number | undefined> = {
+    PENDING: pendingPage?.totalElements,
+    ACTIVE: activePage?.totalElements,
+    REJECTED: rejectedPage?.totalElements,
+    SUSPENDED: suspendedPage?.totalElements,
+    ALL:
+      pendingPage && activePage && rejectedPage
+        ? pendingPage.totalElements + activePage.totalElements + rejectedPage.totalElements
+        : undefined,
+  };
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const rows = sortOrgs(data?.content ?? [], sortKey, sortDir);
+
+  const COLUMNS: { key: SortKey; label: string; className: string }[] = [
+    { key: "name", label: "Organización", className: "px-5 py-3 text-left" },
+    { key: "status", label: "Estado", className: "px-5 py-3 text-left" },
+    { key: "activeMembers", label: "Participantes", className: "px-5 py-3 text-left" },
+    { key: "createdAt", label: "Alta", className: "px-5 py-3 text-left" },
+  ];
 
   return (
     <div className="flex h-full gap-6">
@@ -265,23 +356,26 @@ export default function OrganizationsPage() {
           </div>
         </div>
 
-        <div className="border-border mb-6 flex gap-1 border-b">
+        <div className="bg-fill mb-6 flex w-fit flex-wrap gap-1 rounded-xl p-1" role="tablist">
           {TABS.map(({ label, value }) => (
             <button
               key={value}
+              role="tab"
+              aria-selected={tab === value}
               onClick={() => {
                 setTab(value);
                 setPage(0);
                 setSelected(null);
               }}
               className={cn(
-                "px-4 py-2 text-sm font-semibold transition-colors",
-                tab === value
-                  ? "border-primary text-primary border-b-2"
-                  : "text-text-muted hover:text-text",
+                "flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors",
+                tab === value ? "bg-white text-text shadow-sm" : "text-text-muted hover:text-text",
               )}
             >
               {label}
+              {tabCounts[value] !== undefined && (
+                <span className="text-text-muted text-xs font-bold">{tabCounts[value]}</span>
+              )}
             </button>
           ))}
         </div>
@@ -298,21 +392,28 @@ export default function OrganizationsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-border bg-fill text-text-muted border-b">
-                    <th className="px-5 py-3 text-left font-semibold">Organización</th>
-                    <th className="px-5 py-3 text-left font-semibold">Estado</th>
-                    <th className="px-5 py-3 text-left font-semibold">Participantes</th>
-                    <th className="px-5 py-3 text-left font-semibold">Alta</th>
+                    {COLUMNS.map(({ key, label, className }) => (
+                      <th key={key} className={className}>
+                        <button
+                          onClick={() => handleSort(key)}
+                          className="hover:text-text inline-flex items-center font-semibold transition-colors"
+                        >
+                          {label}
+                          <SortIcon active={sortKey === key} dir={sortDir} />
+                        </button>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.content.length === 0 && (
+                  {rows.length === 0 && (
                     <tr>
                       <td colSpan={4} className="text-text-muted px-5 py-10 text-center">
                         No hay organizaciones con este filtro.
                       </td>
                     </tr>
                   )}
-                  {data?.content.map((org) => (
+                  {rows.map((org) => (
                     <tr
                       key={org.id}
                       className={cn(
