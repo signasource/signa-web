@@ -3,30 +3,29 @@
 > Responsibility: the SIGNA back-office "Métricas de uso" dashboard — global app usage, organized by
 > apartado (persona), with golden metrics, self-documenting widgets and an interactive time filter.
 > Update when: a tab, widget, golden metric, the datetime picker, or the metrics API changes.
-> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/app/(admin)/admin/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,kpi-card,delta,format,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,revenue-by-source-chart,services-status,chart-kind,funnel,sign-reports-card,sales-math,sales-list-dialog,survey-bar-chart,survey-answers,usage-queries,usage-math,usage-business,usage-resumen,usage-growth,usage-usuarios,usage-learning,usage-infra}.ts(x), src/lib/{datetime-range,course-deep-link,refund-reasons,api/metrics}.ts
+> Sources: src/app/(admin)/admin/usage-metrics/page.tsx, src/app/(admin)/admin/page.tsx, src/components/dashboard/{metrics-tabs,golden-row,kpi-card,delta,format,info-popover,metric-catalog,metric-stat,perf-chart,perf-panel,perf-format,breakdown-pie,daily-series-chart,revenue-by-source-chart,services-status,chart-kind,funnel,sign-reports-card,sales-math,sales-list-dialog,survey-bar-chart,survey-answers,usage-queries,usage-math,usage-business,usage-growth,usage-usuarios,usage-learning,usage-infra}.ts(x), src/lib/{datetime-range,course-deep-link,refund-reasons,api/metrics}.ts
 
 A single screen for the whole app's usage — every user, with or without an organization — behind the
 SIGNA `AdminAuthProvider` (not the org dashboard). One **datetime range picker** (hour/minute precision,
 `<input type="datetime-local">`, rolling presets + custom) plus a **live** toggle drive every widget,
 across every tab.
 
-## Apartados (tabs)
+## Admin home (`/admin`)
 
-Five tabs: **Resumen** (default), **Negocio**, **Usuarios**, **Aprendizaje**, **Infraestructura**. Gamification is not a tab: it is a section inside **Usuarios** (`GamificationSection`). The "v3 layout" section below is the current design; the bullets here describe what each tab contains.
+The back-office home page (`src/app/(admin)/admin/page.tsx`) shows a **"Requiere atención"** widget with
+two actionable items sourced from `GET /admin/stats` (cached under `["admin","stats"]`, shared with the
+layout's nav badges):
 
-- **Resumen** (`usage-resumen.tsx`) — four north-star `KpiCard`s (activos, nuevos, finalización de
-  lecciones, ingresos — sin compras reembolsadas, split orgs/usuarios finales in the hint) with deltas; the daily active users chart (2/3 width) beside
-  **"Requiere atención"** (`buildAlerts`: pending organizations → `/admin/organizations`, unresolved sign
-  reports → `/admin/sign-reports`, low-use contracts → `/admin/organizations`, the worst lesson abandonment →
-  `/admin/courses?course=&lesson=`, email failures, failed imports); then the services strip
-  (`services-status.tsx`; its "Ver infraestructura ›" action stays on the strip's line, only the service
-  list wraps). Exercise success rate and the lessons-per-day chart live in Aprendizaje.
-- **Learning funnel and sign reports** are **not** on this screen: the API computes both over the whole
-  history (the funnel up to the window's end), so they ignore the period picker. They live on the admin
-  home **`/admin`** (`src/app/(admin)/admin/page.tsx`), queried with `useLearningQuery` over
-  `2020-01-01 → page open`, together with a **Usuarios registrados** counter taken from the funnel's first
-  step (same universe as growth: no SIGNA staff). The funnel (`funnel.tsx`) and `SignReportsCard`
-  (`sign-reports-card.tsx`) components are shared.
+- **Organizaciones pendientes de validar** — links to `/admin/organizations`; shown only when
+  `pendingOrganizations > 0`.
+- **Reportes de señas sin resolver** — links to `/admin/sign-reports`; shown only when
+  `openSignReports > 0`.
+
+When nothing is pending the widget reads "Todo en orden: nada pendiente de resolver."
+
+## Apartados (tabs) — `/admin/usage-metrics`
+
+Four tabs: **Negocio** (default), **Usuarios**, **Aprendizaje**, **Infraestructura**. Gamification is not a tab: it is a section inside **Usuarios** (`GamificationSection`). The "v3 layout" section below is the current design; the bullets here describe what each tab contains.
 
 `page.tsx` is a shell holding the shared filter state (`selection`/`range`/`step`/`live`) and the active
 tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their apartado. `MetricsTabs`
@@ -99,11 +98,7 @@ panels only populate in production; the Infra tab says so, and shows "sin datos"
   (`previous` + `previousShiftSeconds`).
 - **Tabs** carry health dots (Aprendizaje: completion/success; Infraestructura: services) and the
   "Comparando con … · hora de Argentina" caption on the same row.
-- **Resumen** (see the tab bullet above for the current layout): "Requiere atención" (`buildAlerts`): pending orgs, unresolved reports (PENDING + REVIEWED, the same count as the sidebar badge; top sign), low-use
-  contracts (→ `/admin/organizations`), worst lesson abandonment ≥ 40 % (deep link
-  `/admin/courses?course=&lesson=`, `lib/course-deep-link.ts`), email failures, failed imports.
-  `ServicesStrip` (`services-status.tsx`): API/R2 availability (avg of `avg_over_time(up)`),
-  email/push failure counts (Σ rate × step), on-device recognition.
+- **Admin home** (`/admin`): see the "Admin home" section above.
 - **Usuarios** (superseded nov 2026, see the tab bullet above): retention at 7 days of the window's signups (`retention7`), cohort table removed;
   gamification was one stat strip + XP histogram (XP earned in the window, API tiers 0–100 … 2k+),
   challenge claims, achievements Más/Menos (share of `eligibleUsers`).

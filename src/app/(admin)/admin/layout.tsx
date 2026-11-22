@@ -26,20 +26,11 @@ type NavItem = {
 };
 
 const NAV: NavItem[] = [
-  { href: "/admin", label: "Métricas", icon: MetricsIcon },
-  {
-    href: "/admin/organizations",
-    label: "Organizaciones",
-    icon: BuildingIcon,
-    badgeKey: "pendingOrganizations",
-  },
+  { href: "/admin", label: "Inicio", icon: HomeIcon },
+  { href: "/admin/usage-metrics", label: "Métricas", icon: MetricsIcon },
+  { href: "/admin/organizations", label: "Organizaciones", icon: BuildingIcon },
   { href: "/admin/purchases", label: "Compras", icon: ReceiptIcon },
-  {
-    href: "/admin/sign-reports",
-    label: "Reportes de señas",
-    icon: FlagIcon,
-    badgeKey: "openSignReports",
-  },
+  { href: "/admin/sign-reports", label: "Reportes de señas", icon: FlagIcon },
   { href: "/admin/courses", label: "Cursos", icon: CoursesIcon },
   { href: "/admin/signs", label: "Señas", icon: HandIcon },
   { href: "/admin/users", label: "Usuarios", icon: UsersIcon },
@@ -298,6 +289,24 @@ function UsersIcon({ className }: { className?: string }) {
       <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
       <circle cx="9" cy="7" r="4" />
       <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+    </svg>
+  );
+}
+
+function HomeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 12L12 3l9 9" />
+      <path d="M9 21V12h6v9" />
+      <path d="M3 12v9h18V12" />
     </svg>
   );
 }
