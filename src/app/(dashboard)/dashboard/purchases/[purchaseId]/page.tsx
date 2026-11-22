@@ -561,7 +561,7 @@ export default function PurchaseDetailPage() {
                               Recordar
                             </button>
                           ) : null}
-                          {seat.userId ? (
+                          {seat.userId && purchase.status !== "REFUNDED" ? (
                             <Link href={`/dashboard/members/${seat.userId}`} className={pillButton}>
                               Ver avance
                             </Link>

@@ -509,6 +509,41 @@ describe("PurchaseDetailPage", () => {
     expect(screen.getByText("Duración del acceso")).toBeInTheDocument();
   });
 
+  it("hides Ver avance for refunded purchases", async () => {
+    vi.mocked(organizationsApi.purchase).mockResolvedValue(
+      detail(
+        {
+          status: "REFUNDED",
+          refundedAt: "2026-10-25T15:00:00Z",
+          seatCounts: {
+            pendingPayment: 0,
+            invited: 0,
+            invitationExpired: 0,
+            active: 0,
+            accessExpired: 0,
+            revoked: 1,
+          },
+        },
+        [
+          seat({
+            id: "s1",
+            email: "ana@x.com",
+            status: "REVOKED",
+            userId: "u1",
+            userName: "Ana García",
+            canEditEmail: false,
+            revokedAt: "2026-10-25T15:00:00Z",
+            nextReminderAvailableAt: null,
+          }),
+        ],
+      ),
+    );
+    renderPage();
+
+    expect(await screen.findByText("Ana García · ana@x.com")).toBeInTheDocument();
+    expect(screen.queryByText("Ver avance")).not.toBeInTheDocument();
+  });
+
   it("opens the bought course's details", async () => {
     vi.mocked(organizationsApi.purchase).mockResolvedValue(detail({}, []));
     vi.mocked(organizationsApi.purchasedCourse).mockReturnValue(new Promise(() => {}));
