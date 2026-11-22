@@ -232,6 +232,10 @@ export type Purchase = {
   hasAcceptedSeats: boolean;
   /** How it was paid: Mercado Pago, by hand (manual confirmation), or null while unpaid. */
   paymentMethod: "MERCADO_PAGO" | "MANUAL" | null;
+  /** Short human-readable identifier for this purchase (e.g. `purchase_fa99c247`). */
+  externalRef: string;
+  /** Mercado Pago order ID; null while unpaid or if paid manually. */
+  mpOrderId: string | null;
 };
 
 /**

@@ -310,7 +310,7 @@ export function DailySeriesChart({
               />
               {withPrevious ? (
                 <Line
-                  type="stepAfter"
+                  type="monotone"
                   dataKey="prev"
                   stroke={PREVIOUS_COLOR}
                   strokeWidth={1.5}
@@ -322,7 +322,7 @@ export function DailySeriesChart({
               ) : null}
               {kind === "line" ? (
                 <Line
-                  type="stepAfter"
+                  type="monotone"
                   dataKey="value"
                   stroke="var(--color-primary)"
                   strokeWidth={2}

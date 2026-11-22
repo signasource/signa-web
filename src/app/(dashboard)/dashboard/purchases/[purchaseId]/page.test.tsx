@@ -81,6 +81,8 @@ function detail(overrides: Partial<PurchaseDetail["purchase"]> = {}, seats: Seat
       hasRefundRequest: false,
       hasAcceptedSeats: false,
       paymentMethod: "MERCADO_PAGO" as const,
+      externalRef: "purchase_test001",
+      mpOrderId: "ORD01TEST",
       ...overrides,
     },
     seats,
