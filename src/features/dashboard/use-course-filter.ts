@@ -10,10 +10,14 @@ export const COURSE_PARAM = "curso";
 
 /**
  * The course the panel is filtered by, kept in the URL (`?curso=<id>`) so it survives moving
- * between sections and can be shared. `null` means every contracted course; an id the
- * organization did not contract is ignored.
+ * between sections and can be shared. `null` means every course in the list; an id not present in
+ * the list is ignored.
+ *
+ * Pass `courses` to override the default list (which comes from the organization's contracted
+ * courses). Useful when the page needs a broader set — e.g. purchases, which should include
+ * refunded courses that are no longer in the contracted list.
  */
-export function useCourseFilter(): {
+export function useCourseFilter(courses?: CourseSummary[]): {
   courses: CourseSummary[];
   course: CourseSummary | null;
   courseId: string | undefined;
@@ -23,8 +27,8 @@ export function useCourseFilter(): {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const courses = organization?.courses ?? [];
-  const course = courses.find((c) => c.id === params.get(COURSE_PARAM)) ?? null;
+  const resolvedCourses = courses ?? organization?.courses ?? [];
+  const course = resolvedCourses.find((c) => c.id === params.get(COURSE_PARAM)) ?? null;
 
   const setCourseId = useCallback(
     (id: string | null) => {
@@ -37,7 +41,7 @@ export function useCourseFilter(): {
     [params, pathname, router],
   );
 
-  return { courses, course, courseId: course?.id, setCourseId };
+  return { courses: resolvedCourses, course, courseId: course?.id, setCourseId };
 }
 
 const FILTER_PARAMS = [COURSE_PARAM, FROM_PARAM, TO_PARAM];
