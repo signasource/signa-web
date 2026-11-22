@@ -41,7 +41,7 @@ export const RANGE_PRESETS: RangePreset[] = [
   { key: "30d", label: "Últimos 30 días", minutes: 30 * 24 * 60 },
 ];
 
-export const DEFAULT_SELECTION: RangeSelection = { kind: "all" };
+export const DEFAULT_SELECTION: RangeSelection = { kind: "preset", key: "7d" };
 
 function presetByKey(key: string): RangePreset | undefined {
   return RANGE_PRESETS.find((p) => p.key === key);
