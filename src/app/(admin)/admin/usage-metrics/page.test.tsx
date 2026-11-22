@@ -35,7 +35,8 @@ vi.mock("@/components/dashboard/metrics-tabs", () => ({
 vi.mock("@/components/dashboard/ui", () => ({
   PageHeading: ({ title }: { title: string }) => <h1>{title}</h1>,
 }));
-vi.mock("@/lib/datetime-range", () => ({
+vi.mock("@/lib/datetime-range", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/datetime-range")>()),
   DEFAULT_SELECTION: { kind: "rolling", amount: 24, unit: "hour" },
   resolveRange: () => ({
     from: "2024-01-01T00:00:00Z",
@@ -52,10 +53,8 @@ describe("AdminMetricasPage", () => {
     expect(screen.getByRole("heading", { name: "Métricas" })).toBeInTheDocument();
   });
 
-  it("shows the five metric tabs", () => {
+  it("shows the four metric tabs", () => {
     render(<AdminMetricasPage />);
-    expect(
-      screen.getByText(/Resumen.*Negocio.*Usuarios.*Aprendizaje.*Infraestructura/),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Negocio, Usuarios, Aprendizaje, Infraestructura")).toBeInTheDocument();
   });
 });

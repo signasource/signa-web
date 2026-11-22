@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ConfirmDialog, type ConfirmRequest } from "@/features/admin/signs/confirm-dialog";
 import { errorMessage } from "@/features/admin/signs/errors";
 import { courseLessonHref } from "@/lib/course-deep-link";
+import { SignAnimationView } from "@/features/admin/signs/sign-animation-view";
 import { FORMAT_TINT, FormatBadge } from "@/features/admin/signs/sign-card";
 import {
   adminApi,
@@ -377,6 +378,8 @@ function EditorForm({
             </div>
           ))}
         </section>
+
+        <SignAnimationView sign={sign} meaning={normalizeMeaning(meaning) || sign.meaning} />
 
         {/* usages */}
         <section className="border-border w-full rounded-lg border bg-white p-6">

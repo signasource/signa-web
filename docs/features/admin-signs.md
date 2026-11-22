@@ -3,7 +3,7 @@
 > Responsibility: the SIGNA back-office "Señas" screen — the sign catalog and its editor (name,
 > handedness, YouTube link, where each sign is used).
 > Update when: the catalog, the editor, or the sign API contract change.
-> Sources: src/app/(admin)/admin/signs/page.tsx, src/features/admin/signs/{sign-card,sign-editor,sign-media-preview,confirm-dialog,errors}.ts(x), src/lib/sign-editor.ts, src/lib/api/admin.ts
+> Sources: src/app/(admin)/admin/signs/page.tsx, src/features/admin/signs/{sign-card,sign-editor,sign-animation-view,sign-media-preview,confirm-dialog,errors}.ts(x), src/lib/sign-editor.ts, src/lib/api/admin.ts
 
 Mirrors the look of `/admin/courses` (tinted cards, sticky editor bar, dark summary card) with
 design tokens instead of hex. Two views on one route, chosen by the `?id=` search param so the editor
@@ -33,6 +33,15 @@ confirmation whenever the sign is used, saying how many lessons (and how many pu
 from the catalog. Saving a new link makes signa-api copy it (or remove it, when cleared) into every
 block that presents that sign, in all course versions (published included), in the same transaction.
 Only done when the request carries `youtubeUrl`; blocks already holding the value are untouched.
+
+## Animación (read-only)
+
+`SignAnimationView` shows what learners see: `SignMediaPreview` in a phone frame (the .mp4 looping,
+with a Frente/Lateral switch when there is a side video; the .glb in the model-viewer iframe), the
+format, each file's bucket path with a "descargar" link, and when it was last uploaded. If the sign
+points at a file that is not in the bucket (`mediaAvailable === false`) it says so. **Files cannot be
+uploaded or replaced from the panel** — the upload panel was removed, and the client no longer has
+`uploadSignAnimation` / `removeSignLateral` or the upload checks (`detectMediaFormat`, `uploadError`).
 
 ## Where it is used
 
