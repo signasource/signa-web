@@ -472,7 +472,7 @@ export default function PurchaseDetailPage() {
                       group === option.value && "border-primary bg-primary-light text-primary-dark",
                     )}
                   >
-                    {option.label}
+                    {option.label} · {seatsInGroup(seats, option.value).length}
                   </button>
                 ))}
               </div>
@@ -623,7 +623,7 @@ export default function PurchaseDetailPage() {
                           "Orden de Mercado Pago",
                           <span key="mp" className="flex min-w-0 items-center justify-end gap-1.5">
                             <span
-                              className="max-w-[140px] cursor-text select-all truncate font-extrabold"
+                              className="max-w-[140px] cursor-text truncate font-extrabold select-all"
                               title={purchase.mpOrderId}
                             >
                               {purchase.mpOrderId}
@@ -634,10 +634,7 @@ export default function PurchaseDetailPage() {
                               title="Copiar número de orden"
                               className="text-text-muted hover:text-text shrink-0 transition-colors"
                             >
-                              <Icon
-                                name={copied ? "check" : "copy"}
-                                className="size-4"
-                              />
+                              <Icon name={copied ? "check" : "copy"} className="size-4" />
                             </button>
                           </span>,
                         ] as [string, React.ReactNode],

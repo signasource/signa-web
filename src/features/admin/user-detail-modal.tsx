@@ -83,7 +83,7 @@ function AdminDetailPanel({ detail }: { detail: AdminUserDetail }) {
         <dd className="mt-1">
           <span
             className={cn(
-              "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+              "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
               ROLE_COLORS[detail.role],
             )}
           >
@@ -130,7 +130,7 @@ function OrgAdminDetailPanel({ detail }: { detail: AdminUserDetail }) {
           <dd className="mt-1">
             <span
               className={cn(
-                "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
                 ROLE_COLORS[detail.role],
               )}
             >
@@ -235,7 +235,7 @@ function UserDetailPanel({ detail }: { detail: AdminUserDetail }) {
           <dd className="mt-1">
             <span
               className={cn(
-                "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
                 ROLE_COLORS[detail.role],
               )}
             >

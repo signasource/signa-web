@@ -14,6 +14,8 @@ import {
 import { purchaseFromSearch } from "@/lib/admin-purchase-link";
 import { refundReasonLabel } from "@/lib/refund-reasons";
 import { refundResolveErrorMessage } from "@/lib/purchases";
+import { SortTh } from "@/components/admin/sort-th";
+import { nextSort, sortRows, type SortDir, type SortValue } from "@/lib/table-sort";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -36,6 +38,20 @@ const STATUS_META: Record<UnifiedPurchaseStatus, { label: string; bg: string; fg
   PAID: { label: "Pagada", bg: "var(--color-success-light)", fg: "var(--color-success-dark)" },
   CANCELLED: { label: "Cancelada", bg: "var(--color-fill)", fg: "var(--color-text-muted)" },
   REFUNDED: { label: "Reembolsada", bg: "var(--color-danger-light)", fg: "var(--color-danger)" },
+};
+
+type PurchaseSort = "date" | "product" | "buyer" | "amount" | "status";
+
+/** What each sortable column of the purchases table orders by, and its first direction. */
+const PURCHASE_SORT: Record<
+  PurchaseSort,
+  { key: (p: AdminPurchaseListItem) => SortValue; first: SortDir }
+> = {
+  date: { key: (p) => p.createdAt, first: "desc" },
+  product: { key: (p) => p.productName, first: "asc" },
+  buyer: { key: (p) => p.buyerName, first: "asc" },
+  amount: { key: (p) => p.amount, first: "desc" },
+  status: { key: (p) => STATUS_META[p.status].label, first: "asc" },
 };
 
 const REFUND_STATUS_META: Record<RefundRequestStatus, { label: string; bg: string; fg: string }> = {
@@ -69,13 +85,6 @@ const PERIOD_OPTIONS = [
   { v: "7", l: "Últimos 7 días" },
   { v: "30", l: "Últimos 30 días" },
   { v: "custom", l: "Personalizado" },
-];
-
-const SORT_OPTIONS = [
-  { v: "date_desc", l: "Más recientes" },
-  { v: "date_asc", l: "Más antiguas" },
-  { v: "amount_desc", l: "Mayor importe" },
-  { v: "amount_asc", l: "Menor importe" },
 ];
 
 const RSORT_OPTIONS = [
@@ -339,9 +348,16 @@ function PurchaseList({
   const [period, setPeriod] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [sort, setSort] = useState("date_desc");
+  const [sort, setSort] = useState<{ by: PurchaseSort; dir: SortDir }>({
+    by: "date",
+    dir: "desc",
+  });
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 10;
+  const onSort = (field: PurchaseSort) => {
+    setSort((s) => nextSort(s, field, PURCHASE_SORT[field].first));
+    setPage(0);
+  };
 
   const [from_, to_] = rangeOf(period, from, to);
 
@@ -370,13 +386,7 @@ function PurchaseList({
 
   let filtered = filteredBeforeType.filter((p) => type === "ALL" || p.type === type);
 
-  const [sk, sd] = sort.split("_") as [string, string];
-  filtered = [...filtered].sort((a, b) => {
-    const va = sk === "date" ? a.createdAt : a.amount;
-    const vb = sk === "date" ? b.createdAt : b.amount;
-    const c = va < vb ? -1 : va > vb ? 1 : 0;
-    return sd === "asc" ? c : -c;
-  });
+  filtered = sortRows(filtered, PURCHASE_SORT[sort.by].key, sort.dir);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pg = Math.min(page, pages - 1);
@@ -421,8 +431,6 @@ function PurchaseList({
         setPage(0);
       },
     });
-
-  const arrow = (key: string) => (sk === key ? (sd === "asc" ? " ↑" : " ↓") : "");
 
   const statusActive = status !== "ALL";
   const periodActive = period !== "all";
@@ -492,14 +500,6 @@ function PurchaseList({
             }}
             ariaLabel="Fecha"
           />
-          <PillSelect
-            label="Orden"
-            value={labelOf(SORT_OPTIONS, sort)}
-            options={SORT_OPTIONS}
-            active={false}
-            onChange={setSort}
-            ariaLabel="Orden"
-          />
         </div>
       </div>
 
@@ -566,21 +566,11 @@ function PurchaseList({
                 color: "var(--color-text-muted)",
               }}
             >
-              <th
-                onClick={() => setSort(sort === "date_desc" ? "date_asc" : "date_desc")}
-                className="cursor-pointer px-5 py-3 text-left text-sm font-semibold whitespace-nowrap"
-              >
-                Fecha{arrow("date")}
-              </th>
-              <th className="px-5 py-3 text-left font-semibold">Producto</th>
-              <th className="px-5 py-3 text-left font-semibold">Comprador</th>
-              <th
-                onClick={() => setSort(sort === "amount_desc" ? "amount_asc" : "amount_desc")}
-                className="cursor-pointer px-5 py-3 text-left font-semibold whitespace-nowrap"
-              >
-                Total{arrow("amount")}
-              </th>
-              <th className="px-5 py-3 text-left font-semibold">Estado</th>
+              <SortTh label="Fecha" field="date" sort={sort} onSort={onSort} />
+              <SortTh label="Producto" field="product" sort={sort} onSort={onSort} />
+              <SortTh label="Comprador" field="buyer" sort={sort} onSort={onSort} />
+              <SortTh label="Total" field="amount" sort={sort} onSort={onSort} />
+              <SortTh label="Estado" field="status" sort={sort} onSort={onSort} />
               <th className="w-10 px-5 py-3" />
             </tr>
           </thead>

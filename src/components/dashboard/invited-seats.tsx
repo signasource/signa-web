@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { SeatStatusPill } from "@/components/dashboard/purchase-status";
+import { SortHeader } from "@/components/dashboard/sort-header";
 import { ErrorState, LoadingState } from "@/components/dashboard/ui";
 import { useInvitedSeats } from "@/features/dashboard/use-invited-seats";
-import type { SeatStatus } from "@/lib/api/types";
+import type { OrganizationInvitation, SeatStatus } from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
-import { isErasedEmail, seatEmailLabel } from "@/lib/purchases";
+import { isErasedEmail, seatEmailLabel, seatStatusLabel } from "@/lib/purchases";
+import { nextSort, sortRows, type SortDir, type SortValue } from "@/lib/table-sort";
 import { cn } from "@/lib/utils";
 
 type InvitedFilter = SeatStatus | "ALL";
@@ -17,6 +19,19 @@ const FILTERS: { value: InvitedFilter; label: string }[] = [
   { value: "INVITED", label: "Pendientes" },
   { value: "INVITATION_EXPIRED", label: "Vencidas" },
 ];
+
+type InvitedSort = "email" | "course" | "status" | "invitedAt";
+
+/** What each column of the invited list orders by, and its first direction. */
+const INVITED_SORT: Record<
+  InvitedSort,
+  { key: (r: OrganizationInvitation) => SortValue; first: SortDir }
+> = {
+  email: { key: (r) => r.seat.email, first: "asc" },
+  course: { key: (r) => r.courseName, first: "asc" },
+  status: { key: (r) => seatStatusLabel(r.seat.status, r.purchaseStatus), first: "asc" },
+  invitedAt: { key: (r) => r.seat.invitedAt, first: "desc" },
+};
 
 const GRID = "grid grid-cols-[minmax(220px,2fr)_minmax(160px,1.4fr)_150px_120px] gap-4";
 
@@ -35,15 +50,25 @@ export function InvitedSeats({
 }) {
   const { isPending, error, rows: all } = useInvitedSeats(orgId, courseId);
   const [filter, setFilter] = useState<InvitedFilter>("ALL");
+  const [sort, setSort] = useState<{ by: InvitedSort; dir: SortDir }>({
+    by: "invitedAt",
+    dir: "desc",
+  });
 
   if (isPending) return <LoadingState>Cargando invitados…</LoadingState>;
   if (error) return <ErrorState>No pudimos cargar a los invitados.</ErrorState>;
 
   const q = query.trim().toLowerCase();
-  const rows = all.filter(
-    ({ seat }) =>
-      (filter === "ALL" || seat.status === filter) && (!q || seat.email.toLowerCase().includes(q)),
+  const searched = all.filter(({ seat }) => !q || seat.email.toLowerCase().includes(q));
+  const countOf = (f: InvitedFilter) =>
+    f === "ALL" ? searched.length : searched.filter(({ seat }) => seat.status === f).length;
+  const rows = sortRows(
+    searched.filter(({ seat }) => filter === "ALL" || seat.status === filter),
+    INVITED_SORT[sort.by].key,
+    sort.dir,
   );
+  const onSort = (field: InvitedSort) =>
+    setSort((s) => nextSort(s, field, INVITED_SORT[field].first));
 
   return (
     <div className="flex flex-col gap-3">
@@ -62,7 +87,7 @@ export function InvitedSeats({
                   : "bg-fill text-text hover:bg-fill-dark",
               )}
             >
-              {f.label}
+              {f.label} · {countOf(f.value)}
             </button>
           ))}
         </div>
@@ -79,10 +104,10 @@ export function InvitedSeats({
               "border-border text-text-muted border-b py-3 text-xs font-extrabold tracking-wider",
             )}
           >
-            <span>EMAIL</span>
-            <span>CURSO</span>
-            <span>ESTADO</span>
-            <span>INVITADO</span>
+            <SortHeader label="EMAIL" field="email" sort={sort} onSort={onSort} />
+            <SortHeader label="CURSO" field="course" sort={sort} onSort={onSort} />
+            <SortHeader label="ESTADO" field="status" sort={sort} onSort={onSort} />
+            <SortHeader label="INVITADO" field="invitedAt" sort={sort} onSort={onSort} />
           </div>
           {rows.map(({ seat, purchaseId, courseName, purchaseStatus }) => {
             const reminded = seat.lastReminderAt ?? seat.autoReminderSentAt;

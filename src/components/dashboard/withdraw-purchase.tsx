@@ -37,6 +37,9 @@ export function WithdrawPurchase({ purchase, onConfirm, pending, error }: Props)
   const active = purchase.seatCounts.active;
   const invited = purchase.seatCounts.invited;
   const until = purchase.refundableUntil ? formatDate(purchase.refundableUntil) : "";
+  // Confirmed by SIGNA by hand: there is no Mercado Pago payment to give back, so the withdrawal
+  // becomes a refund request that SIGNA pays back by hand (and only then the purchase is cancelled).
+  const manual = purchase.paymentMethod === "MANUAL";
 
   return (
     <Card className="flex flex-col gap-3">
@@ -44,8 +47,11 @@ export function WithdrawPurchase({ purchase, onConfirm, pending, error }: Props)
         <div className="flex min-w-0 flex-1 basis-72 flex-col gap-1">
           <CardTitle>Anular la compra</CardTitle>
           <p className="text-text-muted text-sm text-pretty">
-            Tenés tiempo hasta el {until} para anularla. Te devolvemos {total} completos a través de
-            Mercado Pago. {REFUND_RULE}
+            Tenés tiempo hasta el {until} para anularla.{" "}
+            {manual
+              ? `Como el pago lo confirmó SIGNA, te devolvemos ${total} completos a mano: te escribimos por email para coordinar la devolución.`
+              : `Te devolvemos ${total} completos a través de Mercado Pago.`}{" "}
+            {REFUND_RULE}
           </p>
         </div>
         {confirming ? null : (
@@ -67,7 +73,11 @@ export function WithdrawPurchase({ purchase, onConfirm, pending, error }: Props)
         >
           <p className="text-sm font-bold">Al anular la compra:</p>
           <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
-            <li>Te devolvemos {total} al medio de pago con el que pagaste.</li>
+            <li>
+              {manual
+                ? `SIGNA te devuelve ${total} a mano y te escribe por email para coordinarlo. Cuando confirme la devolución, se anula la compra:`
+                : `Te devolvemos ${total} al medio de pago con el que pagaste.`}
+            </li>
             <li>
               {active === 0
                 ? "Nadie activó el curso todavía."

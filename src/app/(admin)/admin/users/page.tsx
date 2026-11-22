@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useEffect, useId, useRef, useState } from "react";
 import { AdminAvatar } from "@/components/admin/admin-avatar";
 import { AdminsPanel } from "@/components/admin/admins-panel";
 import { Icon } from "@/components/dashboard/icons";
@@ -238,7 +238,19 @@ function DateRangePicker({
 // ── Sortable column header ────────────────────────────────────────────────────
 
 type SortDir = "asc" | "desc";
-type SortField = "name" | "role" | "createdAt" | "lastActivity" | "streak";
+type SortField =
+  "name" | "role" | "organization" | "access" | "createdAt" | "lastActivity" | "streak";
+
+/** First click on a column: text A→Z, numbers and dates highest/most recent first. */
+const FIRST_DIR: Record<SortField, SortDir> = {
+  name: "asc",
+  role: "asc",
+  organization: "asc",
+  access: "asc",
+  createdAt: "desc",
+  lastActivity: "desc",
+  streak: "desc",
+};
 
 function SortTh({
   label,
@@ -257,10 +269,17 @@ function SortTh({
 }) {
   const active = sortBy === field;
   return (
-    <th className={cn("px-5 py-3 font-bold", align === "right" ? "text-right" : "text-left")}>
+    <th
+      aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+      className={cn(
+        "px-3 py-3 font-bold whitespace-nowrap select-none",
+        align === "right" ? "text-right" : "text-left",
+      )}
+    >
       <button
         type="button"
         onClick={() => onSort(field)}
+        title={`Ordenar por ${label.toLowerCase()}`}
         className={cn(
           "hover:text-text inline-flex cursor-pointer items-center gap-1 transition-colors",
           active ? "text-text" : "text-text-muted",
@@ -277,33 +296,6 @@ function SortTh({
   );
 }
 
-// ── Client-side sort ──────────────────────────────────────────────────────────
-
-function sortUsers(users: AdminUser[], field: SortField | null, dir: SortDir): AdminUser[] {
-  if (!field) return users;
-  return [...users].sort((a, b) => {
-    const mult = dir === "asc" ? 1 : -1;
-    if (field === "name") {
-      const na = `${a.name} ${a.lastName}`;
-      const nb = `${b.name} ${b.lastName}`;
-      return mult * na.localeCompare(nb, "es");
-    }
-    if (field === "role") return mult * a.role.localeCompare(b.role);
-    if (field === "createdAt") {
-      const da = a.createdAt ?? "";
-      const db = b.createdAt ?? "";
-      return mult * da.localeCompare(db);
-    }
-    if (field === "lastActivity") {
-      const da = a.lastSeenDate ?? a.lastStreakDate ?? "";
-      const db = b.lastSeenDate ?? b.lastStreakDate ?? "";
-      return mult * da.localeCompare(db);
-    }
-    if (field === "streak") return mult * (a.currentStreak - b.currentStreak);
-    return 0;
-  });
-}
-
 // ── UsersTab ──────────────────────────────────────────────────────────────────
 
 function UsersTab() {
@@ -315,8 +307,9 @@ function UsersTab() {
   const [lastActiveFrom, setLastActiveFrom] = useState("");
   const [lastActiveTo, setLastActiveTo] = useState("");
   const [page, setPage] = useState(0);
-  const [sortBy, setSortBy] = useState<SortField | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  // Sorted by the API over every matching account (not just this page); newest first by default.
+  const [sortBy, setSortBy] = useState<SortField>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selected, setSelected] = useState<AdminUser | null>(null);
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
@@ -340,8 +333,9 @@ function UsersTab() {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortBy(field);
-      setSortDir("asc");
+      setSortDir(FIRST_DIR[field]);
     }
+    setPage(0);
   }
 
   function handleFilterChange<T>(setter: (v: T) => void, value: T) {
@@ -349,7 +343,7 @@ function UsersTab() {
     setPage(0);
   }
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isPlaceholderData } = useQuery({
     queryKey: [
       "admin",
       "users",
@@ -360,6 +354,8 @@ function UsersTab() {
       createdTo,
       lastActiveFrom,
       lastActiveTo,
+      sortBy,
+      sortDir,
     ],
     queryFn: () =>
       adminApi.users({
@@ -371,13 +367,15 @@ function UsersTab() {
         createdTo: createdTo || undefined,
         lastActiveFrom: lastActiveFrom || undefined,
         lastActiveTo: lastActiveTo || undefined,
+        sortBy,
+        sortDir,
       }),
+    // Re-sorting or paging keeps the current rows on screen (dimmed) until the new ones arrive,
+    // instead of swapping the table for the loading skeleton.
+    placeholderData: keepPreviousData,
   });
 
-  const sorted = useMemo(
-    () => sortUsers(data?.content ?? [], sortBy, sortDir),
-    [data?.content, sortBy, sortDir],
-  );
+  const sorted = data?.content ?? [];
 
   return (
     <div>
@@ -420,8 +418,13 @@ function UsersTab() {
         </div>
       ) : (
         <>
-          <div className="border-border bg-surface overflow-hidden rounded-2xl border">
-            <table className="w-full text-sm">
+          <div
+            className={cn(
+              "border-border bg-surface overflow-x-auto rounded-2xl border transition-opacity",
+              isPlaceholderData && "opacity-60",
+            )}
+          >
+            <table className="w-full min-w-[960px] text-sm">
               <thead>
                 <tr className="border-border bg-fill text-text-muted border-b text-xs">
                   <SortTh
@@ -438,8 +441,20 @@ function UsersTab() {
                     sortDir={sortDir}
                     onSort={handleSort}
                   />
-                  <th className="px-5 py-3 text-left font-bold">Organización</th>
-                  <th className="px-5 py-3 text-left font-bold">Acceso</th>
+                  <SortTh
+                    label="Organización"
+                    field="organization"
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortTh
+                    label="Acceso"
+                    field="access"
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
                   <SortTh
                     label="Incorporación"
                     field="createdAt"
@@ -461,7 +476,9 @@ function UsersTab() {
                     sortDir={sortDir}
                     onSort={handleSort}
                   />
-                  <th className="px-5 py-3" />
+                  <th className="px-3 py-3">
+                    <span className="sr-only">Detalle</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -478,14 +495,14 @@ function UsersTab() {
                     className="border-border hover:bg-fill/50 cursor-pointer border-b last:border-0"
                     onClick={() => setSelected(user)}
                   >
-                    <td className="px-5 py-3.5">
+                    <td className="px-3 py-3.5">
                       <div className="flex items-center gap-3">
                         <AdminAvatar
                           name={user.name}
                           lastName={user.lastName}
                           avatar={user.avatar}
                         />
-                        <div className="min-w-0">
+                        <div className="max-w-[190px] min-w-0">
                           <p className="text-text truncate font-semibold">
                             {user.name} {user.lastName}
                             {!user.enabled && (
@@ -494,26 +511,29 @@ function UsersTab() {
                               </span>
                             )}
                           </p>
-                          <p className="text-text-muted truncate text-xs">
+                          <p
+                            className="text-text-muted truncate text-xs"
+                            title={`@${user.username} · ${user.email}`}
+                          >
                             @{user.username} · {user.email}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-3 py-3.5">
                       <span
                         className={cn(
-                          "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                          "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
                           ROLE_COLORS[user.role],
                         )}
                       >
                         {ROLE_LABELS[user.role]}
                       </span>
                     </td>
-                    <td className="text-text-muted px-5 py-3.5 text-sm">
+                    <td className="text-text-muted px-3 py-3.5 text-sm">
                       {user.organizationName ?? "—"}
                     </td>
-                    <td className="px-5 py-3.5 text-xs">
+                    <td className="px-3 py-3.5 text-xs whitespace-nowrap">
                       <span className="text-text font-medium">
                         {user.authProvider === "GOOGLE" ? "Google" : "Email"}
                       </span>
@@ -523,17 +543,19 @@ function UsersTab() {
                         · {user.verified ? "verificada" : "sin verificar"}
                       </span>
                     </td>
-                    <td className="text-text-muted px-5 py-3.5 text-xs">
+                    <td className="text-text-muted px-3 py-3.5 text-xs">
                       {relativeDate(user.createdAt ?? null)}
                     </td>
-                    <td className="text-text px-5 py-3.5 text-sm font-medium">
+                    <td className="text-text px-3 py-3.5 text-sm font-medium">
                       {user.currentStreak > 0 ? `${user.currentStreak} días` : "—"}
                     </td>
-                    <td className="text-text-muted px-5 py-3.5 text-xs">
+                    <td className="text-text-muted px-3 py-3.5 text-xs">
                       {relativeDate(user.lastSeenDate ?? user.lastStreakDate)}
                     </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <span className="text-primary text-xs font-semibold">Ver</span>
+                    <td className="py-3.5 pr-4 pl-2 text-right">
+                      <span className="bg-primary-light text-primary-dark inline-flex rounded-full px-3 py-1 text-xs font-bold whitespace-nowrap">
+                        Ver
+                      </span>
                     </td>
                   </tr>
                 ))}

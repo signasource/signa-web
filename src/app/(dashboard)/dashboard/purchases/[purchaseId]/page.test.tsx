@@ -145,10 +145,12 @@ describe("PurchaseDetailPage", () => {
     for (const gone of ["Sin aceptar", "Acceso activo", "Invitación vencida", "Acceso vencido"]) {
       expect(screen.queryByRole("button", { name: gone })).not.toBeInTheDocument();
     }
-    fireEvent.click(screen.getByRole("button", { name: "Invitación sin aceptar" }));
+    // Each chip says how many people it has.
+    expect(screen.getByRole("button", { name: "Todos · 2" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Invitación sin aceptar · 1" }));
     expect(screen.queryByText("Bruno Díaz · bruno@x.com")).not.toBeInTheDocument();
     expect(screen.getByText("ana@x.com")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Invitación aceptada" }));
+    fireEvent.click(screen.getByRole("button", { name: "Invitación aceptada · 1" }));
     expect(screen.queryByText("ana@x.com")).not.toBeInTheDocument();
     expect(screen.getByText("Bruno Díaz · bruno@x.com")).toBeInTheDocument();
   });
@@ -363,6 +365,42 @@ describe("PurchaseDetailPage", () => {
     expect(screen.getByText("Acceso anulado")).toBeInTheDocument();
     expect(screen.getByText("Invitación anulada")).toBeInTheDocument();
     expect(screen.queryByText("Pagos devueltos")).not.toBeInTheDocument();
+    expect(screen.queryByText("Anular la compra")).not.toBeInTheDocument();
+  });
+
+  it("lets a purchase SIGNA confirmed by hand be withdrawn, as a refund SIGNA gives back", async () => {
+    const future = new Date(Date.now() + 3 * 86_400_000).toISOString();
+    const manual = detail({ paymentMethod: "MANUAL", refundableUntil: future }, [
+      seat({ id: "s1", email: "ana@x.com" }),
+    ]);
+    const requested = { ...manual, purchase: { ...manual.purchase, hasRefundRequest: true } };
+    vi.mocked(organizationsApi.purchase).mockResolvedValueOnce(manual).mockResolvedValue(requested);
+    vi.mocked(organizationsApi.withdrawPurchase).mockResolvedValue(requested);
+    renderPage();
+
+    // Same withdrawal period as a Mercado Pago purchase, not "Ya no disponible".
+    expect(await screen.findByText("Anular la compra")).toBeInTheDocument();
+    const row = screen.getByText("Anulación con reembolso").parentElement!;
+    expect(row).toHaveTextContent(/Hasta el /);
+    expect(row).not.toHaveTextContent("Ya no disponible");
+    expect(screen.getByText(/te devolvemos .* a mano/)).toBeInTheDocument();
+    expect(screen.queryByText(/a través de Mercado Pago/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Anular compra" }));
+    expect(screen.getByText(/SIGNA te devuelve .* a mano/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Motivo"), { target: { value: "MISTAKE" } });
+    fireEvent.click(screen.getByRole("button", { name: /Sí, anular y reembolsar/ }));
+
+    await waitFor(() =>
+      expect(organizationsApi.withdrawPurchase).toHaveBeenCalledWith("org1", "p1", {
+        reason: "MISTAKE",
+        message: "",
+      }),
+    );
+    // It stays paid until SIGNA gives the money back: the request is under review, no second one.
+    await waitFor(() =>
+      expect(screen.getByText(/Recibimos tu pedido de reembolso/)).toBeInTheDocument(),
+    );
     expect(screen.queryByText("Anular la compra")).not.toBeInTheDocument();
   });
 

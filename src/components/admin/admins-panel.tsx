@@ -7,8 +7,18 @@ import { useForm, useWatch } from "react-hook-form";
 import { AdminAvatar } from "@/components/admin/admin-avatar";
 import { AvatarPicker } from "@/components/admin/avatar-picker";
 import { EditAdminForm } from "@/components/admin/edit-admin-form";
+import { SortTh } from "@/components/admin/sort-th";
 import { createAdminSchema, type CreateAdminValues } from "@/lib/admin-profile";
-import { adminApi } from "@/lib/api/admin";
+import { adminApi, type AdminUser } from "@/lib/api/admin";
+import { nextSort, sortRows, type SortDir, type SortValue } from "@/lib/table-sort";
+
+type AdminSort = "name" | "email" | "username";
+
+const ADMIN_SORT: Record<AdminSort, (a: AdminUser) => SortValue> = {
+  name: (a) => `${a.name} ${a.lastName}`,
+  email: (a) => a.email,
+  username: (a) => a.username,
+};
 
 const inputClass =
   "border-border bg-fill focus:border-primary rounded-xl border px-3 py-2 outline-none";
@@ -113,6 +123,10 @@ export function AdminsPanel() {
     queryFn: adminApi.admins,
   });
 
+  const [sort, setSort] = useState<{ by: AdminSort; dir: SortDir }>({ by: "name", dir: "asc" });
+  const onSort = (field: AdminSort) => setSort((s) => nextSort(s, field, "asc"));
+  const admins = sortRows(data ?? [], ADMIN_SORT[sort.by], sort.dir);
+
   const editing = data?.find((a) => a.id === editingId) ?? null;
 
   return (
@@ -152,57 +166,62 @@ export function AdminsPanel() {
             ))}
           </div>
         ) : (
-          <div className="border-border bg-surface overflow-hidden rounded-2xl border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-border bg-fill text-text-muted border-b">
-                  <th className="px-5 py-3 text-left font-semibold">Nombre</th>
-                  <th className="px-5 py-3 text-left font-semibold">Email</th>
-                  <th className="px-5 py-3 text-left font-semibold">Usuario</th>
-                  <th className="px-5 py-3 text-right font-semibold">
-                    <span className="sr-only">Acciones</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="text-text-muted px-5 py-8 text-center">
-                      No hay administradores.
-                    </td>
+          <>
+            <p className="text-text-muted mb-3 text-xs">
+              {admins.length} {admins.length === 1 ? "administrador" : "administradores"}
+            </p>
+            <div className="border-border bg-surface overflow-hidden rounded-2xl border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-border bg-fill text-text-muted border-b">
+                    <SortTh label="Nombre" field="name" sort={sort} onSort={onSort} />
+                    <SortTh label="Email" field="email" sort={sort} onSort={onSort} />
+                    <SortTh label="Usuario" field="username" sort={sort} onSort={onSort} />
+                    <th className="px-5 py-3 text-right font-semibold">
+                      <span className="sr-only">Acciones</span>
+                    </th>
                   </tr>
-                )}
-                {data.map((admin) => (
-                  <tr key={admin.id} className="border-border border-b last:border-0">
-                    <td className="text-text px-5 py-4 font-semibold">
-                      <div className="flex items-center gap-3">
-                        <AdminAvatar
-                          name={admin.name}
-                          lastName={admin.lastName}
-                          avatar={admin.avatar}
-                        />
-                        {admin.name} {admin.lastName}
-                      </div>
-                    </td>
-                    <td className="text-text-muted px-5 py-4">{admin.email}</td>
-                    <td className="text-text-muted px-5 py-4">@{admin.username}</td>
-                    <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={() => {
-                          setShowForm(false);
-                          setEditingId(admin.id);
-                        }}
-                        aria-label={`Editar a ${admin.name} ${admin.lastName}`}
-                        className="text-primary text-sm font-semibold hover:underline"
-                      >
-                        Editar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {admins.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="text-text-muted px-5 py-8 text-center">
+                        No hay administradores.
+                      </td>
+                    </tr>
+                  )}
+                  {admins.map((admin) => (
+                    <tr key={admin.id} className="border-border border-b last:border-0">
+                      <td className="text-text px-5 py-4 font-semibold">
+                        <div className="flex items-center gap-3">
+                          <AdminAvatar
+                            name={admin.name}
+                            lastName={admin.lastName}
+                            avatar={admin.avatar}
+                          />
+                          {admin.name} {admin.lastName}
+                        </div>
+                      </td>
+                      <td className="text-text-muted px-5 py-4">{admin.email}</td>
+                      <td className="text-text-muted px-5 py-4">@{admin.username}</td>
+                      <td className="px-5 py-4 text-right">
+                        <button
+                          onClick={() => {
+                            setShowForm(false);
+                            setEditingId(admin.id);
+                          }}
+                          aria-label={`Editar a ${admin.name} ${admin.lastName}`}
+                          className="text-primary text-sm font-semibold hover:underline"
+                        >
+                          Editar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
