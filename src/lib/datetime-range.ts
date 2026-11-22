@@ -11,12 +11,23 @@ export type DateTimeRange = { from: string; to: string };
 
 /** The dashboard selection: a rolling preset (recomputed from "now") or a fixed custom window. */
 export type RangeSelection =
-  { kind: "preset"; key: string } | { kind: "custom"; from: string; to: string };
+  { kind: "all" } | { kind: "preset"; key: string } | { kind: "custom"; from: string; to: string };
 
 export type RangePreset = { key: string; label: string; minutes: number };
 
 /** Longest window the API accepts (inclusive days), mirroring the backend's MetricsRange cap. */
 export const MAX_RANGE_DAYS = 366;
+
+export const ALL_TIME_LABEL = "Todo el historial";
+
+/** Sentinel range that signals "no date filter" (whole history). Both bounds are empty strings so
+ * the HTTP client omits them and the backend applies no date restriction. */
+export const ALL_TIME_RANGE: DateTimeRange = { from: "", to: "" };
+
+/** True when {@code range} is the whole-history sentinel (no date filter). */
+export function isAllTimeRange(range: DateTimeRange): boolean {
+  return range.from === "" && range.to === "";
+}
 const MINUTE_MS = 60_000;
 
 export const RANGE_PRESETS: RangePreset[] = [
@@ -28,7 +39,7 @@ export const RANGE_PRESETS: RangePreset[] = [
   { key: "30d", label: "Últimos 30 días", minutes: 30 * 24 * 60 },
 ];
 
-export const DEFAULT_SELECTION: RangeSelection = { kind: "preset", key: "24h" };
+export const DEFAULT_SELECTION: RangeSelection = { kind: "preset", key: "7d" };
 
 function presetByKey(key: string): RangePreset | undefined {
   return RANGE_PRESETS.find((p) => p.key === key);
@@ -44,6 +55,7 @@ export function presetRange(minutes: number, now: Date = new Date()): DateTimeRa
 
 /** Resolves a selection to concrete instants; presets are anchored to {@code now}. */
 export function resolveRange(selection: RangeSelection, now: Date = new Date()): DateTimeRange {
+  if (selection.kind === "all") return ALL_TIME_RANGE;
   if (selection.kind === "custom") return { from: selection.from, to: selection.to };
   const preset = presetByKey(selection.key) ?? RANGE_PRESETS[3]!;
   return presetRange(preset.minutes, now);
@@ -70,13 +82,16 @@ export function previousRange(range: DateTimeRange): DateTimeRange | null {
 }
 
 /**
- * A resolution that keeps a line chart readable: aim for ~120 points, never finer than 15s (the
- * scrape interval is 60s, so sub-15s is pointless) and snapped to a "nice" step. The backend
- * clamps too, so this is only a hint.
+ * A resolution that keeps a line chart readable: aim for ~120 points, never finer than 15s, and
+ * snapped to a "nice" step. The backend clamps too, so this is only a hint.
+ *
+ * Note: the Prometheus scrape interval is 60s. The backend enforces a minimum rate window of 120s
+ * (2× the scrape interval) so rate() always finds ≥ 2 samples; steps finer than 60s are valid for
+ * gauge metrics and the backend handles them correctly for rate metrics via that window floor.
  */
 export function deriveStepSeconds(range: DateTimeRange): number {
   const target = spanSeconds(range) / 120;
-  // Never finer than 15 s (Prometheus scrape interval; the backend clamps too).
+  // Never finer than 15 s; the backend enforces the minimum rate window (120 s).
   const nice = [15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 21600, 43200, 86400];
   return nice.find((s) => s >= target) ?? nice[nice.length - 1]!;
 }
@@ -119,6 +134,7 @@ const DATETIME_FMT = new Intl.DateTimeFormat("es-AR", {
 
 /** Chip text: the preset name, or the formatted bounds for a custom range. */
 export function selectionLabel(selection: RangeSelection): string {
+  if (selection.kind === "all") return ALL_TIME_LABEL;
   if (selection.kind === "preset") return presetByKey(selection.key)?.label ?? "Período";
   return `${DATETIME_FMT.format(new Date(selection.from))} – ${DATETIME_FMT.format(new Date(selection.to))}`;
 }

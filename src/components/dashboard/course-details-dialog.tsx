@@ -54,7 +54,7 @@ export function CourseDetailsDialog({
         className="bg-background flex max-h-[90vh] w-[880px] max-w-full flex-col gap-4 overflow-y-auto rounded-3xl p-5 shadow-[0_24px_60px_rgba(30,23,20,.25)] sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex shrink-0 items-start gap-3">
           <div className="min-w-0 flex-1">
             <h2 id={titleId} className="font-display text-xl font-extrabold">
               Detalles del curso
@@ -78,11 +78,11 @@ export function CourseDetailsDialog({
         ) : error ? (
           <ErrorState>No pudimos cargar los detalles del curso.</ErrorState>
         ) : (
-          <>
+          <div className="flex shrink-0 flex-col gap-4">
             <CourseHero course={data} />
             <CourseShowcase course={data} />
             <CourseContents course={data} />
-          </>
+          </div>
         )}
       </div>
     </div>,

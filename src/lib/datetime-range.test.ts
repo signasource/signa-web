@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  ALL_TIME_LABEL,
+  ALL_TIME_RANGE,
+  isAllTimeRange,
   previousRange,
   deriveStepSeconds,
   isoToLocalInput,
@@ -35,6 +38,12 @@ describe("resolveRange", () => {
     );
     expect(range.from).toBe("2026-11-01T00:00:00.000Z");
     expect(spanSeconds(range)).toBe(86400);
+  });
+
+  it("resolves all to the all-time sentinel", () => {
+    const range = resolveRange({ kind: "all" }, NOW);
+    expect(range).toBe(ALL_TIME_RANGE);
+    expect(isAllTimeRange(range)).toBe(true);
   });
 });
 
@@ -91,6 +100,10 @@ describe("datetime-local conversions round-trip", () => {
 });
 
 describe("selectionLabel", () => {
+  it("names the all-time selection", () => {
+    expect(selectionLabel({ kind: "all" })).toBe(ALL_TIME_LABEL);
+  });
+
   it("names a preset", () => {
     expect(selectionLabel({ kind: "preset", key: "24h" })).toBe("Últimas 24 horas");
   });

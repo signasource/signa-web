@@ -4,14 +4,18 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "@/components/dashboard/icons";
 import { headerChip } from "@/components/dashboard/ui";
 import { useCourseFilter } from "@/features/dashboard/use-course-filter";
+import type { CourseSummary } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
 /**
- * Picks which contracted course the section shows. With a single course there is nothing to
- * choose, so it renders as a plain label.
+ * Picks which course the section shows. With a single course there is nothing to choose, so it
+ * renders as a plain label.
+ *
+ * Pass `courses` to override the default list (the organization's contracted courses). Useful when
+ * the page has a broader set — e.g. the purchases list, which should include refunded courses.
  */
-export function CourseSelect() {
-  const { courses, course, setCourseId } = useCourseFilter();
+export function CourseSelect({ courses: coursesProp }: { courses?: CourseSummary[] } = {}) {
+  const { courses, course, setCourseId } = useCourseFilter(coursesProp);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const menuId = useId();

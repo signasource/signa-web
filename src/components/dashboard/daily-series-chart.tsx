@@ -48,7 +48,7 @@ const MAX_FILLED_POINTS = 1500;
 
 /** One series point. `t` is the bucket's start instant (ISO-8601) or a `YYYY-MM-DD` day. */
 type Point = { t: string; value: number };
-type Datum = { epoch: number; value: number | null; prev?: number | null };
+export type Datum = { epoch: number; value: number | null; prev?: number | null };
 
 /**
  * Bucket size (seconds) for a window, matching how the API buckets the series: minute if the span is
@@ -137,6 +137,80 @@ export function SeriesLegend({
 export const PREVIOUS_COLOR = "var(--color-text-muted)";
 
 /**
+ * The chart's rows: with a `range`, every bucket of the window (gaps filled with 0, or null for
+ * rates via `emptyAsNull`); else the points as they came. `previous` (the window before, shifted
+ * onto this one) is drawn whenever it was fetched: a bucket it has no row for is 0 — an empty
+ * previous window had nobody, which the dashed line must show, not hide as "sin datos".
+ */
+export function buildSeries({
+  points,
+  previous,
+  range,
+  dayResolution = false,
+  emptyAsNull = false,
+}: {
+  points: Point[];
+  previous?: Point[];
+  range?: DateTimeRange;
+  dayResolution?: boolean;
+  emptyAsNull?: boolean;
+}): { data: Datum[]; bucketSeconds: number; withPrevious: boolean } {
+  // Drop points with an unparseable `t`: a single bad timestamp would otherwise make `Intl.format`
+  // throw ("Invalid time value") and take down the whole dashboard page, not just this widget.
+  const valid = points
+    .map((p) => ({ epoch: seriesPointMs(p.t), value: p.value }))
+    .filter((d) => Number.isFinite(d.epoch));
+
+  const fromMs = range ? new Date(range.from).getTime() : NaN;
+  const toMs = range ? new Date(range.to).getTime() : NaN;
+  const haveRange = Number.isFinite(fromMs) && Number.isFinite(toMs) && toMs > fromMs;
+
+  const bucketSeconds = haveRange
+    ? dayResolution
+      ? DAY_SECONDS
+      : bucketSecondsFor(fromMs, toMs)
+    : inferBucketSeconds(valid.map((d) => d.epoch));
+
+  // The previous window's points, moved forward by the span so they line up with this window.
+  const spanMs = haveRange ? toMs - fromMs : 0;
+  const prevValid = (previous ?? [])
+    .map((p) => ({ epoch: seriesPointMs(p.t) + spanMs, value: p.value }))
+    .filter((d) => Number.isFinite(d.epoch));
+  const withPrevious = previous !== undefined && haveRange;
+
+  let data: Datum[];
+  const bucketMs = bucketSeconds * 1000;
+  const bucketCount = haveRange ? Math.ceil((toMs - fromMs) / bucketMs) : 0;
+  if (haveRange && bucketCount > 0 && bucketCount <= MAX_FILLED_POINTS) {
+    // Lay out every bucket of the window, filling the ones without data with 0.
+    // Buckets start at Argentine midnight, like the API's (a day bucket is an Argentine day).
+    const valueByEpoch = new Map<number, number>();
+    for (const d of valid) valueByEpoch.set(argentinaBucketStart(d.epoch, bucketMs), d.value);
+    const prevByEpoch = new Map<number, number>();
+    for (const d of prevValid) prevByEpoch.set(argentinaBucketStart(d.epoch, bucketMs), d.value);
+    const start = argentinaBucketStart(fromMs, bucketMs);
+    // `to` is exclusive: a window ending exactly on a bucket boundary does not open a new bucket.
+    const end = argentinaBucketStart(toMs - 1, bucketMs);
+    data = [];
+    for (let epoch = start; epoch <= end; epoch += bucketMs) {
+      const has = valueByEpoch.has(epoch);
+      const datum: Datum = {
+        epoch,
+        value: has ? valueByEpoch.get(epoch)! : emptyAsNull ? null : 0,
+      };
+      if (withPrevious) {
+        datum.prev = prevByEpoch.has(epoch) ? prevByEpoch.get(epoch)! : emptyAsNull ? null : 0;
+      }
+      data.push(datum);
+    }
+  } else {
+    data = valid;
+  }
+
+  return { data, bucketSeconds, withPrevious };
+}
+
+/**
  * Generic time-series for a `{ t, value }` series (revenue, new users, …). When a `range` is given it
  * lays out **every** bucket of the period on the x axis (filling gaps with 0), so the axis shows the
  * whole window — not only the buckets that happened to have data — at a resolution (minute/hour/day)
@@ -183,63 +257,15 @@ export function DailySeriesChart({
 }) {
   const [kind, setKind] = useState<ChartKind>("line");
 
-  // Drop points with an unparseable `t`: a single bad timestamp would otherwise make `Intl.format`
-  // throw ("Invalid time value") and take down the whole dashboard page, not just this widget.
-  const valid = points
-    .map((p) => ({ epoch: seriesPointMs(p.t), value: p.value }))
-    .filter((d) => Number.isFinite(d.epoch));
-
-  const fromMs = range ? new Date(range.from).getTime() : NaN;
-  const toMs = range ? new Date(range.to).getTime() : NaN;
-  const haveRange = Number.isFinite(fromMs) && Number.isFinite(toMs) && toMs > fromMs;
-
-  const bucketSeconds = haveRange
-    ? dayResolution
-      ? DAY_SECONDS
-      : bucketSecondsFor(fromMs, toMs)
-    : inferBucketSeconds(valid.map((d) => d.epoch));
+  const { data, bucketSeconds, withPrevious } = buildSeries({
+    points,
+    previous,
+    range,
+    dayResolution,
+    emptyAsNull,
+  });
   const subDay = bucketSeconds < DAY_SECONDS;
   const tickFmt = subDay ? TIME_FMT : DAY_FMT;
-
-  // The previous window's points, moved forward by the span so they line up with this window.
-  const spanMs = haveRange ? toMs - fromMs : 0;
-  const prevValid = (previous ?? [])
-    .map((p) => ({ epoch: seriesPointMs(p.t) + spanMs, value: p.value }))
-    .filter((d) => Number.isFinite(d.epoch));
-  const withPrevious = previous !== undefined && haveRange;
-
-  let data: Datum[];
-  const bucketMs = bucketSeconds * 1000;
-  const bucketCount = haveRange ? Math.ceil((toMs - fromMs) / bucketMs) : 0;
-  if (haveRange && bucketCount > 0 && bucketCount <= MAX_FILLED_POINTS) {
-    // Lay out every bucket of the window, filling the ones without data with 0.
-    // Buckets start at Argentine midnight, like the API's (a day bucket is an Argentine day).
-    const valueByEpoch = new Map<number, number>();
-    for (const d of valid) valueByEpoch.set(argentinaBucketStart(d.epoch, bucketMs), d.value);
-    const prevByEpoch = new Map<number, number>();
-    for (const d of prevValid) prevByEpoch.set(argentinaBucketStart(d.epoch, bucketMs), d.value);
-    const start = argentinaBucketStart(fromMs, bucketMs);
-    // `to` is exclusive: a window ending exactly on a bucket boundary does not open a new bucket.
-    const end = argentinaBucketStart(toMs - 1, bucketMs);
-    data = [];
-    for (let epoch = start; epoch <= end; epoch += bucketMs) {
-      const has = valueByEpoch.has(epoch);
-      const datum: Datum = {
-        epoch,
-        value: has ? valueByEpoch.get(epoch)! : emptyAsNull ? null : 0,
-      };
-      if (withPrevious) {
-        datum.prev = prevByEpoch.has(epoch)
-          ? prevByEpoch.get(epoch)!
-          : emptyAsNull || prevValid.length === 0
-            ? null
-            : 0;
-      }
-      data.push(datum);
-    }
-  } else {
-    data = valid;
-  }
 
   const summary = data
     .map(
@@ -310,7 +336,7 @@ export function DailySeriesChart({
               />
               {withPrevious ? (
                 <Line
-                  type="stepAfter"
+                  type="monotone"
                   dataKey="prev"
                   stroke={PREVIOUS_COLOR}
                   strokeWidth={1.5}
@@ -322,7 +348,7 @@ export function DailySeriesChart({
               ) : null}
               {kind === "line" ? (
                 <Line
-                  type="stepAfter"
+                  type="monotone"
                   dataKey="value"
                   stroke="var(--color-primary)"
                   strokeWidth={2}

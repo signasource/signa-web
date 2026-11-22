@@ -1,6 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { DailySeriesChart, bucketLabel } from "@/components/dashboard/daily-series-chart";
+import {
+  DailySeriesChart,
+  bucketLabel,
+  buildSeries,
+} from "@/components/dashboard/daily-series-chart";
 import { fmtCount } from "@/components/dashboard/perf-format";
 
 describe("DailySeriesChart", () => {
@@ -121,5 +125,45 @@ describe("bucketLabel", () => {
     const tenArt = Date.parse("2026-11-22T13:00:00Z");
     expect(bucketLabel(tenArt, 3600)).toMatch(/22 nov.*10:00.*–.*11:00/);
     expect(bucketLabel(tenArt, 86400)).toBe("22 nov");
+  });
+});
+
+describe("buildSeries — previous window", () => {
+  // Last 4 hours: minute buckets.
+  const range = { from: "2026-11-22T13:00:00.000Z", to: "2026-11-22T17:00:00.000Z" };
+
+  it("draws an empty previous window as 0, not as 'sin datos'", () => {
+    const { data, withPrevious, bucketSeconds } = buildSeries({
+      points: [{ t: "2026-11-22T16:30:00Z", value: 2 }],
+      previous: [],
+      range,
+    });
+    expect(bucketSeconds).toBe(60);
+    expect(withPrevious).toBe(true);
+    expect(data).toHaveLength(240);
+    expect(data.every((d) => d.prev === 0)).toBe(true);
+  });
+
+  it("lines the previous 4 hours up minute by minute", () => {
+    const { data } = buildSeries({
+      points: [],
+      // 12:15 UTC in the previous window → 16:15 UTC in this one.
+      previous: [{ t: "2026-11-22T12:15:00Z", value: 3 }],
+      range,
+    });
+    const at = data.find((d) => d.epoch === Date.parse("2026-11-22T16:15:00Z"));
+    expect(at?.prev).toBe(3);
+    expect(data.filter((d) => d.prev === 3)).toHaveLength(1);
+  });
+
+  it("keeps rates without a previous value as null", () => {
+    const { data } = buildSeries({ points: [], previous: [], range, emptyAsNull: true });
+    expect(data.every((d) => d.prev === null)).toBe(true);
+  });
+
+  it("does not draw a previous window while it has not been fetched", () => {
+    const { data, withPrevious } = buildSeries({ points: [], range });
+    expect(withPrevious).toBe(false);
+    expect(data.every((d) => d.prev === undefined)).toBe(true);
   });
 });

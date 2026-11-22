@@ -13,37 +13,17 @@ import {
   fmtPercent,
   fmtPercentRatio,
   fmtRate1,
-  fmtReqsShort,
+  fmtReqsPerMinute,
 } from "@/components/dashboard/perf-format";
 import { PerfPanel, type PerfProps } from "@/components/dashboard/perf-panel";
 import { Card, CardTitle, LoadingState } from "@/components/dashboard/ui";
-import { NUMBER } from "@/components/dashboard/usage-business";
-import {
-  pct1,
-  perfAverage,
-  perfPeak,
-  rateOrNull,
-  seriesValues,
-} from "@/components/dashboard/usage-math";
-import { useBusinessQuery, usePerfWidget } from "@/components/dashboard/usage-queries";
-import { type BusinessMetrics, type PerfMetrics, type PerfSeries } from "@/lib/api/metrics";
+import { pct1, perfAverage, perfPeak, seriesValues } from "@/components/dashboard/usage-math";
+import { usePerfWidget } from "@/components/dashboard/usage-queries";
+import { type PerfMetrics, type PerfSeries } from "@/lib/api/metrics";
 import { previousRange, spanSeconds } from "@/lib/datetime-range";
 import { cn } from "@/lib/utils";
 
 export type InfraProps = PerfProps & { onSelectRange: RangeSelect };
-
-const CAMERA_BLOCK_TYPES = new Set(["VISUAL_RECOGNITION", "PERFORM_SIGN", "SPELL_NAME"]);
-
-/** Camera-exercise accuracy from the per-block-type breakdown (null without attempts). */
-export function cameraAccuracy(b: BusinessMetrics | undefined): {
-  evaluated: number;
-  percent: number | null;
-} {
-  const types = (b?.accuracy.byBlockType ?? []).filter((t) => CAMERA_BLOCK_TYPES.has(t.type));
-  const evaluated = types.reduce((s, t) => s + t.evaluated, 0);
-  const correct = types.reduce((s, t) => s + t.correct, 0);
-  return { evaluated, percent: rateOrNull(correct, evaluated) };
-}
 
 /** Infraestructura: backend metrics. */
 export function InfraTab(props: InfraProps) {
@@ -158,12 +138,8 @@ function DualPerfChart({
 
 function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
   const prev = previousRange(perf.range);
-  const business = useBusinessQuery(perf.range, perf.live);
-  const prevBusiness = useBusinessQuery(prev, perf.live);
   const throughput = usePerfWidget("throughput", perf.range, perf.step, perf.live);
   const prevThroughput = usePerfWidget("throughput", prev, perf.step, perf.live);
-  const camera = cameraAccuracy(business.data);
-  const prevCamera = cameraAccuracy(prevBusiness.data);
 
   return (
     <div className="flex flex-col gap-4">
@@ -189,10 +165,10 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
           {...perf}
           widget="throughput"
           metric="throughput"
-          format={fmtReqsShort}
+          format={fmtReqsPerMinute}
           toned={false}
           delta={{ decimals: 0 }}
-          hint={(_, peak) => (peak == null ? null : `pico ${fmtReqsShort(peak)}`)}
+          hint={(_, peak) => (peak == null ? null : `pico ${fmtReqsPerMinute(peak)}`)}
         />
         <PerfKpi
           {...perf}
@@ -201,17 +177,6 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
           format={fmtPercent}
           delta={false}
           hint={(_, peak) => (peak == null ? null : `pico ${fmtPercent(peak)}`)}
-        />
-        <KpiCard
-          metric="recognition_accuracy"
-          value={camera.percent == null ? "—" : pct1(camera.percent)}
-          toneValue={camera.percent}
-          delta={
-            camera.percent == null
-              ? undefined
-              : { current: camera.percent, previous: prevCamera.percent, mode: "pp" }
-          }
-          hint={`${NUMBER.format(camera.evaluated)} ejercicios con cámara`}
         />
       </KpiRow>
 
@@ -237,20 +202,19 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
           format={fmtPercentRatio}
         />
         <PerfChart
-          title="Consultas por segundo"
+          title="Consultas por minuto"
           metric="throughput"
           data={throughput.data}
           isPending={throughput.isPending}
           isError={throughput.isError}
           isFetching={throughput.isFetching}
-          format={(v) => Math.round(v).toLocaleString("es-AR")}
-          tickFormat={(v) =>
-            v.toLocaleString("es-AR", {
-              maximumFractionDigits: v < 1 ? 1 : 0,
-            })
-          }
+          format={fmtReqsPerMinute}
+          tickFormat={(v) => {
+            const rpm = v * 60;
+            return rpm.toLocaleString("es-AR", { maximumFractionDigits: rpm < 1 ? 1 : 0 });
+          }}
           onSelectRange={onSelectRange}
-          seriesNames={["req/s"]}
+          seriesNames={["req/min"]}
           previous={prevThroughput.data}
           previousShiftSeconds={spanSeconds(perf.range)}
           showKindToggle={false}
@@ -372,4 +336,3 @@ function mean(s: PerfSeries): number | null {
   const values = seriesValues(s);
   return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
 }
-

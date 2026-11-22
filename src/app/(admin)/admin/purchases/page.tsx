@@ -348,7 +348,15 @@ function PurchaseList({
   const matchesSearch = (p: AdminPurchaseListItem) => {
     if (!q) return true;
     const hay = norm(
-      [p.buyerName, p.buyerSub, p.buyerEmail, p.productName, p.mpOrderId ?? "", p.id].join(" "),
+      [
+        p.buyerName,
+        p.buyerSub,
+        p.buyerEmail,
+        p.productName,
+        p.mpOrderId ?? "",
+        p.externalRef,
+        p.id,
+      ].join(" "),
     );
     return hay.includes(norm(q));
   };

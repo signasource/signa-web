@@ -431,7 +431,7 @@ export type OnboardingMetrics = {
   motivations: SurveyAnswer[];
 };
 
-export type RangeParams = { from: string; to: string };
+export type RangeParams = { from?: string; to?: string };
 
 export const metricsApi = {
   business: (params: RangeParams & { courseIds?: string[] }) =>

@@ -34,7 +34,6 @@ export default function PurchasesPage() {
   const { organization } = useAuth();
   const orgId = organization?.id;
   const canBuy = organization?.status === "ACTIVE";
-  const { courseId } = useCourseFilter();
   const [status, setStatus] = useState<PurchaseStatus | "ALL">("ALL");
   const [period, setPeriod] = useState<Period>(null);
   const [direction, setDirection] = useState<"asc" | "desc">("desc");
@@ -44,6 +43,26 @@ export default function PurchasesPage() {
     queryFn: () => organizationsApi.purchases(orgId!),
     enabled: Boolean(orgId),
   });
+
+  // Build the course list from purchases so refunded courses remain selectable.
+  const purchaseCourses = data
+    ? [
+        ...new Map(
+          data.map((p) => [
+            p.courseId,
+            {
+              id: p.courseId,
+              name: p.courseName,
+              description: null,
+              coverUrl: null,
+              isFree: false,
+              signLanguageCode: "LSA",
+            },
+          ]),
+        ).values(),
+      ]
+    : undefined;
+  const { courseId } = useCourseFilter(purchaseCourses);
 
   const buy = canBuy ? (
     <Link href="/dashboard/purchases/new" className={headerButton}>
@@ -100,7 +119,7 @@ export default function PurchasesPage() {
               ))}
             </div>
             <div className="ml-auto flex flex-wrap items-center gap-2">
-              <CourseSelect />
+              <CourseSelect courses={purchaseCourses} />
               <PeriodSelect
                 value={period}
                 onChange={setPeriod}

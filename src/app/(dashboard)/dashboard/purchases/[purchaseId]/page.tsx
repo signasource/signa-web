@@ -294,7 +294,7 @@ export default function PurchaseDetailPage() {
   if (isPending) return <LoadingState />;
   if (error) return <ErrorState>No pudimos cargar los datos.</ErrorState>;
 
-  const { purchase, seats } = data;
+  const { purchase, seats, refunds } = data;
   const payment =
     !returned || purchase.status === "PENDING_PAYMENT"
       ? null
@@ -561,7 +561,7 @@ export default function PurchaseDetailPage() {
                               Recordar
                             </button>
                           ) : null}
-                          {seat.userId ? (
+                          {seat.userId && purchase.status !== "REFUNDED" ? (
                             <Link href={`/dashboard/members/${seat.userId}`} className={pillButton}>
                               Ver avance
                             </Link>
@@ -585,6 +585,14 @@ export default function PurchaseDetailPage() {
             <dl className="flex flex-col text-sm">
               {(
                 [
+                  ...(purchase.discountPercent > 0
+                    ? [
+                        [
+                          "Precio de lista",
+                          formatMoney(purchase.listPricePerSeat, purchase.currency),
+                        ],
+                      ]
+                    : []),
                   [
                     "Precio por cupo",
                     purchase.discountPercent > 0
@@ -592,12 +600,17 @@ export default function PurchaseDetailPage() {
                       : formatMoney(purchase.pricePerSeat, purchase.currency),
                   ],
                   ["Cupos", String(purchase.seats)],
+                  ["Señas del curso", String(purchase.signCount)],
                   ["Fecha de compra", formatDate(purchase.createdAt)],
                   ["Fecha de pago", purchase.paidAt ? formatDate(purchase.paidAt) : "Pendiente"],
                   [
                     "Método de pago",
                     purchase.paymentMethod ? PAYMENT_METHOD_LABEL[purchase.paymentMethod] : "—",
                   ],
+                  ["Referencia de compra", purchase.externalRef],
+                  ...(purchase.mpOrderId
+                    ? [["Orden de Mercado Pago", purchase.mpOrderId] as [string, string]]
+                    : []),
                   [
                     "Plazo para aceptar",
                     purchase.invitationDeadline
@@ -616,17 +629,35 @@ export default function PurchaseDetailPage() {
                             ? `Reembolsada el ${formatDate(purchase.refundedAt)}`
                             : "Reembolsada",
                         ],
+                        ...(refunds.length > 0
+                          ? [
+                              [
+                                "Monto reembolsado",
+                                formatMoney(
+                                  refunds.reduce((sum, r) => sum + r.amount, 0),
+                                  purchase.currency,
+                                ),
+                              ],
+                            ]
+                          : []),
                       ]
-                    : purchase.status === "PAID"
+                    : purchase.status === "CANCELLED"
                       ? [
                           [
-                            "Anulación con reembolso",
-                            purchase.refundableUntil && canWithdraw(purchase, new Date(now))
-                              ? `Hasta el ${formatDate(purchase.refundableUntil)}`
-                              : "Ya no disponible",
+                            "Cancelada el",
+                            purchase.cancelledAt ? formatDate(purchase.cancelledAt) : "—",
                           ],
                         ]
-                      : []),
+                      : purchase.status === "PAID"
+                        ? [
+                            [
+                              "Anulación con reembolso",
+                              purchase.refundableUntil && canWithdraw(purchase, new Date(now))
+                                ? `Hasta el ${formatDate(purchase.refundableUntil)}`
+                                : "Ya no disponible",
+                            ],
+                          ]
+                        : []),
                 ] as [string, string][]
               ).map(([label, value]) => (
                 <div

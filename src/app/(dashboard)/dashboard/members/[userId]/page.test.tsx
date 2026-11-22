@@ -83,7 +83,7 @@ describe("MemberDetailPage", () => {
     expect(rows[1]).toHaveTextContent("Invitación pendiente");
     expect(rows[2]).toHaveTextContent("LSA Salud");
     expect(rows[2]).toHaveTextContent("40%");
-    expect(rows[3]).toHaveTextContent("Todos los cursos");
+    expect(rows[3]).toHaveTextContent("Promedio de los cursos");
     for (const gone of [
       "Tiempo de aprendizaje",
       "Señas aprendidas",
@@ -103,20 +103,20 @@ describe("MemberDetailPage", () => {
     let rows = screen.getAllByRole("row");
     expect(rows).toHaveLength(3);
     expect(rows[1]).toHaveTextContent("LSA Salud");
-    expect(rows[2]).toHaveTextContent("Cursos mostrados");
+    expect(rows[2]).toHaveTextContent("Promedio de cursos mostrados");
     expect(rows[2]).toHaveTextContent("40%");
 
-    // Only the pending invitation: the total is that, not the API's total for every course.
+    // Only the pending invitation: the average is of that row, not of every course.
     fireEvent.change(screen.getByLabelText("Filtrar por estado"), {
       target: { value: "INVITATION_PENDING" },
     });
     rows = screen.getAllByRole("row");
-    expect(rows[2]).toHaveTextContent("Cursos mostrados");
-    expect(rows[2]).toHaveTextContent("Invitación pendiente");
+    expect(rows[2]).toHaveTextContent("Promedio de cursos mostrados");
+    expect(rows[2]).toHaveTextContent("0%");
     expect(rows[2]).not.toHaveTextContent("40%");
 
     fireEvent.change(screen.getByLabelText("Filtrar por estado"), { target: { value: "ALL" } });
-    expect(screen.getByText("Todos los cursos")).toBeInTheDocument();
+    expect(screen.getByText("Promedio de los cursos")).toBeInTheDocument();
 
     // The course filter is a list of their courses, nothing to type.
     const course = screen.getByLabelText("Filtrar por curso");
@@ -129,15 +129,15 @@ describe("MemberDetailPage", () => {
     rows = screen.getAllByRole("row");
     expect(rows).toHaveLength(3);
     expect(rows[1]).toHaveTextContent("LSA Salud");
-    expect(rows[2]).toHaveTextContent("Cursos mostrados");
+    expect(rows[2]).toHaveTextContent("Promedio de cursos mostrados");
 
     // A course and a state that do not match: no rows, no total.
     fireEvent.change(screen.getByLabelText("Filtrar por estado"), {
       target: { value: "INVITATION_PENDING" },
     });
     expect(screen.getByText("Ningún curso coincide con los filtros.")).toBeInTheDocument();
-    expect(screen.queryByText("Todos los cursos")).not.toBeInTheDocument();
-    expect(screen.queryByText("Cursos mostrados")).not.toBeInTheDocument();
+    expect(screen.queryByText("Promedio de los cursos")).not.toBeInTheDocument();
+    expect(screen.queryByText("Promedio de cursos mostrados")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Filtrar por estado"), { target: { value: "ALL" } });
     fireEvent.change(course, { target: { value: "ALL" } });

@@ -4,9 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DatetimeRangePicker } from "@/components/dashboard/datetime-range-picker";
 import { MetricsTabs, type TabItem } from "@/components/dashboard/metrics-tabs";
 import type { RangeSelect } from "@/components/dashboard/perf-chart";
-import { metricTone } from "@/components/dashboard/kpi-card";
-import { worstTone } from "@/components/dashboard/services-status";
-import { REFRESH_MS, useLearningQuery } from "@/components/dashboard/usage-queries";
+import { REFRESH_MS } from "@/components/dashboard/usage-queries";
 import { PageHeading } from "@/components/dashboard/ui";
 import { GrowthTab } from "@/components/dashboard/usage-growth";
 import { InfraTab } from "@/components/dashboard/usage-infra";
@@ -15,6 +13,8 @@ import { UsersTab } from "@/components/dashboard/usage-usuarios";
 import {
   DEFAULT_SELECTION,
   deriveStepSeconds,
+  isAllTimeRange,
+  presetRange,
   resolveRange,
   selectionWindow,
   type RangeSelection,
@@ -89,6 +89,13 @@ export default function AdminMetricasPage() {
 
   const range = useMemo(() => resolveRange(selection, now), [selection, now]);
   const step = useMemo(() => deriveStepSeconds(range), [range]);
+  // Prometheus retains a limited history; "all time" is meaningless for infra metrics.
+  // Fall back to the last 30 days so the charts always show something useful.
+  const infraRange = useMemo(
+    () => (isAllTimeRange(range) ? presetRange(30 * 24 * 60, now) : range),
+    [range, now],
+  );
+  const infraStep = useMemo(() => deriveStepSeconds(infraRange), [infraRange]);
 
   // A time window picked by dragging a chart (or clicking a day bar) becomes the global filter.
   // Tiny selections are widened to a minimum span so focusing on a spike never reads as "sin datos".
@@ -106,22 +113,9 @@ export default function AdminMetricasPage() {
     });
   };
 
-  const perf = { range, step, live };
+  const perf = { range: infraRange, step: infraStep, live };
 
-  // Health dot on the aprendizaje tab from its two headline rates.
-  const learning = useLearningQuery(range, live);
-  const l = learning.data;
-  const learningTone = l
-    ? worstTone([
-        l.lessons.started
-          ? metricTone("lesson_completion_rate", l.lessons.completionPercent)
-          : "neutral",
-        l.exercises.attempted
-          ? metricTone("exercise_success_rate", l.exercises.successPercent)
-          : "neutral",
-      ])
-    : "neutral";
-  const tabs = BASE_TABS.map((t) => (t.key === "aprendizaje" ? { ...t, dot: learningTone } : t));
+  const tabs = BASE_TABS;
 
   return (
     <section className="flex flex-col gap-6">
@@ -150,7 +144,9 @@ export default function AdminMetricasPage() {
         idBase="metrics"
         trailing={
           <p className="text-text-muted text-xs">
-            Comparando con {previousWindowLabel(range)} · hora de Argentina
+            {selection.kind === "all"
+              ? "Todo el historial · hora de Argentina"
+              : `Comparando con ${previousWindowLabel(range)} · hora de Argentina`}
           </p>
         }
       />

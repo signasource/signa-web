@@ -54,6 +54,8 @@ function purchase(overrides: Partial<Purchase>): Purchase {
     hasRefundRequest: false,
     hasAcceptedSeats: true,
     paymentMethod: "MERCADO_PAGO",
+    externalRef: "purchase_test001",
+    mpOrderId: "ORD01TEST",
     ...overrides,
   };
 }

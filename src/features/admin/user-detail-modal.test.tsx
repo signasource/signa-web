@@ -30,6 +30,8 @@ const user: AdminUser = {
   authProvider: "EMAIL",
   currentStreak: 0,
   lastStreakDate: null,
+  lastSeenDate: null,
+  createdAt: "2024-01-01T00:00:00Z",
   avatar: null,
 };
 
