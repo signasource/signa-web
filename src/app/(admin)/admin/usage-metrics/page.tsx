@@ -15,6 +15,8 @@ import { UsersTab } from "@/components/dashboard/usage-usuarios";
 import {
   DEFAULT_SELECTION,
   deriveStepSeconds,
+  isAllTimeRange,
+  presetRange,
   resolveRange,
   selectionWindow,
   type RangeSelection,
@@ -89,6 +91,13 @@ export default function AdminMetricasPage() {
 
   const range = useMemo(() => resolveRange(selection, now), [selection, now]);
   const step = useMemo(() => deriveStepSeconds(range), [range]);
+  // Prometheus retains a limited history; "all time" is meaningless for infra metrics.
+  // Fall back to the last 30 days so the charts always show something useful.
+  const infraRange = useMemo(
+    () => (isAllTimeRange(range) ? presetRange(30 * 24 * 60, now) : range),
+    [range, now],
+  );
+  const infraStep = useMemo(() => deriveStepSeconds(infraRange), [infraRange]);
 
   // A time window picked by dragging a chart (or clicking a day bar) becomes the global filter.
   // Tiny selections are widened to a minimum span so focusing on a spike never reads as "sin datos".
@@ -106,7 +115,7 @@ export default function AdminMetricasPage() {
     });
   };
 
-  const perf = { range, step, live };
+  const perf = { range: infraRange, step: infraStep, live };
 
   // Health dot on the aprendizaje tab from its two headline rates.
   const learning = useLearningQuery(range, live);
