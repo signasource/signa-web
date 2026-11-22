@@ -174,7 +174,7 @@ function CoursePicker({
   );
 }
 
-type SignSortKey = "sign" | "precision" | "reports";
+type SignSortKey = "sign" | "precision" | "evaluated" | "reports";
 type SortDir = "asc" | "desc";
 
 /** Sortable column header button for tables. */
@@ -227,6 +227,7 @@ function signSort(
     const mult = dir === "asc" ? 1 : -1;
     if (col === "sign") return mult * a.sign.localeCompare(b.sign, "es");
     if (col === "precision") return mult * ((100 - a.errorPercent) - (100 - b.errorPercent));
+    if (col === "evaluated") return mult * (a.evaluated - b.evaluated);
     return mult * ((reportsBySign.get(a.sign) ?? 0) - (reportsBySign.get(b.sign) ?? 0));
   });
 }
@@ -296,6 +297,7 @@ function SignAnalysisModal({
             <thead>
               <tr className="text-text-muted text-left text-xs font-bold">
                 <SortTh label="Seña" col="sign" currentCol={sortCol} currentDir={sortDir} onSort={handleSort} />
+                <SortTh label="Intentos" col="evaluated" currentCol={sortCol} currentDir={sortDir} align="right" onSort={handleSort} />
                 <SortTh label="Precisión" col="precision" currentCol={sortCol} currentDir={sortDir} align="right" onSort={handleSort} />
                 <SortTh label="Reportes" col="reports" currentCol={sortCol} currentDir={sortDir} align="right" onSort={handleSort} />
               </tr>
@@ -316,6 +318,9 @@ function SignAnalysisModal({
                       ) : (
                         s.sign
                       )}
+                    </td>
+                    <td className="py-2.5 pl-3 text-right font-bold">
+                      {NUMBER.format(s.evaluated)}
                     </td>
                     <td className={cn("py-2.5 pl-3 text-right", accuracyClass(100 - s.errorPercent))}>
                       {pct0(100 - s.errorPercent)}
@@ -411,6 +416,14 @@ function SignAnalysis({
                     onSort={handleSort}
                   />
                   <SortTh
+                    label="Intentos"
+                    col="evaluated"
+                    currentCol={sortCol}
+                    currentDir={sortDir}
+                    align="right"
+                    onSort={handleSort}
+                  />
+                  <SortTh
                     label="Precisión"
                     col="precision"
                     currentCol={sortCol}
@@ -444,6 +457,9 @@ function SignAnalysis({
                         ) : (
                           s.sign
                         )}
+                      </td>
+                      <td className="py-2.5 pl-3 text-right font-bold">
+                        {NUMBER.format(s.evaluated)}
                       </td>
                       <td
                         className={cn(
