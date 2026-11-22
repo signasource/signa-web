@@ -9,6 +9,7 @@ import type {
   VolumeDiscount,
 } from "@/lib/api/types";
 import { isEmail, parseEmails } from "@/lib/dashboard-format";
+import { REFUND_REASON_VALUES } from "@/lib/refund-reasons";
 
 export const PURCHASE_STATUS_LABEL: Record<PurchaseStatus, string> = {
   PENDING_PAYMENT: "Pendiente de pago",
@@ -71,11 +72,14 @@ export function canWithdraw(purchase: Purchase, now: Date = new Date()): boolean
   );
 }
 
+/** Cancelling needs a reason from the shared list; the comment is optional. */
 export const withdrawalSchema = z.object({
-  reason: z.string().trim().max(500, "Usá hasta 500 caracteres."),
+  reason: z.enum(REFUND_REASON_VALUES, { error: "Elegí un motivo." }),
+  message: z.string().trim().max(500, "Usá hasta 500 caracteres."),
 });
 
-export type WithdrawalForm = z.infer<typeof withdrawalSchema>;
+export type WithdrawalInput = z.input<typeof withdrawalSchema>;
+export type WithdrawalForm = z.output<typeof withdrawalSchema>;
 
 export const REFUNDED_MESSAGE = {
   tone: "warning" as const,

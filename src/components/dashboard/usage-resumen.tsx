@@ -9,7 +9,6 @@ import { fmtCount, fmtMoneyCompact } from "@/components/dashboard/perf-format";
 import { Card, CardTitle, ErrorState, LoadingState } from "@/components/dashboard/ui";
 import { NUMBER } from "@/components/dashboard/usage-business";
 import {
-  dailyRevenue,
   pct1,
   perDayHint,
   rate1,
@@ -102,9 +101,8 @@ export function buildAlerts({
         .slice(0, 2)
         .map((o) => `${o.name} ${Math.round(o.occupancyPercent)}%`)
         .join(" · "),
-      cta: "Ver licencias",
-      tab: "negocio",
-      anchor: "licencias",
+      cta: "Ver organizaciones",
+      href: "/admin/organizations",
       tone: "warning",
     });
   }
@@ -187,14 +185,12 @@ export function ResumenTab({
             previous: g.engagement.previousActiveInRange,
           }}
           hint={`${pct1(activeShare)} de ${NUMBER.format(g.users.total)} usuarios`}
-          spark={g.engagement.dailyActive.map((d) => d.count)}
         />
         <KpiCard
           metric="new_users"
           value={NUMBER.format(g.users.newInRange)}
           delta={{ current: g.users.newInRange, previous: g.users.previousNewInRange }}
           hint={perDayHint(g.users.newInRange, range) ?? `${NUMBER.format(g.users.total)} en total`}
-          spark={g.users.daily.map((d) => d.count)}
         />
         <KpiCard
           metric="lesson_completion_rate"
@@ -215,8 +211,7 @@ export function ResumenTab({
           metric="income"
           value={fmtMoneyCompact(money.net)}
           delta={{ current: money.net, previous: prevMoney?.net }}
-          hint={`Bruto ${fmtMoneyCompact(money.gross)} · reembolsos ${fmtMoneyCompact(money.refunded)}`}
-          spark={dailyRevenue(g)}
+          hint={`Sin compras reembolsadas · orgs ${fmtMoneyCompact(money.orgNet)} · usuarios finales ${fmtMoneyCompact(money.usersNet)}`}
         />
       </KpiRow>
 

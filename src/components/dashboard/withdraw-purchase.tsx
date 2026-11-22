@@ -6,12 +6,19 @@ import { useForm } from "react-hook-form";
 import { Card, CardTitle, ErrorState, pillButton, primaryButton } from "@/components/dashboard/ui";
 import type { Purchase } from "@/lib/api/types";
 import { formatDate } from "@/lib/dashboard-format";
-import { formatMoney, REFUND_RULE, withdrawalSchema, type WithdrawalForm } from "@/lib/purchases";
+import {
+  formatMoney,
+  REFUND_RULE,
+  withdrawalSchema,
+  type WithdrawalForm,
+  type WithdrawalInput,
+} from "@/lib/purchases";
+import { REFUND_REASON_OPTIONS } from "@/lib/refund-reasons";
 import { cn } from "@/lib/utils";
 
 type Props = {
   purchase: Purchase;
-  onConfirm: (reason: string) => void;
+  onConfirm: (values: WithdrawalForm) => void;
   pending: boolean;
   error: string | null;
 };
@@ -22,9 +29,9 @@ type Props = {
  */
 export function WithdrawPurchase({ purchase, onConfirm, pending, error }: Props) {
   const [confirming, setConfirming] = useState(false);
-  const form = useForm<WithdrawalForm>({
+  const form = useForm<WithdrawalInput, unknown, WithdrawalForm>({
     resolver: zodResolver(withdrawalSchema),
-    defaultValues: { reason: "" },
+    defaultValues: { reason: undefined, message: "" },
   });
   const total = formatMoney(purchase.totalAmount, purchase.currency);
   const active = purchase.seatCounts.active;
@@ -55,7 +62,7 @@ export function WithdrawPurchase({ purchase, onConfirm, pending, error }: Props)
       {confirming ? (
         <form
           noValidate
-          onSubmit={form.handleSubmit((values) => onConfirm(values.reason))}
+          onSubmit={form.handleSubmit(onConfirm)}
           className="border-danger/30 bg-danger-light/40 flex flex-col gap-3 rounded-2xl border p-4"
         >
           <p className="text-sm font-bold">Al anular la compra:</p>
@@ -74,20 +81,44 @@ export function WithdrawPurchase({ purchase, onConfirm, pending, error }: Props)
             <li>Les avisamos por email a todas las personas afectadas. No se puede deshacer.</li>
           </ul>
           <label className="flex flex-col gap-1 text-sm font-medium">
-            Motivo (opcional)
-            <textarea
+            Motivo
+            <select
               id="withdraw-reason"
-              rows={2}
-              maxLength={500}
-              placeholder="Por ejemplo: compramos el curso equivocado"
+              defaultValue=""
               aria-invalid={Boolean(form.formState.errors.reason)}
-              className="border-border bg-surface resize-y rounded-lg border px-3 py-2 text-[15px]"
+              className="border-border bg-surface rounded-lg border px-3 py-2 text-[15px]"
               {...form.register("reason")}
-            />
+            >
+              <option value="" disabled>
+                Elegí un motivo
+              </option>
+              {REFUND_REASON_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </label>
           {form.formState.errors.reason ? (
             <span role="alert" className="text-danger text-sm">
               {form.formState.errors.reason.message}
+            </span>
+          ) : null}
+          <label className="flex flex-col gap-1 text-sm font-medium">
+            Comentario (opcional)
+            <textarea
+              id="withdraw-message"
+              rows={2}
+              maxLength={500}
+              placeholder="Por ejemplo: compramos el curso equivocado"
+              aria-invalid={Boolean(form.formState.errors.message)}
+              className="border-border bg-surface resize-y rounded-lg border px-3 py-2 text-[15px]"
+              {...form.register("message")}
+            />
+          </label>
+          {form.formState.errors.message ? (
+            <span role="alert" className="text-danger text-sm">
+              {form.formState.errors.message.message}
             </span>
           ) : null}
           {error ? <ErrorState>{error}</ErrorState> : null}

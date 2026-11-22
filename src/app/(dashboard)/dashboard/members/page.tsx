@@ -24,29 +24,26 @@ import { useCourseFilter, useWithFilters } from "@/features/dashboard/use-course
 import { useInvitedSeats } from "@/features/dashboard/use-invited-seats";
 import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
-import type { MemberActivityStatus, MemberSort, MemberStatus } from "@/lib/api/types";
+import type { MemberSort, ParticipantActivity } from "@/lib/api/types";
 import { avatarSrc } from "@/lib/avatar-url";
-import {
-  currentModuleLabel,
-  daysSince,
-  formatDate,
-  formatRelativeDays,
-} from "@/lib/dashboard-format";
+import { daysSince, formatDate, formatRelativeDays } from "@/lib/dashboard-format";
+import { activityLegend } from "@/lib/participants";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 
-type Filter = { key: string; label: string; status: MemberStatus; activity?: MemberActivityStatus };
+type Filter = { key: string; label: string; activity?: ParticipantActivity };
 
+/** Only two states: whether they entered the selected course(s) in the last 7 days. */
 const FILTERS: Filter[] = [
-  { key: "all", label: "Todos", status: "ACTIVE" },
-  { key: "active", label: "Activos", status: "ACTIVE", activity: "ACTIVE" },
-  { key: "inactive", label: "Inactivos", status: "ACTIVE", activity: "INACTIVE" },
-  { key: "notStarted", label: "Sin iniciar", status: "ACTIVE", activity: "NOT_STARTED" },
+  { key: "all", label: "Todos" },
+  { key: "active", label: "Activos", activity: "ACTIVE" },
+  { key: "inactive", label: "Inactivos", activity: "INACTIVE" },
 ];
 
-/** Members who left the organization; shown through a toggle, not a chip. */
-const REMOVED = { status: "REMOVED" as MemberStatus, activity: undefined };
+/** What the period filter does on this page. */
+const JOINED_HINT =
+  "Filtra solo por la fecha en que cada persona se incorporó. El estado y el avance son los de hoy.";
 
 type Tab = "participantes" | "invitados";
 const TAB_PARAM = "tab";
@@ -61,8 +58,7 @@ const FIRST_DIRECTION: Record<MemberSort, Direction> = {
   joinedAt: "desc",
 };
 
-const GRID =
-  "grid grid-cols-[minmax(240px,2.2fr)_112px_minmax(170px,1.4fr)_minmax(170px,1.5fr)_116px_116px] gap-4";
+const GRID = "grid grid-cols-[minmax(240px,2.4fr)_112px_minmax(190px,1.6fr)_120px_120px] gap-4";
 
 function useDebounced<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -110,12 +106,13 @@ function SortHeader({
 export default function MembersPage() {
   const { organization } = useAuth();
   const orgId = organization?.id;
-  const { courseId, courses } = useCourseFilter();
+  const { courseId, course } = useCourseFilter();
   const { period } = usePeriodFilter();
   const withFilters = useWithFilters();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>(FILTERS[0]!);
-  const [showRemoved, setShowRemoved] = useState(false);
+  // Who already completed the selected course(s) is listed unless the admin hides them.
+  const [showCompleted, setShowCompleted] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -131,7 +128,7 @@ export default function MembersPage() {
   const setPage = (next: number | ((p: number) => number)) =>
     setPaging({ scope, page: typeof next === "function" ? next(page) : next });
   const query = useDebounced(search.trim(), 300);
-  const showCourse = !courseId && courses.length > 1;
+  const legend = activityLegend(course?.name ?? null);
   const invitedView = tab === "invitados";
   const invited = useInvitedSeats(orgId, courseId);
 
@@ -147,17 +144,17 @@ export default function MembersPage() {
 
   const params = {
     query: query || undefined,
-    status: showRemoved ? REMOVED.status : filter.status,
-    activity: showRemoved ? REMOVED.activity : filter.activity,
+    activity: filter.activity,
     courseId,
     period,
+    includeCompleted: showCompleted,
     sort,
     page,
     size: PAGE_SIZE,
   };
   const { data, isPending, error, isPlaceholderData } = useQuery({
-    queryKey: ["organization", orgId, "members", params],
-    queryFn: () => organizationsApi.members(orgId!, params),
+    queryKey: ["organization", orgId, "members", "roster", params],
+    queryFn: () => organizationsApi.participants(orgId!, params),
     enabled: Boolean(orgId) && !invitedView,
     placeholderData: keepPreviousData,
   });
@@ -187,7 +184,7 @@ export default function MembersPage() {
       >
         <div className="flex flex-wrap items-center gap-2">
           <CourseSelect />
-          {invitedView ? null : <PeriodFilter />}
+          {invitedView ? null : <PeriodFilter prefix="Incorporación" hint={JOINED_HINT} />}
           <Link href="/dashboard/purchases" className={headerButton}>
             <Icon name="personAdd" className="size-4" />
             Sumar personas
@@ -233,41 +230,52 @@ export default function MembersPage() {
             />
           </label>
           {invitedView ? null : (
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex flex-wrap gap-2" role="group" aria-label="Estado">
-                {FILTERS.map((f) => {
-                  const pressed = !showRemoved && filter.key === f.key;
-                  return (
-                    <button
-                      key={f.key}
-                      type="button"
-                      aria-pressed={pressed}
-                      onClick={() => {
-                        setFilter(f);
-                        setShowRemoved(false);
-                        setPage(0);
-                      }}
-                      className={cn(
-                        "cursor-pointer rounded-full px-3.5 py-2 text-[13px] font-extrabold transition-colors",
-                        pressed ? "bg-text text-on-dark" : "bg-fill text-text hover:bg-fill-dark",
-                      )}
-                    >
-                      {f.label}
-                    </button>
-                  );
-                })}
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Estado">
+                  {FILTERS.map((f) => {
+                    const pressed = filter.key === f.key;
+                    return (
+                      <button
+                        key={f.key}
+                        type="button"
+                        aria-pressed={pressed}
+                        title={
+                          f.activity === "ACTIVE"
+                            ? legend.active
+                            : f.activity === "INACTIVE"
+                              ? legend.inactive
+                              : undefined
+                        }
+                        onClick={() => {
+                          setFilter(f);
+                          setPage(0);
+                        }}
+                        className={cn(
+                          "cursor-pointer rounded-full px-3.5 py-2 text-[13px] font-extrabold transition-colors",
+                          pressed ? "bg-text text-on-dark" : "bg-fill text-text hover:bg-fill-dark",
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <label className="text-text-muted ml-auto flex cursor-pointer items-center gap-2 text-[13px] font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={showCompleted}
+                    onChange={(e) => {
+                      setShowCompleted(e.target.checked);
+                      setPage(0);
+                    }}
+                  />
+                  Mostrar completados
+                </label>
               </div>
-              <label className="text-text-muted ml-auto flex cursor-pointer items-center gap-2 text-[13px] font-semibold">
-                <input
-                  type="checkbox"
-                  checked={showRemoved}
-                  onChange={(e) => {
-                    setShowRemoved(e.target.checked);
-                    setPage(0);
-                  }}
-                />
-                Mostrar quitados
-              </label>
+              <p className="text-text-muted text-[13px] text-pretty">
+                <span className="text-text font-bold">{legend.active}</span> {legend.inactive}
+              </p>
             </div>
           )}
         </div>
@@ -294,74 +302,62 @@ export default function MembersPage() {
                   )}
                 >
                   <SortHeader label="PERSONA" field="name" sort={sort} onSort={onSort} />
-                  <span>ESTADO</span>
-                  <span>MÓDULO ACTUAL</span>
+                  <span title={`${legend.active} ${legend.inactive}`}>ESTADO</span>
                   <SortHeader label="AVANCE" field="progress" sort={sort} onSort={onSort} />
                   <SortHeader label="ÚLTIMA VEZ" field="lastActivity" sort={sort} onSort={onSort} />
                   <SortHeader label="INCORPORACIÓN" field="joinedAt" sort={sort} onSort={onSort} />
                 </div>
-                {data.content.map((m) => {
-                  const moduleLabel = currentModuleLabel(m, showCourse);
-                  return (
-                    <Link
-                      key={m.userId}
-                      href={withFilters(`/dashboard/members/${m.userId}`)}
-                      className={cn(
-                        GRID,
-                        "border-fill hover:bg-background items-center border-b py-3",
-                      )}
-                    >
-                      <span className="flex min-w-0 items-center gap-2.5">
-                        <Avatar
-                          seed={m.userId}
-                          name={m.name}
-                          lastName={m.lastName}
-                          src={avatarSrc(m.avatarUrl)}
-                        />
-                        <span className="flex min-w-0 flex-col">
-                          <span className="text-[15px] font-bold">
-                            {m.name} {m.lastName}
-                          </span>
-                          <span className="text-text-muted truncate text-[13px]">{m.email}</span>
-                        </span>
-                      </span>
-                      <span>
-                        <StatusPill status={m.activityStatus} />
-                      </span>
+                {data.content.map((m) => (
+                  <Link
+                    key={m.userId}
+                    href={withFilters(`/dashboard/members/${m.userId}`)}
+                    className={cn(
+                      GRID,
+                      "border-fill hover:bg-background items-center border-b py-3",
+                    )}
+                  >
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <Avatar
+                        seed={m.userId}
+                        name={m.name}
+                        lastName={m.lastName}
+                        src={avatarSrc(m.avatarUrl)}
+                      />
                       <span className="flex min-w-0 flex-col">
-                        <span
-                          className={cn(
-                            "flex items-center gap-1.5 truncate text-sm",
-                            moduleLabel.finished && "text-success-dark font-bold",
-                            moduleLabel.text === "Todavía no empezó" && "text-text-muted",
-                          )}
-                        >
-                          {moduleLabel.finished ? (
-                            <Icon name="checkCircle" className="size-4" />
-                          ) : null}
-                          {moduleLabel.text}
+                        <span className="text-[15px] font-bold">
+                          {m.name} {m.lastName}
                         </span>
-                        {moduleLabel.detail ? (
-                          <span className="text-text-muted truncate text-xs">
-                            {moduleLabel.detail}
-                          </span>
+                        <span className="text-text-muted truncate text-[13px]">{m.email}</span>
+                      </span>
+                    </span>
+                    <span>
+                      <StatusPill status={m.activity} />
+                    </span>
+                    <span className="flex items-center gap-2.5">
+                      <ProgressBar
+                        percent={m.progressPercentage}
+                        tone={m.completed ? "success" : "primary"}
+                        className="flex-1"
+                        label={`Avance de ${m.name}`}
+                      />
+                      <span
+                        className={cn(
+                          "flex w-14 items-center gap-1 text-sm font-extrabold",
+                          m.completed && "text-success-dark",
+                        )}
+                      >
+                        {m.completed ? (
+                          <Icon name="checkCircle" className="size-4" aria-label="Completó" />
                         ) : null}
+                        {m.progressPercentage}%
                       </span>
-                      <span className="flex items-center gap-2.5">
-                        <ProgressBar
-                          percent={m.progressPercentage}
-                          className="flex-1"
-                          label={`Avance de ${m.name}`}
-                        />
-                        <span className="w-10 text-sm font-extrabold">{m.progressPercentage}%</span>
-                      </span>
-                      <span className="text-text-muted text-sm">
-                        {formatRelativeDays(daysSince(m.lastActivityAt))}
-                      </span>
-                      <span className="text-text-muted text-sm">{formatDate(m.joinedAt)}</span>
-                    </Link>
-                  );
-                })}
+                    </span>
+                    <span className="text-text-muted text-sm">
+                      {formatRelativeDays(daysSince(m.lastActivityAt))}
+                    </span>
+                    <span className="text-text-muted text-sm">{formatDate(m.joinedAt)}</span>
+                  </Link>
+                ))}
                 {data.content.length === 0 ? (
                   <div className="flex flex-col items-center gap-1.5 py-10 text-center">
                     <p className="font-display text-lg font-bold">
@@ -370,7 +366,7 @@ export default function MembersPage() {
                     <p className="text-text-muted text-sm">
                       {query
                         ? "Probá con otro nombre o email."
-                        : "Elegí otro estado para ver al resto del equipo."}
+                        : "Probá con otro estado, otro período de incorporación o mostrando a quienes completaron."}
                     </p>
                   </div>
                 ) : null}

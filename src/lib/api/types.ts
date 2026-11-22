@@ -418,6 +418,53 @@ export type UserRefundRequestResponse = {
   currency: string | null;
 };
 
+/** Participant list state: learning activity in the selected course(s) in the last 7 days. */
+export type ParticipantActivity = "ACTIVE" | "INACTIVE";
+
+/** One row of the participant list (`GET /organizations/{id}/members/roster`). */
+export type ParticipantSummary = {
+  userId: string;
+  name: string;
+  lastName: string;
+  email: string;
+  joinedAt: string;
+  lastActivityAt: string | null;
+  progressPercentage: number;
+  activity: ParticipantActivity;
+  completed: boolean;
+  avatarUrl: string | null;
+};
+
+/** Where a participant stands in a course (or, in the total row, across all of them). */
+export type TrainingStatus =
+  "INVITATION_PENDING" | "NOT_STARTED" | "ACTIVE" | "INACTIVE" | "COMPLETED" | "ACCESS_EXPIRED";
+
+/** A participant's training in one course; the total row has `courseId`/`courseName` null. */
+export type CourseTraining = {
+  courseId: string | null;
+  courseName: string | null;
+  status: TrainingStatus;
+  progressPercentage: number;
+  lastActivityAt: string | null;
+  /** When the access began (the invitation was accepted); null for a pending invitation. */
+  startedAt: string | null;
+  /** When the access ends; null for a pending invitation or access with no end. */
+  expiresAt: string | null;
+};
+
+/** `GET /organizations/{id}/members/{userId}/training`. */
+export type ParticipantTraining = {
+  userId: string;
+  name: string;
+  lastName: string;
+  email: string;
+  avatarUrl: string | null;
+  status: MemberStatus;
+  joinedAt: string;
+  courses: CourseTraining[];
+  total: CourseTraining;
+};
+
 export type Page<T> = {
   content: T[];
   totalElements: number;
