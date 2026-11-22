@@ -10,7 +10,7 @@ import { useGrowthQuery, useOnboardingQuery } from "@/components/dashboard/usage
 import { previousRange, type DateTimeRange } from "@/lib/datetime-range";
 
 /**
- * Usuarios — who arrives and who stays: the active and new users series (with the previous
+ * Usuarios — who arrives and who stays: the new and active users series (new on the left) (with the previous
  * window dashed), then who the window's new accounts are, from the app's onboarding survey: age
  * range, how much LSA they knew and why they want to learn.
  */
@@ -36,21 +36,21 @@ export function UsersTab({
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 lg:grid-cols-2">
         <DailySeriesChart
-          title="Usuarios activos"
-          metric="users_active"
-          seriesLabel="Activos"
-          points={g.engagement.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
-          previous={pg?.engagement.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
-          format={fmtCount}
-          range={range}
-          onSelectRange={onSelectRange}
-        />
-        <DailySeriesChart
           title="Nuevos usuarios"
           metric="new_users"
           seriesLabel="Nuevos"
           points={g.users.daily.map((d) => ({ t: d.t, value: d.count }))}
           previous={pg?.users.daily.map((d) => ({ t: d.t, value: d.count }))}
+          format={fmtCount}
+          range={range}
+          onSelectRange={onSelectRange}
+        />
+        <DailySeriesChart
+          title="Usuarios activos"
+          metric="users_active"
+          seriesLabel="Activos"
+          points={g.engagement.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
+          previous={pg?.engagement.dailyActive.map((d) => ({ t: d.t, value: d.count }))}
           format={fmtCount}
           range={range}
           onSelectRange={onSelectRange}

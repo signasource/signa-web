@@ -65,7 +65,7 @@ tab. The active tab lives in the URL (`?tab=`), so an admin can bookmark their a
   ingresos and an **Estado** badge (Bajo uso / Vence pronto / Saludable / Sin cupos libres); ranked by
   risk, collapses to 6 rows behind a "Ver más (N)" toggle. Exposes `useGrowthMetrics` (shared with Usuarios).
 - **Usuarios** (`usage-usuarios.tsx`) — per the users sheet (nov 2026): only the **Usuarios
-  activos** and **Nuevos usuarios** series (`DailySeriesChart`, previous window dashed), then the
+  activos** and **Nuevos usuarios** series (Nuevos usuarios on the left, Usuarios activos on the right) (`DailySeriesChart`, previous window dashed), then the
   **Encuesta inicial** section — who the window's new accounts are, from the app's onboarding survey
   (`GET /admin/metrics/onboarding`, `useOnboardingQuery`): **Edad** (vertical bars by age range,
   short axis ticks "< 18 … 55+", no y axis), **Nivel de conocimiento** and **Motivación**
