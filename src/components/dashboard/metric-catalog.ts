@@ -633,12 +633,6 @@ export const METRICS = {
     howComputed: "Dividimos las consultas rechazadas por el total de consultas.",
     goodWhen: "Estable; un salto puede indicar un error en la app o un uso abusivo.",
   },
-  slowest_ops: {
-    label: "Operaciones más lentas",
-    description: "Las partes de la app que más tardan en responder.",
-    howComputed: "Ordenamos las operaciones por su tiempo de respuesta en los casos lentos.",
-    goodWhen: "Ninguna operación domina el tiempo de respuesta.",
-  },
   cpu_host: {
     label: "CPU del servidor",
     description: "Cuánta capacidad de cálculo del servidor se está usando.",

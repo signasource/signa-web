@@ -87,6 +87,7 @@ export function PerfChart({
   isError,
   isFetching = false,
   format = (v) => v.toLocaleString("es-AR"),
+  tickFormat,
   delay,
   onSelectRange,
   seriesNames,
@@ -105,6 +106,8 @@ export function PerfChart({
   isError: boolean;
   isFetching?: boolean;
   format?: ValueFormat;
+  /** Formatter used only for Y-axis tick labels (defaults to `format`). */
+  tickFormat?: ValueFormat;
   delay?: number;
   /** When set, dragging across the chart selects a time window (drives the global filter). */
   onSelectRange?: RangeSelect;
@@ -274,7 +277,7 @@ export function PerfChart({
                 tickLine={false}
                 width={44}
                 domain={[0, (max: number) => (max === 0 ? 1 : max * 1.1)]}
-                tickFormatter={(v) => format(Number(v))}
+                tickFormatter={(v) => (tickFormat ?? format)(Number(v))}
                 tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
               />
               <Tooltip content={ChartTooltip} isAnimationActive={false} />
