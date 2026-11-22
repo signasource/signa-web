@@ -123,15 +123,13 @@ Used by `/organizations/forgot-password` (same code flow as `signa-mobile`). The
 
 ## `adminApi` signs (`src/lib/api/admin.ts`) — sign catalog
 
-| Method                             | Path                                         | Returns           | Notes                                                                     |
-| ---------------------------------- | -------------------------------------------- | ----------------- | ------------------------------------------------------------------------- |
-| `signs({query,page,size})`         | `GET /admin/signs`                           | `Page<AdminSign>` | The editor loads everything once (`size=1000`) and filters in the browser |
-| `sign(id)`                         | `GET /admin/signs/{id}`                      | `AdminSignDetail` | With usages and media URLs                                                |
-| `createSign(data)`                 | `POST /admin/signs`                          | `AdminSignDetail` | `{meaning, handedness, youtubeUrl?}`                                      |
-| `updateSign(id, data)`             | `PATCH /admin/signs/{id}`                    | `AdminSignDetail` | A rename cascades to lessons                                              |
-| `uploadSignAnimation(id, file, v)` | `POST /admin/signs/{id}/animation?view=`     | `AdminSignDetail` | Multipart; `view` = `front` (default) or `lateral`; ≤ 50 MB               |
-| `removeSignLateral(id)`            | `DELETE /admin/signs/{id}/animation/lateral` | `AdminSignDetail` | Defined; not called by any screen yet                                     |
-| `deleteSign(id)`                   | `DELETE /admin/signs/{id}`                   | `void`            | The API refuses while the sign is used in lessons or has open reports     |
+| Method                     | Path                       | Returns           | Notes                                                                     |
+| -------------------------- | -------------------------- | ----------------- | ------------------------------------------------------------------------- |
+| `signs({query,page,size})` | `GET /admin/signs`         | `Page<AdminSign>` | The editor loads everything once (`size=1000`) and filters in the browser |
+| `sign(id)`                 | `GET /admin/signs/{id}`    | `AdminSignDetail` | With usages and media URLs                                                |
+| `createSign(data)`         | `POST /admin/signs`        | `AdminSignDetail` | `{meaning, handedness, youtubeUrl?}`                                      |
+| `updateSign(id, data)`     | `PATCH /admin/signs/{id}`  | `AdminSignDetail` | A rename cascades to lessons                                              |
+| `deleteSign(id)`           | `DELETE /admin/signs/{id}` | `void`            | The API refuses while the sign is used in lessons or has open reports     |
 
 More in [../features/admin-signs.md](../features/admin-signs.md). `signAnimation(meaning)` (`GET /signs/{meaning}/animation`) is defined but unused.
 
