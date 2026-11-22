@@ -11,7 +11,10 @@ is linkable and the browser's back button works:
 
 - **Catalog** (no `id`): the whole catalog is loaded once (`GET /admin/signs?size=1000`, a few
   hundred signs) and filtered in the browser (`filterSigns`): accent/case-insensitive search, format
-  tabs (Todas · 3D · Video · Sin archivo, with counts) and sort (A→Z, recent uploads, most used).
+  tabs (Todas · 3D · Video · Sin archivo, with counts), sort (A→Z, recent uploads, most used), and
+  a **course filter** (`GET /admin/courses` for the picker; on selection loads the best non-archived
+  version via `GET /admin/course-versions/{id}` and extracts sign meanings from block configs using
+  `BLOCK_TYPES` from `src/lib/course-blocks.ts`; format-tab counts and results narrow to that course).
   "Nueva seña" opens a react-hook-form + zod dialog (`newSignSchema`) and lands in the editor.
 - **Editor** (`?id=<sign>`): explicit save (no autosave — a rename rewrites live lessons). Shows
   `Guardado / Sin guardar`, discards, guards leaving with unsaved changes, and deletes. "Eliminar" is disabled, with the reason in a

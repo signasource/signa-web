@@ -107,22 +107,6 @@ export function DatetimeRangePicker({
           className="border-border bg-surface dash-card-enter absolute right-0 z-30 mt-2 flex w-[min(20rem,calc(100vw-2rem))] flex-col rounded-2xl border p-1.5 shadow-lg"
         >
           <ul className="flex flex-col gap-0.5">
-            <li>
-              <button
-                type="button"
-                aria-pressed={value.kind === "all"}
-                onClick={() => pick({ kind: "all" })}
-                className={cn(
-                  "flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors",
-                  value.kind === "all"
-                    ? "bg-primary-light text-primary-dark"
-                    : "hover:bg-fill text-text",
-                )}
-              >
-                {ALL_TIME_LABEL}
-                {value.kind === "all" ? <Icon name="check" className="size-4" /> : null}
-              </button>
-            </li>
             {RANGE_PRESETS.map((p) => {
               const selected = value.kind === "preset" && value.key === p.key;
               return (
@@ -142,6 +126,22 @@ export function DatetimeRangePicker({
                 </li>
               );
             })}
+            <li>
+              <button
+                type="button"
+                aria-pressed={value.kind === "all"}
+                onClick={() => pick({ kind: "all" })}
+                className={cn(
+                  "flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors",
+                  value.kind === "all"
+                    ? "bg-primary-light text-primary-dark"
+                    : "hover:bg-fill text-text",
+                )}
+              >
+                {ALL_TIME_LABEL}
+                {value.kind === "all" ? <Icon name="check" className="size-4" /> : null}
+              </button>
+            </li>
           </ul>
           <form
             onSubmit={apply}

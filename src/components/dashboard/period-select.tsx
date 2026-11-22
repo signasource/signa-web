@@ -51,13 +51,13 @@ export function PeriodSelect({
   const preset = value ? matchPreset(value) : null;
   const label = periodLabel(value);
   const options = [
-    { key: "all", label: ALL_TIME_LABEL, selected: value === null, period: () => null },
     ...RANGE_PRESETS.map((p) => ({
       key: p.key,
       label: p.label,
       selected: preset?.key === p.key,
       period: () => p.range(new Date()),
     })),
+    { key: "all", label: ALL_TIME_LABEL, selected: value === null, period: () => null },
   ];
 
   useEffect(() => {

@@ -3,12 +3,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { Icon } from "@/components/dashboard/icons";
+import { headerChip } from "@/components/dashboard/ui";
 import { SignCard } from "@/features/admin/signs/sign-card";
 import { SignEditor, signQueryKey } from "@/features/admin/signs/sign-editor";
 import { adminApi } from "@/lib/api/admin";
 import { ApiError } from "@/lib/api/client";
+import { BLOCK_TYPES } from "@/lib/course-blocks";
 import {
   countByFormat,
   filterSigns,
@@ -35,6 +38,92 @@ const SORTS: { key: SignSort; label: string }[] = [
   { key: "recent", label: "Subidas recientes" },
   { key: "used", label: "Más usadas" },
 ];
+
+function DropdownPicker<T extends string>({
+  icon,
+  options,
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  icon: Parameters<typeof Icon>[0]["name"];
+  options: { key: T; label: string }[];
+  value: T | null;
+  onChange: (key: T | null) => void;
+  ariaLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (
+        e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)
+      )
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+
+  const current = options.find((o) => o.key === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={menuId}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          headerChip,
+          "border-border bg-surface text-text cursor-pointer border transition-shadow hover:shadow-sm",
+        )}
+      >
+        <Icon name={icon} className="size-4" />
+        <span className="max-w-[200px] truncate">{current?.label ?? options[0]?.label}</span>
+        <Icon name="chevronDown" className={cn("size-3.5 transition-transform", open && "rotate-180")} />
+      </button>
+      {open ? (
+        <ul
+          id={menuId}
+          role="listbox"
+          aria-label={ariaLabel}
+          className="border-border bg-surface absolute left-0 z-30 mt-2 flex w-56 flex-col gap-0.5 rounded-2xl border p-1.5 shadow-lg"
+        >
+          {options.map((o) => {
+            const selected = value === o.key;
+            return (
+              <li key={o.key} role="option" aria-selected={selected}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(o.key);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-colors",
+                    selected ? "bg-primary-light text-primary-dark" : "hover:bg-fill text-text",
+                  )}
+                >
+                  <span className="truncate">{o.label}</span>
+                  {selected ? <Icon name="check" className="size-4" /> : null}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 export default function SignsPage() {
   return (
@@ -97,15 +186,74 @@ function Catalog({
   const [format, setFormat] = useState<FormatFilter>("all");
   const [sort, setSort] = useState<SignSort>("az");
   const [creating, setCreating] = useState(false);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
   const { data, isPending, error } = useQuery({
     queryKey: ["admin", "signs", "catalog"],
     queryFn: () => adminApi.signs({ size: CATALOG_SIZE }),
   });
 
+  const { data: coursesData } = useQuery({
+    queryKey: ["admin", "courses"],
+    queryFn: () => adminApi.courses(),
+    staleTime: 5 * 60_000,
+  });
+  const courses = coursesData ?? [];
+
+  const selectedCourse = courses.find((c) => c.id === selectedCourseId) ?? null;
+  const bestVersionId = useMemo(() => {
+    if (!selectedCourse) return null;
+    const published = selectedCourse.versions.find((v) => v.status === "PUBLISHED");
+    if (published) return published.id;
+    const nonArchived = selectedCourse.versions
+      .filter((v) => v.status !== "ARCHIVED")
+      .sort((a, b) => b.version - a.version);
+    return nonArchived[0]?.id ?? null;
+  }, [selectedCourse]);
+
+  const { data: courseVersionDetail } = useQuery({
+    queryKey: ["admin", "course-version", bestVersionId],
+    queryFn: () => adminApi.courseVersion(bestVersionId!),
+    enabled: !!bestVersionId,
+    staleTime: 5 * 60_000,
+  });
+
+  const courseSignMeanings = useMemo<Set<string> | null>(() => {
+    if (!selectedCourseId) return null;
+    if (!courseVersionDetail) return null;
+    const meanings = new Set<string>();
+    for (const topic of courseVersionDetail.topics) {
+      for (const lesson of topic.lessons) {
+        for (const block of lesson.blocks) {
+          const def = BLOCK_TYPES[block.type];
+          if (!def) continue;
+          for (const [key, fieldType] of def.fields) {
+            if (fieldType === "sign") {
+              const v = block.config[key];
+              if (typeof v === "string" && v.trim()) meanings.add(v.trim());
+            } else if (fieldType === "signs") {
+              const arr = block.config[key];
+              if (Array.isArray(arr)) {
+                for (const v of arr) {
+                  if (typeof v === "string" && v.trim()) meanings.add(v.trim());
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return meanings;
+  }, [selectedCourseId, courseVersionDetail]);
+
   const all = data?.content ?? [];
-  const counts = countByFormat(all);
-  const visible = filterSigns(all, { query, format, sort });
+  const inCourse = useMemo(() => {
+    if (!selectedCourseId) return all;
+    if (!courseSignMeanings) return [];
+    return all.filter((s) => courseSignMeanings.has(s.meaning));
+  }, [all, selectedCourseId, courseSignMeanings]);
+  const counts = countByFormat(inCourse);
+  const visible = filterSigns(inCourse, { query, format, sort });
 
   return (
     <div>
@@ -180,20 +328,25 @@ function Catalog({
             </button>
           ))}
         </div>
-        <label className="border-border text-text flex items-center gap-2 rounded-xl border bg-white px-3.5 py-2 text-sm font-semibold">
-          <span className="text-text-muted font-normal">Orden</span>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SignSort)}
-            className="bg-transparent outline-none"
-          >
-            {SORTS.map(({ key, label }) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+        {courses.length > 0 && (
+          <DropdownPicker
+            icon="book"
+            ariaLabel="Curso"
+            options={[{ key: "" as string, label: "Todos los cursos" }, ...courses.map((c) => ({ key: c.id, label: c.name }))]}
+            value={selectedCourseId ?? ""}
+            onChange={(v) => {
+              setSelectedCourseId(v || null);
+              setFormat("all");
+            }}
+          />
+        )}
+        <DropdownPicker
+          icon="sortable"
+          ariaLabel="Orden"
+          options={SORTS}
+          value={sort}
+          onChange={(v) => v && setSort(v)}
+        />
       </div>
 
       {isPending ? (
@@ -211,12 +364,17 @@ function Catalog({
         <div className="border-fill-dark text-text-muted rounded-lg border border-dashed px-5 py-10 text-center text-sm">
           {all.length === 0
             ? "Todavía no hay señas. Creá la primera."
-            : "Ninguna seña coincide con la búsqueda."}
+            : selectedCourseId && inCourse.length === 0
+              ? "El curso no tiene señas en el catálogo."
+              : "Ninguna seña coincide con la búsqueda."}
         </div>
       ) : (
         <>
           <p className="text-text-muted mb-4 text-sm">
-            {visible.length} de {all.length} señas
+            {visible.length} de {selectedCourseId ? inCourse.length : all.length} señas
+            {selectedCourseId && inCourse.length < all.length && (
+              <span> · {all.length} en total</span>
+            )}
           </p>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
             {visible.map((s) => (
