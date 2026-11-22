@@ -95,7 +95,10 @@ panels only populate in production; the Infra tab says so, and shows "sin datos"
   value from the catalog threshold. Previous windows come from the same endpoints queried with
   `previousRange(range)` (`usage-queries.ts`), no extra API.
 - **Período anterior** is drawn dashed on `DailySeriesChart` (`previous` prop) and `PerfChart`
-  (`previous` + `previousShiftSeconds`).
+  (`previous` + `previousShiftSeconds`). Once fetched, a bucket the previous window has no row for is **0** (`buildSeries`), also when the
+  whole previous window came back empty — common in "Últimas 4 horas", whose previous window often has
+  nobody — so the dashed line is drawn at 0 instead of disappearing as "sin datos" (rates with
+  `emptyAsNull` keep null).
 - **Tabs** carry health dots (Aprendizaje: completion/success; Infraestructura: services) and the
   "Comparando con … · hora de Argentina" caption on the same row.
 - **Admin home** (`/admin`): see the "Admin home" section above.

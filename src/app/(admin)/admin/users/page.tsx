@@ -71,7 +71,10 @@ function RolePicker({
       >
         <Icon name="people" className="size-4" />
         <span>{current?.label ?? "Todos los roles"}</span>
-        <Icon name="chevronDown" className={cn("size-3.5 transition-transform", open && "rotate-180")} />
+        <Icon
+          name="chevronDown"
+          className={cn("size-3.5 transition-transform", open && "rotate-180")}
+        />
       </button>
 
       {open ? (
@@ -179,7 +182,10 @@ function DateRangePicker({
         <span>
           {label}: {dateRangeLabel(from, to)}
         </span>
-        <Icon name="chevronDown" className={cn("size-3.5 transition-transform", open && "rotate-180")} />
+        <Icon
+          name="chevronDown"
+          className={cn("size-3.5 transition-transform", open && "rotate-180")}
+        />
       </button>
 
       {open ? (
@@ -383,10 +389,7 @@ function UsersTab() {
           placeholder="Nombre, @usuario o email"
           className="border-border bg-surface focus:border-primary min-w-52 flex-1 rounded-full border px-4 py-2 text-[13px] font-bold outline-none"
         />
-        <RolePicker
-          value={roleFilter}
-          onChange={(v) => handleFilterChange(setRoleFilter, v)}
-        />
+        <RolePicker value={roleFilter} onChange={(v) => handleFilterChange(setRoleFilter, v)} />
         <DateRangePicker
           label="Incorporación"
           from={createdFrom}
@@ -421,13 +424,43 @@ function UsersTab() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-border bg-fill text-text-muted border-b text-xs">
-                  <SortTh label="Usuario" field="name" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <SortTh label="Rol" field="role" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortTh
+                    label="Usuario"
+                    field="name"
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortTh
+                    label="Rol"
+                    field="role"
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
                   <th className="px-5 py-3 text-left font-bold">Organización</th>
                   <th className="px-5 py-3 text-left font-bold">Acceso</th>
-                  <SortTh label="Incorporación" field="createdAt" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <SortTh label="Racha" field="streak" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <SortTh label="Última actividad" field="lastActivity" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <SortTh
+                    label="Incorporación"
+                    field="createdAt"
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortTh
+                    label="Racha"
+                    field="streak"
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
+                  <SortTh
+                    label="Última actividad"
+                    field="lastActivity"
+                    sortBy={sortBy}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
                   <th className="px-5 py-3" />
                 </tr>
               </thead>

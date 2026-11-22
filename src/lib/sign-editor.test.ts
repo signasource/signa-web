@@ -2,24 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { AdminSign } from "@/lib/api/admin";
 import {
   countByFormat,
-  detectMediaFormat,
   filterSigns,
   formatAgo,
-  formatBytes,
   meaningError,
   newSignSchema,
   normalizeMeaning,
-  uploadError,
   youtubeError,
 } from "@/lib/sign-editor";
-
-const bytes = (s: string) => new Uint8Array([...s].map((c) => c.charCodeAt(0)));
-const file = (content: Uint8Array<ArrayBuffer> | string, name = "x") =>
-  new File([typeof content === "string" ? bytes(content) : content], name);
-
-const GLB = bytes("glTF\x02\0\0\0\0\0\0\0rest");
-const MP4 = bytes("\0\0\0\x18ftypisom\0\0rest");
-const MOV = bytes("\0\0\0\x14ftypqt  \0\0rest");
 
 function sign(partial: Partial<AdminSign> & { meaning: string }): AdminSign {
   return {
@@ -67,25 +56,6 @@ describe("meaning validation", () => {
   });
 });
 
-describe("media detection", () => {
-  it("detects glb and mp4 by content, not by name", async () => {
-    expect(await detectMediaFormat(file(GLB, "x.mp4"))).toBe("glb");
-    expect(await detectMediaFormat(file(MP4, "x.glb"))).toBe("mp4");
-  });
-
-  it("rejects QuickTime, short and unknown files", async () => {
-    expect(await detectMediaFormat(file(MOV))).toBeNull();
-    expect(await detectMediaFormat(file("glTF"))).toBeNull();
-    expect(await detectMediaFormat(file("\x89PNG\r\n\x1a\n00000000"))).toBeNull();
-  });
-
-  it("explains why a file cannot be uploaded", async () => {
-    expect(await uploadError(file(new Uint8Array()))).toMatch(/vacío/);
-    expect(await uploadError(file(MOV))).toMatch(/\.glb.*\.mp4/);
-    expect(await uploadError(file(GLB))).toBeNull();
-  });
-});
-
 describe("catalog filtering", () => {
   const signs = [
     sign({ meaning: "Mañana", lessonCount: 1 }),
@@ -121,12 +91,6 @@ describe("catalog filtering", () => {
 });
 
 describe("formatters", () => {
-  it("formats sizes", () => {
-    expect(formatBytes(500)).toBe("500 B");
-    expect(formatBytes(2048)).toBe("2 KB");
-    expect(formatBytes(2.5 * 1024 * 1024)).toBe("2,5 MB");
-  });
-
   it("formats relative time", () => {
     const now = Date.parse("2026-01-10T12:00:00Z");
     expect(formatAgo(null, now)).toBe("");

@@ -536,23 +536,6 @@ export const adminApi = {
   updateSign: (id: string, data: UpdateSignInput) =>
     api<AdminSignDetail>(`/admin/signs/${id}`, { method: "PATCH", body: data }),
 
-  /**
-   * Replaces the sign's animation (max 50 MB); live in the app right away. `front`: a .glb or the
-   * front .mp4 (a .glb drops the lateral video). `lateral`: the side-view .mp4 of an .mp4 sign.
-   */
-  uploadSignAnimation: (id: string, file: File, view: SignView = "front") => {
-    const formData = new FormData();
-    formData.append("file", file);
-    return api<AdminSignDetail>(`/admin/signs/${id}/animation`, {
-      method: "POST",
-      formData,
-      query: { view },
-    });
-  },
-
-  removeSignLateral: (id: string) =>
-    api<AdminSignDetail>(`/admin/signs/${id}/animation/lateral`, { method: "DELETE" }),
-
   deleteSign: (id: string) => api(`/admin/signs/${id}`, { method: "DELETE" }),
 
   waitlist: (params?: { page?: number; size?: number }) =>

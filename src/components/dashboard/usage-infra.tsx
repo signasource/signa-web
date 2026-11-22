@@ -17,12 +17,7 @@ import {
 } from "@/components/dashboard/perf-format";
 import { PerfPanel, type PerfProps } from "@/components/dashboard/perf-panel";
 import { Card, CardTitle, LoadingState } from "@/components/dashboard/ui";
-import {
-  pct1,
-  perfAverage,
-  perfPeak,
-  seriesValues,
-} from "@/components/dashboard/usage-math";
+import { pct1, perfAverage, perfPeak, seriesValues } from "@/components/dashboard/usage-math";
 import { usePerfWidget } from "@/components/dashboard/usage-queries";
 import { type PerfMetrics, type PerfSeries } from "@/lib/api/metrics";
 import { previousRange, spanSeconds } from "@/lib/datetime-range";
@@ -341,4 +336,3 @@ function mean(s: PerfSeries): number | null {
   const values = seriesValues(s);
   return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
 }
-

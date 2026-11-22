@@ -11,9 +11,7 @@ export type DateTimeRange = { from: string; to: string };
 
 /** The dashboard selection: a rolling preset (recomputed from "now") or a fixed custom window. */
 export type RangeSelection =
-  | { kind: "all" }
-  | { kind: "preset"; key: string }
-  | { kind: "custom"; from: string; to: string };
+  { kind: "all" } | { kind: "preset"; key: string } | { kind: "custom"; from: string; to: string };
 
 export type RangePreset = { key: string; label: string; minutes: number };
 

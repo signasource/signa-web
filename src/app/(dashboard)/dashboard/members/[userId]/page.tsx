@@ -45,7 +45,7 @@ const FIRST_DIRECTION: Record<TrainingSort, "asc" | "desc"> = {
 };
 
 const GRID =
-  "grid grid-cols-[minmax(200px,1.6fr)_150px_minmax(120px,1.3fr)_160px_110px_110px] items-center gap-4";
+  "grid grid-cols-[minmax(180px,1.6fr)_150px_minmax(120px,1.3fr)_160px_110px_110px] items-center gap-4 px-3";
 
 function SortButton({
   label,
@@ -80,10 +80,19 @@ function SortButton({
 }
 
 /** The cells of one course row (or the total row) of the training table. */
-function TrainingCells({ row, name }: { row: CourseTraining; name: string }) {
+function TrainingCells({
+  row,
+  name,
+  total = false,
+}: {
+  row: CourseTraining;
+  name: string;
+  /** The all-courses summary row: its name in the brand colour, on its tinted band. */
+  total?: boolean;
+}) {
   return (
     <>
-      <span className="text-[15px] font-bold">{name}</span>
+      <span className={cn("text-[15px] font-bold", total && "text-primary-dark")}>{name}</span>
       <span>
         <TrainingPill status={row.status} />
       </span>
@@ -147,7 +156,7 @@ function TrainingTable({ courses, total }: { courses: CourseTraining[]; total: C
         <p className="text-text-muted text-sm">Todavía no tiene cursos asignados.</p>
       ) : (
         <div className="overflow-x-auto">
-          <div className="min-w-[920px]">
+          <div className="min-w-[934px]">
             <div
               role="row"
               className={cn(
@@ -213,10 +222,11 @@ function TrainingTable({ courses, total }: { courses: CourseTraining[]; total: C
               </p>
             ) : null}
             {rows.length > 0 ? (
-              <div role="row" className={cn(GRID, "border-border border-t py-3")}>
+              <div role="row" className={cn(GRID, "bg-primary-light mt-1.5 rounded-xl py-3")}>
                 <TrainingCells
                   row={shownTotal}
                   name={filtered ? "Cursos mostrados" : "Todos los cursos"}
+                  total
                 />
               </div>
             ) : null}
