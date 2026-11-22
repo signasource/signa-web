@@ -130,20 +130,6 @@ export type MemberProgress = {
   avatarUrl: string | null;
 };
 
-export type ModuleStats = {
-  courseId: string;
-  courseName: string;
-  topicId: string;
-  title: string;
-  order: number;
-  totalLessons: number;
-  participantsCompleted: number;
-  participantsInProgress: number;
-  completionPercentage: number;
-  exerciseAttempts: number;
-  correctPercentage: number;
-};
-
 /** `REFUNDED`: paid and then given back (withdrawal, refund in Mercado Pago or chargeback). */
 export type PurchaseStatus = "PENDING_PAYMENT" | "PAID" | "CANCELLED" | "REFUNDED";
 export type SeatStatus =
@@ -244,6 +230,21 @@ export type Purchase = {
   hasRefundRequest: boolean;
   /** True once any invitee accepted their seat: the purchase can no longer be refunded. */
   hasAcceptedSeats: boolean;
+  /** How it was paid: Mercado Pago, by hand (manual confirmation), or null while unpaid. */
+  paymentMethod: "MERCADO_PAGO" | "MANUAL" | null;
+};
+
+/**
+ * `GET /organizations/{id}/purchases/{purchaseId}/progress`: the people who accepted a seat of the
+ * purchase and how they are doing in its course. `averageProgress` is of those who started.
+ */
+export type PurchaseProgress = {
+  participants: number;
+  started: number;
+  completed: number;
+  completionPercentage: number;
+  averageProgress: number;
+  seats: { seatId: string; progressPercentage: number }[];
 };
 
 export type Seat = {
@@ -416,6 +417,53 @@ export type UserRefundRequestResponse = {
   productName: string | null;
   amount: number | null;
   currency: string | null;
+};
+
+/** Participant list state: learning activity in the selected course(s) in the last 7 days. */
+export type ParticipantActivity = "ACTIVE" | "INACTIVE";
+
+/** One row of the participant list (`GET /organizations/{id}/members/roster`). */
+export type ParticipantSummary = {
+  userId: string;
+  name: string;
+  lastName: string;
+  email: string;
+  joinedAt: string;
+  lastActivityAt: string | null;
+  progressPercentage: number;
+  activity: ParticipantActivity;
+  completed: boolean;
+  avatarUrl: string | null;
+};
+
+/** Where a participant stands in a course (or, in the total row, across all of them). */
+export type TrainingStatus =
+  "INVITATION_PENDING" | "NOT_STARTED" | "ACTIVE" | "INACTIVE" | "COMPLETED" | "ACCESS_EXPIRED";
+
+/** A participant's training in one course; the total row has `courseId`/`courseName` null. */
+export type CourseTraining = {
+  courseId: string | null;
+  courseName: string | null;
+  status: TrainingStatus;
+  progressPercentage: number;
+  lastActivityAt: string | null;
+  /** When the access began (the invitation was accepted); null for a pending invitation. */
+  startedAt: string | null;
+  /** When the access ends; null for a pending invitation or access with no end. */
+  expiresAt: string | null;
+};
+
+/** `GET /organizations/{id}/members/{userId}/training`. */
+export type ParticipantTraining = {
+  userId: string;
+  name: string;
+  lastName: string;
+  email: string;
+  avatarUrl: string | null;
+  status: MemberStatus;
+  joinedAt: string;
+  courses: CourseTraining[];
+  total: CourseTraining;
 };
 
 export type Page<T> = {

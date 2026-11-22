@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/dashboard", label: "Resumen" },
   { href: "/dashboard/members", label: "Participantes" },
-  { href: "/dashboard/modules", label: "Contenidos" },
   { href: "/dashboard/purchases", label: "Compras" },
 ];
 

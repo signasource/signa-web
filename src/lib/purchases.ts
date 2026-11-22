@@ -9,6 +9,8 @@ import type {
   VolumeDiscount,
 } from "@/lib/api/types";
 import { isEmail, parseEmails } from "@/lib/dashboard-format";
+import type { Period } from "@/lib/date-range";
+import { REFUND_REASON_VALUES } from "@/lib/refund-reasons";
 
 export const PURCHASE_STATUS_LABEL: Record<PurchaseStatus, string> = {
   PENDING_PAYMENT: "Pendiente de pago",
@@ -71,11 +73,14 @@ export function canWithdraw(purchase: Purchase, now: Date = new Date()): boolean
   );
 }
 
+/** Cancelling needs a reason from the shared list; the comment is optional. */
 export const withdrawalSchema = z.object({
-  reason: z.string().trim().max(500, "Usá hasta 500 caracteres."),
+  reason: z.enum(REFUND_REASON_VALUES, { error: "Elegí un motivo." }),
+  message: z.string().trim().max(500, "Usá hasta 500 caracteres."),
 });
 
-export type WithdrawalForm = z.infer<typeof withdrawalSchema>;
+export type WithdrawalInput = z.input<typeof withdrawalSchema>;
+export type WithdrawalForm = z.output<typeof withdrawalSchema>;
 
 export const REFUNDED_MESSAGE = {
   tone: "warning" as const,
@@ -271,4 +276,70 @@ export function refundResolveErrorMessage(error: unknown): string {
     return "No se puede reembolsar: al menos un invitado ya aceptó su cupo.";
   }
   return "No pudimos guardar los cambios. Probá de nuevo.";
+}
+
+/** The payment-state filter of the purchase list ("Pendiente" = waiting for the payment). */
+export const PURCHASE_FILTERS: { value: PurchaseStatus | "ALL"; label: string }[] = [
+  { value: "ALL", label: "Todos" },
+  { value: "PAID", label: "Pagado" },
+  { value: "REFUNDED", label: "Reembolsado" },
+  { value: "PENDING_PAYMENT", label: "Pendiente" },
+];
+
+/** The Argentine calendar day (`YYYY-MM-DD`) of an instant. */
+export function argentineDay(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+}
+
+/**
+ * The purchases the list shows: by course, by payment state, bought (created) within the period —
+ * Argentine days, both ends included — and sorted by purchase date. Does not touch the list it gets.
+ */
+export function visiblePurchases(
+  purchases: Purchase[],
+  {
+    courseId,
+    status,
+    period,
+    direction,
+  }: {
+    courseId?: string;
+    status: PurchaseStatus | "ALL";
+    period: Period;
+    direction: "asc" | "desc";
+  },
+): Purchase[] {
+  const sign = direction === "asc" ? 1 : -1;
+  return purchases
+    .filter((p) => !courseId || p.courseId === courseId)
+    .filter((p) => status === "ALL" || p.status === status)
+    .filter((p) => {
+      if (!period) return true;
+      const day = argentineDay(p.createdAt);
+      return day >= period.from && day <= period.to;
+    })
+    .sort((a, b) => sign * (Date.parse(a.createdAt) - Date.parse(b.createdAt)));
+}
+
+export const PAYMENT_METHOD_LABEL: Record<NonNullable<Purchase["paymentMethod"]>, string> = {
+  MERCADO_PAGO: "Mercado Pago",
+  MANUAL: "Confirmado por SIGNA",
+};
+
+/** The participant filter of a purchase: whether the invitation was accepted. */
+export type SeatGroup = "ALL" | "ACCEPTED" | "NOT_ACCEPTED";
+
+export const SEAT_GROUPS: { value: SeatGroup; label: string }[] = [
+  { value: "ALL", label: "Todos" },
+  { value: "ACCEPTED", label: "Invitación aceptada" },
+  { value: "NOT_ACCEPTED", label: "Invitación sin aceptar" },
+];
+
+/** Seats of that group; someone accepted once they activated the course, whatever came after. */
+export function seatsInGroup<T extends { activatedAt: string | null }>(
+  seats: T[],
+  group: SeatGroup,
+): T[] {
+  if (group === "ALL") return seats;
+  return seats.filter((s) => (group === "ACCEPTED") === (s.activatedAt !== null));
 }

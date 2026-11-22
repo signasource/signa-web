@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { SeatStatusPill } from "@/components/dashboard/purchase-status";
 import { ErrorState, LoadingState } from "@/components/dashboard/ui";
 import { useInvitedSeats } from "@/features/dashboard/use-invited-seats";
@@ -14,7 +14,7 @@ type InvitedFilter = SeatStatus | "ALL";
 
 const FILTERS: { value: InvitedFilter; label: string }[] = [
   { value: "ALL", label: "Todas" },
-  { value: "INVITED", label: "Enviadas" },
+  { value: "INVITED", label: "Pendientes" },
   { value: "INVITATION_EXPIRED", label: "Vencidas" },
 ];
 
@@ -25,10 +25,13 @@ export function InvitedSeats({
   orgId,
   courseId,
   query,
+  filtersEnd,
 }: {
   orgId: string | undefined;
   courseId: string | undefined;
   query: string;
+  /** Rendered at the right of the state chips (the page's course picker). */
+  filtersEnd?: ReactNode;
 }) {
   const { isPending, error, rows: all } = useInvitedSeats(orgId, courseId);
   const [filter, setFilter] = useState<InvitedFilter>("ALL");
@@ -44,21 +47,28 @@ export function InvitedSeats({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Estado de la invitación">
-        {FILTERS.map((f) => (
-          <button
-            key={f.value}
-            type="button"
-            aria-pressed={filter === f.value}
-            onClick={() => setFilter(f.value)}
-            className={cn(
-              "cursor-pointer rounded-full px-3.5 py-2 text-[13px] font-extrabold transition-colors",
-              filter === f.value ? "bg-text text-on-dark" : "bg-fill text-text hover:bg-fill-dark",
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Estado de la invitación">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              aria-pressed={filter === f.value}
+              onClick={() => setFilter(f.value)}
+              className={cn(
+                "cursor-pointer rounded-full px-3.5 py-2 text-[13px] font-extrabold transition-colors",
+                filter === f.value
+                  ? "bg-text text-on-dark"
+                  : "bg-fill text-text hover:bg-fill-dark",
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        {filtersEnd ? (
+          <div className="ml-auto flex flex-wrap items-center gap-2">{filtersEnd}</div>
+        ) : null}
       </div>
 
       <div className="border-border bg-surface overflow-x-auto rounded-2xl border">
@@ -80,7 +90,10 @@ export function InvitedSeats({
               <Link
                 key={seat.id}
                 href={`/dashboard/purchases/${purchaseId}`}
-                className={cn(GRID, "border-fill hover:bg-background items-center border-b py-3")}
+                className={cn(
+                  GRID,
+                  "border-fill hover:bg-background items-center border-b py-3 last:border-b-0",
+                )}
               >
                 <span className="flex min-w-0 flex-col">
                   <span

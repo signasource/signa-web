@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/dashboard/icons";
-import { PeriodFilter } from "@/components/dashboard/period-select";
 import {
   Avatar,
   Card,
@@ -13,30 +12,218 @@ import {
   ErrorState,
   LoadingState,
   ProgressBar,
-  StatusPill,
+  TrainingPill,
   pillButton,
+  trainingStatusLabel,
 } from "@/components/dashboard/ui";
 import { useAuth } from "@/features/auth/auth-context";
 import { useWithFilters } from "@/features/dashboard/use-course-filter";
-import { usePeriodFilter } from "@/features/dashboard/use-period-filter";
 import { organizationsApi } from "@/lib/api/organizations";
+import type { CourseTraining, TrainingStatus } from "@/lib/api/types";
 import { avatarSrc } from "@/lib/avatar-url";
-import {
-  currentModuleLabel,
-  daysSince,
-  formatDate,
-  formatMinutes,
-  formatRelativeDays,
-} from "@/lib/dashboard-format";
+import { daysSince, formatDate, formatRelativeDays } from "@/lib/dashboard-format";
+import { trainingTotal, visibleTraining, type TrainingSort } from "@/lib/participants";
+import { cn } from "@/lib/utils";
 
-function Metric({ label, children }: { label: string; children: React.ReactNode }) {
+const STATUSES: TrainingStatus[] = [
+  "ACTIVE",
+  "INACTIVE",
+  "NOT_STARTED",
+  "INVITATION_PENDING",
+  "COMPLETED",
+  "ACCESS_EXPIRED",
+];
+
+/** First click on a number/date column shows the highest / most recent first. */
+const FIRST_DIRECTION: Record<TrainingSort, "asc" | "desc"> = {
+  course: "asc",
+  status: "asc",
+  progress: "desc",
+  lastActivity: "desc",
+  startedAt: "desc",
+  expiresAt: "asc",
+};
+
+const GRID =
+  "grid grid-cols-[minmax(200px,1.6fr)_150px_minmax(120px,1.3fr)_160px_110px_110px] items-center gap-4";
+
+function SortButton({
+  label,
+  by,
+  sort,
+  onSort,
+}: {
+  label: string;
+  by: TrainingSort;
+  sort: { by: TrainingSort; direction: "asc" | "desc" };
+  onSort: (by: TrainingSort) => void;
+}) {
+  const active = sort.by === by;
   return (
-    <div className="border-border bg-surface rounded-2xl border p-[18px]">
-      <p className="text-text-muted text-[13px] font-bold">{label}</p>
-      <p className="font-display mt-1.5 flex items-center gap-1.5 text-3xl leading-9 font-extrabold tracking-tight whitespace-nowrap">
-        {children}
-      </p>
-    </div>
+    <button
+      type="button"
+      aria-pressed={active}
+      title={`Ordenar por ${label.toLowerCase()}`}
+      onClick={() => onSort(by)}
+      className={cn(
+        "hover:text-text inline-flex cursor-pointer items-center gap-1 text-left tracking-wider transition-colors",
+        active && "text-text",
+      )}
+    >
+      {label}
+      <Icon
+        name={active ? (sort.direction === "asc" ? "arrowUp" : "arrowDown") : "sortable"}
+        className={cn("size-3.5", !active && "opacity-50")}
+      />
+    </button>
+  );
+}
+
+/** The cells of one course row (or the total row) of the training table. */
+function TrainingCells({ row, name }: { row: CourseTraining; name: string }) {
+  return (
+    <>
+      <span className="text-[15px] font-bold">{name}</span>
+      <span>
+        <TrainingPill status={row.status} />
+      </span>
+      <span className="flex items-center gap-2.5">
+        {row.status === "INVITATION_PENDING" ? (
+          <span className="text-text-muted text-sm">—</span>
+        ) : (
+          <>
+            <ProgressBar
+              percent={row.progressPercentage}
+              tone={row.progressPercentage >= 100 ? "success" : "primary"}
+              className="flex-1"
+              label={`Progreso en ${name}`}
+            />
+            <span className="w-10 text-sm font-extrabold">{row.progressPercentage}%</span>
+          </>
+        )}
+      </span>
+      <span className="text-text-muted text-sm">
+        {row.status === "INVITATION_PENDING"
+          ? "—"
+          : formatRelativeDays(daysSince(row.lastActivityAt))}
+      </span>
+      <span className="text-text-muted text-sm">
+        {row.startedAt ? formatDate(row.startedAt) : "—"}
+      </span>
+      <span className="text-text-muted text-sm">
+        {row.expiresAt ? formatDate(row.expiresAt) : "—"}
+      </span>
+    </>
+  );
+}
+
+/**
+ * One row per course the participant takes or was invited to, with state, progress, last
+ * activity, access start and expiry; every column sorts, course and state filter, and a last row
+ * sums up all the courses (average progress, latest activity, earliest start, nearest expiry).
+ */
+function TrainingTable({ courses, total }: { courses: CourseTraining[]; total: CourseTraining }) {
+  const [sort, setSort] = useState<{ by: TrainingSort; direction: "asc" | "desc" }>({
+    by: "course",
+    direction: "asc",
+  });
+  const [courseFilter, setCourseFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState<TrainingStatus | "ALL">("ALL");
+  const rows = visibleTraining(courses, { courseId: courseFilter, status: statusFilter }, sort);
+  // The total follows what is on screen: the API's row unfiltered, recomputed for a filtered list.
+  const filtered = courseFilter !== "ALL" || statusFilter !== "ALL";
+  const shownTotal = filtered ? trainingTotal(rows) : total;
+  const onSort = (by: TrainingSort) =>
+    setSort((s) =>
+      s.by === by
+        ? { by, direction: s.direction === "asc" ? "desc" : "asc" }
+        : { by, direction: FIRST_DIRECTION[by] },
+    );
+
+  return (
+    <Card className="flex flex-col gap-3">
+      <CardTitle>Cursos</CardTitle>
+      {courses.length === 0 ? (
+        <p className="text-text-muted text-sm">Todavía no tiene cursos asignados.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <div className="min-w-[920px]">
+            <div
+              role="row"
+              className={cn(
+                GRID,
+                "border-border text-text-muted items-start border-b pb-3 text-xs font-extrabold",
+              )}
+            >
+              <span className="flex flex-col gap-1.5">
+                <SortButton label="CURSO" by="course" sort={sort} onSort={onSort} />
+                <select
+                  value={courseFilter}
+                  onChange={(e) => setCourseFilter(e.target.value)}
+                  aria-label="Filtrar por curso"
+                  className="border-border bg-surface text-text rounded-lg border px-2 py-1 text-[13px] font-semibold"
+                >
+                  <option value="ALL">Todos</option>
+                  {courses.flatMap((c) =>
+                    c.courseId ? (
+                      <option key={c.courseId} value={c.courseId}>
+                        {c.courseName}
+                      </option>
+                    ) : (
+                      []
+                    ),
+                  )}
+                </select>
+              </span>
+              <span className="flex flex-col gap-1.5">
+                <SortButton label="ESTADO" by="status" sort={sort} onSort={onSort} />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as TrainingStatus | "ALL")}
+                  aria-label="Filtrar por estado"
+                  className="border-border bg-surface text-text rounded-lg border px-2 py-1 text-[13px] font-semibold"
+                >
+                  <option value="ALL">Todos</option>
+                  {STATUSES.map((st) => (
+                    <option key={st} value={st}>
+                      {trainingStatusLabel(st)}
+                    </option>
+                  ))}
+                </select>
+              </span>
+              <SortButton label="PROGRESO" by="progress" sort={sort} onSort={onSort} />
+              <SortButton label="ÚLTIMA ACTIVIDAD" by="lastActivity" sort={sort} onSort={onSort} />
+              <SortButton label="INICIO" by="startedAt" sort={sort} onSort={onSort} />
+              <SortButton label="VENCIMIENTO" by="expiresAt" sort={sort} onSort={onSort} />
+            </div>
+            <div>
+              {rows.map((row) => (
+                <div
+                  key={row.courseId}
+                  role="row"
+                  className={cn(GRID, "border-fill border-b py-3 last:border-b-0")}
+                >
+                  <TrainingCells row={row} name={row.courseName ?? ""} />
+                </div>
+              ))}
+            </div>
+            {rows.length === 0 ? (
+              <p className="text-text-muted py-4 text-center text-sm">
+                Ningún curso coincide con los filtros.
+              </p>
+            ) : null}
+            {rows.length > 0 ? (
+              <div role="row" className={cn(GRID, "border-border border-t py-3")}>
+                <TrainingCells
+                  row={shownTotal}
+                  name={filtered ? "Cursos mostrados" : "Todos los cursos"}
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -48,11 +235,10 @@ export default function MemberDetailPage() {
   const orgId = organization?.id;
   const [confirming, setConfirming] = useState(false);
   const withFilters = useWithFilters();
-  const { period } = usePeriodFilter();
 
   const { data, isPending, error } = useQuery({
-    queryKey: ["organization", orgId, "members", "detail", userId, { period }],
-    queryFn: () => organizationsApi.member(orgId!, userId, period),
+    queryKey: ["organization", orgId, "members", "training", userId],
+    queryFn: () => organizationsApi.participantTraining(orgId!, userId),
     enabled: Boolean(orgId),
     placeholderData: keepPreviousData,
   });
@@ -74,7 +260,6 @@ export default function MemberDetailPage() {
         <Icon name="chevronBack" className="size-4" />
         Participantes
       </Link>
-      <PeriodFilter />
     </div>
   );
 
@@ -94,7 +279,6 @@ export default function MemberDetailPage() {
     );
 
   const m = data;
-  const started = m.progressPercentage > 0;
 
   return (
     <section className="flex flex-col gap-4">
@@ -113,11 +297,9 @@ export default function MemberDetailPage() {
             <h1 className="font-display text-3xl leading-9 font-bold">
               {m.name} {m.lastName}
             </h1>
-            <StatusPill status={m.activityStatus} />
           </div>
           <p className="text-text-muted text-sm">
-            {m.email} · Se incorporó el {formatDate(m.joinedAt)} · Última vez:{" "}
-            {formatRelativeDays(daysSince(m.lastActivityAt)).toLowerCase()}
+            {m.email} · Se incorporó el {formatDate(m.joinedAt)}
           </p>
         </div>
         {m.status === "ACTIVE" ? (
@@ -132,79 +314,7 @@ export default function MemberDetailPage() {
         ) : null}
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3">
-        <Metric label="Avance">{m.progressPercentage}%</Metric>
-        <Metric label="Lecciones">
-          {m.completedLessons}
-          <span className="text-text-muted text-lg font-bold">/{m.totalLessons}</span>
-        </Metric>
-        <Metric label="Señas aprendidas">{m.signsLearned}</Metric>
-        <Metric label="Respuestas correctas">{started ? `${m.correctPercentage}%` : "—"}</Metric>
-        <Metric label="Racha actual">
-          <Icon name="flame" className="text-streak-orange size-6" />
-          {m.currentStreak} {m.currentStreak === 1 ? "día" : "días"}
-        </Metric>
-        <Metric label={period ? "Tiempo en el período" : "Tiempo de aprendizaje"}>
-          {started ? formatMinutes(m.learningMinutes) : "—"}
-        </Metric>
-      </div>
-
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-4">
-        <Card className="flex flex-col gap-2">
-          <CardTitle>Progreso por curso</CardTitle>
-          {m.courses.length === 0 ? (
-            <p className="text-text-muted text-sm">Todavía no hay cursos asignados.</p>
-          ) : null}
-          {m.courses.map((c) => (
-            <div
-              key={c.courseId}
-              className="border-fill flex flex-col gap-2 border-b py-3 last:border-b-0"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-[15px] font-bold">{c.courseName}</span>
-                <span className="text-text-muted text-[13px]">
-                  {c.completedLessons}/{c.totalLessons} lecciones
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <ProgressBar
-                  percent={c.progressPercentage}
-                  className="flex-1"
-                  label={`Avance en ${c.courseName}`}
-                />
-                <span className="w-10 text-sm font-extrabold">{c.progressPercentage}%</span>
-              </div>
-            </div>
-          ))}
-        </Card>
-
-        <Card className="flex flex-col gap-2">
-          <CardTitle>Actividad</CardTitle>
-          <dl className="flex flex-col text-sm">
-            {[
-              [
-                "Módulo actual",
-                currentModuleLabel({ ...m, currentCourse: null }, m.courses.length > 1).text,
-              ],
-              ["Módulos completados", m.modulesCompleted],
-              [
-                period ? "Días activos en el período" : "Días activos (últimos 30)",
-                m.activeDaysLast30,
-              ],
-              ["Ejercicios realizados", m.exerciseAttempts],
-              ["Respuestas correctas", `${m.correctAnswers} de ${m.exerciseAttempts}`],
-            ].map(([label, value]) => (
-              <div
-                key={label}
-                className="border-fill flex justify-between gap-3 border-b py-2.5 last:border-b-0"
-              >
-                <dt className="text-text-muted">{label}</dt>
-                <dd className="font-extrabold">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
-      </div>
+      <TrainingTable courses={m.courses} total={m.total} />
 
       {confirming ? (
         <div

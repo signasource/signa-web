@@ -37,6 +37,13 @@ export default function PrivacyPage() {
             estudio por día, meta diaria, vidas y gemas.
           </li>
           <li>
+            <strong>Encuesta inicial (opcional):</strong> al empezar en la app te preguntamos tu
+            rango de edad (por ejemplo, «25 a 34»; nunca tu edad exacta ni tu fecha de nacimiento),
+            cuánto conocés la lengua de señas y por qué querés aprenderla. Podés elegir «Prefiero no
+            decirlo» o no responder. Solo la vemos agrupada con la de otras personas, para adaptar
+            los cursos.
+          </li>
+          <li>
             <strong>Social:</strong> solicitudes de amistad, amistades, actividad que compartís con
             tus amigos y los «me gusta». Lo que otras personas ven de tu perfil depende de la
             visibilidad que configures (público o solo amigos).
@@ -76,6 +83,10 @@ export default function PrivacyPage() {
           <li>Acreditar las compras de gemas y prevenir fraudes.</li>
           <li>Mostrar el progreso a la organización a la que pertenecés (ver sección 4).</li>
           <li>Mantener la seguridad del sistema y corregir errores.</li>
+          <li>
+            Adaptar las temáticas y la dificultad de los cursos a quienes llegan, con las respuestas
+            de la encuesta inicial vistas solo de forma agregada.
+          </li>
           <li>
             Fines académicos del proyecto, siempre con estadísticas agregadas que no te identifican.
           </li>
@@ -140,9 +151,9 @@ export default function PrivacyPage() {
         <p>
           Conservamos tus datos mientras tu cuenta esté activa. Si eliminás tu cuenta, se desactiva
           de inmediato y borramos tus datos personales y de actividad: nombre, apellido, email,
-          usuario, foto de perfil, progreso, estadísticas, logros, amistades, notificaciones,
-          configuraciones, tu pertenencia a organizaciones, las invitaciones enviadas a tu email y
-          las sesiones y tokens de tus dispositivos.
+          usuario, foto de perfil, respuestas de la encuesta inicial, progreso, estadísticas,
+          logros, amistades, notificaciones, configuraciones, tu pertenencia a organizaciones, las
+          invitaciones enviadas a tu email y las sesiones y tokens de tus dispositivos.
         </p>
         <p>
           Lo único que conservamos es el historial de compras y regalos de gemas, por obligaciones

@@ -56,7 +56,7 @@ export function InfraTab(props: InfraProps) {
 
 /**
  * A KPI card fed by a Prometheus widget: the window's average (with its peak in the hint), the
- * change vs. the previous window, and the series as sparkline.
+ * change vs. the previous window.
  */
 function PerfKpi({
   widget,
@@ -105,7 +105,6 @@ function PerfKpi({
             : "Sin datos en este período"
           : hint?.(avg, perfPeak(q.data))
       }
-      spark={seriesValues(q.data?.series[0])}
     />
   );
 }

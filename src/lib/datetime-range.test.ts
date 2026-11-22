@@ -7,6 +7,7 @@ import {
   presetRange,
   resolveRange,
   selectionLabel,
+  selectionWindow,
   spanSeconds,
   validateRange,
 } from "./datetime-range";
@@ -116,5 +117,22 @@ describe("previousRange", () => {
     expect(
       previousRange({ from: "2026-11-10T00:00:00.000Z", to: "2026-11-10T00:00:00.000Z" }),
     ).toBeNull();
+  });
+});
+
+describe("selectionWindow", () => {
+  const NOW = 10_000;
+  it("cuts the bucket in progress at now without moving its start", () => {
+    // 10:00–11:00 clicked at 10:31 → 10:00–10:31, not 9:31–10:31.
+    expect(selectionWindow(7_000, 10_599, NOW, 300)).toEqual({ from: 7_000, to: NOW });
+  });
+  it("keeps a past window as it is, in either order", () => {
+    expect(selectionWindow(2_000, 1_000, NOW, 300)).toEqual({ from: 1_000, to: 2_000 });
+  });
+  it("widens a tiny window around its middle", () => {
+    expect(selectionWindow(5_000, 5_060, NOW, 300)).toEqual({ from: 4_880, to: 5_180 });
+  });
+  it("widens a tiny window at now backwards, never into the future", () => {
+    expect(selectionWindow(9_950, 10_050, NOW, 300)).toEqual({ from: 9_700, to: NOW });
   });
 });

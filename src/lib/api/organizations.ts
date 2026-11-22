@@ -1,24 +1,28 @@
 import { api } from "@/lib/api/client";
 import type { Period } from "@/lib/date-range";
 import type {
+  CatalogCourse,
   InvitationSummary,
   MemberActivityStatus,
   MemberProgress,
   MemberSort,
   MemberStatus,
-  ModuleStats,
   MyOrganization,
   OrganizationHome,
   OrganizationInvitation,
   OrganizationMemberSummary,
   OrganizationOverview,
   Page,
+  ParticipantActivity,
+  ParticipantSummary,
+  ParticipantTraining,
   ParticipantReminder,
   Purchase,
   PaymentSync,
   PurchaseCatalog,
   PurchaseCheckout,
   PurchaseDetail,
+  PurchaseProgress,
   PurchaseQuote,
   RedeemInviteCodeResponse,
   RefundRequestReason,
@@ -83,6 +87,37 @@ export const organizationsApi = {
     });
   },
 
+  /**
+   * The participant list: `period` only picks who joined in it; state is active/inactive over the
+   * last 7 days; `includeCompleted: false` hides who completed the selected course(s).
+   */
+  participants: (
+    orgId: string,
+    params: {
+      query?: string;
+      activity?: ParticipantActivity;
+      courseId?: string;
+      period?: Period;
+      includeCompleted: boolean;
+      sort?: { by: MemberSort; direction: "asc" | "desc" };
+      page?: number;
+      size?: number;
+    },
+  ) => {
+    const { sort, period, ...rest } = params;
+    return api<Page<ParticipantSummary>>(`/organizations/${orgId}/members/roster`, {
+      query: {
+        ...rest,
+        ...periodQuery(period),
+        sort: sort ? `${sort.by},${sort.direction}` : undefined,
+      },
+    });
+  },
+
+  /** One participant's training, course by course, plus a total row. */
+  participantTraining: (orgId: string, userId: string) =>
+    api<ParticipantTraining>(`/organizations/${orgId}/members/${userId}/training`),
+
   member: (orgId: string, userId: string, period?: Period) =>
     api<MemberProgress>(`/organizations/${orgId}/members/${userId}`, {
       query: periodQuery(period),
@@ -96,11 +131,6 @@ export const organizationsApi = {
   removeMember: (orgId: string, userId: string) =>
     api(`/organizations/${orgId}/members/${userId}`, { method: "DELETE" }),
 
-  modules: (orgId: string, params: { courseId?: string; period?: Period }) =>
-    api<ModuleStats[]>(`/organizations/${orgId}/modules`, {
-      query: { courseId: params.courseId, ...periodQuery(params.period) },
-    }),
-
   catalog: () => api<PurchaseCatalog>("/organizations/catalog", { anonymous: true }),
 
   quote: (params: { courseId: string; seats: number; durationDays: number }) =>
@@ -110,6 +140,14 @@ export const organizationsApi = {
 
   purchase: (orgId: string, purchaseId: string) =>
     api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}`),
+
+  /** How the people of a purchase are doing in its course (completed, rate, average progress). */
+  purchaseProgress: (orgId: string, purchaseId: string) =>
+    api<PurchaseProgress>(`/organizations/${orgId}/purchases/${purchaseId}/progress`),
+
+  /** The purchase's course as the buy screen showed it, from the version that was bought. */
+  purchasedCourse: (orgId: string, purchaseId: string) =>
+    api<CatalogCourse>(`/organizations/${orgId}/purchases/${purchaseId}/course`),
 
   createPurchase: (
     orgId: string,
@@ -126,10 +164,15 @@ export const organizationsApi = {
       method: "POST",
     }),
 
-  withdrawPurchase: (orgId: string, purchaseId: string, reason?: string) =>
+  /** Cancels a paid purchase within the withdrawal period: a reason is required, the comment optional. */
+  withdrawPurchase: (
+    orgId: string,
+    purchaseId: string,
+    data: { reason: RefundRequestReason; message?: string },
+  ) =>
     api<PurchaseDetail>(`/organizations/${orgId}/purchases/${purchaseId}/refund`, {
       method: "POST",
-      body: { reason: reason?.trim() || null },
+      body: { reason: data.reason, message: data.message?.trim() || null },
     }),
 
   syncPayment: (orgId: string, purchaseId: string) =>
@@ -140,7 +183,7 @@ export const organizationsApi = {
   createPurchaseRefundRequest: (
     orgId: string,
     purchaseId: string,
-    data: { reason?: RefundRequestReason; message?: string },
+    data: { reason: RefundRequestReason; message?: string },
   ) =>
     api<UserRefundRequestResponse>(
       `/organizations/${orgId}/purchases/${purchaseId}/refund-request`,

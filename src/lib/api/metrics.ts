@@ -265,6 +265,7 @@ export type LessonReview = {
 /** One sign ranked by difficulty across exercise blocks that test it. */
 export type SignDifficulty = {
   sign: string;
+  signId: string | null;
   evaluated: number;
   correct: number;
   errorPercent: number;
@@ -351,6 +352,85 @@ export type MlMetrics = {
   recognizedSigns: MlSignRecognition[];
 };
 
+/** Kinds of purchase in the sales detail (organization seats, gem packs, individual courses). */
+export type SaleType = "SEATS" | "GEMS" | "COURSE";
+
+/**
+ * One purchase paid in the window. `refundReason` is set only when `refunded`: a buyer reason
+ * (`RefundRequestReason`), `CHARGEBACK` or `UNSPECIFIED`.
+ */
+export type Sale = {
+  id: string;
+  type: SaleType;
+  productName: string;
+  productDetail: string;
+  buyerName: string;
+  /** `null` for gem packs. */
+  courseId: string | null;
+  amount: number;
+  currency: string;
+  paidAt: string;
+  refunded: boolean;
+  refundedAt: string | null;
+  refundReason: string | null;
+};
+
+export type RefundReasonCount = { reason: string; count: number; amount: number };
+
+/** Seats activated by organizations plus individuals (paid orders + free self-enrollments). */
+export type CoursePopularity = {
+  courseId: string;
+  courseName: string;
+  orgSeats: number;
+  individual: number;
+  total: number;
+};
+
+/** Income per course, refunded purchases left out. */
+export type CourseRevenue = {
+  courseId: string;
+  courseName: string;
+  orgAmount: number;
+  individualAmount: number;
+  total: number;
+  purchases: number;
+};
+
+/**
+ * Gems users got in the window by origin: `CHALLENGES` (challenge rewards claimed), `ACHIEVEMENTS`
+ * (achievement rewards) and `PURCHASED` (packs paid with money, not refunded).
+ */
+export type GemSource = { source: "CHALLENGES" | "ACHIEVEMENTS" | "PURCHASED"; gems: number };
+
+/**
+ * The "Negocio" sales detail (`GET /admin/metrics/sales`): every purchase paid in the window
+ * (refunded ones flagged), refund reasons, the most popular courses, income per course and where
+ * the users' gems came from. The KPI
+ * counters are worked out from `sales`, so the list behind each one adds up to it.
+ */
+export type SalesMetrics = {
+  sales: Sale[];
+  refundReasons: RefundReasonCount[];
+  popularCourses: CoursePopularity[];
+  courseRevenue: CourseRevenue[];
+  gemSources: GemSource[];
+};
+
+/** One answer of an onboarding-survey question (`key` = option or `NO_ANSWER`). */
+export type SurveyAnswer = { key: string; count: number };
+
+/**
+ * Onboarding survey answers of the accounts created in the window (`GET /admin/metrics/onboarding`).
+ * Each list has every option in order, zeros included, then `NO_ANSWER`. Motivations are multiple
+ * choice (they can add up to more than `signups`).
+ */
+export type OnboardingMetrics = {
+  signups: number;
+  ageRanges: SurveyAnswer[];
+  experienceLevels: SurveyAnswer[];
+  motivations: SurveyAnswer[];
+};
+
 export type RangeParams = { from: string; to: string };
 
 export const metricsApi = {
@@ -368,6 +448,11 @@ export const metricsApi = {
     api<LearningMetrics>("/admin/metrics/learning", {
       query: { from: params.from, to: params.to, courseIds: params.courseIds },
     }),
+
+  onboarding: (params: RangeParams) =>
+    api<OnboardingMetrics>("/admin/metrics/onboarding", { query: params }),
+
+  sales: (params: RangeParams) => api<SalesMetrics>("/admin/metrics/sales", { query: params }),
 
   gamification: (params: RangeParams) =>
     api<GamificationMetrics>("/admin/metrics/gamification", { query: params }),

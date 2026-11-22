@@ -10,39 +10,6 @@ import {
 } from "@/components/dashboard/metric-catalog";
 import { cn } from "@/lib/utils";
 
-/** A minimal sparkline: normalises the values into the 0–24 viewBox and draws a single path. */
-export function Sparkline({ values, className }: { values: number[]; className?: string }) {
-  const finite = values.filter((v) => Number.isFinite(v));
-  if (finite.length < 2) return null;
-  const min = Math.min(...finite);
-  const max = Math.max(...finite);
-  const span = max - min || 1;
-  const step = 100 / (finite.length - 1);
-  const d = finite
-    .map(
-      (v, i) =>
-        `${i === 0 ? "M" : "L"}${(i * step).toFixed(2)} ${(24 - ((v - min) / span) * 24).toFixed(2)}`,
-    )
-    .join(" ");
-  return (
-    <svg
-      viewBox="0 0 100 24"
-      preserveAspectRatio="none"
-      className={cn("h-7 w-full overflow-visible", className)}
-      aria-hidden
-    >
-      <path
-        d={d}
-        fill="none"
-        className="stroke-primary"
-        strokeWidth={1.6}
-        vectorEffect="non-scaling-stroke"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export const TONE_DOT: Record<MetricTone, string> = {
   success: "bg-success",
   warning: "bg-streak-orange",
@@ -66,8 +33,9 @@ export function metricTone(metric: MetricId, value: number | null | undefined): 
 export type KpiDelta = DeltaOptions & { current: number; previous: number | null | undefined };
 
 /**
- * A north-star KPI card: label + info, big value, a period-over-period delta pill, a hint and a
- * sparkline. Every KPI has the same anatomy so a row reads at a glance. When `toneValue` is given,
+ * A north-star KPI card: label + info, big value, a period-over-period delta pill and a hint (no
+ * sparkline: the time series live in the charts below). Every KPI has the same anatomy so a row
+ * reads at a glance. `onOpen` adds a "Ver las compras" action that opens the list behind the number. When `toneValue` is given,
  * the value and a status dot are coloured by the metric's catalog threshold (health metrics only;
  * plain magnitudes like income stay neutral). The explanation comes from the metric catalog.
  */
@@ -78,8 +46,10 @@ export function KpiCard({
   toneValue,
   delta,
   hint,
-  spark,
   href,
+  onOpen,
+  openLabel = "Ver las compras",
+  className,
 }: {
   metric: MetricId;
   /** Overrides the catalog label (the card's short name). */
@@ -89,14 +59,17 @@ export function KpiCard({
   toneValue?: number | null;
   delta?: KpiDelta;
   hint?: ReactNode;
-  spark?: number[];
   href?: string;
+  /** Opens the detail behind the number (e.g. the purchases a money counter adds up). */
+  onOpen?: () => void;
+  openLabel?: string;
+  className?: string;
 }) {
   const def = METRICS[metric];
   const tone = toneValue === undefined ? "neutral" : metricTone(metric, toneValue);
   const name = label ?? def.label;
   return (
-    <div className="border-border bg-surface dash-card-enter flex min-w-0 flex-col rounded-2xl border p-[18px]">
+    <div className={cn("border-border bg-surface dash-card-enter flex min-w-0 flex-col rounded-2xl border p-[18px]", className)}>
       <div className="flex min-w-0 items-center gap-1.5">
         {tone !== "neutral" ? (
           <span className={cn("size-2 shrink-0 rounded-full", TONE_DOT[tone])} aria-hidden />
@@ -120,10 +93,15 @@ export function KpiCard({
         </div>
       ) : null}
       {hint ? <p className="text-text-muted mt-1.5 text-[13px] text-pretty">{hint}</p> : null}
-      {spark && spark.length > 1 ? (
-        <div className="mt-auto pt-2.5">
-          <Sparkline values={spark} />
-        </div>
+      {onOpen ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={`${openLabel}: ${name}`}
+          className="text-primary hover:text-primary-dark mt-auto cursor-pointer self-start pt-2.5 text-[13px] font-extrabold"
+        >
+          {openLabel} →
+        </button>
       ) : null}
       {href ? (
         <Link

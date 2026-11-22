@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/client";
 import type { Purchase } from "@/lib/api/types";
 import {
+  seatsInGroup,
+  visiblePurchases,
   daysToComplete,
   refundResolveErrorMessage,
   signsWithin,
@@ -228,12 +230,23 @@ describe("canWithdraw", () => {
 });
 
 describe("withdrawalSchema", () => {
-  it("accepts an empty reason and caps it at 500 characters", () => {
-    expect(withdrawalSchema.safeParse({ reason: "" }).success).toBe(true);
-    expect(withdrawalSchema.safeParse({ reason: "x".repeat(500) }).success).toBe(true);
-    expect(withdrawalSchema.safeParse({ reason: "x".repeat(501) }).error?.issues[0]?.message).toBe(
-      "Usá hasta 500 caracteres.",
+  it("requires a reason from the shared list and keeps the comment optional", () => {
+    expect(withdrawalSchema.safeParse({ reason: "MISTAKE", message: "" }).success).toBe(true);
+    expect(withdrawalSchema.safeParse({ reason: "", message: "x" }).error?.issues[0]?.message).toBe(
+      "Elegí un motivo.",
     );
+    expect(withdrawalSchema.safeParse({ message: "x" }).success).toBe(false);
+    expect(withdrawalSchema.safeParse({ reason: "CHARGEBACK", message: "" }).success).toBe(false);
+  });
+
+  it("caps the comment at 500 characters", () => {
+    expect(withdrawalSchema.safeParse({ reason: "OTHER", message: "x".repeat(500) }).success).toBe(
+      true,
+    );
+    expect(
+      withdrawalSchema.safeParse({ reason: "OTHER", message: "x".repeat(501) }).error?.issues[0]
+        ?.message,
+    ).toBe("Usá hasta 500 caracteres.");
   });
 });
 
@@ -304,5 +317,73 @@ describe("refundResolveErrorMessage", () => {
     expect(refundResolveErrorMessage(new ApiError(500, "boom"))).toBe(
       "No pudimos guardar los cambios. Probá de nuevo.",
     );
+  });
+});
+
+describe("visiblePurchases", () => {
+  const bought = (id: string, status: Purchase["status"], createdAt: string) =>
+    ({ id, status, createdAt }) as Purchase;
+  const LIST = [
+    bought("a", "PAID", "2026-11-10T15:00:00Z"),
+    bought("b", "REFUNDED", "2026-11-01T02:00:00Z"), // Oct 31 at 23:00 in Argentina
+    bought("c", "PENDING_PAYMENT", "2026-11-20T12:00:00Z"),
+    bought("d", "CANCELLED", "2026-11-05T12:00:00Z"),
+  ];
+  const ids = (list: Purchase[]) => list.map((p) => p.id);
+
+  it("sorts by purchase date both ways", () => {
+    expect(ids(visiblePurchases(LIST, { status: "ALL", period: null, direction: "desc" }))).toEqual(
+      ["c", "a", "d", "b"],
+    );
+    expect(ids(visiblePurchases(LIST, { status: "ALL", period: null, direction: "asc" }))).toEqual([
+      "b",
+      "d",
+      "a",
+      "c",
+    ]);
+  });
+
+  it("filters by payment state", () => {
+    const by = (status: Purchase["status"]) =>
+      ids(visiblePurchases(LIST, { status, period: null, direction: "desc" }));
+    expect(by("PAID")).toEqual(["a"]);
+    expect(by("REFUNDED")).toEqual(["b"]);
+    expect(by("PENDING_PAYMENT")).toEqual(["c"]);
+  });
+
+  it("filters by the Argentine day of the purchase, both ends included", () => {
+    const november = { from: "2026-11-01", to: "2026-11-10" };
+    expect(
+      ids(visiblePurchases(LIST, { status: "ALL", period: november, direction: "desc" })),
+    ).toEqual(["a", "d"]);
+    expect(
+      ids(
+        visiblePurchases(LIST, {
+          status: "ALL",
+          period: { from: "2026-10-31", to: "2026-10-31" },
+          direction: "desc",
+        }),
+      ),
+    ).toEqual(["b"]);
+  });
+
+  it("does not reorder the list it was given", () => {
+    const copy = [...LIST];
+    visiblePurchases(LIST, { status: "ALL", period: null, direction: "asc" });
+    expect(LIST).toEqual(copy);
+  });
+});
+
+describe("seatsInGroup", () => {
+  const seats = [
+    { id: "active", activatedAt: "2026-11-01T00:00:00Z" },
+    { id: "expired", activatedAt: "2026-10-01T00:00:00Z" },
+    { id: "invited", activatedAt: null },
+    { id: "lost", activatedAt: null },
+  ];
+  it("splits who accepted the invitation from who did not", () => {
+    expect(seatsInGroup(seats, "ALL")).toHaveLength(4);
+    expect(seatsInGroup(seats, "ACCEPTED").map((s) => s.id)).toEqual(["active", "expired"]);
+    expect(seatsInGroup(seats, "NOT_ACCEPTED").map((s) => s.id)).toEqual(["invited", "lost"]);
   });
 });
