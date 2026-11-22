@@ -82,13 +82,16 @@ export function previousRange(range: DateTimeRange): DateTimeRange | null {
 }
 
 /**
- * A resolution that keeps a line chart readable: aim for ~120 points, never finer than 15s (the
- * scrape interval is 60s, so sub-15s is pointless) and snapped to a "nice" step. The backend
- * clamps too, so this is only a hint.
+ * A resolution that keeps a line chart readable: aim for ~120 points, never finer than 15s, and
+ * snapped to a "nice" step. The backend clamps too, so this is only a hint.
+ *
+ * Note: the Prometheus scrape interval is 60s. The backend enforces a minimum rate window of 120s
+ * (2× the scrape interval) so rate() always finds ≥ 2 samples; steps finer than 60s are valid for
+ * gauge metrics and the backend handles them correctly for rate metrics via that window floor.
  */
 export function deriveStepSeconds(range: DateTimeRange): number {
   const target = spanSeconds(range) / 120;
-  // Never finer than 15 s (Prometheus scrape interval; the backend clamps too).
+  // Never finer than 15 s; the backend enforces the minimum rate window (120 s).
   const nice = [15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 21600, 43200, 86400];
   return nice.find((s) => s >= target) ?? nice[nice.length - 1]!;
 }
