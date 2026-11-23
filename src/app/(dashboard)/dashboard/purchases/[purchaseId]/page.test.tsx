@@ -401,6 +401,10 @@ describe("PurchaseDetailPage", () => {
     await waitFor(() =>
       expect(screen.getByText(/Recibimos tu pedido de reembolso/)).toBeInTheDocument(),
     );
+    // The summary agrees with the card: asked for, not "Ya no disponible".
+    expect(screen.getByText("Anulación con reembolso").parentElement!).toHaveTextContent(
+      "Pedida, en revisión",
+    );
     expect(screen.queryByText("Anular la compra")).not.toBeInTheDocument();
   });
 
