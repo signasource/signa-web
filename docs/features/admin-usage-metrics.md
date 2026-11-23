@@ -94,7 +94,7 @@ panels only populate in production; the Infra tab says so, and shows "sin datos"
   sparklines** (removed from every card, nov 2026: the series live in the charts). Health KPIs pass `toneValue` → dot + coloured
   value from the catalog threshold. Previous windows come from the same endpoints queried with
   `previousRange(range)` (`usage-queries.ts`), no extra API.
-- **Período anterior** is drawn dashed on `DailySeriesChart` (`previous` prop) and `PerfChart`
+- **Período anterior** is drawn dashed on `DailySeriesChart` (`previous` prop) and `PerfChart` `PerfChart` puts each previous point on the nearest row within half a step (`alignPrevious`), not on the exact same timestamp: the two windows are separate Prometheus queries and their grids can drift (backend step alignment, "En vivo" moving the window between them). When the previous window comes back with no values at all — Grafana Cloud keeps a limited history, so "Últimos 30 días" and "Todo el historial" (30 days in Infraestructura) reach before it — the legend reads "Período anterior: sin datos" instead of silently dropping the line.
   (`previous` + `previousShiftSeconds`). Once fetched, a bucket the previous window has no row for is **0** (`buildSeries`), also when the
   whole previous window came back empty — common in "Últimas 4 horas", whose previous window often has
   nobody — so the dashed line is drawn at 0 instead of disappearing as "sin datos" (rates with
