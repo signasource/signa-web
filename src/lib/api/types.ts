@@ -346,7 +346,7 @@ export type HomeFollowUpParticipant = {
 export type OrganizationHome = {
   participants: number;
   startedParticipants: number;
-  /** Among `startedParticipants` only. */
+  /** Among all `participants`; non-starters count as zero. */
   averageProgressPercentage: number;
   completedParticipants: number;
   /** `completedParticipants / participants`. */

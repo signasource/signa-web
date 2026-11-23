@@ -154,15 +154,6 @@ function BackendInfra({ onSelectRange, ...perf }: InfraProps) {
         />
         <PerfKpi
           {...perf}
-          widget="error_rate"
-          metric="error_rate"
-          format={fmtPercentRatio}
-          scale={100}
-          delta={{ mode: "pp", good: "down" }}
-          hint={() => "5xx sobre el total"}
-        />
-        <PerfKpi
-          {...perf}
           widget="throughput"
           metric="throughput"
           format={fmtReqsPerMinute}
