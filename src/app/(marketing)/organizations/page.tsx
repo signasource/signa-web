@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { BackButton } from "@/components/back-button";
 import { LandingUIProvider } from "@/components/landing/landing-ui-provider";
@@ -27,51 +28,63 @@ const STEPS = [
   },
   {
     title: "Seguí el avance",
-    body: "Métricas simples: quién empezó, cuánto avanzó y cuántas señas aprendió.",
+    body: "Un panel simple: quién empezó, cuánto avanzó y quién necesita un recordatorio.",
   },
 ] as const;
 
-const DEMO_KPIS = [
-  { label: "Personas inscriptas", value: "24" },
-  { label: "Activas esta semana", value: "18" },
-  { label: "Avance promedio", value: "62%" },
-  { label: "Completaron el curso", value: "5" },
-] as const;
+/** Real captures of the organization panel (example data), newest panel first. */
+/** All captures are 2000×1194 (a 1440 px wide panel at 2×, resized). */
+const SHOT_SIZE = { width: 2000, height: 1194 } as const;
 
-const DEMO_MEMBERS = [
+const PANEL_SHOTS: { src: string; title: string; body: string; alt: string }[] = [
   {
-    initials: "CR",
-    name: "Carla R.",
-    progress: 100,
-    last: "Hoy",
-    badge: "bg-avatar-teal-light text-avatar-teal-dark",
-    bar: "bg-success",
+    src: "/images/panel/resumen.webp",
+    title: "Resumen",
+    body: "Las invitaciones pendientes, el progreso promedio y quién necesita seguimiento, con un recordatorio a un clic.",
+    alt: "Panel de Signa, pestaña Resumen: 6 invitaciones pendientes, progreso promedio de 31%, una persona que requiere seguimiento y la lista de participantes activos.",
   },
   {
-    initials: "DM",
-    name: "Diego M.",
-    progress: 74,
-    last: "Ayer",
-    badge: "bg-primary-light text-primary-dark",
-    bar: "bg-primary",
+    src: "/images/panel/participantes.webp",
+    title: "Participantes",
+    body: "El estado y el avance de cada persona, con filtros por curso y fecha y orden por columna.",
+    alt: "Panel de Signa, pestaña Participantes: tabla con nueve personas, su estado (activo o inactivo), barra de avance, última vez que entraron y fecha de incorporación.",
   },
   {
-    initials: "LP",
-    name: "Lucía P.",
-    progress: 51,
-    last: "Hace 3 días",
-    badge: "bg-avatar-wine-light text-social-wine",
-    bar: "bg-primary",
+    src: "/images/panel/compra.webp",
+    title: "Compras",
+    body: "Cada compra con sus cupos, quién aceptó la invitación y cuánto avanzó, junto al resumen del pago.",
+    alt: "Panel de Signa, detalle de una compra: 2 personas completaron, progreso promedio de 42%, tasa de finalización de 20%, la lista de personas invitadas y el resumen de la compra.",
   },
-  {
-    initials: "MS",
-    name: "Martín S.",
-    progress: 18,
-    last: "Hace 9 días",
-    badge: "bg-shop-amber-light text-shop-amber-dark",
-    bar: "bg-streak-orange",
-  },
-] as const;
+];
+
+function PanelShot({
+  shot,
+  priority = false,
+  sizes,
+}: {
+  shot: (typeof PANEL_SHOTS)[number];
+  priority?: boolean;
+  sizes: string;
+}) {
+  return (
+    <figure className="flex flex-col gap-4">
+      <div className="bg-background overflow-hidden rounded-[20px] shadow-2xl ring-1 ring-white/10 sm:rounded-[28px]">
+        <Image
+          src={shot.src}
+          alt={shot.alt}
+          {...SHOT_SIZE}
+          sizes={sizes}
+          priority={priority}
+          className="h-auto w-full"
+        />
+      </div>
+      <figcaption className="flex flex-col gap-1 px-1">
+        <span className="font-display text-xl font-bold tracking-tight">{shot.title}</span>
+        <span className="text-on-dark/65 text-base leading-relaxed">{shot.body}</span>
+      </figcaption>
+    </figure>
+  );
+}
 
 export default function OrganizacionesPage() {
   return (
@@ -126,65 +139,27 @@ export default function OrganizacionesPage() {
                 </ol>
               </div>
 
-              <div className="bg-background text-text mt-24 rounded-[32px] p-8 shadow-2xl">
-                <div className="flex flex-wrap items-center gap-3.5">
-                  <span className="font-display text-lg font-bold tracking-tight">
-                    Panel de organización
+              <div className="mt-24 flex flex-col gap-10">
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <h2 className="font-display text-4xl font-extrabold tracking-tight">
+                    Así se ve tu panel
+                  </h2>
+                  <span className="bg-on-dark/10 text-on-dark/70 rounded-full px-3.5 py-2 text-[13px] font-bold">
+                    Datos de ejemplo
                   </span>
-                  <div className="ml-auto flex flex-wrap gap-2">
-                    <span className="bg-shop-amber-light text-shop-amber-dark rounded-full px-3.5 py-2 text-[13px] font-extrabold">
-                      Curso: Atención al cliente
-                    </span>
-                    <span className="bg-fill text-text-muted rounded-full px-3.5 py-2 text-[13px] font-bold">
-                      Datos de ejemplo
-                    </span>
-                  </div>
                 </div>
-
-                <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {DEMO_KPIS.map((kpi) => (
-                    <div
-                      key={kpi.label}
-                      className="border-border bg-surface rounded-2xl border p-[18px]"
-                    >
-                      <p className="text-text-muted text-[13px] font-bold">{kpi.label}</p>
-                      <p className="font-display mt-1.5 text-4xl font-extrabold tracking-tight">
-                        {kpi.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-border bg-surface mt-4 rounded-2xl border px-5 py-2">
-                  <div className="border-border text-text-muted grid grid-cols-[2fr_3fr_1fr] gap-4 border-b py-3 text-xs font-extrabold tracking-wider">
-                    <span>PERSONA</span>
-                    <span>AVANCE DEL CURSO</span>
-                    <span>ÚLTIMA VEZ</span>
-                  </div>
-                  {DEMO_MEMBERS.map((p, i) => (
-                    <div
-                      key={p.name}
-                      className={`grid grid-cols-[2fr_3fr_1fr] items-center gap-4 py-3 ${i < DEMO_MEMBERS.length - 1 ? "border-fill border-b" : ""}`}
-                    >
-                      <div className="flex items-center gap-2.5 text-[15px] font-bold">
-                        <span
-                          className={`font-display flex h-[34px] w-[34px] items-center justify-center rounded-full text-xs font-extrabold ${p.badge}`}
-                        >
-                          {p.initials}
-                        </span>
-                        {p.name}
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <div className="bg-fill h-2.5 flex-grow overflow-hidden rounded-full">
-                          <div
-                            className={`landing-grow h-2.5 origin-left rounded-full ${p.bar}`}
-                            style={{ width: `${p.progress}%` }}
-                          />
-                        </div>
-                        <span className="w-11 text-sm font-extrabold">{p.progress}%</span>
-                      </div>
-                      <span className="text-text-muted text-sm">{p.last}</span>
-                    </div>
+                <PanelShot
+                  shot={PANEL_SHOTS[0]!}
+                  priority
+                  sizes="(min-width: 1152px) 1120px, calc(100vw - 48px)"
+                />
+                <div className="grid gap-10 md:grid-cols-2">
+                  {PANEL_SHOTS.slice(1).map((shot) => (
+                    <PanelShot
+                      key={shot.title}
+                      shot={shot}
+                      sizes="(min-width: 1152px) 544px, (min-width: 768px) 50vw, calc(100vw - 48px)"
+                    />
                   ))}
                 </div>
               </div>

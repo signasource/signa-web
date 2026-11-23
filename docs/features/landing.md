@@ -15,7 +15,7 @@ a waitlist email form (`waitlist-form.tsx` → `subscribeToWaitlist`, `POST /wai
 and links to `/organizations`.
 
 `/organizations` (`src/app/(marketing)/organizations/page.tsx`) is the organizations marketing
-page: hero, four-step flow, an example org dashboard preview, and CTAs to login or register. It
+page: hero, four-step flow, **"Así se ve tu panel"** — real captures of the organization panel with example data (Resumen large, then Participantes and Compras side by side, each with a caption; `public/images/panel/*.webp`, 2000×1194, taken at 1440 px and 2× from the local demo, "Datos de ejemplo" badge) — and CTAs to login or register. Retake them when the panel changes. It
 replaces the former `organizations-modal.tsx` overlay that was embedded inside the landing.
 
 `/organizations/login` is the org auth page (dynamic, strict CSP): a login tab (`useAuth().login()`,
