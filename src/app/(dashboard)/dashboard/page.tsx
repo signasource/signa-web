@@ -78,7 +78,7 @@ export default function DashboardOverviewPage() {
               hint={
                 data.startedParticipants === 0
                   ? "Nadie inició la capacitación todavía"
-                  : `Entre ${data.startedParticipants} ${data.startedParticipants === 1 ? "participante que inició" : "participantes que iniciaron"}`
+                  : `Entre ${data.participants} ${data.participants === 1 ? "participante" : "participantes"}`
               }
             >
               <ProgressBar

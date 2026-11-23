@@ -681,9 +681,13 @@ export default function PurchaseDetailPage() {
                         ? [
                             [
                               "Anulación con reembolso",
-                              purchase.refundableUntil && canWithdraw(purchase, new Date(now))
-                                ? `Hasta el ${formatDate(purchase.refundableUntil)}`
-                                : "Ya no disponible",
+                              // Asked for (a purchase SIGNA confirmed by hand stays paid until
+                              // SIGNA gives the money back): say so, not "Ya no disponible".
+                              purchase.hasRefundRequest
+                                ? "Pedida, en revisión"
+                                : purchase.refundableUntil && canWithdraw(purchase, new Date(now))
+                                  ? `Hasta el ${formatDate(purchase.refundableUntil)}`
+                                  : "Ya no disponible",
                             ],
                           ]
                         : []),
