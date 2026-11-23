@@ -89,7 +89,10 @@ function DropdownPicker<T extends string>({
       >
         <Icon name={icon} className="size-4" />
         <span className="max-w-[200px] truncate">{current?.label ?? options[0]?.label}</span>
-        <Icon name="chevronDown" className={cn("size-3.5 transition-transform", open && "rotate-180")} />
+        <Icon
+          name="chevronDown"
+          className={cn("size-3.5 transition-transform", open && "rotate-180")}
+        />
       </button>
       {open ? (
         <ul
@@ -332,7 +335,10 @@ function Catalog({
           <DropdownPicker
             icon="book"
             ariaLabel="Curso"
-            options={[{ key: "" as string, label: "Todos los cursos" }, ...courses.map((c) => ({ key: c.id, label: c.name }))]}
+            options={[
+              { key: "" as string, label: "Todos los cursos" },
+              ...courses.map((c) => ({ key: c.id, label: c.name })),
+            ]}
             value={selectedCourseId ?? ""}
             onChange={(v) => {
               setSelectedCourseId(v || null);
