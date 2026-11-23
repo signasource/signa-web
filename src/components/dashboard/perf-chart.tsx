@@ -78,6 +78,40 @@ function toRows(series: PerfSeries[]): { rows: Row[]; keys: string[] } {
   return { rows: [...byT.values()].sort((a, b) => a.t - b.t), keys };
 }
 
+/**
+ * Puts the previous window's points on this window's rows. Each previous point is moved forward
+ * by `shift` (the window's span) and lands on the nearest row within half a step, instead of
+ * needing the exact same timestamp: the two windows are separate Prometheus queries, and when
+ * the backend aligns them to its own grid, or "En vivo" moves the window between them, the
+ * timestamps drift a few seconds and an exact match drops the whole dashed line.
+ */
+export function alignPrevious(
+  rows: readonly { t: number }[],
+  previous: readonly { t: number; v: number | null }[],
+  shift: number,
+): (number | null)[] {
+  if (rows.length === 0 || previous.length === 0) return rows.map(() => null);
+  const gaps = rows
+    .slice(1)
+    .map((r, i) => r.t - rows[i]!.t)
+    .filter((g) => g > 0);
+  const step = gaps.length ? Math.min(...gaps) : Infinity;
+  const tolerance = step / 2;
+  const out: (number | null)[] = rows.map(() => null);
+  const best: number[] = rows.map(() => Infinity);
+  let i = 0;
+  for (const p of [...previous].sort((a, b) => a.t - b.t)) {
+    const t = p.t + shift;
+    while (i < rows.length - 1 && Math.abs(rows[i + 1]!.t - t) <= Math.abs(rows[i]!.t - t)) i++;
+    const d = Math.abs(rows[i]!.t - t);
+    if (d <= tolerance && d < best[i]!) {
+      best[i] = d;
+      out[i] = p.v;
+    }
+  }
+  return out;
+}
+
 export function PerfChart({
   title,
   subtitle,
@@ -131,10 +165,13 @@ export function PerfChart({
   const withPrevious = previous !== undefined && baseRows.length > 0;
   const rows: Row[] = withPrevious
     ? (() => {
-        const prevByT = new Map(previousPoints.map((p) => [p.t + previousShiftSeconds, p.v]));
-        return baseRows.map((r) => ({ ...r, prev: prevByT.get(r.t) ?? null }));
+        const prev = alignPrevious(baseRows, previousPoints, previousShiftSeconds);
+        return baseRows.map((r, i) => ({ ...r, prev: prev[i] ?? null }));
       })()
     : baseRows;
+  // The previous window came back without a single value (Prometheus keeps a limited history,
+  // or the query failed): say so in the legend instead of silently dropping the line.
+  const previousEmpty = withPrevious && rows.every((r) => r.prev === null);
   const showLegend = legend ?? (series.length > 1 || withPrevious);
   const multiDay = rows.length > 1 && rows[rows.length - 1]!.t - rows[0]!.t > 36 * 3600;
   const timeFmt = multiDay ? DATE_TIME_FMT : TIME_FMT;
@@ -217,7 +254,13 @@ export function PerfChart({
               items={[
                 ...names.map((label, i) => ({ label, color: colors[i % colors.length]! })),
                 ...(withPrevious
-                  ? [{ label: "Período anterior", color: PREVIOUS_COLOR, dashed: true }]
+                  ? [
+                      {
+                        label: previousEmpty ? "Período anterior: sin datos" : "Período anterior",
+                        color: PREVIOUS_COLOR,
+                        dashed: true,
+                      },
+                    ]
                   : []),
               ]}
             />
